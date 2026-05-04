@@ -3,13 +3,13 @@ import { Download, ShieldCheck, Settings, CheckCircle, AlertTriangle, Star, User
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-const APK_URL = `https://nrsfvhztpzwkadwciizp.supabase.co/storage/v1/object/public/app-downloads/datasika.apk`;
+const APK_URL = `https://nrsfvhztpzwkadwciizp.supabase.co/storage/v1/object/public/app-downloads/yiego.apk`;
 
 const STEPS = [
   {
     icon: Download,
     title: 'Download the APK',
-    description: 'Tap the download button to get the DataSika APK file.',
+    description: 'Tap the download button to get the YieGo APK file.',
   },
   {
     icon: Settings,
@@ -19,7 +19,7 @@ const STEPS = [
   {
     icon: CheckCircle,
     title: 'Install & open',
-    description: 'Open the downloaded file, tap "Install", then "Open" to launch DataSika.',
+    description: 'Open the downloaded file, tap "Install", then "Open" to launch YieGo.',
   },
 ];
 
@@ -31,11 +31,11 @@ const AppAndroid = () => {
         <div className="border border-border rounded-2xl p-6 bg-card card-shadow mb-6">
           <div className="flex gap-4 items-start">
             <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-md">
-              <img src="/datasika-icon.png" alt="DataSika" className="w-full h-full object-cover" />
+              <img src="/yiego-icon.png" alt="YieGo" className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold mb-0.5">DataSika</h1>
-              <p className="text-sm text-primary font-medium mb-2">DataSika Technologies</p>
+              <h1 className="text-xl font-bold mb-0.5">YieGo</h1>
+              <p className="text-sm text-primary font-medium mb-2">YieGo Technologies</p>
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Star className="w-3.5 h-3.5 fill-primary text-primary" />
@@ -64,7 +64,7 @@ const AppAndroid = () => {
           </div>
 
           {/* Download Button */}
-          <a href={APK_URL} download="DataSika.apk" className="block mt-5">
+          <a href={APK_URL} download="YieGo.apk" className="block mt-5">
             <Button className="w-full btn-press gap-2 font-bold h-12 text-base rounded-xl">
               <Download className="w-5 h-5" />
               Download APK
@@ -76,7 +76,7 @@ const AppAndroid = () => {
         <div className="border border-border rounded-2xl p-5 bg-card card-shadow mb-6">
           <h2 className="text-base font-bold mb-2">About this app</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            DataSika is the fastest way to buy affordable internet data bundles in Ghana. 
+            YieGo is the fastest way to buy affordable internet data bundles in Ghana. 
             Supports MTN, Telecel, AirtelTigo & AT networks with instant delivery directly to your phone.
           </p>
           <div className="flex flex-wrap gap-2 mt-3">
@@ -112,7 +112,7 @@ const AppAndroid = () => {
             <div>
               <p className="text-sm font-semibold mb-0.5">Verified & Safe</p>
               <p className="text-xs text-muted-foreground">
-                Only download from <span className="font-semibold text-foreground">datasika.shop</span>. 
+                Only download from <span className="font-semibold text-foreground">yiego.com</span>. 
                 Do not install APKs from unknown third-party sources.
               </p>
             </div>

@@ -1,7 +1,7 @@
 import { AlertTriangle, MessageSquare } from 'lucide-react';
 import { normalizeGhanaWhatsApp } from '@/lib/agent-whatsapp-message';
 
-const DATASIKA_WHATSAPP = '233275644195';
+const YIEGO_WHATSAPP = '233275644195';
 
 interface DuplicateOrderAlertProps {
   existingOrderId?: string;
@@ -15,7 +15,7 @@ const DuplicateOrderAlert = ({ existingOrderId, agentWhatsApp }: DuplicateOrderA
   const whatsAppMessage = `Hello, I'm trying to place a data order but the system says I already have an order in progress for this number. Order ID: ${orderId}. Please assist.`;
 
   const agentNormalized = normalizeGhanaWhatsApp(agentWhatsApp);
-  const targetNumber = agentNormalized || DATASIKA_WHATSAPP;
+  const targetNumber = agentNormalized || YIEGO_WHATSAPP;
   const supportLink = `https://wa.me/${targetNumber}?text=${encodeURIComponent(whatsAppMessage)}`;
 
   return (

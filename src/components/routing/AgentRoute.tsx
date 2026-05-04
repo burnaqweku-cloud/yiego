@@ -2,14 +2,14 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAgent } from '@/hooks/useAgent';
 import { ReactNode } from 'react';
-import DataSikaLoader from '@/components/ui/DataSikaLoader';
+import YieGoLoader from '@/components/ui/YieGoLoader';
 
 const AgentRoute = ({ children }: { children: ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
   const { agent, loading: agentLoading } = useAgent();
 
   if (authLoading || agentLoading) {
-    return <DataSikaLoader fullScreen label="Loading agent dashboard..." />;
+    return <YieGoLoader fullScreen label="Loading agent dashboard..." />;
   }
 
   if (!user) return <Navigate to="/auth" replace />;

@@ -35,7 +35,7 @@ const Checkout = () => {
   const [placing, setPlacing] = useState(false);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('datasika_purchase');
+    const stored = sessionStorage.getItem('yiego_purchase');
     if (stored) {
       setPurchaseData(JSON.parse(stored));
     } else {
@@ -111,7 +111,7 @@ const Checkout = () => {
       }
 
       // Store for confirmation page
-      sessionStorage.setItem('datasika_order', JSON.stringify({
+      sessionStorage.setItem('yiego_order', JSON.stringify({
         orderId: (createdOrder as any).order_id,
         recipientNumber: (createdOrder as any).recipient_number,
         network: (createdOrder as any).network,
@@ -122,7 +122,7 @@ const Checkout = () => {
         createdAt: (createdOrder as any).created_at,
         updatedAt: (createdOrder as any).updated_at,
       }));
-      sessionStorage.removeItem('datasika_purchase');
+      sessionStorage.removeItem('yiego_purchase');
 
       const { data, error } = await supabase.functions.invoke('process-wallet-order', {
         body: { order_id: orderId },
@@ -185,13 +185,13 @@ const Checkout = () => {
       }
 
       // Store flow metadata for PaystackCallback
-      sessionStorage.setItem('datasika_paystack_meta', JSON.stringify({
+      sessionStorage.setItem('yiego_paystack_meta', JSON.stringify({
         purpose: 'order',
         order_id: data.order_id,
         reference: data.reference,
         flow: 'checkout',
       }));
-      sessionStorage.removeItem('datasika_purchase');
+      sessionStorage.removeItem('yiego_purchase');
 
       window.location.href = data.authorization_url;
       return;

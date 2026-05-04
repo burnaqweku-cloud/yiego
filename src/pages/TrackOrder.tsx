@@ -72,7 +72,7 @@ const TrackOrder = () => {
   return (
     <Layout>
       <SEOHead
-        title="Track Your Order | DataSika"
+        title="Track Your Order | YieGo"
         description="Track your data bundle order status in real-time. Enter your Order ID to check delivery status."
         path="/track-order"
       />

@@ -35,7 +35,7 @@ const AgentLandingHero = () => {
 
         <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight leading-tight animate-hero-in hero-stagger-2">
           Become a{' '}
-          <span className="text-gradient">DataSika Agent</span>
+          <span className="text-gradient">YieGo Agent</span>
         </h1>
 
         <p className="mt-4 text-base sm:text-lg text-muted-foreground leading-relaxed animate-hero-in hero-stagger-3">

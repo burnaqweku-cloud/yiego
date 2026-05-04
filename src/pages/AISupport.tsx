@@ -16,8 +16,8 @@ const AISupport = () => {
   return (
     <Layout>
       <SEOHead
-        title="Support | DataSika"
-        description="Get help with your DataSika account, orders, deposits, and more. AI-powered support available 9 AM – 9 PM."
+        title="Support | YieGo"
+        description="Get help with your YieGo account, orders, deposits, and more. AI-powered support available 9 AM – 9 PM."
         path="/ai-support"
       />
 
@@ -103,10 +103,10 @@ const AISupport = () => {
         <div className="text-center space-y-2 pt-2">
           <p className="text-xs text-muted-foreground">For urgent issues outside support hours:</p>
           <a
-            href="mailto:support@datasika.com"
+            href="mailto:support@yiego.com"
             className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
           >
-            support@datasika.com
+            support@yiego.com
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>

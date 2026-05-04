@@ -158,7 +158,7 @@ export default function TgDeposit() {
   if (phase === "fatal") {
     return (
       <div className="space-y-4">
-        <Header subtitle="Top up your DataSika wallet" />
+        <Header subtitle="Top up your YieGo wallet" />
         <Card tone="error">
           <p className="text-sm font-medium" style={{ color: "#991b1b" }}>{prettyError(fatal)}</p>
           <p className="text-xs mt-2" style={{ color: "#991b1b" }}>
@@ -171,10 +171,10 @@ export default function TgDeposit() {
   if (phase === "needs_link") {
     return (
       <div className="space-y-4">
-        <Header subtitle="Top up your DataSika wallet" />
+        <Header subtitle="Top up your YieGo wallet" />
         <Card>
           <p className="text-sm" style={{ color: "#0f172a" }}>
-            Wallet deposits need a linked DataSika account.
+            Wallet deposits need a linked YieGo account.
           </p>
           <Link
             to="/tg/link"
@@ -184,7 +184,7 @@ export default function TgDeposit() {
             Link my account
           </Link>
         </Card>
-        <FallbackLink href="https://datasika.com/dashboard/wallet" />
+        <FallbackLink href="https://yiego.com/dashboard/wallet" />
       </div>
     );
   }
@@ -311,7 +311,7 @@ export default function TgDeposit() {
 // ─── Helpers ──────────────────────────────────────────────────────────
 
 function fallbackUrl(amt: number | null): string {
-  const base = "https://datasika.com/dashboard/wallet";
+  const base = "https://yiego.com/dashboard/wallet";
   if (amt == null) return base;
   return `${base}?deposit=${encodeURIComponent(amt)}`;
 }
@@ -356,7 +356,7 @@ function prettyError(msg: string): string {
 function Header({ subtitle }: { subtitle: string }) {
   return (
     <header>
-      <h1 className="text-xl font-semibold">DataSika · Wallet Top-up</h1>
+      <h1 className="text-xl font-semibold">YieGo · Wallet Top-up</h1>
       <p className="text-sm mt-1" style={{ color: "var(--tg-hint)" }}>{subtitle}</p>
     </header>
   );

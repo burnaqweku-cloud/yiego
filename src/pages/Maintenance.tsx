@@ -100,7 +100,7 @@ const Maintenance = () => {
             We'll Be Back Shortly
           </h1>
           <p className="text-muted-foreground text-sm mb-4 leading-relaxed">
-            {message || "We're improving DataSika for a better experience."}
+            {message || "We're improving YieGo for a better experience."}
           </p>
 
           {/* ETA */}
@@ -117,7 +117,7 @@ const Maintenance = () => {
 
         {/* Bottom label */}
         <p className="text-center text-xs text-muted-foreground mt-4 opacity-60">
-          DataSika · Ghana Data Bundles
+          YieGo · Ghana Data Bundles
         </p>
       </div>
     </div>

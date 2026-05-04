@@ -29,7 +29,7 @@ const TgBotHealth = () => {
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success('Webhook re-registered');
-    await supabase.rpc('log_tg_admin_action', { p_action: 'bot.webhook_reregister', p_target_type: 'webhook', p_target_id: 'datasika_bot', p_details: {} });
+    await supabase.rpc('log_tg_admin_action', { p_action: 'bot.webhook_reregister', p_target_type: 'webhook', p_target_id: 'yiego_bot', p_details: {} });
     load();
   };
 
@@ -40,7 +40,7 @@ const TgBotHealth = () => {
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success('Webhook deleted — switch to polling via cron');
-    await supabase.rpc('log_tg_admin_action', { p_action: 'bot.switch_to_polling', p_target_type: 'webhook', p_target_id: 'datasika_bot', p_details: {} });
+    await supabase.rpc('log_tg_admin_action', { p_action: 'bot.switch_to_polling', p_target_type: 'webhook', p_target_id: 'yiego_bot', p_details: {} });
     load();
   };
 

@@ -281,7 +281,7 @@ const AdminSettings = () => {
               <Input
                 value={mdAccountName}
                 onChange={e => setMdAccountName(e.target.value)}
-                placeholder="DataSika"
+                placeholder="YieGo"
                 className="mt-1"
                 maxLength={80}
               />
@@ -362,7 +362,7 @@ const AdminSettings = () => {
             <Textarea
               value={supportSettings.whatsapp_message}
               onChange={e => updateSupportSettings({ whatsapp_message: e.target.value })}
-              placeholder="Hello DataSika Support, I need help with my order."
+              placeholder="Hello YieGo Support, I need help with my order."
               className="mt-1"
               rows={3}
               maxLength={500}
@@ -379,7 +379,7 @@ const AdminSettings = () => {
             </div>
             <div>
               <h3 className="font-display font-semibold">Platform</h3>
-              <p className="text-xs text-muted-foreground">DataSika v1.0</p>
+              <p className="text-xs text-muted-foreground">YieGo v1.0</p>
             </div>
           </div>
           <p className="text-sm text-muted-foreground">

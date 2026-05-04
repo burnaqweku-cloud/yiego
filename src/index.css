@@ -4,45 +4,48 @@
 
 @layer base {
 :root {
-    --background: 40 20% 98%;
-    --foreground: 0 0% 9%;
+    /* ── YieGo Light ── */
+    --background: 150 20% 98%;
+    --foreground: 160 18% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
-    --card-elevated: 40 15% 97%;
-    --card-elevated-foreground: 0 0% 9%;
+    --card-foreground: 160 18% 9%;
+    --card-elevated: 150 20% 97%;
+    --card-elevated-foreground: 160 18% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+    --popover-foreground: 160 18% 9%;
 
-    --primary: 44 96% 47%;
-    --primary-foreground: 0 0% 6%;
+    /* Emerald primary */
+    --primary: 156 78% 38%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 10% 95%;
-    --secondary-foreground: 0 0% 22%;
+    --secondary: 150 18% 95%;
+    --secondary-foreground: 160 16% 22%;
 
-    --muted: 40 10% 95%;
-    --muted-foreground: 0 0% 42%;
+    --muted: 150 14% 95%;
+    --muted-foreground: 160 8% 42%;
 
-    --accent: 44 96% 55%;
-    --accent-foreground: 0 0% 6%;
+    /* Warm gold accent — used sparingly */
+    --accent: 42 96% 52%;
+    --accent-foreground: 160 18% 9%;
 
-    --destructive: 0 80% 55%;
+    --destructive: 0 78% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 145 62% 40%;
+    --success: 156 78% 38%;
     --success-foreground: 0 0% 100%;
 
-    --info: 211 82% 52%;
+    --info: 200 78% 45%;
     --info-foreground: 0 0% 100%;
 
-    --border: 40 10% 90%;
-    --input: 40 10% 93%;
-    --ring: 44 96% 47%;
+    --border: 150 14% 90%;
+    --input: 150 14% 93%;
+    --ring: 156 78% 38%;
 
-    --radius: 0.875rem;
+    --radius: 1rem;
 
-    /* Network brand colors */
+    /* Network brand colors (operator-specific, untouched semantics) */
     --mtn: 48 100% 50%;
     --mtn-foreground: 0 0% 7%;
     --telecel: 0 85% 50%;
@@ -50,97 +53,97 @@
     --airteltigo: 210 85% 45%;
     --airteltigo-foreground: 0 0% 100%;
 
-    /* Custom tokens */
-    --gold: 44 96% 47%;
-    --gold-foreground: 0 0% 6%;
-    --gold-glow: 44 96% 68%;
+    /* Brand tokens */
+    --brand: 156 78% 38%;
+    --brand-foreground: 0 0% 100%;
+    --brand-glow: 156 80% 55%;
+    --gold: 42 96% 52%;
+    --gold-foreground: 160 18% 9%;
+    --gold-glow: 42 96% 65%;
     --glow-gold: none;
     --glow-gold-strong: none;
-    --hero-gradient: linear-gradient(145deg, hsl(224 44% 5%), hsl(222 38% 9%), hsl(222 35% 13%));
-    --card-shadow: 0 1px 4px 0 hsl(0 0% 0% / 0.06), 0 1px 2px -1px hsl(0 0% 0% / 0.04);
-    --card-shadow-hover: 0 10px 28px -6px hsl(0 0% 0% / 0.12), 0 4px 8px -2px hsl(0 0% 0% / 0.06);
-    --card-shadow-elevated: 0 16px 40px -8px hsl(0 0% 0% / 0.14), 0 6px 16px -4px hsl(0 0% 0% / 0.07);
+    --glow-brand: none;
+
+    --hero-gradient: linear-gradient(145deg, hsl(160 22% 6%), hsl(158 28% 9%), hsl(156 32% 12%));
+    --card-shadow: 0 1px 4px 0 hsl(160 18% 6% / 0.05), 0 1px 2px -1px hsl(160 18% 6% / 0.04);
+    --card-shadow-hover: 0 10px 28px -6px hsl(156 60% 12% / 0.12), 0 4px 8px -2px hsl(160 18% 6% / 0.06);
+    --card-shadow-elevated: 0 16px 40px -8px hsl(156 60% 10% / 0.14), 0 6px 16px -4px hsl(160 18% 6% / 0.07);
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 22%;
-    --sidebar-primary: 44 96% 47%;
-    --sidebar-primary-foreground: 0 0% 6%;
-    --sidebar-accent: 40 10% 95%;
-    --sidebar-accent-foreground: 0 0% 16%;
-    --sidebar-border: 40 10% 90%;
-    --sidebar-ring: 44 96% 47%;
+    --sidebar-foreground: 160 14% 22%;
+    --sidebar-primary: 156 78% 38%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 150 14% 95%;
+    --sidebar-accent-foreground: 160 16% 16%;
+    --sidebar-border: 150 14% 90%;
+    --sidebar-ring: 156 78% 38%;
   }
 
   .dark {
-    /* ── DataSika Premium Navy Dark ── */
+    /* ── YieGo Premium Charcoal Dark ── */
+    --background: 160 22% 5%;
+    --foreground: 150 18% 96%;
 
-    /* App shell: deep navy, not pure black */
-    --background: 224 44% 5%;
-    --foreground: 210 22% 96%;
+    --card: 160 24% 8%;
+    --card-foreground: 150 18% 96%;
 
-    /* Cards: one step lighter than background */
-    --card: 222 38% 8%;
-    --card-foreground: 210 22% 96%;
+    --card-elevated: 158 22% 11%;
+    --card-elevated-foreground: 150 18% 96%;
 
-    /* Elevated cards: subtle step up */
-    --card-elevated: 222 35% 11%;
-    --card-elevated-foreground: 210 22% 96%;
+    --popover: 160 24% 9%;
+    --popover-foreground: 150 18% 96%;
 
-    --popover: 222 38% 9%;
-    --popover-foreground: 210 22% 96%;
+    /* Emerald primary — slightly brighter for dark contrast */
+    --primary: 156 78% 46%;
+    --primary-foreground: 160 22% 5%;
 
-    /* Gold primary */
-    --primary: 44 96% 52%;
-    --primary-foreground: 0 0% 6%;
+    --secondary: 158 18% 13%;
+    --secondary-foreground: 150 14% 88%;
 
-    /* Secondary surface */
-    --secondary: 222 30% 13%;
-    --secondary-foreground: 210 18% 88%;
+    --muted: 158 16% 13%;
+    --muted-foreground: 150 10% 65%;
 
-    /* Muted surfaces — still readable */
-    --muted: 222 30% 13%;
-    --muted-foreground: 210 14% 65%;
+    /* Gold accent for dark — used sparingly */
+    --accent: 42 96% 58%;
+    --accent-foreground: 160 22% 5%;
 
-    /* Accent gold */
-    --accent: 44 96% 58%;
-    --accent-foreground: 0 0% 6%;
-
-    /* Status colors — not neon, rich */
-    --destructive: 0 68% 52%;
+    --destructive: 0 70% 54%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 145 62% 42%;
-    --success-foreground: 0 0% 100%;
+    --success: 156 78% 46%;
+    --success-foreground: 160 22% 5%;
 
-    --info: 211 82% 57%;
+    --info: 200 78% 56%;
     --info-foreground: 0 0% 100%;
 
-    --border: 222 26% 17%;
-    --input: 222 30% 11%;
-    --ring: 44 96% 52%;
+    --border: 158 16% 17%;
+    --input: 158 18% 11%;
+    --ring: 156 78% 46%;
 
-    /* Layered depth shadows */
-    --card-shadow: 0 2px 12px 0 hsl(224 44% 2% / 0.55), 0 1px 3px 0 hsl(224 44% 2% / 0.3);
-    --card-shadow-hover: 0 8px 28px -4px hsl(224 44% 2% / 0.65), 0 2px 8px -2px hsl(224 44% 2% / 0.4);
-    --card-shadow-elevated: 0 16px 48px -8px hsl(224 44% 2% / 0.75), 0 4px 16px -4px hsl(224 44% 2% / 0.5);
+    --card-shadow: 0 2px 12px 0 hsl(160 30% 2% / 0.55), 0 1px 3px 0 hsl(160 30% 2% / 0.3);
+    --card-shadow-hover: 0 8px 28px -4px hsl(160 30% 2% / 0.65), 0 2px 8px -2px hsl(160 30% 2% / 0.4);
+    --card-shadow-elevated: 0 16px 48px -8px hsl(160 30% 2% / 0.75), 0 4px 16px -4px hsl(160 30% 2% / 0.5);
 
-    /* Gold glow for premium elements */
-    --glow-gold: 0 0 20px hsl(44 96% 52% / 0.18), 0 0 40px hsl(44 96% 52% / 0.08);
-    --glow-gold-strong: 0 0 24px hsl(44 96% 52% / 0.28), 0 0 48px hsl(44 96% 52% / 0.12);
+    /* Brand glow */
+    --glow-brand: 0 0 20px hsl(156 78% 46% / 0.22), 0 0 48px hsl(156 78% 46% / 0.10);
+    --glow-gold: 0 0 18px hsl(42 96% 58% / 0.18), 0 0 36px hsl(42 96% 58% / 0.08);
+    --glow-gold-strong: 0 0 24px hsl(42 96% 58% / 0.28), 0 0 48px hsl(42 96% 58% / 0.12);
 
-    /* Gold token */
-    --gold: 44 96% 52%;
-    --gold-foreground: 0 0% 6%;
-    --gold-glow: 44 96% 72%;
+    --brand: 156 78% 46%;
+    --brand-foreground: 160 22% 5%;
+    --brand-glow: 156 80% 60%;
+    --gold: 42 96% 58%;
+    --gold-foreground: 160 22% 5%;
+    --gold-glow: 42 96% 70%;
 
-    --sidebar-background: 224 44% 4%;
-    --sidebar-foreground: 210 20% 88%;
-    --sidebar-primary: 44 96% 52%;
-    --sidebar-primary-foreground: 0 0% 6%;
-    --sidebar-accent: 222 30% 11%;
-    --sidebar-accent-foreground: 210 20% 88%;
-    --sidebar-border: 222 26% 14%;
-    --sidebar-ring: 44 96% 52%;
+    --sidebar-background: 160 26% 4%;
+    --sidebar-foreground: 150 16% 88%;
+    --sidebar-primary: 156 78% 46%;
+    --sidebar-primary-foreground: 160 22% 5%;
+    --sidebar-accent: 158 18% 11%;
+    --sidebar-accent-foreground: 150 18% 88%;
+    --sidebar-border: 158 16% 14%;
+    --sidebar-ring: 156 78% 46%;
   }
 }
 
@@ -326,18 +329,31 @@
   }
 
   .text-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--gold-glow)));
+    background: linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-glow)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
+  .gradient-brand {
+    background: linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-glow)));
+  }
+
+  .gradient-brand-soft {
+    background: linear-gradient(135deg, hsl(var(--brand) / 0.12), hsl(var(--brand-glow) / 0.04));
+  }
+
+  /* Legacy aliases — kept so older components don't break visually */
   .gradient-gold {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--gold-glow)));
+    background: linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-glow)));
   }
 
   .gradient-gold-soft {
-    background: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--gold-glow) / 0.05));
+    background: linear-gradient(135deg, hsl(var(--brand) / 0.10), hsl(var(--brand-glow) / 0.04));
+  }
+
+  .glow-brand {
+    box-shadow: var(--glow-brand);
   }
 
   .network-mtn {
@@ -620,29 +636,29 @@
 }
 
 /* ═══════════════════════════════════════════════
-   DATASIKA PREMIUM LOADER
+   YIEGO PREMIUM LOADER
    ═══════════════════════════════════════════════ */
 
-@keyframes datasika-ring-spin {
+@keyframes yiego-ring-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-@keyframes datasika-dot-pulse {
+@keyframes yiego-dot-pulse {
   0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
   50% { transform: translate(-50%, -50%) scale(1.4); opacity: 0.5; }
 }
 
-.datasika-ring {
+.yiego-ring {
   border: 3px solid hsl(var(--border));
   border-top-color: hsl(var(--primary));
   border-right-color: hsl(var(--primary) / 0.4);
   border-radius: 50%;
-  animation: datasika-ring-spin 0.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  animation: yiego-ring-spin 0.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 
-.datasika-dot {
-  animation: datasika-dot-pulse 1.2s ease-in-out infinite;
+.yiego-dot {
+  animation: yiego-dot-pulse 1.2s ease-in-out infinite;
 }
 
 /* ═══════════════════════════════════════════════
@@ -731,8 +747,8 @@
   .pulse-dot,
   .blink-colon,
   .shimmer,
-  .datasika-ring,
-  .datasika-dot,
+  .yiego-ring,
+  .yiego-dot,
   .wa-fab,
   .wa-badge {
     animation: none !important;
@@ -819,7 +835,7 @@
 }
 
 /* ═══════════════════════════════════════════════
-   DATASIKA BOTTOM NAV — flat white, premium minimal
+   YIEGO BOTTOM NAV — flat white, premium minimal
    ═══════════════════════════════════════════════
    - Pure white bar, rounded top corners only
    - Pinned to true viewport bottom (iOS-stable)
@@ -1192,7 +1208,7 @@ select:focus-visible {
 }
 
 /* ═══════════════════════════════════════════════
-   DATASIKA PREMIUM TOAST STYLES
+   YIEGO PREMIUM TOAST STYLES
    ═══════════════════════════════════════════════ */
 
 /* Base glass toast — light */

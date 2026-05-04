@@ -37,7 +37,7 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
               <Link
                 to="/"
                 className="inline-block relative mb-5 md:mb-6"
-                aria-label="DataSika Home"
+                aria-label="YieGo Home"
               >
                 {/* Gold radial glow behind logo */}
                 <div

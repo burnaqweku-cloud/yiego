@@ -25,11 +25,11 @@ const OpenInSafariMessage = () => (
   <Layout>
     <div className="container py-12 max-w-md mx-auto px-4 text-center">
       <div className="w-20 h-20 rounded-[1.25rem] mx-auto mb-5 overflow-hidden shadow-md border border-border">
-        <img src="/datasika-icon.png?v=2" alt="DataSika" className="w-full h-full object-cover" />
+        <img src="/yiego-icon.png?v=2" alt="YieGo" className="w-full h-full object-cover" />
       </div>
       <h1 className="text-2xl font-bold mb-2 text-foreground">Open in Safari</h1>
       <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
-        To install DataSika on your iPhone, you need to open this page in <strong className="text-foreground">Safari</strong>.
+        To install YieGo on your iPhone, you need to open this page in <strong className="text-foreground">Safari</strong>.
       </p>
 
       <div className="border border-border rounded-2xl p-5 bg-card shadow-sm mb-6 text-left">
@@ -37,7 +37,7 @@ const OpenInSafariMessage = () => (
           Tap the <strong className="text-foreground">Share</strong> button in your current browser, then choose <strong className="text-foreground">"Open in Safari"</strong> if available. Or copy this link and paste it into Safari:
         </p>
         <div className="mt-3 flex items-center gap-2 bg-muted rounded-lg px-3 py-2.5 border border-border">
-          <span className="text-xs text-foreground font-mono truncate flex-1">datasika.com/app/ios</span>
+          <span className="text-xs text-foreground font-mono truncate flex-1">yiego.com/app/ios</span>
           <button
             onClick={() => {
               navigator.clipboard.writeText(window.location.href);
@@ -66,9 +66,9 @@ const SafariInstallGuide = () => (
       {/* Header */}
       <div className="text-center mb-8">
         <div className="w-20 h-20 rounded-[1.25rem] mx-auto mb-4 overflow-hidden shadow-md border border-border">
-          <img src="/datasika-icon.png?v=2" alt="DataSika" className="w-full h-full object-cover" />
+          <img src="/yiego-icon.png?v=2" alt="YieGo" className="w-full h-full object-cover" />
         </div>
-        <h1 className="text-2xl font-bold mb-1.5 text-foreground">Install DataSika</h1>
+        <h1 className="text-2xl font-bold mb-1.5 text-foreground">Install YieGo</h1>
         <p className="text-muted-foreground text-sm leading-relaxed">
           Add to your Home Screen in 3 quick steps.
         </p>
@@ -148,11 +148,11 @@ const SafariInstallGuide = () => (
             </div>
             <div className="flex items-center gap-3 bg-card rounded-lg p-3 border border-border">
               <div className="w-10 h-10 rounded-xl overflow-hidden border border-border shadow-sm">
-                <img src="/datasika-icon.png?v=2" alt="DataSika" className="w-full h-full object-cover" />
+                <img src="/yiego-icon.png?v=2" alt="YieGo" className="w-full h-full object-cover" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-foreground">DataSika</p>
-                <p className="text-[10px] text-muted-foreground">datasika.com</p>
+                <p className="text-xs font-semibold text-foreground">YieGo</p>
+                <p className="text-[10px] text-muted-foreground">yiego.com</p>
               </div>
             </div>
           </div>
@@ -161,7 +161,7 @@ const SafariInstallGuide = () => (
 
       {/* Why install? */}
       <div className="mt-8 border border-border rounded-2xl p-5 bg-card shadow-sm">
-        <h3 className="font-bold text-sm text-foreground mb-4">Why install DataSika?</h3>
+        <h3 className="font-bold text-sm text-foreground mb-4">Why install YieGo?</h3>
         <div className="space-y-3">
           {[
             { icon: Smartphone, text: 'Opens like a real app — no browser bars' },
@@ -183,7 +183,7 @@ const SafariInstallGuide = () => (
         <Link to="/">
           <Button variant="outline" className="gap-2 rounded-xl h-11 px-6">
             <Globe className="w-4 h-4" />
-            Go to DataSika
+            Go to YieGo
           </Button>
         </Link>
       </div>

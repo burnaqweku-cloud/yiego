@@ -362,7 +362,7 @@ async function renderBannerToCanvas(
   ctx.font = '400 13px system-ui, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
-  ctx.fillText('Powered by DataSika', W / 2, H - 18);
+  ctx.fillText('Powered by YieGo', W / 2, H - 18);
   ctx.globalAlpha = 1;
 
   return canvas;
@@ -434,7 +434,7 @@ function buildPreviewSVG(
     <rect x="80" y="340" width="160" height="30" rx="15" fill="${s.ctaBg}"/>
     <text x="160" y="360" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="800" fill="${s.ctaText}">BUY DATA NOW</text>
 
-    <text x="200" y="392" text-anchor="middle" font-family="system-ui, sans-serif" font-size="6" fill="${s.textMuted}" opacity="0.3">Powered by DataSika</text>
+    <text x="200" y="392" text-anchor="middle" font-family="system-ui, sans-serif" font-size="6" fill="${s.textMuted}" opacity="0.3">Powered by YieGo</text>
   </svg>`;
 }
 

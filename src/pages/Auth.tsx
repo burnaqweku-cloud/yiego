@@ -28,16 +28,16 @@ const Auth = () => {
 
   return (
     <AuthLayout
-      title={tab === 'login' ? 'Sign In to DataSika' : 'Create Your DataSika Account'}
+      title={tab === 'login' ? 'Sign In to YieGo' : 'Create Your YieGo Account'}
       subtitle={tab === 'login'
         ? 'Access your wallet, orders, and fast checkout'
         : 'Join thousands of Ghanaians buying data the smart way'}
     >
       <SEOHead
-        title={tab === 'login' ? 'Sign In to DataSika' : 'Create Your DataSika Account'}
+        title={tab === 'login' ? 'Sign In to YieGo' : 'Create Your YieGo Account'}
         description={tab === 'login'
-          ? 'Sign in to your DataSika account to manage your wallet, orders, and buy affordable data bundles in Ghana.'
-          : 'Create a free DataSika account for fast checkout, wallet top-ups, and order tracking for MTN, Telecel & AirtelTigo data bundles.'}
+          ? 'Sign in to your YieGo account to manage your wallet, orders, and buy affordable data bundles in Ghana.'
+          : 'Create a free YieGo account for fast checkout, wallet top-ups, and order tracking for MTN, Telecel & AirtelTigo data bundles.'}
         path="/auth"
         noIndex
       />
@@ -252,7 +252,7 @@ const LoginForm = () => {
     } else if (next && next.startsWith('/')) {
       target = next;
     } else {
-      const lastPage = localStorage.getItem('datasika_last_dashboard_page');
+      const lastPage = localStorage.getItem('yiego_last_dashboard_page');
       target = lastPage && lastPage.startsWith('/dashboard') ? lastPage : '/dashboard';
     }
     navigate(target, { replace: true });
@@ -482,7 +482,7 @@ const SignupForm = () => {
     }
 
     setLoading(false);
-    toast.success('Account created! Welcome to DataSika.');
+    toast.success('Account created! Welcome to YieGo.');
 
     const params = new URLSearchParams(window.location.search);
     const next = params.get('next');

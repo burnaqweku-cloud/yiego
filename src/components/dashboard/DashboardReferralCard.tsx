@@ -4,7 +4,7 @@ import { Gift, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useReferralProgress, CANONICAL_TIERS } from '@/hooks/useReferralProgress';
 
-const VIEWED_KEY = 'datasika_referral_viewed_at';
+const VIEWED_KEY = 'yiego_referral_viewed_at';
 
 const DashboardReferralCard = memo(() => {
   const navigate = useNavigate();

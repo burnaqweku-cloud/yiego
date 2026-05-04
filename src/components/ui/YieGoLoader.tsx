@@ -1,11 +1,11 @@
 /**
- * DataSika Premium Loading Indicator
+ * YieGo Premium Loading Indicator
  * A branded pulse-ring animation with gold accents
  */
 
 import { cn } from '@/lib/utils';
 
-export interface DataSikaLoaderProps {
+export interface YieGoLoaderProps {
   size?: 'sm' | 'md' | 'lg';
   text?: string;
   label?: string;
@@ -19,17 +19,17 @@ const sizeMap = {
   lg: { ring: 'w-20 h-20', dot: 'w-5 h-5', text: 'text-base' },
 };
 
-const DataSikaLoader = ({ size = 'md', text, label, className, fullScreen }: DataSikaLoaderProps) => {
+const YieGoLoader = ({ size = 'md', text, label, className, fullScreen }: YieGoLoaderProps) => {
   const s = sizeMap[size];
   const displayText = text || label;
 
   const loader = (
     <div className={cn('flex flex-col items-center justify-center gap-3', className)}>
-      <div className={cn('datasika-loader relative', s.ring)}>
+      <div className={cn('yiego-loader relative', s.ring)}>
         {/* Outer spinning ring */}
-        <div className="datasika-ring absolute inset-0 rounded-full" />
+        <div className="yiego-ring absolute inset-0 rounded-full" />
         {/* Inner pulsing dot */}
-        <div className={cn('datasika-dot absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary', s.dot)} />
+        <div className={cn('yiego-dot absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary', s.dot)} />
       </div>
       {displayText && (
         <p className={cn('text-muted-foreground font-medium animate-pulse', s.text)}>{displayText}</p>
@@ -48,4 +48,4 @@ const DataSikaLoader = ({ size = 'md', text, label, className, fullScreen }: Dat
   return loader;
 };
 
-export default DataSikaLoader;
+export default YieGoLoader;

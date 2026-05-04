@@ -144,7 +144,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    localStorage.removeItem('datasika_last_dashboard_page');
+    localStorage.removeItem('yiego_last_dashboard_page');
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

@@ -10,7 +10,7 @@ import { toast } from "sonner";
 export default function ConnectTelegram() {
   const [loading, setLoading] = useState(true);
   const [link, setLink] = useState<string | null>(null);
-  const [botUsername, setBotUsername] = useState<string>("datasika_bot");
+  const [botUsername, setBotUsername] = useState<string>("yiego_bot");
   const [copied, setCopied] = useState(false);
 
   const generate = async () => {
@@ -19,7 +19,7 @@ export default function ConnectTelegram() {
       const { data, error } = await supabase.functions.invoke("telegram-create-link-token");
       if (error) throw error;
       setLink(data.link);
-      setBotUsername(data.bot_username || "datasika_bot");
+      setBotUsername(data.bot_username || "yiego_bot");
     } catch (e) {
       console.error(e);
       toast.error("Failed to generate link. Please try again.");
@@ -29,7 +29,7 @@ export default function ConnectTelegram() {
   };
 
   useEffect(() => {
-    document.title = "Connect Telegram | DataSika";
+    document.title = "Connect Telegram | YieGo";
     generate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -58,14 +58,14 @@ export default function ConnectTelegram() {
                 </div>
                 <div>
                   <CardTitle>Connect Telegram</CardTitle>
-                  <CardDescription>Link your DataSika account to @{botUsername}</CardDescription>
+                  <CardDescription>Link your YieGo account to @{botUsername}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <Alert>
                 <AlertDescription>
-                  Once connected, your Telegram order history and wallet balance will be unified with your DataSika web account.
+                  Once connected, your Telegram order history and wallet balance will be unified with your YieGo web account.
                 </AlertDescription>
               </Alert>
 

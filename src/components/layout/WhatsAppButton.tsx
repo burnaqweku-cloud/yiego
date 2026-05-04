@@ -10,7 +10,7 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
 
 /* ── Config ── */
 const WHATSAPP_CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb78XFeHFxOzC57sVg1R';
-const DISMISS_KEY = 'datasika_wa_dismissed_date';
+const DISMISS_KEY = 'yiego_wa_dismissed_date';
 
 // Timing constants (ms)
 const BUBBLE_VISIBLE_MS = 4_000;   // bubble stays visible for 4s
@@ -152,7 +152,7 @@ const WhatsAppChannelButton = () => {
 
   return (
     <div
-      id="datasika-wa-widget"
+      id="yiego-wa-widget"
       className="fixed z-[9999] left-4 safe-area-floating-widget flex flex-col items-start gap-2"
       style={{
         opacity: isScrolling ? 0.35 : 1,

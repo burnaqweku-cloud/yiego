@@ -5,10 +5,10 @@ const STRUCTURED_DATA = [
   {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'DataSika',
-    alternateName: 'Datasika',
-    url: 'https://datasika.com',
-    logo: 'https://datasika.com/datasika-logo.png',
+    name: 'YieGo',
+    alternateName: 'YieGo',
+    url: 'https://yiego.com',
+    logo: 'https://yiego.com/yiego-logo.png',
     foundingDate: '2025',
     description:
       "Ghana's cheapest platform for buying MTN, Telecel, and AirtelTigo data bundles online. Lowest prices, fast delivery, plus earn as a data reseller.",
@@ -20,7 +20,7 @@ const STRUCTURED_DATA = [
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',
-      email: 'support@datasika.com',
+      email: 'support@yiego.com',
       areaServed: 'GH',
       availableLanguage: ['English'],
     },
@@ -29,11 +29,11 @@ const STRUCTURED_DATA = [
   {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'DataSika',
-    url: 'https://datasika.com',
+    name: 'YieGo',
+    url: 'https://yiego.com',
     potentialAction: {
       '@type': 'SearchAction',
-      target: 'https://datasika.com/buy-data?network={search_term_string}',
+      target: 'https://yiego.com/buy-data?network={search_term_string}',
       'query-input': 'required name=search_term_string',
     },
   },
@@ -41,10 +41,10 @@ const STRUCTURED_DATA = [
   {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
-    name: 'DataSika',
-    url: 'https://datasika.com',
-    image: 'https://datasika.com/datasika-logo.png',
-    logo: 'https://datasika.com/datasika-logo.png',
+    name: 'YieGo',
+    url: 'https://yiego.com',
+    image: 'https://yiego.com/yiego-logo.png',
+    logo: 'https://yiego.com/yiego-logo.png',
     description:
       'Internet data bundle delivery platform serving MTN, Telecel & AirtelTigo networks across Ghana. Founded 2025.',
     foundingDate: '2025',

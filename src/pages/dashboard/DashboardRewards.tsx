@@ -303,7 +303,7 @@ const ReferralsTab = () => {
 
   const share = async () => {
     if (navigator.share) {
-      try { await navigator.share({ title: 'Join DataSika', text: `Use my code ${referralCode} and get rewards on DataSika`, url: link }); } catch {}
+      try { await navigator.share({ title: 'Join YieGo', text: `Use my code ${referralCode} and get rewards on YieGo`, url: link }); } catch {}
     } else copy(link);
   };
 
@@ -437,7 +437,7 @@ const DashboardRewards = () => {
 
   return (
     <DashboardLayout>
-      <SEOHead title="Rewards | DataSika" description="Earn and redeem DataSika reward points." path="/dashboard/rewards" noIndex />
+      <SEOHead title="Rewards | YieGo" description="Earn and redeem YieGo reward points." path="/dashboard/rewards" noIndex />
       <div className="p-4 md:p-6 space-y-4 max-w-2xl">
         <div>
           <h1 className="font-display font-bold text-2xl tracking-tight">Rewards</h1>

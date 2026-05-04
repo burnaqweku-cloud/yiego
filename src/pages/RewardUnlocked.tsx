@@ -96,7 +96,7 @@ export default function RewardUnlocked() {
     return () => clearTimeout(t);
   }, [user, authLoading, navigate]);
 
-  const referralLink = `https://datasika.com/r/${referralCode}`;
+  const referralLink = `https://yiego.com/r/${referralCode}`;
 
   const copyLink = async () => {
     try {
@@ -113,8 +113,8 @@ export default function RewardUnlocked() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Earn 25GB FREE on DataSika!',
-          text: 'Join DataSika via my link and we both earn free data! Buy any bundle and start climbing to 25GB.',
+          title: 'Earn 25GB FREE on YieGo!',
+          text: 'Join YieGo via my link and we both earn free data! Buy any bundle and start climbing to 25GB.',
           url: referralLink,
         });
       } catch { /* user cancelled */ }

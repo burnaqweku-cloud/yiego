@@ -110,7 +110,7 @@ const Support = () => {
   return (
     <Layout>
       <SEOHead
-        title="Support Center — DataSika"
+        title="Support Center — YieGo"
         description="Get help with your data bundle orders, deposits, and account. AI-powered support available 9 AM – 9 PM."
         path="/support"
       />
@@ -330,7 +330,7 @@ const Support = () => {
                 {
                   icon: <FileText className="w-4 h-4" />,
                   title: 'Deposit Not Reflected',
-                  details: 'DataSika deposit ID (DES-... or DEP-...), MoMo screenshot',
+                  details: 'YieGo deposit ID (DES-... or DEP-...), MoMo screenshot',
                   color: 'text-amber-500 bg-amber-500/10',
                 },
                 {
@@ -417,10 +417,10 @@ const Support = () => {
           <section className="text-center space-y-2 pt-2 pb-6">
             <p className="text-xs text-muted-foreground">For urgent issues outside support hours:</p>
             <a
-              href="mailto:support@datasika.com"
+              href="mailto:support@yiego.com"
               className="inline-flex items-center gap-1.5 text-sm text-primary font-semibold hover:underline"
             >
-              support@datasika.com
+              support@yiego.com
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </section>

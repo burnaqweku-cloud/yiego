@@ -69,8 +69,8 @@ export const NETWORK_BORDER_COLORS: Record<Network, string> = {
 
 export const FAQ_DATA = [
   {
-    question: 'Is Datasika really cheaper than buying data directly from MTN, Telecel, or AirtelTigo?',
-    answer: 'Yes — Datasika prices are genuinely much cheaper than buying direct. Same bundle, same network, far lower price.',
+    question: 'Is YieGo really cheaper than buying data directly from MTN, Telecel, or AirtelTigo?',
+    answer: 'Yes — YieGo prices are genuinely much cheaper than buying direct. Same bundle, same network, far lower price.',
   },
   {
     question: 'How fast is data delivered after I pay?',
@@ -82,7 +82,7 @@ export const FAQ_DATA = [
   },
   {
     question: 'Which payment methods do you accept?',
-    answer: 'MTN MoMo, Telecel Cash, AirtelTigo Money, Visa, Mastercard, and your DataSika wallet — all secured via Paystack.',
+    answer: 'MTN MoMo, Telecel Cash, AirtelTigo Money, Visa, Mastercard, and your YieGo wallet — all secured via Paystack.',
   },
   {
     question: 'Can I buy data for someone else\'s number?',
@@ -94,21 +94,21 @@ export const FAQ_DATA = [
   },
   {
     question: 'What happens if my data doesn\'t arrive?',
-    answer: 'If a bundle hasn\'t arrived after 12 hours, contact support at support@datasika.com or via live chat. Failed orders are automatically refunded.',
+    answer: 'If a bundle hasn\'t arrived after 12 hours, contact support at support@yiego.com or via live chat. Failed orders are automatically refunded.',
   },
   {
-    question: 'How do I become a DataSika agent?',
+    question: 'How do I become a YieGo agent?',
     answer: 'Apply for free on the Become an Agent page. Once approved, activate your store subscription to get your personal store link, set your prices, and start earning when customers buy through your store.',
   },
   {
-    question: 'Is Datasika safe to use?',
-    answer: 'Yes — payments are processed through Paystack, the site is SSL-encrypted, and Datasika has served 50,000+ Ghanaians since launching in 2025.',
+    question: 'Is YieGo safe to use?',
+    answer: 'Yes — payments are processed through Paystack, the site is SSL-encrypted, and YieGo has served 50,000+ Ghanaians since launching in 2025.',
   },
 ];
 
-export const SUPPORT_EMAIL = 'support@datasika.com';
+export const SUPPORT_EMAIL = 'support@yiego.com';
 export const WHATSAPP_NUMBER = '233200000000'; // kept for agent store WhatsApp (agent's own number)
-export const WHATSAPP_MESSAGE = 'Hello DataSika Support, I need help with my order.';
+export const WHATSAPP_MESSAGE = 'Hello YieGo Support, I need help with my order.';
 
 export const generateOrderId = (): string => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

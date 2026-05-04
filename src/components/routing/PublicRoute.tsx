@@ -1,7 +1,7 @@
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { ReactNode } from 'react';
-import DataSikaLoader from '@/components/ui/DataSikaLoader';
+import YieGoLoader from '@/components/ui/YieGoLoader';
 
 interface PublicRouteProps {
   children: ReactNode;
@@ -18,7 +18,7 @@ const PublicRoute = ({ children, redirectIfAuth = false }: PublicRouteProps) => 
   const [searchParams] = useSearchParams();
 
   if (loading) {
-    return <DataSikaLoader fullScreen label="Loading..." />;
+    return <YieGoLoader fullScreen label="Loading..." />;
   }
 
   if (redirectIfAuth && user) {
@@ -27,7 +27,7 @@ const PublicRoute = ({ children, redirectIfAuth = false }: PublicRouteProps) => 
     if (next && next.startsWith('/')) {
       return <Navigate to={next} replace />;
     }
-    const lastPage = localStorage.getItem('datasika_last_dashboard_page');
+    const lastPage = localStorage.getItem('yiego_last_dashboard_page');
     const target = lastPage && lastPage.startsWith('/dashboard') ? lastPage : '/dashboard';
     return <Navigate to={target} replace />;
   }

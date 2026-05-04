@@ -61,8 +61,8 @@ const AgentRouter = () => {
   return (
     <Layout>
       <SEOHead
-        title="Become a DataSika Agent — Sell Data & Earn | DataSika"
-        description="Join DataSika as an agent. Sell MTN, Telecel & AirtelTigo data bundles, set your own prices, and earn commissions."
+        title="Become a YieGo Agent — Sell Data & Earn | YieGo"
+        description="Join YieGo as an agent. Sell MTN, Telecel & AirtelTigo data bundles, set your own prices, and earn commissions."
         path="/agent"
       />
       <div className="animate-page-in">

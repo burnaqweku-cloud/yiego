@@ -242,7 +242,7 @@ const AgentActivationBanner = () => {
               <div className="flex items-center gap-1 opacity-40"><Rocket className="w-3.5 h-3.5" /><span>Go Live</span></div>
             </div>
 
-            <a href={`https://wa.me/233275644195?text=${encodeURIComponent("Hi DataSika Support, I'm an agent. My store name is " + (agent?.store_name || '') + ". I need help with my application review.")}`} target="_blank" rel="noopener noreferrer" className="w-full">
+            <a href={`https://wa.me/233275644195?text=${encodeURIComponent("Hi YieGo Support, I'm an agent. My store name is " + (agent?.store_name || '') + ". I need help with my application review.")}`} target="_blank" rel="noopener noreferrer" className="w-full">
               <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full">
                 <LifeBuoy className="w-3.5 h-3.5" /> Need help? Chat on WhatsApp
               </Button>
@@ -298,7 +298,7 @@ const AgentActivationBanner = () => {
   const isExpiredState = storeStatus === 'expired' || subscriptionState === 'expired';
 
   const whatsappLink = `https://wa.me/233275644195?text=${encodeURIComponent(
-    "Hi DataSika Support, I'm an approved agent. My store name is " +
+    "Hi YieGo Support, I'm an approved agent. My store name is " +
     (agent?.store_name || 'not showing') +
     ". I need help with activation."
   )}`;
@@ -354,7 +354,7 @@ const AgentActivationBanner = () => {
           {/* ── Social Proof Stats ── */}
           {!isExpiredState && (
             <div className="space-y-1.5">
-              <p className="text-[11px] font-bold text-foreground text-center">Agents are already making daily sales on DataSika.</p>
+              <p className="text-[11px] font-bold text-foreground text-center">Agents are already making daily sales on YieGo.</p>
               <p className="text-[10px] text-muted-foreground text-center">Activate now so you don't miss customers buying every day.</p>
               <div className="grid grid-cols-2 gap-2 mt-2">
                 <div className="text-center p-2.5 bg-muted/50 rounded-xl border border-border/50">
@@ -522,7 +522,7 @@ const AgentActivationBanner = () => {
           {/* ── WhatsApp Support ── */}
           <div className="text-center pt-2 border-t border-border space-y-1.5">
             <p className="text-[10px] text-muted-foreground">
-              Need help activating? Chat with DataSika Support on WhatsApp.
+              Need help activating? Chat with YieGo Support on WhatsApp.
             </p>
             <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="inline-block">
               <Button variant="outline" size="sm" className="gap-1.5 text-[10px] h-7">

@@ -420,7 +420,7 @@ const AdminUserDetail = () => {
                     <div>
                       <h3 className="font-display font-semibold text-sm">Manual Transfer Deposit Access</h3>
                       <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
-                        Allow this user to request wallet top-ups by sending money manually to DataSika payment details. Disabled by default. Requests still require your approval before crediting.
+                        Allow this user to request wallet top-ups by sending money manually to YieGo payment details. Disabled by default. Requests still require your approval before crediting.
                       </p>
                       <p className="text-[10px] mt-1.5 font-bold uppercase tracking-wide" style={{ color: profile.manual_deposit_enabled ? 'hsl(var(--success))' : 'hsl(var(--muted-foreground))' }}>
                         {profile.manual_deposit_enabled ? 'Enabled' : 'Disabled'}

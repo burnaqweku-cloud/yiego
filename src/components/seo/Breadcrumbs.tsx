@@ -18,12 +18,12 @@ const Breadcrumbs = ({ items }: BreadcrumbsProps) => {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://datasika.com/' },
+        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://yiego.com/' },
         ...items.map((item, i) => ({
           '@type': 'ListItem',
           position: i + 2,
           name: item.label,
-          ...(item.href ? { item: `https://datasika.com${item.href}` } : {}),
+          ...(item.href ? { item: `https://yiego.com${item.href}` } : {}),
         })),
       ],
     };

@@ -33,7 +33,7 @@ const Blog = () => {
   return (
     <Layout>
       <SEOHead
-        title="Blog — Data Bundle Tips & Guides for Ghana | DataSika"
+        title="Blog — Data Bundle Tips & Guides for Ghana | YieGo"
         description="Read the latest tips, guides, and news about buying data bundles in Ghana. MTN, Telecel & AirtelTigo bundle guides, pricing updates, and more."
         path="/blog"
       />
@@ -42,7 +42,7 @@ const Blog = () => {
 
         <div className="text-center mb-10">
           <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Insights & Guides</span>
-          <h1 className="text-3xl md:text-4xl font-display font-bold mb-3 tracking-tight">DataSika Blog</h1>
+          <h1 className="text-3xl md:text-4xl font-display font-bold mb-3 tracking-tight">YieGo Blog</h1>
           <p className="text-muted-foreground max-w-xl mx-auto text-sm leading-relaxed">
             Tips, guides, and news about buying data bundles in Ghana. Stay informed about MTN, Telecel & AirtelTigo deals.
           </p>

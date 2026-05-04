@@ -807,10 +807,10 @@ const AdminAgentProfile = () => {
                       {orders.length === 0 ? (
                         <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No orders yet</td></tr>
                       ) : orders.map(o => {
-                        // agent_cost_price = DataSika Agent Base Price (snapshot at purchase)
+                        // agent_cost_price = YieGo Agent Base Price (snapshot at purchase)
                         const dsBasePrice = Number(o.agent_cost_price || 0);
                         const agentProfit = Number(o.profit_ghs || 0);
-                        // DataSika profit is not stored on agent_orders yet — show N/A
+                        // YieGo profit is not stored on agent_orders yet — show N/A
                         // Future: supplier_cost_at_purchase field would enable this
                         return (
                         <tr key={o.id} className="border-b last:border-0 hover:bg-muted/20">
@@ -822,7 +822,7 @@ const AdminAgentProfile = () => {
                           <td className="px-4 py-3 text-right hidden md:table-cell text-xs font-semibold text-success">{formatPrice(agentProfit)}</td>
                           <td className="px-4 py-3 text-right hidden lg:table-cell text-xs text-muted-foreground">
                             {dsBasePrice > 0 ? (
-                              <span title="DataSika profit = DS Base − Supplier Cost. Supplier cost not stored per order.">
+                              <span title="YieGo profit = DS Base − Supplier Cost. Supplier cost not stored per order.">
                                 <span className="text-amber-500">N/A*</span>
                               </span>
                             ) : '—'}
@@ -845,7 +845,7 @@ const AdminAgentProfile = () => {
                 </div>
                 <div className="px-4 py-2 border-t bg-muted/20">
                   <p className="text-[10px] text-muted-foreground">
-                    * <strong>DS Base</strong> = DataSika Agent Base Price (snapshot). <strong>Agent Profit</strong> = Customer Paid − DS Base. <strong>DS Profit</strong> = DS Base − Supplier Cost (will show once per-order supplier cost is stored).
+                    * <strong>DS Base</strong> = YieGo Agent Base Price (snapshot). <strong>Agent Profit</strong> = Customer Paid − DS Base. <strong>DS Profit</strong> = DS Base − Supplier Cost (will show once per-order supplier cost is stored).
                   </p>
                 </div>
               </CardContent>

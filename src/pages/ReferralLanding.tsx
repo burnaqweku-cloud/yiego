@@ -106,7 +106,7 @@ export default function ReferralLanding() {
             This invitation link is invalid or has expired.
           </p>
           <Button asChild className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold">
-            <Link to="/">Go to DataSika</Link>
+            <Link to="/">Go to YieGo</Link>
           </Button>
         </div>
       </div>
@@ -151,7 +151,7 @@ export default function ReferralLanding() {
       {/* ── FOOTER ─────────────────────────────────────────────── */}
       <footer className="border-t border-white/5 py-8 px-4 text-center">
         <p className="text-slate-500 text-xs">
-          © {new Date().getFullYear()} DataSika. All rights reserved. &nbsp;·&nbsp;
+          © {new Date().getFullYear()} YieGo. All rights reserved. &nbsp;·&nbsp;
           <Link to="/privacy" className="hover:text-slate-300 transition-colors">Privacy</Link>
           &nbsp;·&nbsp;
           <Link to="/terms" className="hover:text-slate-300 transition-colors">Terms</Link>
@@ -635,7 +635,7 @@ function ReferralSignupForm({ referrerName, referralCode }: { referrerName: stri
       sessionStorage.removeItem('ds_ref');
       document.cookie = 'ds_ref=; path=/; max-age=0';
 
-      toast.success('🎉 Account created! Welcome to DataSika.', {
+      toast.success('🎉 Account created! Welcome to YieGo.', {
         description: 'Complete your first data purchase to activate your rewards.',
       });
 

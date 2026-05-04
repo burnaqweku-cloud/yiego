@@ -155,7 +155,7 @@ const AgentActivate = () => {
   };
 
   const whatsappLink = `https://wa.me/233275644195?text=${encodeURIComponent(
-    "Hi DataSika Support, I'm an approved agent. My store name is " +
+    "Hi YieGo Support, I'm an approved agent. My store name is " +
     (agent?.store_name || 'not showing') +
     ". I need help with activating my store subscription."
   )}`;
@@ -222,7 +222,7 @@ const AgentActivate = () => {
         <Card className="card-shadow border-border/50">
           <CardContent className="p-4 space-y-2.5">
             <div className="text-center">
-              <p className="text-xs font-bold text-foreground">Agents are already making daily sales on DataSika.</p>
+              <p className="text-xs font-bold text-foreground">Agents are already making daily sales on YieGo.</p>
             </div>
             <div className="grid grid-cols-2 gap-2.5">
               <div className="text-center p-3 bg-muted/50 rounded-xl border border-border/50">
@@ -379,7 +379,7 @@ const AgentActivate = () => {
         {/* ── WhatsApp Support ── */}
         <div className="text-center space-y-1.5 pb-2">
           <p className="text-[10px] text-muted-foreground">
-            Need help activating? Chat with DataSika Support on WhatsApp.
+            Need help activating? Chat with YieGo Support on WhatsApp.
           </p>
           <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
             <Button variant="outline" size="sm" className="gap-1.5 text-[11px] h-8">

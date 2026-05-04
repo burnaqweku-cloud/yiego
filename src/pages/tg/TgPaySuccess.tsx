@@ -217,7 +217,7 @@ export default function TgPaySuccess() {
         </Card>
         {data.order_id && (
           <FallbackLink
-            href={`https://datasika.com/track-order?order_id=${encodeURIComponent(data.order_id)}`}
+            href={`https://yiego.com/track-order?order_id=${encodeURIComponent(data.order_id)}`}
             label="Track in browser"
           />
         )}
@@ -252,7 +252,7 @@ export default function TgPaySuccess() {
         </div>
       </Card>
       <FallbackLink
-        href={`https://datasika.com/track-order?ref=${encodeURIComponent(reference)}`}
+        href={`https://yiego.com/track-order?ref=${encodeURIComponent(reference)}`}
         label={timedOut ? "Still stuck?" : "MoMo prompt didn't appear?"}
       />
     </div>
@@ -274,7 +274,7 @@ function OrderMeta({ data, reference, success }: { data: StatusResp; reference: 
 function Header({ subtitle }: { subtitle: string }) {
   return (
     <header>
-      <h1 className="text-xl font-semibold">DataSika · Pay for order</h1>
+      <h1 className="text-xl font-semibold">YieGo · Pay for order</h1>
       <p className="text-sm mt-1" style={{ color: "var(--tg-hint)" }}>{subtitle}</p>
     </header>
   );

@@ -155,7 +155,7 @@ const PurchaseModal = ({ bundle, open, onOpenChange, getSellingPrice }: Purchase
       }
 
       // Store flow metadata for PaystackCallback
-      sessionStorage.setItem('datasika_paystack_meta', JSON.stringify({
+      sessionStorage.setItem('yiego_paystack_meta', JSON.stringify({
         purpose: 'order',
         order_id: data.order_id,
         reference: data.reference,
@@ -222,7 +222,7 @@ const PurchaseModal = ({ bundle, open, onOpenChange, getSellingPrice }: Purchase
       customerName: name.trim(),
       network: bundle.network,
     };
-    sessionStorage.setItem('datasika_purchase', JSON.stringify(purchaseData));
+    sessionStorage.setItem('yiego_purchase', JSON.stringify(purchaseData));
     onOpenChange(false);
     navigate('/checkout');
   };

@@ -4,7 +4,7 @@ import { X, Download, Plus } from 'lucide-react';
 import { getDevicePlatform, isStandalone, isIOSSafari } from '@/hooks/useDeviceDetect';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-const DISMISS_KEY = 'datasika_app_banner_dismissed';
+const DISMISS_KEY = 'yiego_app_banner_dismissed';
 const DISMISS_DAYS = 7;
 
 const AppBanner = () => {
@@ -52,7 +52,7 @@ const AppBanner = () => {
 
   return (
     <div
-      id="datasika-app-banner"
+      id="yiego-app-banner"
       className="flex items-center gap-3 px-4 py-2.5 relative z-[60] border-b border-border/60"
       style={{
         background: 'hsl(var(--card))',
@@ -61,15 +61,15 @@ const AppBanner = () => {
       }}
     >
       <img
-        src="/datasika-icon.png?v=2"
-        alt="DataSika"
+        src="/yiego-icon.png?v=2"
+        alt="YieGo"
         className="w-10 h-10 rounded-xl shrink-0"
         loading="eager"
       />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold leading-tight text-foreground">DataSika</p>
+        <p className="text-sm font-bold leading-tight text-foreground">YieGo</p>
         <p className="text-xs text-muted-foreground leading-tight">
-          {isIOS ? 'Fast data delivery for Ghana' : 'Get the DataSika app'}
+          {isIOS ? 'Fast data delivery for Ghana' : 'Get the YieGo app'}
         </p>
       </div>
       <Link

@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
-        display: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+        sans: ['"Plus Jakarta Sans"', 'Inter', "system-ui", "-apple-system", "sans-serif"],
+        display: ['"Plus Jakarta Sans"', 'Inter', "system-ui", "-apple-system", "sans-serif"],
+        body: ['Inter', "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -57,6 +58,11 @@ export default {
           DEFAULT: "hsl(var(--gold))",
           foreground: "hsl(var(--gold-foreground))",
           glow: "hsl(var(--gold-glow))",
+        },
+        brand: {
+          DEFAULT: "hsl(var(--brand))",
+          foreground: "hsl(var(--brand-foreground))",
+          glow: "hsl(var(--brand-glow))",
         },
         success: {
           DEFAULT: "hsl(var(--success))",

@@ -11,7 +11,7 @@ export interface MaintenanceState {
 
 const DEFAULT_STATE: MaintenanceState = {
   enabled: false,
-  message: "We're improving DataSika for a better experience.",
+  message: "We're improving YieGo for a better experience.",
   eta: '',
   bypassToken: '',
   loading: true,
@@ -37,7 +37,7 @@ export const useMaintenanceMode = () => {
         enabled: map['site_maintenance_enabled'] === 'true',
         message:
           map['maintenance_message'] ||
-          "We're improving DataSika for a better experience.",
+          "We're improving YieGo for a better experience.",
         eta: map['maintenance_eta'] || '',
         bypassToken: map['maintenance_bypass_token'] || '',
         loading: false,

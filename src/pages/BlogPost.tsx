@@ -99,7 +99,7 @@ const BlogPost = () => {
   return (
     <Layout>
       <SEOHead
-        title={post.seo_title || `${post.title} | DataSika Blog`}
+        title={post.seo_title || `${post.title} | YieGo Blog`}
         description={post.meta_description || post.excerpt || ''}
         path={`/blog/${post.slug}`}
         ogImage={post.cover_image_url || undefined}
