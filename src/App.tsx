@@ -258,6 +258,7 @@ const App = () => (
             <PWATracker />
             <Toaster />
             <Sonner />
+            <UpdateToast />
             {/* Floating widgets temporarily hidden */}
             {/* <WhatsAppChannelButton /> */}
             {/* <GlobalAISupportChat /> */}
