@@ -794,10 +794,8 @@ function ReferralSignupForm({ referrerName, referralCode }: { referrerName: stri
         <p className="text-xs text-slate-400 leading-relaxed">
           I agree to the{' '}
           <Link to="/terms" target="_blank" className="text-yellow-400 hover:underline font-medium">Terms of Service</Link>
-          {', '}
-          <Link to="/privacy" target="_blank" className="text-yellow-400 hover:underline font-medium">Privacy Policy</Link>
-          {', and '}
-          <Link to="/disclaimer" target="_blank" className="text-yellow-400 hover:underline font-medium">Disclaimer</Link>.
+          {' and '}
+          <Link to="/privacy" target="_blank" className="text-yellow-400 hover:underline font-medium">Privacy Policy</Link>.
         </p>
       </div>
 
