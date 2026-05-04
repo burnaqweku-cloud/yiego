@@ -319,7 +319,7 @@ export default function TgSignup() {
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 8 chars, letter + number"
+                placeholder="At least 6 characters"
                 disabled={submitting}
                 maxLength={128}
                 className="pr-16"
