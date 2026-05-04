@@ -452,7 +452,7 @@ const SignupForm = () => {
         await supabase.from('profiles').update({
           accepted_terms: true, accepted_terms_at: now, accepted_terms_version: 'v1.0',
           accepted_privacy: true, accepted_privacy_at: now, accepted_privacy_version: 'v1.0',
-          accepted_disclaimer: true, accepted_disclaimer_at: now, accepted_disclaimer_version: 'v1.0',
+          
           ...(deviceHash ? { device_hash: deviceHash } : {}),
           ...((referralCode || searchParams.get('ref') || '').trim()
             ? { referral_source: localStorage.getItem('ds_referral_source') === 'landing' ? 'landing_page' : 'referral_code' }
