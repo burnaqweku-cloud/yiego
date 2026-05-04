@@ -2,11 +2,8 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import WalletHeroPanel from '@/components/dashboard/WalletHeroPanel';
 import ServiceHubGrid from '@/components/dashboard/ServiceHubGrid';
-import DashboardSystemStatus from '@/components/dashboard/DashboardSystemStatus';
 import DashboardRecentOrders from '@/components/dashboard/DashboardRecentOrders';
-import DashboardSupportCard from '@/components/dashboard/DashboardSupportCard';
 import RecentActivityCard from '@/components/dashboard/RecentActivityCard';
-import { useGlobalSystemStatus } from '@/contexts/SystemStatusContext';
 import { useUserOrders } from '@/hooks/useUserOrders';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,7 +20,6 @@ function getGreeting() {
 
 const DashboardHome = () => {
   const { user, profile } = useAuth();
-  const { status, loading: statusLoading } = useGlobalSystemStatus();
   const { orders, loading: ordersLoading } = useUserOrders();
   const { wallet, loading: walletLoading } = useWallet();
 
@@ -94,9 +90,6 @@ const DashboardHome = () => {
           </div>
         </div>
 
-        {/* System status */}
-        <DashboardSystemStatus status={status} loading={statusLoading} />
-
         {/* Orders + activity */}
         <div className="grid lg:grid-cols-12 gap-4">
           <div className="lg:col-span-7">
@@ -106,9 +99,6 @@ const DashboardHome = () => {
             <RecentActivityCard />
           </div>
         </div>
-
-        {/* Support */}
-        <DashboardSupportCard />
 
         <div aria-hidden className="h-20 md:h-2" />
       </div>
