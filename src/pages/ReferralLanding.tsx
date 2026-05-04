@@ -569,9 +569,7 @@ function ReferralSignupForm({ referrerName, referralCode }: { referrerName: stri
       setError(err.errors?.[0]?.message || 'Invalid email'); return;
     }
 
-    if (password.length < 8) { setError('Password must be at least 8 characters'); return; }
-    if (!/[a-zA-Z]/.test(password)) { setError('Password must contain at least one letter'); return; }
-    if (!/[\d\W_]/.test(password)) { setError('Password must contain at least one number or symbol'); return; }
+    if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
 
     if (!agreedToTerms) {
       setError('You must agree to the Terms of Service, Privacy Policy, and Disclaimer to continue.');

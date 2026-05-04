@@ -14,7 +14,7 @@ import SEOHead from '@/components/seo/SEOHead';
 import PasswordStrengthBar, { getStrength } from '@/components/auth/PasswordStrengthBar';
 
 const emailSchema = z.string().email('Please enter a valid email address');
-const passwordSchema = z.string().min(8, 'Password must be at least 8 characters');
+const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
 const usernameSchema = z.string()
   .min(3, 'Username must be at least 3 characters')
   .max(20, 'Username must be 20 characters or less')
@@ -408,16 +408,8 @@ const SignupForm = () => {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-    if (!/[a-zA-Z]/.test(password)) {
-      setError('Password must contain at least one letter');
-      return;
-    }
-    if (!/[\d\W_]/.test(password)) {
-      setError('Password must contain at least one number or symbol');
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
       return;
     }
 
@@ -568,7 +560,7 @@ const SignupForm = () => {
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Min 8 characters"
+            placeholder="Min 6 characters"
             className="pr-11"
             maxLength={128}
           />
@@ -580,9 +572,6 @@ const SignupForm = () => {
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
-        </div>
-        <div className="mt-2">
-          <PasswordStrengthBar password={password} />
         </div>
       </div>
 

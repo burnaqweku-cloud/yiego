@@ -47,9 +47,7 @@ function validate(v: {
 
   if (!EMAIL_RE.test(v.email.trim())) e.email = "Please enter a valid email address";
 
-  if (v.password.length < 8) e.password = "Password must be at least 8 characters";
-  else if (!/[a-zA-Z]/.test(v.password)) e.password = "Password must contain at least one letter";
-  else if (!/[\d\W_]/.test(v.password)) e.password = "Password must contain at least one number or symbol";
+  if (v.password.length < 6) e.password = "Password must be at least 6 characters";
 
   if (!v.terms) e.terms = "You must agree to the Terms, Privacy & Disclaimer.";
 
@@ -321,7 +319,7 @@ export default function TgSignup() {
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 8 chars, letter + number"
+                placeholder="At least 6 characters"
                 disabled={submitting}
                 maxLength={128}
                 className="pr-16"
