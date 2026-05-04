@@ -1,36 +1,30 @@
 import { useEffect } from 'react';
 
-const CANONICAL_DOMAIN = 'https://yiego.com';
+const CANONICAL_HOST = 'yiego.shop';
+const CANONICAL_DOMAIN = `https://${CANONICAL_HOST}`;
 
 /**
  * Client-side domain redirect.
- * If the current hostname is NOT yiego.com, redirect to yiego.com
- * preserving the path and query string.
- *
- * This handles:
- *   www.yiego.com  → yiego.com
- *   yiego.com     → yiego.com
- *   www.yiego.com → yiego.com
- *
- * For proper 301 redirects, server-side config (DNS / edge / CDN) is also needed.
- * This acts as a client-side safety net.
+ * Forces all non-canonical hosts (e.g. www.yiego.shop, legacy yiego.com) to https://yiego.shop
+ * preserving path, query, and hash.
  */
 const DomainRedirect = () => {
   useEffect(() => {
-    const { hostname, pathname, search, hash } = window.location;
+    const { hostname, pathname, search, hash, protocol } = window.location;
 
     // Skip redirect in development / preview environments
     if (
       hostname === 'localhost' ||
       hostname === '127.0.0.1' ||
-      hostname.includes('lovable.app') ||
-      hostname.includes('lovable.dev') ||
-      hostname === 'yiego.com'
+      hostname.endsWith('.lovable.app') ||
+      hostname.endsWith('.lovable.dev')
     ) {
       return;
     }
 
-    // Redirect non-canonical domains to yiego.com
+    // Already canonical (https + apex yiego.shop) — do nothing
+    if (hostname === CANONICAL_HOST && protocol === 'https:') return;
+
     const target = `${CANONICAL_DOMAIN}${pathname}${search}${hash}`;
     window.location.replace(target);
   }, []);
