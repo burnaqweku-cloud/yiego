@@ -206,7 +206,7 @@ export default function TgSignup() {
           <div className="font-semibold mb-1" style={{ color: "#991b1b" }}>❌ Verification failed</div>
           <div className="text-sm" style={{ color: "#7f1d1d" }}>{fatal}</div>
           <p className="text-xs mt-3" style={{ color: "var(--tg-hint)" }}>
-            If you opened this page outside Telegram, that's expected. Open it from @datasika_bot.
+            If you opened this page outside Telegram, that's expected. Open it from @yiego_bot.
           </p>
         </Card>
       </div>
@@ -217,14 +217,14 @@ export default function TgSignup() {
     const greeting = done.full_name?.split(" ")[0] || getTg()?.initDataUnsafe?.user?.first_name || "there";
     return (
       <div className="space-y-4">
-        <Header subtitle="Welcome to DataSika" />
+        <Header subtitle="Welcome to YieGo" />
         <Card tone="success">
           <div className="text-3xl mb-1">🎉</div>
           <div className="text-base font-semibold" style={{ color: "#166534" }}>
             Account created, {greeting}!
           </div>
           <p className="text-sm mt-2" style={{ color: "#166534" }}>
-            Your DataSika account is now linked to this Telegram chat.
+            Your YieGo account is now linked to this Telegram chat.
           </p>
           {done.welcomePoints > 0 && (
             <div
@@ -247,7 +247,7 @@ export default function TgSignup() {
   const hasTgSdk = !!getTg();
   return (
     <div className="space-y-4">
-      <Header subtitle="Create your DataSika account" />
+      <Header subtitle="Create your YieGo account" />
       <Card>
         <form id="tg-signup-form" onSubmit={handleSubmit} className="space-y-3" autoComplete="on">
           {topError && (
@@ -349,9 +349,9 @@ export default function TgSignup() {
             />
             <span className="text-xs leading-snug" style={{ color: "#475569" }}>
               I agree to the{" "}
-              <FallbackA href="https://datasika.com/terms">Terms of Service</FallbackA>,{" "}
-              <FallbackA href="https://datasika.com/privacy">Privacy Policy</FallbackA>, and{" "}
-              <FallbackA href="https://datasika.com/disclaimer">Disclaimer</FallbackA>.
+              <FallbackA href="https://yiego.com/terms">Terms of Service</FallbackA>,{" "}
+              <FallbackA href="https://yiego.com/privacy">Privacy Policy</FallbackA>, and{" "}
+              <FallbackA href="https://yiego.com/disclaimer">Disclaimer</FallbackA>.
             </span>
           </label>
           {errors.terms && (
@@ -401,7 +401,7 @@ export default function TgSignup() {
 function Header({ subtitle }: { subtitle: string }) {
   return (
     <header>
-      <h1 className="text-xl font-semibold">DataSika · Create account</h1>
+      <h1 className="text-xl font-semibold">YieGo · Create account</h1>
       <p className="text-sm mt-1" style={{ color: "var(--tg-hint)" }}>{subtitle}</p>
     </header>
   );

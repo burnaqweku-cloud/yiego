@@ -27,7 +27,7 @@ export default function TgMiniAppLayout() {
 
   useEffect(() => {
     let cancelled = false;
-    // DataSika brand palette (charcoal + gold) — applied uniformly across all
+    // YieGo brand palette (charcoal + gold) — applied uniformly across all
     // Mini App pages, ignoring Telegram's user theme to keep brand consistent.
     const BRAND_BG = "#ffffff";
     const BRAND_SURFACE = "#f8f5ee"; // warm cream surface
@@ -98,8 +98,8 @@ function NotInTelegram() {
       <div className="text-2xl mb-2">🤖</div>
       <h1 className="text-lg font-semibold mb-2">Open inside Telegram</h1>
       <p className="text-sm leading-relaxed" style={{ color: "var(--tg-hint)" }}>
-        This page is part of the DataSika Telegram bot and must be opened from inside Telegram.
-        Search <strong>@datasika_bot</strong> on Telegram to get started.
+        This page is part of the YieGo Telegram bot and must be opened from inside Telegram.
+        Search <strong>@yiego_bot</strong> on Telegram to get started.
       </p>
     </div>
   );

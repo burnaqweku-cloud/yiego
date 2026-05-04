@@ -24,7 +24,7 @@ const SEOContentSection = () => {
             Buy Affordable Data Bundles in Ghana
           </h2>
           <p className="text-muted-foreground leading-relaxed">
-            DataSika is Ghana's trusted platform for buying <strong>MTN data bundles</strong>,{' '}
+            YieGo is Ghana's trusted platform for buying <strong>MTN data bundles</strong>,{' '}
             <strong>Telecel data bundles</strong>, and <strong>AirtelTigo data bundles</strong> online.
             Enjoy fast delivery, secure Paystack payments via Mobile Money, and affordable prices on all data packages.
           </p>

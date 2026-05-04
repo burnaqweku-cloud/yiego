@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { ReactNode, useEffect } from 'react';
-import DataSikaLoader from '@/components/ui/DataSikaLoader';
+import YieGoLoader from '@/components/ui/YieGoLoader';
 
 interface PrivateRouteProps {
   children: ReactNode;
@@ -18,12 +18,12 @@ const PrivateRoute = ({ children }: PrivateRouteProps) => {
   // Track last visited dashboard page
   useEffect(() => {
     if (user && location.pathname.startsWith('/dashboard')) {
-      localStorage.setItem('datasika_last_dashboard_page', location.pathname);
+      localStorage.setItem('yiego_last_dashboard_page', location.pathname);
     }
   }, [user, location.pathname]);
 
   if (loading) {
-    return <DataSikaLoader fullScreen label="Loading dashboard..." />;
+    return <YieGoLoader fullScreen label="Loading dashboard..." />;
   }
 
   if (!user) {

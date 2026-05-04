@@ -332,7 +332,7 @@ const App = () => (
               <Route path="/reward" element={<PrivateRoute><RewardActivation /></PrivateRoute>} />
               <Route path="/reward-unlocked" element={<PrivateRoute><RewardUnlocked /></PrivateRoute>} />
 
-              {/* Agent store — public, no DataSika branding */}
+              {/* Agent store — public, no YieGo branding */}
               <Route path="/store/:slug" element={<AgentStore />} />
 
               {/* Agent smart router — public landing page, redirects logged-in agents */}

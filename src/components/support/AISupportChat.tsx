@@ -45,14 +45,14 @@ interface UserTicket {
 
 type ViewMode = 'chat' | 'hub' | 'ticket_detail' | 'track' | 'guest_name';
 
-const STORAGE_KEY = 'datasika_ai_chat';
-const SESSION_ID_KEY = 'datasika_ai_session_id';
-const TICKET_STORAGE_KEY = 'datasika_ai_tickets';
-const INJECTED_UPDATES_KEY = 'datasika_ai_injected_updates';
-const GUEST_NAME_KEY = 'datasika_guest_name';
+const STORAGE_KEY = 'yiego_ai_chat';
+const SESSION_ID_KEY = 'yiego_ai_session_id';
+const TICKET_STORAGE_KEY = 'yiego_ai_tickets';
+const INJECTED_UPDATES_KEY = 'yiego_ai_injected_updates';
+const GUEST_NAME_KEY = 'yiego_guest_name';
 // Per-session limit removed — daily/weekly limits are enforced server-side.
 const COOLDOWN_MS = 1500;
-const GREETING = "Hi there! 👋 I'm DataSika's support assistant. I can help you with order status, payment issues, or any questions about our data bundle services.\n\nHow can I help you today?";
+const GREETING = "Hi there! 👋 I'm YieGo's support assistant. I can help you with order status, payment issues, or any questions about our data bundle services.\n\nHow can I help you today?";
 const TICKET_POLL_MS = 30_000;
 // 7-day persistence window — keeps conversation continuity for admin monitoring
 // and prevents premature session splits / chat history loss.
@@ -924,9 +924,9 @@ const AISupportChat = ({ context }: AISupportChatProps) => {
         } else if (data.code === 'DAILY_LIMIT' || data.code === 'WEEKLY_LIMIT') {
           setError(data.error);
         } else if (data.code === 'RATE_LIMITED') {
-          setError("You've reached the support assistant limit for now. Please try again later or contact support@datasika.com directly.");
+          setError("You've reached the support assistant limit for now. Please try again later or contact support@yiego.com directly.");
         } else if (data.code === 'AI_NOT_CONFIGURED') {
-          setError('Support assistant is temporarily unavailable. Please contact support@datasika.com for help.');
+          setError('Support assistant is temporarily unavailable. Please contact support@yiego.com for help.');
         } else {
           setError(data.error);
         }
@@ -952,7 +952,7 @@ const AISupportChat = ({ context }: AISupportChatProps) => {
       }]);
     } catch (err: any) {
       console.error('AI chat error:', err);
-      setError('Something went wrong. Please try again or contact support@datasika.com.');
+      setError('Something went wrong. Please try again or contact support@yiego.com.');
     } finally {
       setIsLoading(false);
       setIsAnalyzingImage(false);
@@ -1023,7 +1023,7 @@ const AISupportChat = ({ context }: AISupportChatProps) => {
     // Add personalized greeting
     setMessages([{
       role: 'assistant',
-      content: `Hi ${name}! 👋 I'm DataSika's support assistant. How can I help you today?`,
+      content: `Hi ${name}! 👋 I'm YieGo's support assistant. How can I help you today?`,
       timestamp: Date.now(),
     }]);
   }, [guestNameInput]);
@@ -1347,7 +1347,7 @@ const AISupportChat = ({ context }: AISupportChatProps) => {
             9 AM – 9 PM Ghana time. Most issues are reviewed within minutes during active hours.
           </p>
           <p className="text-[10px] text-muted-foreground">
-            For urgent issues: <a href="mailto:support@datasika.com" className="text-primary hover:underline">support@datasika.com</a>
+            For urgent issues: <a href="mailto:support@yiego.com" className="text-primary hover:underline">support@yiego.com</a>
           </p>
         </div>
 
@@ -1629,7 +1629,7 @@ const AISupportChat = ({ context }: AISupportChatProps) => {
         {isAtLimit ? (
           <div className="text-center py-2 space-y-2">
             <p className="text-xs text-muted-foreground">Message limit reached for this session.</p>
-            <a href="mailto:support@datasika.com" className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+            <a href="mailto:support@yiego.com" className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
               Contact support directly <ExternalLink className="w-3 h-3" />
             </a>
           </div>
@@ -1677,7 +1677,7 @@ const AISupportChat = ({ context }: AISupportChatProps) => {
           </div>
         )}
         <p className="text-[10px] text-muted-foreground/50 text-center mt-1.5 select-none">
-          {isAdminHandling ? 'You are chatting with a real person · ' : 'AI assistant · '}support@datasika.com
+          {isAdminHandling ? 'You are chatting with a real person · ' : 'AI assistant · '}support@yiego.com
         </p>
       </div>
     </>
@@ -1716,7 +1716,7 @@ const AISupportChat = ({ context }: AISupportChatProps) => {
             </div>
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-bold truncate">
-                {view === 'hub' ? 'Support Hub' : view === 'ticket_detail' ? `Ticket ${selectedTicket?.ticket_code || '#' + selectedTicket?.ticket_number}` : view === 'track' ? 'Track Ticket' : view === 'guest_name' ? 'Welcome' : isAdminHandling ? (adminHandlerName || 'Support Admin') : 'DataSika Support'}
+                {view === 'hub' ? 'Support Hub' : view === 'ticket_detail' ? `Ticket ${selectedTicket?.ticket_code || '#' + selectedTicket?.ticket_number}` : view === 'track' ? 'Track Ticket' : view === 'guest_name' ? 'Welcome' : isAdminHandling ? (adminHandlerName || 'Support Admin') : 'YieGo Support'}
               </p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 {view === 'chat' ? (

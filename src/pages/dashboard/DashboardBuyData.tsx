@@ -58,12 +58,12 @@ const DashboardBuyData = () => {
 
   // Pre-fill from reorder
   useEffect(() => {
-    const reorder = sessionStorage.getItem('datasika_reorder');
+    const reorder = sessionStorage.getItem('yiego_reorder');
     if (reorder) {
       const data = JSON.parse(reorder);
       if (data.network) setSelectedNetwork(data.network);
       if (data.recipientPhone) setPhone(data.recipientPhone);
-      sessionStorage.removeItem('datasika_reorder');
+      sessionStorage.removeItem('yiego_reorder');
     }
   }, []);
 
@@ -221,7 +221,7 @@ const DashboardBuyData = () => {
           return;
         }
 
-        sessionStorage.setItem('datasika_paystack_meta', JSON.stringify({
+        sessionStorage.setItem('yiego_paystack_meta', JSON.stringify({
           purpose: 'order',
           order_id: data.order_id,
           reference: data.reference,

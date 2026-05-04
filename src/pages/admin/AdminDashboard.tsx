@@ -267,7 +267,7 @@ const AdminDashboard = () => {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-2xl font-display font-bold tracking-tight">Operations Dashboard</h2>
-            <p className="text-muted-foreground text-sm">Live overview of DataSika orders, revenue and platform health.</p>
+            <p className="text-muted-foreground text-sm">Live overview of YieGo orders, revenue and platform health.</p>
           </div>
           <Button
             variant="outline" size="sm"

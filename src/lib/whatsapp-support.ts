@@ -13,20 +13,20 @@ function buildMessage(ctx: SupportContext): string {
   switch (ctx.type) {
     case 'user':
       return ctx.username
-        ? `Hi DataSika Support, my username is ${ctx.username}. I need help with `
-        : 'Hi DataSika Support, I need help with my account.';
+        ? `Hi YieGo Support, my username is ${ctx.username}. I need help with `
+        : 'Hi YieGo Support, I need help with my account.';
     case 'guest':
-      return 'Hi DataSika Support, please I need help. My issue is:';
+      return 'Hi YieGo Support, please I need help. My issue is:';
     case 'agent':
       return ctx.storeName
-        ? `Hi DataSika Support, I'm an agent. My store name is ${ctx.storeName}. I need help with `
-        : "Hi DataSika Support, I'm an agent. I need help with my store.";
+        ? `Hi YieGo Support, I'm an agent. My store name is ${ctx.storeName}. I need help with `
+        : "Hi YieGo Support, I'm an agent. I need help with my store.";
     case 'agent_activation':
       return ctx.storeName
-        ? `Hi DataSika Support, I'm an agent. My store name is ${ctx.storeName}. I need help with activating my store subscription.`
-        : "Hi DataSika Support, I'm an agent. I need help with activating my store subscription.";
+        ? `Hi YieGo Support, I'm an agent. My store name is ${ctx.storeName}. I need help with activating my store subscription.`
+        : "Hi YieGo Support, I'm an agent. I need help with activating my store subscription.";
     case 'order': {
-      const parts = ['Hi DataSika Support, I need help with my order.'];
+      const parts = ['Hi YieGo Support, I need help with my order.'];
       if (ctx.orderId) parts.push(`Order ID: ${ctx.orderId}.`);
       if (ctx.phone) parts.push(`Recipient: ${ctx.phone}.`);
       if (ctx.network) parts.push(`Network: ${ctx.network}.`);
@@ -35,10 +35,10 @@ function buildMessage(ctx: SupportContext): string {
     }
     case 'wallet':
       return ctx.username
-        ? `Hi DataSika Support, I need help with my wallet. Username: ${ctx.username}.${ctx.reference ? ` Transaction Ref: ${ctx.reference}.` : ''}`
-        : `Hi DataSika Support, I need help with my wallet.${ctx.reference ? ` Transaction Ref: ${ctx.reference}.` : ''}`;
+        ? `Hi YieGo Support, I need help with my wallet. Username: ${ctx.username}.${ctx.reference ? ` Transaction Ref: ${ctx.reference}.` : ''}`
+        : `Hi YieGo Support, I need help with my wallet.${ctx.reference ? ` Transaction Ref: ${ctx.reference}.` : ''}`;
     default:
-      return 'Hi DataSika Support, please I need help. My issue is: ';
+      return 'Hi YieGo Support, please I need help. My issue is: ';
   }
 }
 

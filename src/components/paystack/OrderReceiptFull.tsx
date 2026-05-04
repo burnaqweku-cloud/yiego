@@ -364,7 +364,7 @@ const OrderReceiptFull = ({
         {isFailed && (
           <a
             href={`https://wa.me/233275644195?text=${encodeURIComponent(
-              'Hi DataSika Support, I need help with my order. Order ID: ' +
+              'Hi YieGo Support, I need help with my order. Order ID: ' +
                 orderId +
                 '. Recipient: ' +
                 (recipientPhone || '') +

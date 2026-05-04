@@ -163,7 +163,7 @@ const AdminFinanceReport = () => {
 
     // Agent store profit
     const agentStoreProfit = (agentOrdersRes.data || []).reduce((s: number, o: any) => s + Number(o.profit_ghs || 0), 0);
-    const normalProfit = totalProfit; // All normal DataSika orders profit
+    const normalProfit = totalProfit; // All normal YieGo orders profit
     
     // Agent subscription revenue
     const agentSubscriptionRevenue = (agentSubsRes.data || []).reduce((s: number, sub: any) => s + Number(sub.plan_price_current || 0), 0);

@@ -32,7 +32,7 @@ const DashboardOrderDetail = () => {
 
   const handleReorder = () => {
     if (!order) return;
-    sessionStorage.setItem('datasika_reorder', JSON.stringify({ network: order.network, recipientPhone: order.recipient_number }));
+    sessionStorage.setItem('yiego_reorder', JSON.stringify({ network: order.network, recipientPhone: order.recipient_number }));
     navigate('/dashboard/buy');
   };
 

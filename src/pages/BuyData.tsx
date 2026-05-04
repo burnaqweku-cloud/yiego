@@ -96,7 +96,7 @@ const BuyData = () => {
         </div>
       )}
       <SEOHead
-        title="Buy Data Bundles — MTN, Telecel & AirtelTigo | DataSika"
+        title="Buy Data Bundles — MTN, Telecel & AirtelTigo | YieGo"
         description="Choose from affordable MTN, Telecel & AirtelTigo data bundles. Fast delivery across Ghana. No account required."
         path="/buy-data"
       />

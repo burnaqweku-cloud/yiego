@@ -153,7 +153,7 @@ function QuickBuyModal({ onClose, onCheckoutInit, userId, userEmail }: QuickBuyM
         return;
       }
 
-      sessionStorage.setItem('datasika_paystack_meta', JSON.stringify({
+      sessionStorage.setItem('yiego_paystack_meta', JSON.stringify({
         purpose: 'order',
         order_id: data.order_id,
         reference: data.reference,

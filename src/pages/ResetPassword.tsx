@@ -92,7 +92,7 @@ const ResetPassword = () => {
 
   return (
     <AuthLayout title={title} subtitle={subtitle}>
-      <SEOHead title="Reset Password | DataSika" description="Set your new DataSika password securely." path="/reset-password" noIndex />
+      <SEOHead title="Reset Password | YieGo" description="Set your new YieGo password securely." path="/reset-password" noIndex />
 
       {success ? (
         <div className="bg-card dark:bg-[hsl(222_35%_11%)] rounded-2xl p-6 md:p-7 card-shadow-elevated border border-border/60 dark:border-border/40 text-center space-y-4">

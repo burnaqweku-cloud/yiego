@@ -763,7 +763,7 @@ TierClaimCard.displayName = 'TierClaimCard';
 /* ─── HOW IT WORKS — Vertical Glowing Timeline ─────────────────── */
 const HOW_IT_WORKS_STEPS = [
   { icon: Share2, color: '#f59e0b', title: 'Share Your Quest Link', subtitle: 'Send your unique referral link to friends on WhatsApp, socials, or anywhere.' },
-  { icon: Users, color: '#a78bfa', title: 'Friend Signs Up', subtitle: 'They create their DataSika account using your referral link.' },
+  { icon: Users, color: '#a78bfa', title: 'Friend Signs Up', subtitle: 'They create their YieGo account using your referral link.' },
   { icon: ChevronRight, color: '#60a5fa', title: 'They Place a Successful Order', subtitle: 'Your referral counts once they complete their first paid data purchase.' },
   { icon: TrendingUp, color: '#4ade80', title: 'You Unlock the Next Tier', subtitle: 'Each qualified referral moves you up — Bronze, Silver, Gold, Platinum, Elite.' },
   { icon: Gift, color: '#fbbf24', title: 'Claim Rewards up to 25GB', subtitle: 'Tap "Claim Reward", choose your network and number — delivered instantly.' },
@@ -1102,7 +1102,7 @@ const DashboardReferral = () => {
   // Lazy section visibility (leaderboard only — others render eagerly)
   const leaderboardLazy = useLazyVisible('300px');
 
-  const referralLink = stats?.referral_code ? `https://datasika.com/r/${stats.referral_code}` : '';
+  const referralLink = stats?.referral_code ? `https://yiego.com/r/${stats.referral_code}` : '';
 
   // Request deduplication
   const loadPromiseRef = useRef<Promise<void> | null>(null);
@@ -1253,7 +1253,7 @@ const DashboardReferral = () => {
   const handleShare = useCallback(async () => {
     if (!referralLink) return;
     if (navigator.share) {
-      try { await navigator.share({ title: 'Get FREE data on DataSika!', text: 'Join DataSika — buy affordable data bundles in Ghana. Use my referral link!', url: referralLink }); }
+      try { await navigator.share({ title: 'Get FREE data on YieGo!', text: 'Join YieGo — buy affordable data bundles in Ghana. Use my referral link!', url: referralLink }); }
       catch { /* cancelled */ }
     } else { handleCopy(); }
   }, [referralLink, handleCopy]);
@@ -1539,7 +1539,7 @@ const DashboardReferral = () => {
 
   return (
     <DashboardLayout>
-      <SEOHead title="Refer & Earn – DataSika" description="Invite friends to DataSika and earn up to 25GB in free data bundle rewards." path="/dashboard/referral" noIndex />
+      <SEOHead title="Refer & Earn – YieGo" description="Invite friends to YieGo and earn up to 25GB in free data bundle rewards." path="/dashboard/referral" noIndex />
       <style>{LADDER_STYLES}</style>
 
       <div className="fixed inset-0 pointer-events-none z-0"
@@ -1597,7 +1597,7 @@ const DashboardReferral = () => {
 
             <p className="text-sm font-medium mb-1" style={{ color: 'rgba(255,255,255,0.55)' }}>
               {isEliteReached
-                ? "You've completed all milestones. You're a DataSika legend!"
+                ? "You've completed all milestones. You're a YieGo legend!"
                 : 'Invite friends who place successful orders — climb the reward ladder.'}
             </p>
 

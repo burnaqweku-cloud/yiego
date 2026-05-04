@@ -95,7 +95,7 @@ const defaultNotice: SiteNotice = {
 
 const defaultSupport: SupportSettings = {
   whatsapp_number: '233200000000',
-  whatsapp_message: 'Hello DataSika Support, I need help with my order.',
+  whatsapp_message: 'Hello YieGo Support, I need help with my order.',
 };
 
 const AdminContext = createContext<AdminContextType | null>(null);

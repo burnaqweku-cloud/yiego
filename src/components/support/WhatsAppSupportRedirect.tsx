@@ -17,7 +17,7 @@ const WhatsAppSupportRedirect = ({ context = { type: 'default' } }: Props) => {
         </div>
         <h1 className="text-xl font-display font-bold">Support is now on WhatsApp</h1>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Ticket support is temporarily disabled. Please contact DataSika on WhatsApp for fast assistance.
+          Ticket support is temporarily disabled. Please contact YieGo on WhatsApp for fast assistance.
         </p>
         <a href={link} target="_blank" rel="noopener noreferrer">
           <Button

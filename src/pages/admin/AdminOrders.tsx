@@ -57,7 +57,7 @@ interface EnrichedOrder {
   agent_store_price_at_purchase?: number | null;
   agent_base_price_at_purchase?: number | null;
   agent_profit_at_purchase?: number | null;
-  datasika_profit_at_purchase?: number | null;
+  yiego_profit_at_purchase?: number | null;
   supplier_cost_at_purchase?: number | null;
   profit_credited?: boolean;
   _agent_store_name?: string;
@@ -130,7 +130,7 @@ async function fetchOrdersPage(params: {
     agent_store_price_at_purchase: r.agent_store_price,
     agent_base_price_at_purchase: r.agent_base_price,
     agent_profit_at_purchase: r.agent_profit,
-    datasika_profit_at_purchase: r.datasika_profit,
+    yiego_profit_at_purchase: r.yiego_profit,
     supplier_cost_at_purchase: r.supplier_cost_snapshot,
   }));
 
@@ -1076,7 +1076,7 @@ const OrderDetailDialog = ({ order, isAdmin, isAdminOrStaff, onClose, onUpdate, 
                 <div className="flex justify-between"><span className="text-muted-foreground">Store</span><span className="font-medium">{order._agent_store_name || 'Agent Store'}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Customer Paid (Agent Price)</span><span className="font-semibold">{formatPrice(order.agent_store_price_at_purchase ?? order.amount_ghs)}</span></div>
                 <div className="border-t border-border my-1" />
-                <div className="flex justify-between"><span className="text-muted-foreground">DataSika Agent Base Price</span><span className="font-medium">{order.agent_base_price_at_purchase != null ? formatPrice(order.agent_base_price_at_purchase) : '—'}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">YieGo Agent Base Price</span><span className="font-medium">{order.agent_base_price_at_purchase != null ? formatPrice(order.agent_base_price_at_purchase) : '—'}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Supplier Cost</span><span className="font-mono text-xs">{order.supplier_cost_at_purchase != null ? formatPrice(order.supplier_cost_at_purchase) : <span className="text-muted-foreground italic">Not available</span>}</span></div>
                 <div className="border-t border-border my-1" />
                 <div className="flex justify-between">
@@ -1090,10 +1090,10 @@ const OrderDetailDialog = ({ order, isAdmin, isAdminOrStaff, onClose, onUpdate, 
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-medium text-primary">DataSika Profit</span>
+                  <span className="text-muted-foreground font-medium text-primary">YieGo Profit</span>
                   <span className="font-bold text-primary">
-                    {order.datasika_profit_at_purchase != null
-                      ? `+${formatPrice(order.datasika_profit_at_purchase)}`
+                    {order.yiego_profit_at_purchase != null
+                      ? `+${formatPrice(order.yiego_profit_at_purchase)}`
                       : order.supplier_cost_at_purchase == null && order.agent_base_price_at_purchase != null
                         ? <span className="text-muted-foreground text-xs italic">Supplier cost not captured</span>
                         : '—'}

@@ -17,7 +17,7 @@ export function normalizeGhanaWhatsApp(raw: string | null | undefined): string |
 export function buildAgentApprovalMessage(agentName: string, storeName?: string | null): string {
   const name = agentName || 'there';
   const store = storeName || 'your store';
-  return `Congrats ${name}! Your DataSika Agent Store (${store}) has been approved and is ready to go live.
+  return `Congrats ${name}! Your YieGo Agent Store (${store}) has been approved and is ready to go live.
 
 To start selling, you only need to activate your store subscription.
 
@@ -30,7 +30,7 @@ Once activated, you get:
 ✅ Customers can buy 24/7 even when you're offline
 ✅ Withdraw your earnings anytime
 
-This is the easiest way to start earning daily without stress because DataSika handles delivery for you.
+This is the easiest way to start earning daily without stress because YieGo handles delivery for you.
 
 📌 Activate now and start selling today.
 The earlier you activate, the faster you start making profit.

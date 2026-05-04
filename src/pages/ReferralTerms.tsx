@@ -5,7 +5,7 @@ import { Shield } from 'lucide-react';
 const ReferralTerms = () => {
   return (
     <Layout>
-      <SEOHead title="Referral Program Terms — DataSika" description="Terms and conditions for the DataSika referral rewards program." path="/referral-terms" noIndex />
+      <SEOHead title="Referral Program Terms — YieGo" description="Terms and conditions for the YieGo referral rewards program." path="/referral-terms" noIndex />
       <div className="container max-w-2xl py-10 md:py-16">
         <div className="flex items-center gap-3 mb-6">
           <Shield className="w-6 h-6 text-primary" />
@@ -15,7 +15,7 @@ const ReferralTerms = () => {
         <div className="bg-card rounded-2xl p-6 border border-border space-y-5 text-sm text-muted-foreground leading-relaxed">
           <section>
             <h2 className="text-base font-bold text-foreground mb-2">1. Eligibility</h2>
-            <p>All registered DataSika users with verified accounts are eligible to participate in the referral program. Each user receives a unique referral code and link upon registration.</p>
+            <p>All registered YieGo users with verified accounts are eligible to participate in the referral program. Each user receives a unique referral code and link upon registration.</p>
           </section>
 
           <section>
@@ -39,7 +39,7 @@ const ReferralTerms = () => {
 
           <section>
             <h2 className="text-base font-bold text-foreground mb-2">4. Monitoring & Enforcement</h2>
-            <p>DataSika monitors referral activity for suspicious patterns including but not limited to:</p>
+            <p>YieGo monitors referral activity for suspicious patterns including but not limited to:</p>
             <ul className="list-disc pl-5 space-y-1 mt-1">
               <li>Same device fingerprint across referrer and referred accounts</li>
               <li>Unusual IP address clustering among referred accounts</li>
@@ -70,12 +70,12 @@ const ReferralTerms = () => {
 
           <section>
             <h2 className="text-base font-bold text-foreground mb-2">7. Admin Decision</h2>
-            <p>DataSika reserves the right to modify, suspend, or terminate the referral program at any time. All admin decisions regarding referral disputes are final.</p>
+            <p>YieGo reserves the right to modify, suspend, or terminate the referral program at any time. All admin decisions regarding referral disputes are final.</p>
           </section>
 
           <section>
             <h2 className="text-base font-bold text-foreground mb-2">8. Contact</h2>
-            <p>For questions about the referral program, contact <a href="mailto:support@datasika.com" className="text-primary hover:underline">support@datasika.com</a>.</p>
+            <p>For questions about the referral program, contact <a href="mailto:support@yiego.com" className="text-primary hover:underline">support@yiego.com</a>.</p>
           </section>
 
           <p className="text-xs text-muted-foreground/60 pt-2 border-t border-border">Last updated: February 2026</p>

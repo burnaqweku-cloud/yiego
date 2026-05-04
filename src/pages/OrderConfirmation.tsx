@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OrderReceiptFull from '@/components/paystack/OrderReceiptFull';
 import Logo from '@/components/layout/Logo';
-import DataSikaLoader from '@/components/ui/DataSikaLoader';
+import YieGoLoader from '@/components/ui/YieGoLoader';
 import DeliveryStatusPanel from '@/components/delivery/DeliveryStatusPanel';
 
 interface OrderData {
@@ -23,7 +23,7 @@ const OrderConfirmation = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('datasika_order');
+    const stored = sessionStorage.getItem('yiego_order');
     if (stored) {
       setOrder(JSON.parse(stored));
     } else {
@@ -35,7 +35,7 @@ const OrderConfirmation = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <DataSikaLoader size="lg" text="Loading order details…" />
+        <YieGoLoader size="lg" text="Loading order details…" />
       </div>
     );
   }

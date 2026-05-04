@@ -487,7 +487,7 @@ const AdminFinanceOverview = () => {
                   <div className="flex items-center gap-2 mb-2">
                     <Shield className="w-4 h-4 text-amber-500" />
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Liabilities</span>
-                    <button title="Funds held that belong to users/agents — not DataSika's money." className="ml-auto">
+                    <button title="Funds held that belong to users/agents — not YieGo's money." className="ml-auto">
                       <Info className="w-3.5 h-3.5 text-muted-foreground/50" />
                     </button>
                   </div>

@@ -266,7 +266,7 @@ const AdminNotificationSender = () => {
                     <Input
                       value={pushUrl}
                       onChange={e => setPushUrl(e.target.value)}
-                      placeholder="https://datasika.com/dashboard/orders"
+                      placeholder="https://yiego.com/dashboard/orders"
                       className="mt-1"
                     />
                     <p className="text-[11px] text-muted-foreground mt-1">

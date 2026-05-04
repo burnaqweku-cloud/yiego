@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Settings, Monitor, Info, Lock, Mail, Shield, Loader2, Eye, EyeOff, LogOut, Trophy, ChevronRight, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-const VIEWED_KEY = 'datasika_referral_viewed_at';
+const VIEWED_KEY = 'yiego_referral_viewed_at';
 
 const DashboardSettings = () => {
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ const DashboardSettings = () => {
   const handleToggle = (checked: boolean) => {
     setReduceMotion(checked);
     document.documentElement.classList.toggle('reduce-motion', checked);
-    try { localStorage.setItem('datasika_reduce_motion', checked ? '1' : '0'); } catch {}
+    try { localStorage.setItem('yiego_reduce_motion', checked ? '1' : '0'); } catch {}
   };
 
   const handleChangePassword = async () => {
@@ -96,7 +96,7 @@ const DashboardSettings = () => {
             </div>
             <div>
               <h3 className="font-display font-semibold text-sm">Display</h3>
-              <p className="text-xs text-muted-foreground">Customize how DataSika looks</p>
+              <p className="text-xs text-muted-foreground">Customize how YieGo looks</p>
             </div>
           </div>
 
@@ -216,7 +216,7 @@ const DashboardSettings = () => {
           </div>
           <div className="flex-1 text-left">
             <h3 className="font-display font-semibold text-sm">Connect Telegram</h3>
-            <p className="text-xs text-muted-foreground">Link your account to the DataSika bot</p>
+            <p className="text-xs text-muted-foreground">Link your account to the YieGo bot</p>
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
         </button>
@@ -257,10 +257,10 @@ const DashboardSettings = () => {
             </div>
           </div>
           <a
-            href="mailto:support@datasika.com"
+            href="mailto:support@yiego.com"
             className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
           >
-            <Mail className="w-4 h-4" /> support@datasika.com
+            <Mail className="w-4 h-4" /> support@yiego.com
           </a>
         </div>
 
@@ -276,7 +276,7 @@ const DashboardSettings = () => {
             </div>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            DataSika v2.0 — Your trusted platform for affordable data bundles in Ghana.
+            YieGo v2.0 — Your trusted platform for affordable data bundles in Ghana.
           </p>
         </div>
       </div>

@@ -45,8 +45,8 @@ const AMBER = {
   pillText: '#B45309',
 } as const;
 
-/* ── Show-once key (spec: datasika_seen_pending_deposit_ref) ── */
-const LS_SEEN_KEY = 'datasika_seen_pending_deposit_ref';
+/* ── Show-once key (spec: yiego_seen_pending_deposit_ref) ── */
+const LS_SEEN_KEY = 'yiego_seen_pending_deposit_ref';
 
 const DashboardWallet = () => {
   const { wallet, transactions, loading, refresh, refreshTransactions } = useWallet();
@@ -176,7 +176,7 @@ const DashboardWallet = () => {
         return;
       }
 
-      sessionStorage.setItem('datasika_paystack_meta', JSON.stringify({
+      sessionStorage.setItem('yiego_paystack_meta', JSON.stringify({
         purpose: 'deposit',
         reference,
         wallet_txn_id: txn.id,
@@ -258,7 +258,7 @@ const DashboardWallet = () => {
   }, [transactions]);
 
   // --- Show-once logic per pending deposit reference ---
-  // Uses localStorage key: datasika_seen_pending_deposit_ref
+  // Uses localStorage key: yiego_seen_pending_deposit_ref
   // Value = the reference string of the pending deposit that was already shown
   const pendingRef = pendingDeposit?.reference || pendingDeposit?.id || null;
 
@@ -289,7 +289,7 @@ const DashboardWallet = () => {
 
   const buildWaDepositLink = () => {
     const parts = [
-      `Hello DataSika Support, my name is ${userName || 'a DataSika user'}.`,
+      `Hello YieGo Support, my name is ${userName || 'a YieGo user'}.`,
       'I made a wallet deposit but it has not reflected automatically.',
     ];
     if (pendingDeposit?.amount_ghs) parts.push(`Amount: GHS ${Number(pendingDeposit.amount_ghs).toFixed(2)}.`);
@@ -300,7 +300,7 @@ const DashboardWallet = () => {
 
   const handleCopyDepositDetails = () => {
     const lines = [
-      'Hello DataSika Support, I need help with a pending wallet deposit.',
+      'Hello YieGo Support, I need help with a pending wallet deposit.',
       '',
       `Name: ${userName || 'N/A'}`,
       `Email: ${userEmail || 'N/A'}`,

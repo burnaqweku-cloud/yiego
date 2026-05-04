@@ -1,11 +1,11 @@
 /**
- * DataSika Premium Loading Indicator
+ * YieGo Premium Loading Indicator
  * A branded pulse-ring animation with gold accents
  */
 
 import { cn } from '@/lib/utils';
 
-export interface DataSikaLoaderProps {
+export interface YieGoLoaderProps {
   size?: 'sm' | 'md' | 'lg';
   text?: string;
   label?: string;
@@ -19,7 +19,7 @@ const sizeMap = {
   lg: { ring: 'w-20 h-20', dot: 'w-5 h-5', text: 'text-base' },
 };
 
-const DataSikaLoader = ({ size = 'md', text, label, className, fullScreen }: DataSikaLoaderProps) => {
+const YieGoLoader = ({ size = 'md', text, label, className, fullScreen }: YieGoLoaderProps) => {
   const s = sizeMap[size];
   const displayText = text || label;
 
@@ -48,4 +48,4 @@ const DataSikaLoader = ({ size = 'md', text, label, className, fullScreen }: Dat
   return loader;
 };
 
-export default DataSikaLoader;
+export default YieGoLoader;

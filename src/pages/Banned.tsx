@@ -2,7 +2,7 @@ import { ShieldAlert, Mail, Phone as PhoneIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const WHATSAPP_SUPPORT = 'https://wa.me/233501234567?text=Hi%2C%20my%20access%20has%20been%20restricted.%20Please%20help.';
-const SUPPORT_EMAIL = 'support@datasika.com';
+const SUPPORT_EMAIL = 'support@yiego.com';
 
 const Banned = () => {
   return (

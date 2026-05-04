@@ -13,8 +13,8 @@ const Privacy = () => {
   return (
     <Layout>
       <SEOHead
-        title="Privacy Policy | DataSika"
-        description="DataSika's privacy policy. Learn how we collect, use, store, and protect your personal data when you buy data bundles in Ghana. We never sell your information."
+        title="Privacy Policy | YieGo"
+        description="YieGo's privacy policy. Learn how we collect, use, store, and protect your personal data when you buy data bundles in Ghana. We never sell your information."
         path="/privacy"
       />
       <div className="container py-8 md:py-14 max-w-2xl">
@@ -34,7 +34,7 @@ const Privacy = () => {
               <Shield className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-display font-bold">DataSika Privacy Policy</h1>
+              <h1 className="text-2xl md:text-3xl font-display font-bold">YieGo Privacy Policy</h1>
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
                 <span>Effective Date: <strong className="text-foreground">{PRIVACY_EFFECTIVE_DATE}</strong></span>
                 <span>Last Updated: <strong className="text-foreground">{PRIVACY_LAST_UPDATED}</strong></span>
@@ -43,10 +43,10 @@ const Privacy = () => {
             </div>
           </div>
           <p className="mt-5 text-sm text-muted-foreground leading-relaxed">
-            DataSika ("we," "our," "us") respects your privacy and is committed to protecting your personal information. This Privacy Policy explains how we collect, use, store, share, and protect your information when you use our website, services, and related platforms (collectively, the "Service").
+            YieGo ("we," "our," "us") respects your privacy and is committed to protecting your personal information. This Privacy Policy explains how we collect, use, store, share, and protect your information when you use our website, services, and related platforms (collectively, the "Service").
           </p>
           <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-            By accessing or using DataSika, you agree to the collection and use of information in accordance with this Privacy Policy.
+            By accessing or using YieGo, you agree to the collection and use of information in accordance with this Privacy Policy.
           </p>
         </div>
 
@@ -54,7 +54,7 @@ const Privacy = () => {
         <div className="space-y-6">
 
           <Section number="1" title="Who We Are">
-            <p className="text-sm text-muted-foreground">DataSika is an online platform that enables users to purchase and send mobile data bundles across supported telecom networks in Ghana. DataSika may also provide an agent/reseller system that allows approved agents to sell data bundles through their own store links.</p>
+            <p className="text-sm text-muted-foreground">YieGo is an online platform that enables users to purchase and send mobile data bundles across supported telecom networks in Ghana. YieGo may also provide an agent/reseller system that allows approved agents to sell data bundles through their own store links.</p>
           </Section>
 
           <Section number="2" title="Information We Collect">
@@ -77,7 +77,7 @@ const Privacy = () => {
 
           <Section number="3" title="How We Use Your Information">
             <SubSection title="3.1 To Provide Our Services">
-              <p className="text-sm text-muted-foreground">Create and manage your DataSika account, process data bundle purchases and deliveries, validate payments and confirm transactions, display order history and status updates, and provide agent store and agent order tracking.</p>
+              <p className="text-sm text-muted-foreground">Create and manage your YieGo account, process data bundle purchases and deliveries, validate payments and confirm transactions, display order history and status updates, and provide agent store and agent order tracking.</p>
             </SubSection>
             <SubSection title="3.2 To Improve Our Platform">
               <p className="text-sm text-muted-foreground">Monitor platform performance, detect and fix bugs or errors, and improve user experience and delivery reliability.</p>
@@ -122,17 +122,17 @@ const Privacy = () => {
 
           <Section number="6" title="Agent System and Customer Data">
             <p className="text-sm text-muted-foreground">If you purchase from an agent store link, the agent may have access to limited information related to the order, such as order amount, order status, bundle type and size, and timestamp.</p>
-            <p className="text-sm text-muted-foreground mt-2">Agents do not have access to sensitive payment details such as your Mobile Money PIN, Paystack card details, or full payment authorization information. DataSika maintains a complete record of transactions for audit and support purposes.</p>
+            <p className="text-sm text-muted-foreground mt-2">Agents do not have access to sensitive payment details such as your Mobile Money PIN, Paystack card details, or full payment authorization information. YieGo maintains a complete record of transactions for audit and support purposes.</p>
           </Section>
 
           <Section number="7" title="Cookies and Tracking Technologies">
-            <p className="text-sm text-muted-foreground">DataSika may use cookies and similar tracking technologies to keep you logged in, improve website performance, remember your preferences, prevent fraudulent activity, and track user behavior to improve service quality.</p>
+            <p className="text-sm text-muted-foreground">YieGo may use cookies and similar tracking technologies to keep you logged in, improve website performance, remember your preferences, prevent fraudulent activity, and track user behavior to improve service quality.</p>
             <p className="text-sm text-muted-foreground mt-2">You can disable cookies in your browser settings, but some platform features may not work properly.</p>
           </Section>
 
           <Section number="8" title="Data Storage and Security">
             <p className="text-sm text-muted-foreground">We apply industry-standard measures to protect your information, including encrypted password storage, secure payment processing systems, firewalls and server protections, restricted access to sensitive information, and monitoring for suspicious activities.</p>
-            <p className="text-sm text-muted-foreground mt-2">However, no system is 100% secure. By using DataSika, you acknowledge that online transmission carries some risk.</p>
+            <p className="text-sm text-muted-foreground mt-2">However, no system is 100% secure. By using YieGo, you acknowledge that online transmission carries some risk.</p>
           </Section>
 
           <Section number="9" title="Data Retention">
@@ -153,25 +153,25 @@ const Privacy = () => {
           </Section>
 
           <Section number="11" title="Account Deletion">
-            <p className="text-sm text-muted-foreground">If you wish to delete your DataSika account, you may contact support. Once deleted, your personal profile may be removed, but transaction history may still be retained for compliance, fraud prevention, and accounting purposes.</p>
+            <p className="text-sm text-muted-foreground">If you wish to delete your YieGo account, you may contact support. Once deleted, your personal profile may be removed, but transaction history may still be retained for compliance, fraud prevention, and accounting purposes.</p>
           </Section>
 
           <Section number="12" title="Third-Party Links">
-            <p className="text-sm text-muted-foreground">DataSika may contain links to third-party websites or platforms. We are not responsible for the privacy practices or content of third-party websites.</p>
+            <p className="text-sm text-muted-foreground">YieGo may contain links to third-party websites or platforms. We are not responsible for the privacy practices or content of third-party websites.</p>
           </Section>
 
           <Section number="13" title="Children's Privacy">
-            <p className="text-sm text-muted-foreground">DataSika is not intended for use by individuals under the age of 18. We do not knowingly collect personal information from minors. If we become aware that a minor has provided personal data, we may delete it immediately.</p>
+            <p className="text-sm text-muted-foreground">YieGo is not intended for use by individuals under the age of 18. We do not knowingly collect personal information from minors. If we become aware that a minor has provided personal data, we may delete it immediately.</p>
           </Section>
 
           <Section number="14" title="Changes to This Privacy Policy">
-            <p className="text-sm text-muted-foreground">We may update this Privacy Policy from time to time. Any changes will be posted on this page, and the "Last Updated" date will be revised. Continued use of DataSika after updates means you accept the revised Privacy Policy.</p>
+            <p className="text-sm text-muted-foreground">We may update this Privacy Policy from time to time. Any changes will be posted on this page, and the "Last Updated" date will be revised. Continued use of YieGo after updates means you accept the revised Privacy Policy.</p>
           </Section>
 
           <Section number="15" title="Contact Us">
             <p className="text-sm text-muted-foreground">If you have any questions about this Privacy Policy or how your data is handled, you may contact us through our official support channels:</p>
             <ul className="list-disc pl-4 mt-2 space-y-1 text-sm text-muted-foreground marker:text-muted-foreground">
-              <li>Email: support@datasika.com</li>
+              <li>Email: support@yiego.com</li>
               <li><Link to="/support" className="text-primary hover:underline">Support Page</Link></li>
             </ul>
           </Section>

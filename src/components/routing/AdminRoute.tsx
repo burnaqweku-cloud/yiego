@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { ReactNode } from 'react';
-import DataSikaLoader from '@/components/ui/DataSikaLoader';
+import YieGoLoader from '@/components/ui/YieGoLoader';
 
 interface AdminRouteProps {
   children: ReactNode;
@@ -16,7 +16,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, loading, isAdmin, isStaff } = useAuth();
 
   if (loading) {
-    return <DataSikaLoader fullScreen label="Verifying access..." />;
+    return <YieGoLoader fullScreen label="Verifying access..." />;
   }
 
   if (!user) {

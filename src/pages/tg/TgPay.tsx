@@ -272,7 +272,7 @@ function prettyError(msg: string): string {
 }
 
 function FallbackOpenLink({ reference }: { reference: string }) {
-  const href = `https://datasika.com/track-order?ref=${encodeURIComponent(reference)}`;
+  const href = `https://yiego.com/track-order?ref=${encodeURIComponent(reference)}`;
   function open(e: React.MouseEvent) {
     e.preventDefault();
     const tg = getTg();
@@ -291,7 +291,7 @@ function FallbackOpenLink({ reference }: { reference: string }) {
 function Header({ subtitle }: { subtitle: string }) {
   return (
     <header>
-      <h1 className="text-xl font-semibold">DataSika · Pay for order</h1>
+      <h1 className="text-xl font-semibold">YieGo · Pay for order</h1>
       <p className="text-sm mt-1" style={{ color: "var(--tg-hint)" }}>{subtitle}</p>
     </header>
   );

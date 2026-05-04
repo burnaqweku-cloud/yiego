@@ -31,4 +31,4 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-Sitemap: https://datasika.com/sitemap.xml
+Sitemap: https://yiego.com/sitemap.xml

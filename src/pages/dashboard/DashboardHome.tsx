@@ -61,8 +61,8 @@ const DashboardHome = () => {
       <ReferralLaunchModal />
       <SiteNoticeBanner />
       <SEOHead
-        title="Dashboard | DataSika"
-        description="Manage your data orders, wallet, and account from your DataSika dashboard."
+        title="Dashboard | YieGo"
+        description="Manage your data orders, wallet, and account from your YieGo dashboard."
         path="/dashboard"
         noIndex
       />

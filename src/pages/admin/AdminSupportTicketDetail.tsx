@@ -653,7 +653,7 @@ const AdminSupportTicketDetail = () => {
                   <Mail className="w-4 h-4 text-primary" />
                   <h3 className="text-sm font-bold">Phase 2: Link Customer Account</h3>
                 </div>
-                <p className="text-xs text-muted-foreground mb-3">Enter the customer's DataSika account email to link and credit their wallet.</p>
+                <p className="text-xs text-muted-foreground mb-3">Enter the customer's YieGo account email to link and credit their wallet.</p>
                 <div className="flex gap-2">
                   <Input
                     className="h-9 text-sm flex-1"

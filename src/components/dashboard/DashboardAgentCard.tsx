@@ -46,7 +46,7 @@ const DashboardAgentCard = () => {
 
   useEffect(() => {
     try {
-      const draft = localStorage.getItem('datasika_agent_draft');
+      const draft = localStorage.getItem('yiego_agent_draft');
       if (draft) {
         const d = JSON.parse(draft);
         if (d.storeName?.trim()) setHasDraft(true);

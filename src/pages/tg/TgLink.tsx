@@ -116,7 +116,7 @@ export default function TgLink() {
 
   const fallbackHref = useMemo(() => {
     // "Open in browser" fallback — works even if Mini App webview is acting up
-    return "https://datasika.com/dashboard/connect-telegram";
+    return "https://yiego.com/dashboard/connect-telegram";
   }, []);
 
   // ─── Render ─────────────────────────────────────────────────────────
@@ -139,7 +139,7 @@ export default function TgLink() {
           <div className="font-semibold mb-1" style={{ color: "#991b1b" }}>❌ Verification failed</div>
           <div className="text-sm" style={{ color: "#7f1d1d" }}>{fatal}</div>
           <p className="text-xs mt-3" style={{ color: "var(--tg-hint)" }}>
-            If you opened this page outside Telegram, that is expected. Open it from the @datasika_bot.
+            If you opened this page outside Telegram, that is expected. Open it from the @yiego_bot.
           </p>
         </Card>
         <FallbackLink href={fallbackHref} />
@@ -166,7 +166,7 @@ export default function TgLink() {
             </div>
           )}
           <p className="text-sm mt-3" style={{ color: "#166534" }}>
-            Your DataSika account is now connected. You can use wallet payments,
+            Your YieGo account is now connected. You can use wallet payments,
             <code className="mx-1 px-1 rounded bg-white/60">/account</code>,
             <code className="mx-1 px-1 rounded bg-white/60">/deposit</code>, and faster checkout.
           </p>
@@ -182,11 +182,11 @@ export default function TgLink() {
   const submitting = phase === "submitting";
   return (
     <div className="space-y-4">
-      <Header subtitle="Sign in to link your DataSika account" />
+      <Header subtitle="Sign in to link your YieGo account" />
       <Card>
         <p className="text-sm leading-relaxed mb-3" style={{ color: "var(--tg-text)" }}>
-          <strong>Already have a DataSika account?</strong> Sign in below with the same
-          username/email and password you use on datasika.com.
+          <strong>Already have a YieGo account?</strong> Sign in below with the same
+          username/email and password you use on yiego.com.
         </p>
         <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--tg-hint)" }}>
           We just need to confirm the account is yours — your password is never stored.
@@ -216,7 +216,7 @@ export default function TgLink() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Your DataSika password"
+                placeholder="Your YieGo password"
                 disabled={submitting}
                 className="w-full rounded-xl px-3 py-2.5 pr-16 text-base outline-none border bg-white"
                 style={{ borderColor: "#cbd5e1", color: "#0f172a" }}
@@ -285,7 +285,7 @@ function prettyError(msg: string): string {
 function Header({ subtitle }: { subtitle: string }) {
   return (
     <header>
-      <h1 className="text-xl font-semibold">DataSika · Account Link</h1>
+      <h1 className="text-xl font-semibold">YieGo · Account Link</h1>
       <p className="text-sm mt-1" style={{ color: "var(--tg-hint)" }}>{subtitle}</p>
     </header>
   );
@@ -349,7 +349,7 @@ function SignupLine() {
   // external browser).
   return (
     <p className="text-xs text-center pt-1" style={{ color: "var(--tg-hint)" }}>
-      Don't have a DataSika account yet?{" "}
+      Don't have a YieGo account yet?{" "}
       <Link
         to="/tg/signup"
         className="font-medium underline"

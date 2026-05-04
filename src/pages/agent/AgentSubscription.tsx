@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 const FEATURES = [
-  { icon: Store, title: 'Public Storefront', desc: 'Your branded store at datasika.com/store/your-slug' },
+  { icon: Store, title: 'Public Storefront', desc: 'Your branded store at yiego.com/store/your-slug' },
   { icon: Tag, title: 'Custom Pricing', desc: 'Set your own selling prices and earn profit per order' },
   { icon: Wallet, title: 'Earnings Wallet', desc: 'Auto-credited profit on every delivered order' },
   { icon: BarChart3, title: 'Analytics & Reports', desc: 'Track sales, profit, customers and trends' },
@@ -56,8 +56,8 @@ const AgentSubscription = () => {
     <AgentGate>
       <AgentLayout>
         <SEOHead
-          title="Subscription | Agent Dashboard | DataSika"
-          description="Manage your DataSika agent subscription plan."
+          title="Subscription | Agent Dashboard | YieGo"
+          description="Manage your YieGo agent subscription plan."
           path="/agent/subscription"
           noIndex
         />
@@ -87,7 +87,7 @@ const AgentSubscription = () => {
                   </div>
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Agent Plan</p>
-                    <h2 className="text-base font-bold">DataSika Reseller</h2>
+                    <h2 className="text-base font-bold">YieGo Reseller</h2>
                   </div>
                 </div>
                 {isPromoActive && (

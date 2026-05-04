@@ -174,7 +174,7 @@ const AdminPWAUsers = () => {
             Home Screen Users
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Track users who installed the DataSika PWA to their home screen.
+            Track users who installed the YieGo PWA to their home screen.
           </p>
         </div>
 

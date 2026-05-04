@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Rocket, ChevronRight } from 'lucide-react';
 
-const STORAGE_KEY = 'datasika_referral_launch_seen';
+const STORAGE_KEY = 'yiego_referral_launch_seen';
 
 // Feature flag — set to true to re-enable the referral launch banner/modal.
 // Hidden temporarily per product decision; referral system backend remains active.

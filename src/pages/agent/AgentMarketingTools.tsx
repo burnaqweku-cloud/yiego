@@ -12,7 +12,7 @@ const AgentMarketingTools = () => {
   const { agent } = useAgent();
 
   // Canonical public store URL — used for all sharing/copying
-  const shareUrl = agent ? `https://datasika.com/store/${agent.store_slug}` : '';
+  const shareUrl = agent ? `https://yiego.com/store/${agent.store_slug}` : '';
 
   const copyLink = () => {
     navigator.clipboard.writeText(shareUrl);

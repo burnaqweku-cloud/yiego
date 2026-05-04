@@ -8,12 +8,12 @@ const DashboardSupport = () => {
 
   return (
     <DashboardLayout>
-      <SEOHead title="Support | DataSika" description="Get help with your DataSika account" path="/dashboard/support" noIndex />
+      <SEOHead title="Support | YieGo" description="Get help with your YieGo account" path="/dashboard/support" noIndex />
       <div className="p-4 md:p-6 max-w-2xl">
         <div className="space-y-3 mb-8">
           <h1 className="text-xl font-display font-bold">Support</h1>
           <p className="text-muted-foreground text-sm">
-            Chat with our AI assistant for instant help, or contact support@datasika.com
+            Chat with our AI assistant for instant help, or contact support@yiego.com
           </p>
         </div>
       </div>

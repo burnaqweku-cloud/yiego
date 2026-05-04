@@ -65,8 +65,8 @@ const Footer = () => {
             <h4 className="font-display font-semibold mb-5 text-[11px] uppercase tracking-widest text-muted-foreground/50">Support</h4>
             <ul className="space-y-3">
               <li>
-                <a href="mailto:support@datasika.com" className="text-sm text-muted-foreground/70 hover:text-primary transition-colors duration-150">
-                  support@datasika.com
+                <a href="mailto:support@yiego.com" className="text-sm text-muted-foreground/70 hover:text-primary transition-colors duration-150">
+                  support@yiego.com
                 </a>
               </li>
               <li>
@@ -82,7 +82,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-border mt-12 pt-6 flex flex-col md:flex-row justify-between items-center gap-3">
-          <p className="text-xs text-muted-foreground/50">© DataSika {new Date().getFullYear()} — Ghana's Cheapest Data Bundles. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground/50">© YieGo {new Date().getFullYear()} — Ghana's Cheapest Data Bundles. All rights reserved.</p>
           <div className="flex gap-6">
             <Link to="/terms" className="text-xs text-muted-foreground/40 hover:text-primary transition-colors duration-150">Terms of Service</Link>
             <Link to="/privacy" className="text-xs text-muted-foreground/40 hover:text-primary transition-colors duration-150">Privacy Policy</Link>

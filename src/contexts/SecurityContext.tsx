@@ -37,13 +37,13 @@ export const SecurityGateProvider = ({ children }: { children: ReactNode }) => {
 
   // Get device hash once
   useEffect(() => {
-    const stored = localStorage.getItem('datasika_device_hash');
+    const stored = localStorage.getItem('yiego_device_hash');
     if (stored) {
       deviceHashRef.current = stored;
     } else {
       generateDeviceFingerprint().then(hash => {
         deviceHashRef.current = hash;
-        localStorage.setItem('datasika_device_hash', hash);
+        localStorage.setItem('yiego_device_hash', hash);
       });
     }
   }, []);

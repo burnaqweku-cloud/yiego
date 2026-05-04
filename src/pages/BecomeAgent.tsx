@@ -35,7 +35,7 @@ const SELLING_CHANNELS = [
 
 const CUSTOMER_RANGES = ['0–10', '11–50', '51–100', '101–250', '251–500', '501–1,000', '1,000+'];
 
-const DRAFT_KEY = 'datasika_agent_draft';
+const DRAFT_KEY = 'yiego_agent_draft';
 
 /** Returns field-level errors for a given step */
 const getStepErrors = (
@@ -466,15 +466,15 @@ const BecomeAgent = () => {
   return (
     <Layout>
       <SEOHead
-        title="Become a DataSika Agent — Start Selling Data | DataSika"
-        description="Apply to become a DataSika agent. Sell MTN, Telecel & AirtelTigo data bundles and earn commissions. Apply in 3 minutes."
+        title="Become a YieGo Agent — Start Selling Data | YieGo"
+        description="Apply to become a YieGo agent. Sell MTN, Telecel & AirtelTigo data bundles and earn commissions. Apply in 3 minutes."
         path="/become-an-agent"
       />
       <div className="max-w-2xl mx-auto px-4 py-6 sm:py-8 animate-page-in">
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-            Become a DataSika Agent
+            Become a YieGo Agent
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Apply in 3 minutes — start earning today

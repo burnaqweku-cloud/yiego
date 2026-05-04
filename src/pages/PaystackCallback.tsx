@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import DepositReceipt from '@/components/paystack/DepositReceipt';
 import Logo from '@/components/layout/Logo';
 import OrderReceiptFull from '@/components/paystack/OrderReceiptFull';
-import DataSikaLoader from '@/components/ui/DataSikaLoader';
+import YieGoLoader from '@/components/ui/YieGoLoader';
 
 type VerifyState = 'loading' | 'success' | 'failed' | 'error';
 
@@ -100,7 +100,7 @@ const PaystackCallback = () => {
           message,
         });
 
-        sessionStorage.removeItem('datasika_paystack_meta');
+        sessionStorage.removeItem('yiego_paystack_meta');
 
         // ── Reward Activation Check ──────────────────────────────────
         // Backend already sets reward_activated=true after first paid order.
@@ -148,7 +148,7 @@ const PaystackCallback = () => {
       {/* Main content — centered vertically */}
       <div className="flex-1 flex items-center justify-center py-8 md:py-12">
         {state === 'loading' && (
-          <DataSikaLoader size="lg" text="Verifying your payment…" />
+          <YieGoLoader size="lg" text="Verifying your payment…" />
         )}
 
         {state === 'success' && result && (

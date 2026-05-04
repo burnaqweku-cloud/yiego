@@ -264,7 +264,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             <Menu className="w-5 h-5" />
           </button>
 
-          <h1 className="font-display font-bold text-sm truncate lg:hidden">DataSika Admin</h1>
+          <h1 className="font-display font-bold text-sm truncate lg:hidden">YieGo Admin</h1>
 
           {/* Global search */}
           <button

@@ -14,13 +14,13 @@ const ThemeContext = createContext<ThemeContextValue>({
   setTheme: () => {},
 });
 
-const STORAGE_KEY = 'datasika_theme';
+const STORAGE_KEY = 'yiego_theme';
 
 function getInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'dark';
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored === 'light' || stored === 'dark') return stored;
-  return 'light'; // DataSika default – light on first visit
+  return 'light'; // YieGo default – light on first visit
 }
 
 function applyTheme(theme: Theme) {

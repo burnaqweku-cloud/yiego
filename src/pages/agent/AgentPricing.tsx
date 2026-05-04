@@ -118,7 +118,7 @@ const AgentPricing = () => {
         <div className="flex items-start gap-2.5 bg-primary/5 rounded-xl p-3 border border-primary/10">
           <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            <strong>Base Price</strong> is the price DataSika sells to you. <strong>Your Profit</strong> is what you earn per order.
+            <strong>Base Price</strong> is the price YieGo sells to you. <strong>Your Profit</strong> is what you earn per order.
           </p>
         </div>
 

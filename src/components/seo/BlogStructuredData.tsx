@@ -17,23 +17,23 @@ const BlogStructuredData = ({ post }: { post: BlogPost }) => {
       '@type': 'Article',
       headline: post.title,
       description: post.meta_description || post.excerpt || '',
-      url: `https://datasika.com/blog/${post.slug}`,
-      image: post.cover_image_url || 'https://datasika.com/og-image.png',
+      url: `https://yiego.com/blog/${post.slug}`,
+      image: post.cover_image_url || 'https://yiego.com/og-image.png',
       datePublished: post.published_at || undefined,
       dateModified: post.updated_at || post.published_at || undefined,
       author: {
         '@type': 'Organization',
-        name: 'DataSika',
-        url: 'https://datasika.com',
+        name: 'YieGo',
+        url: 'https://yiego.com',
       },
       publisher: {
         '@type': 'Organization',
-        name: 'DataSika',
-        logo: { '@type': 'ImageObject', url: 'https://datasika.com/datasika-logo.png' },
+        name: 'YieGo',
+        logo: { '@type': 'ImageObject', url: 'https://yiego.com/datasika-logo.png' },
       },
       mainEntityOfPage: {
         '@type': 'WebPage',
-        '@id': `https://datasika.com/blog/${post.slug}`,
+        '@id': `https://yiego.com/blog/${post.slug}`,
       },
     };
 

@@ -29,7 +29,7 @@ const SupportSection = () => {
 
             <div className="flex items-center justify-center gap-2 mt-6 text-xs text-muted-foreground">
               <Clock className="w-3.5 h-3.5" />
-              <span>AI Support: 9 AM – 9 PM · support@datasika.com</span>
+              <span>AI Support: 9 AM – 9 PM · support@yiego.com</span>
             </div>
           </div>
         </div>

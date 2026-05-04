@@ -40,7 +40,7 @@ const AdminMaintenanceMode = () => {
   const { toast } = useToast();
   const [settings, setSettings] = useState<Settings>({
     site_maintenance_enabled: 'false',
-    maintenance_message: "We're improving DataSika for a better experience.",
+    maintenance_message: "We're improving YieGo for a better experience.",
     maintenance_eta: '',
     maintenance_bypass_token: '',
   });
@@ -177,7 +177,7 @@ const AdminMaintenanceMode = () => {
               onChange={(e) =>
                 setSettings((s) => ({ ...s, maintenance_message: e.target.value }))
               }
-              placeholder="We're improving DataSika for a better experience."
+              placeholder="We're improving YieGo for a better experience."
               className="resize-none"
             />
             <p className="text-xs text-muted-foreground">

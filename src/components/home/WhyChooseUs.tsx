@@ -15,12 +15,12 @@ const features = [
   {
     icon: Wallet,
     title: 'Genuinely Cheaper',
-    description: 'DataSika prices are much cheaper than buying direct from MTN, Telecel or AirtelTigo.',
+    description: 'YieGo prices are much cheaper than buying direct from MTN, Telecel or AirtelTigo.',
   },
   {
     icon: MessageCircle,
     title: 'Live Chat Support',
-    description: 'Talk to our team in-app or by email at support@datasika.com.',
+    description: 'Talk to our team in-app or by email at support@yiego.com.',
   },
   {
     icon: Clock,
@@ -40,8 +40,8 @@ const WhyChooseUs = () => {
   return (
     <section className="container py-16 md:py-24" ref={ref}>
       <div className="text-center mb-12 reveal-on-scroll">
-        <span className="inline-block text-xs font-bold uppercase tracking-widest text-primary mb-3">Why DataSika</span>
-        <h2 className="text-2xl md:text-3xl font-display font-bold mb-3">Why Choose DataSika</h2>
+        <span className="inline-block text-xs font-bold uppercase tracking-widest text-primary mb-3">Why YieGo</span>
+        <h2 className="text-2xl md:text-3xl font-display font-bold mb-3">Why Choose YieGo</h2>
         <p className="text-muted-foreground max-w-md mx-auto text-sm leading-relaxed">We make buying data bundles fast, simple, and reliable</p>
       </div>
 

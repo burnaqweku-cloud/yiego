@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-const CANONICAL_DOMAIN = 'https://datasika.com';
+const CANONICAL_DOMAIN = 'https://yiego.com';
 
 interface SEOHeadProps {
   title?: string;
@@ -11,9 +11,9 @@ interface SEOHeadProps {
 }
 
 const defaultMeta = {
-  title: 'DataSika | Buy Data Bundles in Ghana',
+  title: 'YieGo | Buy Data Bundles in Ghana',
   description:
-    'Buy affordable MTN, Telecel & AirtelTigo data bundles in Ghana. Fast delivery, secure payments, and easy ordering. DataSika is online 24/7.',
+    'Buy affordable MTN, Telecel & AirtelTigo data bundles in Ghana. Fast delivery, secure payments, and easy ordering. YieGo is online 24/7.',
   ogImage: `${CANONICAL_DOMAIN}/og-image.png`,
 };
 
@@ -74,7 +74,7 @@ const SEOHead = ({
     setMeta('property', 'og:url', canonicalUrl);
     setMeta('property', 'og:image', image);
     setMeta('property', 'og:type', 'website');
-    setMeta('property', 'og:site_name', 'DataSika');
+    setMeta('property', 'og:site_name', 'YieGo');
     setMeta('property', 'og:locale', 'en_GH');
 
     // Twitter

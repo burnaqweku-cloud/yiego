@@ -13,8 +13,8 @@ const Index = () => {
   return (
     <Layout>
       <SEOHead
-        title="DataSika — Ghana's Cheapest Data Bundles | Buy MTN, Telecel & AirtelTigo Online"
-        description="Buy the cheapest MTN, Telecel & AirtelTigo data bundles in Ghana on DataSika. Instant delivery, lowest prices, plus earn money as a data reseller. Top up now."
+        title="YieGo — Ghana's Cheapest Data Bundles | Buy MTN, Telecel & AirtelTigo Online"
+        description="Buy the cheapest MTN, Telecel & AirtelTigo data bundles in Ghana on YieGo. Instant delivery, lowest prices, plus earn money as a data reseller. Top up now."
         path="/"
       />
       <HeroSection />

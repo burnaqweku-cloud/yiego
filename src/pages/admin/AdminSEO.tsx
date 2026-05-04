@@ -71,11 +71,11 @@ const AdminSEO = () => {
               <MapPin className="w-4 h-4 text-primary" />
               <h3 className="font-semibold text-sm">Sitemap</h3>
             </div>
-            <a href="https://datasika.com/sitemap.xml" target="_blank" rel="noopener noreferrer"
+            <a href="https://yiego.com/sitemap.xml" target="_blank" rel="noopener noreferrer"
               className="text-sm text-primary hover:underline flex items-center gap-1">
               sitemap.xml <ExternalLink className="w-3 h-3" />
             </a>
-            <a href="https://datasika.com/robots.txt" target="_blank" rel="noopener noreferrer"
+            <a href="https://yiego.com/robots.txt" target="_blank" rel="noopener noreferrer"
               className="text-sm text-primary hover:underline flex items-center gap-1 mt-1">
               robots.txt <ExternalLink className="w-3 h-3" />
             </a>

@@ -21,7 +21,7 @@ interface DiagnosticResult {
   snapshots_present: boolean;
   profit_credited: boolean;
   agent_profit_at_purchase: number | null;
-  datasika_profit_at_purchase: number | null;
+  yiego_profit_at_purchase: number | null;
   supplier_cost_at_purchase: number | null;
   agent_base_price_at_purchase: number | null;
   agent_store_price_at_purchase: number | null;
@@ -81,7 +81,7 @@ const AdminOrderDiagnostics = () => {
           snapshots_present: snapshotsPresent,
           profit_credited: Boolean(ao.profit_credited),
           agent_profit_at_purchase: ao.agent_profit_at_purchase != null ? Number(ao.agent_profit_at_purchase) : null,
-          datasika_profit_at_purchase: ao.datasika_profit_at_purchase != null ? Number(ao.datasika_profit_at_purchase) : null,
+          yiego_profit_at_purchase: ao.yiego_profit_at_purchase != null ? Number(ao.yiego_profit_at_purchase) : null,
           supplier_cost_at_purchase: ao.supplier_cost_at_purchase != null ? Number(ao.supplier_cost_at_purchase) : null,
           agent_base_price_at_purchase: ao.agent_base_price_at_purchase != null ? Number(ao.agent_base_price_at_purchase) : null,
           agent_store_price_at_purchase: ao.agent_store_price_at_purchase != null ? Number(ao.agent_store_price_at_purchase) : null,
@@ -112,7 +112,7 @@ const AdminOrderDiagnostics = () => {
           snapshots_present: true, // normal orders use cost_price_ghs
           profit_credited: false, // N/A for normal orders
           agent_profit_at_purchase: null,
-          datasika_profit_at_purchase: null,
+          yiego_profit_at_purchase: null,
           supplier_cost_at_purchase: null,
           agent_base_price_at_purchase: null,
           agent_store_price_at_purchase: null,
@@ -133,7 +133,7 @@ const AdminOrderDiagnostics = () => {
   };
 
   const handleBackfill = async () => {
-    if (!window.confirm('This will recalculate agent profits for orders with missing/incorrect snapshot data. Uses the correct DataSika Agent Base Price from pricing_overrides. This is safe and idempotent. Continue?')) return;
+    if (!window.confirm('This will recalculate agent profits for orders with missing/incorrect snapshot data. Uses the correct YieGo Agent Base Price from pricing_overrides. This is safe and idempotent. Continue?')) return;
     setBackfilling(true);
     setBackfillLogs([]);
     setBackfillSummary(null);
@@ -154,7 +154,7 @@ const AdminOrderDiagnostics = () => {
       const orders = (candidates || []) as any[];
 
       // Preload all agent pricing overrides from pricing_overrides table
-      // This is the authoritative DataSika Agent Base Price source
+      // This is the authoritative YieGo Agent Base Price source
       const { data: allOverrides } = await supabase
         .from('pricing_overrides')
         .select('product_id, manual_price, pricing_mode')
@@ -183,7 +183,7 @@ const AdminOrderDiagnostics = () => {
           continue;
         }
 
-        // Resolve DataSika Agent Base Price:
+        // Resolve YieGo Agent Base Price:
         // 1. From pricing_overrides (admin-set, authoritative)
         // 2. From agent_cost_price stored on the order (may have been retail price — flagged)
         // 3. From products.agent_price_ghs
@@ -221,7 +221,7 @@ const AdminOrderDiagnostics = () => {
         const sellingPrice = Number(o.agent_selling_price) || Number(o.agent_store_price_at_purchase) || 0;
         const profitComputed = Math.max(0, Math.round((sellingPrice - resolvedBasePrice) * 100) / 100);
 
-        // Supplier cost from product (admin-only, for DataSika profit)
+        // Supplier cost from product (admin-only, for YieGo profit)
         const supplierCostFromProduct = product?.cost_price_ghs != null && Number(product.cost_price_ghs) > 0
           ? Number(product.cost_price_ghs)
           : (Number(o.supplier_cost_at_purchase) || 0);
@@ -233,7 +233,7 @@ const AdminOrderDiagnostics = () => {
           agent_profit_at_purchase: o.agent_profit_at_purchase,
           agent_base_price_at_purchase: o.agent_base_price_at_purchase,
           agent_store_price_at_purchase: o.agent_store_price_at_purchase,
-          datasika_profit_at_purchase: o.datasika_profit_at_purchase,
+          yiego_profit_at_purchase: o.yiego_profit_at_purchase,
           profit_credited: o.profit_credited,
         };
 
@@ -245,7 +245,7 @@ const AdminOrderDiagnostics = () => {
           updates.agent_cost_price = resolvedBasePrice; // Fix the stored base price too
           updates.profit_ghs = profitComputed;          // Fix the legacy profit field
           if (supplierCostFromProduct > 0) updates.supplier_cost_at_purchase = supplierCostFromProduct;
-          if (datasikaProfitComputed != null) updates.datasika_profit_at_purchase = datasikaProfitComputed;
+          if (datasikaProfitComputed != null) updates.yiego_profit_at_purchase = datasikaProfitComputed;
           repaired++;
         }
 
@@ -392,7 +392,7 @@ const AdminOrderDiagnostics = () => {
                       <Row label="Agent Base Price (snapshot)" value={diagnostic.agent_base_price_at_purchase != null ? formatPrice(diagnostic.agent_base_price_at_purchase) : '—'} />
                       <Row label="Agent Store Price (snapshot)" value={diagnostic.agent_store_price_at_purchase != null ? formatPrice(diagnostic.agent_store_price_at_purchase) : '—'} />
                       <Row label="Agent Profit (snapshot)" value={diagnostic.agent_profit_at_purchase != null ? <span className="text-success font-semibold">+{formatPrice(diagnostic.agent_profit_at_purchase)}</span> : '—'} />
-                      <Row label="DataSika Profit (snapshot)" value={diagnostic.datasika_profit_at_purchase != null ? <span className="text-primary font-semibold">+{formatPrice(diagnostic.datasika_profit_at_purchase)}</span> : 'Unavailable'} />
+                      <Row label="YieGo Profit (snapshot)" value={diagnostic.yiego_profit_at_purchase != null ? <span className="text-primary font-semibold">+{formatPrice(diagnostic.yiego_profit_at_purchase)}</span> : 'Unavailable'} />
                       <Row label="Supplier Cost (snapshot)" value={diagnostic.supplier_cost_at_purchase != null ? formatPrice(diagnostic.supplier_cost_at_purchase) : 'Not stored'} />
                       <Row label="Profit (legacy field)" value={diagnostic.profit_ghs != null ? formatPrice(diagnostic.profit_ghs) : '—'} />
                     </div>
