@@ -43,53 +43,63 @@ const DashboardOrders = () => {
 
   const statusOptions = ['all', 'Processing', 'Delivered', 'Failed', 'Pending', 'Pending Approval', 'Rejected'];
 
+  // Quick counts for status tabs
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: orders.length };
+    statusOptions.slice(1).forEach((s) => { c[s] = orders.filter((o) => o.status === s).length; });
+    return c;
+  }, [orders]);
+
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-4 max-w-3xl">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-display font-bold">My Orders</h1>
-          <button onClick={refresh} className="p-2 rounded-lg hover:bg-muted transition-colors duration-150 btn-press">
+      <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
+        {/* Page header */}
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">Activity</p>
+            <h1 className="text-2xl md:text-3xl font-display font-extrabold tracking-tight mt-1">My orders</h1>
+            <p className="text-xs text-muted-foreground mt-1">{orders.length} order{orders.length === 1 ? '' : 's'} across all services.</p>
+          </div>
+          <button onClick={refresh} className="p-2.5 rounded-full border border-border hover:bg-muted/50 transition-colors" aria-label="Refresh">
             <RefreshCw className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
 
-        {/* Search & Filter */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by Order ID or phone..."
-              className="pl-9 h-10"
-            />
-          </div>
-          <div className="flex gap-1.5 flex-wrap">
-            {/* Type filter */}
+        {/* Status pill rail */}
+        <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 pb-1 snap-row">
+          <button
+            onClick={() => setTypeFilter(typeFilter === 'reward' ? 'all' : 'reward')}
+            className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all border ${
+              typeFilter === 'reward' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:text-foreground'
+            }`}
+          >
+            <Gift className="w-3 h-3" /> Rewards
+          </button>
+          {statusOptions.map((s) => (
             <button
-              onClick={() => setTypeFilter(typeFilter === 'reward' ? 'all' : 'reward')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 btn-press flex items-center gap-1 ${
-                typeFilter === 'reward' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-secondary text-secondary-foreground hover:bg-muted'
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-semibold transition-all border ${
+                statusFilter === s
+                  ? 'bg-foreground text-background border-foreground'
+                  : 'bg-card text-muted-foreground border-border hover:text-foreground'
               }`}
             >
-              <Gift className="w-3 h-3" />
-              Rewards
+              {s === 'all' ? 'All' : s}
+              <span className={`text-[10px] tabular px-1.5 py-0.5 rounded-full ${statusFilter === s ? 'bg-background/20' : 'bg-muted'}`}>{counts[s] || 0}</span>
             </button>
-            {/* Status filters */}
-            {statusOptions.map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 btn-press ${
-                  statusFilter === s
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-secondary text-secondary-foreground hover:bg-muted'
-                }`}
-              >
-                {s === 'all' ? 'All' : s}
-              </button>
-            ))}
-          </div>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by order ID or phone number…"
+            className="pl-11 h-11 rounded-2xl"
+          />
         </div>
 
         {/* Orders List */}

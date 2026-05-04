@@ -317,57 +317,71 @@ const DashboardWallet = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-4 max-w-2xl">
-        <h1 className="text-xl font-display font-bold tracking-tight">Wallet</h1>
+      <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
+        {/* Page header */}
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">My account</p>
+            <h1 className="text-2xl md:text-3xl font-display font-extrabold tracking-tight mt-1">Wallet</h1>
+          </div>
+          <Link to="/dashboard/transactions" className="text-xs font-semibold text-primary hover:underline underline-offset-4 inline-flex items-center gap-1">
+            All transactions <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
 
-        {/* Balance Card */}
-        <div className="gradient-gold rounded-3xl p-6 relative overflow-hidden shadow-[0_20px_50px_-20px_hsl(var(--primary)/0.5)]">
-          <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/10 blur-2xl -mr-12 -mt-12 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/5 blur-xl -ml-6 -mb-6 pointer-events-none" />
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-xl bg-white/15 ring-1 ring-white/20 flex items-center justify-center backdrop-blur-sm">
-                <Wallet className="w-4 h-4 text-primary-foreground" />
+        {/* Hero balance — split layout */}
+        <div className="grid lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-7 relative overflow-hidden rounded-[2rem] border border-primary/30 p-6 md:p-8 bg-gradient-to-br from-primary/20 via-card to-card">
+            <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-primary/30 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-9 h-9 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center">
+                  <Wallet className="w-4 h-4 text-primary" />
+                </div>
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Available balance</span>
               </div>
-              <span className="text-sm font-medium text-primary-foreground/80">Available Balance</span>
+              {loading ? (
+                <Skeleton className="h-12 w-48" />
+              ) : (
+                <p className="text-5xl md:text-6xl font-display font-extrabold tracking-[-0.025em] tabular">{formatPrice(wallet?.balance_ghs || 0)}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-2">Fund instantly via Paystack — MoMo, card or bank.</p>
+              <div className="flex flex-wrap gap-2 mt-6">
+                <Button onClick={() => setDepositOpen(true)} className="rounded-full h-11 px-6 font-bold gap-2">
+                  <ArrowDownCircle className="w-4 h-4" /> Top up wallet
+                </Button>
+                <Link to="/buy-data">
+                  <Button variant="outline" className="rounded-full h-11 px-6 font-semibold gap-2">
+                    Buy data <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
             </div>
-            {loading ? (
-              <Skeleton className="h-10 w-40 bg-white/20" />
-            ) : (
-              <p className="text-4xl font-display font-bold text-primary-foreground tracking-tight tabular">{formatPrice(wallet?.balance_ghs || 0)}</p>
-            )}
-            <div className="flex gap-3 mt-5">
-              <Button onClick={() => setDepositOpen(true)} className="flex-1 gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm text-primary-foreground border border-white/20 h-11 font-semibold rounded-xl shadow-[inset_0_1px_0_hsl(0_0%_100%/0.15)]">
-                <ArrowDownCircle className="w-4 h-4" />
-                Deposit
-              </Button>
+          </div>
+
+          {/* Side metrics column */}
+          <div className="lg:col-span-5 grid grid-cols-2 lg:grid-cols-1 gap-3">
+            <div className="rounded-2xl border border-border bg-card p-4 flex flex-col">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                <ArrowDownCircle className="w-3.5 h-3.5 text-success" /> Total deposited
+              </div>
+              <p className="text-xl md:text-2xl font-display font-extrabold tabular mt-2 text-success">
+                {loading ? '—' : formatPrice(totalDeposits)}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-auto">Across all confirmed top-ups</p>
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-4 flex flex-col">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                <ArrowUpCircle className="w-3.5 h-3.5 text-destructive" /> Wallet payments
+              </div>
+              <p className="text-xl md:text-2xl font-display font-extrabold tabular mt-2">
+                {loading ? '—' : formatPrice(totalWalletPayments)}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-auto">Paid from your YieGo balance</p>
             </div>
           </div>
         </div>
-
-        {/* Summary Stats */}
-        {!loading && (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="surface-premium rounded-2xl p-3.5">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <div className="w-6 h-6 rounded-lg bg-success/10 ring-1 ring-success/20 flex items-center justify-center">
-                  <ArrowDownCircle className="w-3 h-3 text-success" />
-                </div>
-                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">Total Deposited</span>
-              </div>
-              <p className="text-lg font-display font-bold text-success tabular tracking-tight">{formatPrice(totalDeposits)}</p>
-            </div>
-            <div className="surface-premium rounded-2xl p-3.5">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <div className="w-6 h-6 rounded-lg bg-destructive/10 ring-1 ring-destructive/20 flex items-center justify-center">
-                  <ArrowUpCircle className="w-3 h-3 text-destructive" />
-                </div>
-                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">Wallet Payments</span>
-              </div>
-              <p className="text-lg font-display font-bold tabular tracking-tight">{formatPrice(totalWalletPayments)}</p>
-            </div>
-          </div>
-        )}
 
         {/* ── Pending Deposit Assistance Card — shown only ONCE per pending deposit ref ── */}
         {showPendingSupportCard && (

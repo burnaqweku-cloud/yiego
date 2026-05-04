@@ -3,26 +3,21 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, Users, Wallet, Package, Percent,
   Zap, Bell, Activity, Settings, ScrollText, LifeBuoy, Menu, X,
-  ArrowLeft, Search, BarChart3, TestTube, CreditCard, MessageSquare, Download, CheckCircle2, Smartphone, WrenchIcon, Gift, ShieldAlert, Phone, Shield, DollarSign, PieChart, HeadphonesIcon, Layers, Bot, Sparkles
+  ArrowLeft, Search, BarChart3, TestTube, CreditCard, MessageSquare, Download, CheckCircle2, Smartphone, WrenchIcon, Gift, ShieldAlert, Phone, Shield, DollarSign, PieChart, HeadphonesIcon, Layers, Bot, Sparkles, ChevronDown
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import AdminSearchDialog from '@/components/admin/AdminSearchDialog';
 import Logo from '@/components/layout/Logo';
-import AnimatedBackground from '@/components/layout/AnimatedBackground';
 import PageTransition from '@/components/layout/PageTransition';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 
-interface NavGroup {
-  label: string;
-  items: NavItem[];
-}
-
+interface NavGroup { label: string; items: NavItem[]; }
 interface NavItem {
   to: string;
   icon: typeof LayoutDashboard;
   label: string;
   exact?: boolean;
-  adminOnly?: boolean; // hidden from staff
+  adminOnly?: boolean;
   badge?: string;
 }
 
@@ -84,9 +79,6 @@ const navGroups: NavGroup[] = [
     items: [
       { to: '/admin/agents', icon: LayoutDashboard, label: 'Agent Overview', exact: true },
       { to: '/admin/agents/applications', icon: ScrollText, label: 'Applications' },
-      // Agent Directory hidden — superseded by Agent Overview + Active Agents views.
-      // Route still works at /admin/agents/list for direct access. Restore by uncommenting:
-      // { to: '/admin/agents/list', icon: Users, label: 'Agent Directory' },
       { to: '/admin/agents/withdrawals', icon: Wallet, label: 'Withdrawals', adminOnly: true },
       { to: '/admin/agents/activity', icon: Activity, label: 'Activity & Fraud' },
       { to: '/admin/agents/profit-diagnostics', icon: Activity, label: 'Profit Diagnostics', adminOnly: true },
@@ -142,26 +134,27 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-interface AdminLayoutProps {
-  children: ReactNode;
-}
-
-const AdminLayout = ({ children }: AdminLayoutProps) => {
+const AdminLayout = ({ children }: { children: ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const location = useLocation();
   const { isAdmin, profile, userRole } = useAuth();
 
   const filteredGroups = useMemo(() => {
     if (isAdmin) return navGroups;
-    // Staff: filter out adminOnly items and groups that become empty
     return navGroups
-      .map(group => ({
-        ...group,
-        items: group.items.filter(item => !item.adminOnly),
-      }))
-      .filter(group => group.items.length > 0);
+      .map((group) => ({ ...group, items: group.items.filter((i) => !i.adminOnly) }))
+      .filter((group) => group.items.length > 0);
   }, [isAdmin]);
+
+  // Auto-detect active group based on path
+  const currentGroup = useMemo(() => {
+    for (const g of filteredGroups) {
+      if (g.items.some((i) => (i.exact ? location.pathname === i.to : location.pathname.startsWith(i.to)))) return g.label;
+    }
+    return filteredGroups[0]?.label;
+  }, [filteredGroups, location.pathname]);
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
@@ -170,136 +163,141 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
   return (
     <div className="min-h-screen bg-background flex relative">
-      <AnimatedBackground />
-
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-foreground/50 z-40 lg:hidden" onClick={closeSidebar} />
+        <div className="fixed inset-0 bg-foreground/50 z-40 lg:hidden backdrop-blur-sm" onClick={closeSidebar} />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — group rail + items panel */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col transition-transform duration-300 ease-out lg:relative lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex bg-card border-r border-border transition-transform duration-300 ease-out lg:relative lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Logo */}
-        <div className="h-14 px-4 border-b border-border flex items-center justify-between shrink-0">
-          <Link to="/admin" className="flex items-center" onClick={closeSidebar}>
-            <Logo height="h-8" />
+        {/* Group rail (icons + abbreviated labels) */}
+        <div className="w-[88px] flex flex-col bg-card/60 border-r border-border/60 shrink-0">
+          <Link to="/admin" className="h-16 flex items-center justify-center border-b border-border/60" onClick={closeSidebar}>
+            <Logo height="h-7" />
           </Link>
-          <button onClick={closeSidebar} className="lg:hidden p-1.5 rounded-lg hover:bg-muted transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Role badge */}
-        <div className="px-4 py-2.5 border-b border-border">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-xs font-bold text-primary">
-                {(profile?.full_name || 'A')[0].toUpperCase()}
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold truncate">{profile?.full_name || 'Admin'}</p>
-              <p className="text-[10px] text-muted-foreground capitalize">{userRole || 'admin'}</p>
-            </div>
+          <div className="flex-1 overflow-y-auto py-3 space-y-1.5 scrollbar-thin">
+            {filteredGroups.map((g) => {
+              const Icon = g.items[0]?.icon || LayoutDashboard;
+              const active = (activeGroup ?? currentGroup) === g.label;
+              return (
+                <button
+                  key={g.label}
+                  onClick={() => setActiveGroup(g.label)}
+                  className={`w-full flex flex-col items-center gap-1 px-1 py-2.5 mx-2 rounded-xl transition-all ${
+                    active ? 'bg-primary/12 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="text-[9px] font-bold tracking-wide uppercase leading-tight text-center">
+                    {g.label.split(' ')[0]}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-2">
-          {filteredGroups.map((group) => (
-            <div key={group.label} className="mb-1">
-              <p className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                {group.label}
-              </p>
-              <div className="px-2 space-y-0.5">
-                {group.items.map((item) => (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    onClick={closeSidebar}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors duration-150 ${
-                      isActive(item.to, item.exact)
-                        ? 'bg-primary/10 text-primary font-semibold'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                    }`}
-                  >
-                    <item.icon className={`w-4 h-4 shrink-0 ${isActive(item.to, item.exact) ? '' : 'opacity-70'}`} />
-                    <span className="truncate">{item.label}</span>
-                    {item.badge && (
-                      <span className="ml-auto text-[10px] font-bold bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-full">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                ))}
+        {/* Items panel */}
+        <div className="w-60 flex flex-col">
+          <div className="h-16 px-5 border-b border-border/60 flex items-center justify-between">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">{activeGroup ?? currentGroup}</p>
+            <button onClick={closeSidebar} className="lg:hidden p-1.5 rounded-lg hover:bg-muted">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+            {(filteredGroups.find((g) => g.label === (activeGroup ?? currentGroup))?.items || []).map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={closeSidebar}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors ${
+                  isActive(item.to, item.exact)
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-foreground/75 hover:text-foreground hover:bg-muted/60'
+                }`}
+              >
+                <item.icon className="w-4 h-4 shrink-0" />
+                <span className="truncate">{item.label}</span>
+                {item.badge && (
+                  <span className="ml-auto text-[10px] font-bold bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-full">
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Profile + back */}
+          <div className="border-t border-border/60 p-3 space-y-1.5">
+            <div className="flex items-center gap-2.5 px-2 py-2">
+              <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-xs font-bold text-primary">
+                {(profile?.full_name || 'A')[0].toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold truncate">{profile?.full_name || 'Admin'}</p>
+                <p className="text-[10px] text-muted-foreground capitalize">{userRole || 'admin'}</p>
               </div>
             </div>
-          ))}
-        </nav>
-
-        {/* Footer */}
-        <div className="p-2 border-t border-border shrink-0">
-          <Link
-            to="/"
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Site
-          </Link>
+            <Link
+              to="/"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to site
+            </Link>
+          </div>
         </div>
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        {/* Top bar */}
-        <header className="h-14 border-b border-border bg-card/90 backdrop-blur-md flex items-center px-4 gap-3 shrink-0 sticky top-0 z-30">
+      <div className="flex-1 flex flex-col min-w-0 relative">
+        {/* Top operations bar */}
+        <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center px-4 md:px-6 gap-3 shrink-0 sticky top-0 z-30">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-1.5 rounded-lg hover:bg-muted transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+            aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
           </button>
 
-          <h1 className="font-display font-bold text-sm truncate lg:hidden">YieGo Admin</h1>
+          <div className="hidden lg:flex items-center gap-2 text-xs">
+            <span className="font-semibold text-muted-foreground">YieGo</span>
+            <span className="text-muted-foreground/50">/</span>
+            <span className="font-bold uppercase tracking-wider text-foreground">{activeGroup ?? currentGroup}</span>
+          </div>
 
-          {/* Global search */}
+          {/* Search */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/60 hover:bg-muted text-muted-foreground text-sm transition-colors flex-1 max-w-sm"
+            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-full bg-muted/50 hover:bg-muted text-muted-foreground text-xs transition-colors flex-1 max-w-md ml-auto lg:ml-6"
           >
             <Search className="w-3.5 h-3.5" />
-            <span className="text-xs">Search orders, users...</span>
-            <kbd className="ml-auto text-[10px] font-mono bg-background px-1.5 py-0.5 rounded border border-border">
-              ⌘K
-            </kbd>
+            <span>Search orders, users, references…</span>
+            <kbd className="ml-auto text-[10px] font-mono bg-background px-1.5 py-0.5 rounded border border-border">⌘K</kbd>
           </button>
-
-          {/* Mobile search icon */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="sm:hidden p-1.5 rounded-lg hover:bg-muted transition-colors ml-auto"
+            className="sm:hidden p-2 rounded-lg hover:bg-muted transition-colors ml-auto"
+            aria-label="Search"
           >
             <Search className="w-5 h-5 text-muted-foreground" />
           </button>
 
-          {/* Theme toggle — always visible */}
-          <ThemeToggle size="sm" className="shrink-0 hidden sm:flex" />
-          <ThemeToggle size="sm" className="shrink-0 sm:hidden" />
+          <ThemeToggle size="sm" className="shrink-0" />
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
-          <PageTransition>
-            {children}
-          </PageTransition>
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
 
-      {/* Global search dialog */}
       <AdminSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
