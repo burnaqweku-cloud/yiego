@@ -6,23 +6,27 @@ interface ThemeToggleProps {
   size?: 'sm' | 'md';
 }
 
+/**
+ * Premium pill-style theme toggle with animated icon swap.
+ */
 export function ThemeToggle({ className = '', size = 'md' }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme();
-  const iconSize = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
-  const btnSize = size === 'sm' ? 'w-8 h-8' : 'w-9 h-9';
+  const isDark = theme === 'dark';
+  const dim = size === 'sm' ? 'w-8 h-8' : 'w-9 h-9';
 
   return (
     <button
       onClick={toggleTheme}
-      className={`${btnSize} rounded-lg flex items-center justify-center transition-colors duration-150 hover:bg-muted text-muted-foreground hover:text-foreground ${className}`}
-      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Light mode' : 'Dark mode'}
+      className={`${dim} relative rounded-full border border-border/70 bg-card/70 backdrop-blur-md text-foreground/70 hover:text-foreground hover:border-primary/40 transition-all duration-200 flex items-center justify-center overflow-hidden group ${className}`}
     >
-      {theme === 'dark' ? (
-        <Sun className={iconSize} />
-      ) : (
-        <Moon className={iconSize} />
-      )}
+      <Sun
+        className={`absolute w-4 h-4 transition-all duration-300 ${isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-45 scale-75'}`}
+      />
+      <Moon
+        className={`absolute w-4 h-4 transition-all duration-300 ${isDark ? 'opacity-0 rotate-45 scale-75' : 'opacity-100 rotate-0 scale-100'}`}
+      />
     </button>
   );
 }

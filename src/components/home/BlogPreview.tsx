@@ -30,7 +30,7 @@ const BlogPreview = () => {
             From the Blog
           </span>
           <h2 className="text-2xl md:text-3xl font-display font-bold tracking-tight">
-            Data bundle tips & guides
+            Insights, tips & guides
           </h2>
         </div>
         <Link

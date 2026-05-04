@@ -1,36 +1,36 @@
-import { Zap, Shield, Wallet, MessageCircle, Clock, BarChart3 } from 'lucide-react';
+import { Zap, Shield, Wallet, MessageCircle, BarChart3, Layers } from 'lucide-react';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 const features = [
   {
-    icon: Zap,
-    title: 'Fast Delivery',
-    description: 'Most bundles arrive within a few minutes. In rare cases delivery may take longer — failed orders are auto-refunded.',
+    icon: Layers,
+    title: 'One wallet, every service',
+    description: 'Data, airtime, bills, social boosting and more — managed from one balance, one history, one account.',
   },
   {
-    icon: Shield,
-    title: 'Secure Checkout',
-    description: 'Payments processed securely via Paystack. Your details stay protected.',
+    icon: Zap,
+    title: 'Built for speed',
+    description: 'Most orders complete in seconds. Failed orders are auto-refunded back to your wallet — no chasing.',
   },
   {
     icon: Wallet,
-    title: 'Genuinely Cheaper',
-    description: 'YieGo prices are much cheaper than buying direct from MTN, Telecel or AirtelTigo.',
+    title: 'Genuinely cheaper',
+    description: 'YieGo prices undercut buying direct from MTN, Telecel and AirtelTigo. Save on every order.',
   },
   {
-    icon: MessageCircle,
-    title: 'Live Chat Support',
-    description: 'Talk to our team in-app or by email at support@yiego.com.',
-  },
-  {
-    icon: Clock,
-    title: '24/7 Availability',
-    description: 'Our platform is always online. Buy data bundles anytime, anywhere.',
+    icon: Shield,
+    title: 'Secure by default',
+    description: 'Paystack-grade payments, encrypted wallet, and strict server-side verification on every transaction.',
   },
   {
     icon: BarChart3,
-    title: 'Order Tracking',
-    description: 'Track every order in your dashboard or with your Order ID.',
+    title: 'Track everything',
+    description: 'Live order status, delivery ETAs, and a full transaction history available anytime.',
+  },
+  {
+    icon: MessageCircle,
+    title: 'Real human support',
+    description: 'Live chat 9am–9pm and AI-assisted help round the clock. Real answers, not scripts.',
   },
 ];
 
@@ -39,23 +39,34 @@ const WhyChooseUs = () => {
 
   return (
     <section className="container py-16 md:py-24" ref={ref}>
-      <div className="text-center mb-12 reveal-on-scroll">
-        <span className="inline-block text-xs font-bold uppercase tracking-widest text-primary mb-3">Why YieGo</span>
-        <h2 className="text-2xl md:text-3xl font-display font-bold mb-3">Why Choose YieGo</h2>
-        <p className="text-muted-foreground max-w-md mx-auto text-sm leading-relaxed">We make buying data bundles fast, simple, and reliable</p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 reveal-on-scroll">
+        <div className="max-w-xl">
+          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Why YieGo</span>
+          <h2 className="text-3xl md:text-4xl font-display font-extrabold tracking-tight mt-3 leading-tight">
+            Built for everyday <span className="text-gradient">digital life</span>.
+          </h2>
+        </div>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          Not just another data shop. YieGo is a full digital services platform engineered for Ghana.
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 max-w-4xl mx-auto reveal-stagger">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 reveal-stagger">
         {features.map((feature) => (
           <div
             key={feature.title}
-            className="reveal-on-scroll group p-5 md:p-6 rounded-2xl surface-premium transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_-12px_hsl(var(--primary)/0.3)]"
+            className="reveal-on-scroll group relative overflow-hidden rounded-3xl border border-border bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_20px_40px_-20px_hsl(var(--primary)/0.3)]"
           >
-            <div className="w-11 h-11 rounded-xl bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center mb-4 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.06)] group-hover:bg-primary/15 transition-colors">
-              <feature.icon className="w-5 h-5 text-primary" />
+            {/* Subtle corner glow on hover */}
+            <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-primary/0 group-hover:bg-primary/10 blur-3xl transition-colors duration-500" />
+
+            <div className="relative">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/20 flex items-center justify-center mb-5">
+                <feature.icon className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-display font-bold text-[15px] tracking-tight mb-1.5">{feature.title}</h3>
+              <p className="text-[13px] text-muted-foreground leading-relaxed">{feature.description}</p>
             </div>
-            <h3 className="font-display font-semibold text-sm md:text-base mb-2 tracking-tight">{feature.title}</h3>
-            <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
           </div>
         ))}
       </div>
