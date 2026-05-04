@@ -179,7 +179,7 @@ const Privacy = () => {
 
         <div className="mt-8 flex flex-wrap gap-4 text-xs text-muted-foreground">
           <Link to="/terms" className="hover:text-primary transition-colors duration-150">Terms of Service</Link>
-          <Link to="/disclaimer" className="hover:text-primary transition-colors duration-150">Disclaimer</Link>
+          
           <Link to="/support" className="hover:text-primary transition-colors duration-150">Contact Support</Link>
         </div>
       </div>

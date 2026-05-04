@@ -572,7 +572,7 @@ function ReferralSignupForm({ referrerName, referralCode }: { referrerName: stri
     if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
 
     if (!agreedToTerms) {
-      setError('You must agree to the Terms of Service, Privacy Policy, and Disclaimer to continue.');
+      setError('You must agree to the Terms of Service and Privacy Policy to continue.');
       return;
     }
 
@@ -610,7 +610,7 @@ function ReferralSignupForm({ referrerName, referralCode }: { referrerName: stri
           await supabase.from('profiles').update({
             accepted_terms: true, accepted_terms_at: now, accepted_terms_version: 'v1.0',
             accepted_privacy: true, accepted_privacy_at: now, accepted_privacy_version: 'v1.0',
-            accepted_disclaimer: true, accepted_disclaimer_at: now, accepted_disclaimer_version: 'v1.0',
+            
           } as any).eq('id', user.id);
 
           // Attach referral — fire-and-forget
@@ -794,10 +794,8 @@ function ReferralSignupForm({ referrerName, referralCode }: { referrerName: stri
         <p className="text-xs text-slate-400 leading-relaxed">
           I agree to the{' '}
           <Link to="/terms" target="_blank" className="text-yellow-400 hover:underline font-medium">Terms of Service</Link>
-          {', '}
-          <Link to="/privacy" target="_blank" className="text-yellow-400 hover:underline font-medium">Privacy Policy</Link>
-          {', and '}
-          <Link to="/disclaimer" target="_blank" className="text-yellow-400 hover:underline font-medium">Disclaimer</Link>.
+          {' and '}
+          <Link to="/privacy" target="_blank" className="text-yellow-400 hover:underline font-medium">Privacy Policy</Link>.
         </p>
       </div>
 

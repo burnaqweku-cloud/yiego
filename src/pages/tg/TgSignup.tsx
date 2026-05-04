@@ -49,7 +49,7 @@ function validate(v: {
 
   if (v.password.length < 6) e.password = "Password must be at least 6 characters";
 
-  if (!v.terms) e.terms = "You must agree to the Terms, Privacy & Disclaimer.";
+  if (!v.terms) e.terms = "You must agree to the Terms & Privacy Policy.";
 
   return e;
 }
@@ -347,9 +347,8 @@ export default function TgSignup() {
             />
             <span className="text-xs leading-snug" style={{ color: "#475569" }}>
               I agree to the{" "}
-              <FallbackA href="https://yiego.com/terms">Terms of Service</FallbackA>,{" "}
-              <FallbackA href="https://yiego.com/privacy">Privacy Policy</FallbackA>, and{" "}
-              <FallbackA href="https://yiego.com/disclaimer">Disclaimer</FallbackA>.
+              <FallbackA href="https://yiego.shop/terms">Terms of Service</FallbackA> and{" "}
+              <FallbackA href="https://yiego.shop/privacy">Privacy Policy</FallbackA>.
             </span>
           </label>
           {errors.terms && (

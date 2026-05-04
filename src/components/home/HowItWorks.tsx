@@ -2,7 +2,7 @@ import { Wallet, MousePointer2, Send, BellRing } from 'lucide-react';
 
 const steps = [
   { n: '01', icon: Wallet, title: 'Fund your wallet', desc: 'Top up securely with Paystack — Mobile Money, card or bank.' },
-  { n: '02', icon: MousePointer2, title: 'Pick a service', desc: 'Data, airtime, bills, gift cards. Browse the hub, choose what you need.' },
+  { n: '02', icon: MousePointer2, title: 'Pick a service', desc: 'Data and airtime — pick your network and bundle in seconds.' },
   { n: '03', icon: Send, title: 'Order in seconds', desc: 'One tap to confirm. We handle delivery, supplier routing and retries.' },
   { n: '04', icon: BellRing, title: 'Get notified', desc: 'Live status, push & SMS alerts, plus full history in your dashboard.' },
 ];

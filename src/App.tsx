@@ -42,7 +42,7 @@ const FAQ = lazy(() => import("./pages/FAQ"));
 const Support = lazy(() => import("./pages/Support"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
-const Disclaimer = lazy(() => import("./pages/Disclaimer"));
+
 const AppRedirect = lazy(() => import("./pages/AppRedirect"));
 const AppAndroid = lazy(() => import("./pages/AppAndroid"));
 const AppIOS = lazy(() => import("./pages/AppIOS"));
@@ -286,7 +286,7 @@ const App = () => (
               <Route path="/ai-support" element={<AISupport />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
-              <Route path="/disclaimer" element={<Disclaimer />} />
+              <Route path="/disclaimer" element={<Navigate to="/terms" replace />} />
               <Route path="/app" element={<AppRedirect />} />
               <Route path="/app/android" element={<AppAndroid />} />
               <Route path="/app/ios" element={<AppIOS />} />
