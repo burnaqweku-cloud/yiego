@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings, Monitor, Info, Lock, Mail, Shield, Loader2, Eye, EyeOff, LogOut, Trophy, ChevronRight, MessageCircle } from 'lucide-react';
+import { Monitor, Info, Lock, Shield, Loader2, Eye, EyeOff, LogOut, Trophy, ChevronRight, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const VIEWED_KEY = 'yiego_referral_viewed_at';
@@ -245,24 +245,7 @@ const DashboardSettings = () => {
           </button>
         </div>
 
-        {/* Contact Support */}
-        <div className="bg-card rounded-2xl p-5 border border-border card-shadow">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-info/10 flex items-center justify-center">
-              <Mail className="w-5 h-5 text-info" />
-            </div>
-            <div>
-              <h3 className="font-display font-semibold text-sm">Support</h3>
-              <p className="text-xs text-muted-foreground">Need help? Contact us</p>
-            </div>
-          </div>
-          <a
-            href="mailto:support@yiego.com"
-            className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-          >
-            <Mail className="w-4 h-4" /> support@yiego.com
-          </a>
-        </div>
+        {/* Support intentionally hidden */}
 
         {/* About */}
         <div className="bg-card rounded-2xl p-5 border border-border card-shadow">

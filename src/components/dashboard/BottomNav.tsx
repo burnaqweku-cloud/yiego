@@ -1,6 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Grid3x3, Wallet, ShoppingCart, HelpCircle } from 'lucide-react';
-import { useOrdersBadge } from '@/hooks/useOrdersBadge';
+import { Home, Smartphone, Grid3x3, Wallet, MoreHorizontal } from 'lucide-react';
 
 type Tab = {
   to: string;
@@ -8,21 +7,24 @@ type Tab = {
   label: string;
   exact?: boolean;
   badge?: number;
+  match?: string[];
 };
 
 const BottomNav = () => {
   const location = useLocation();
-  const { count: ordersBadgeCount } = useOrdersBadge();
 
-  const isActive = (path: string, exact?: boolean) =>
-    exact ? location.pathname === path : location.pathname.startsWith(path);
+  const isActive = (tab: Tab) => {
+    if (tab.exact) return location.pathname === tab.to;
+    if (tab.match) return tab.match.some((p) => location.pathname.startsWith(p));
+    return location.pathname.startsWith(tab.to);
+  };
 
   const tabs: Tab[] = [
-    { to: '/dashboard', icon: Home, label: 'Home', exact: true },
-    { to: '/dashboard/buy', icon: Grid3x3, label: 'Services' },
+    { to: '/dashboard', icon: Home, label: 'Dashboard', exact: true },
+    { to: '/dashboard/buy', icon: Smartphone, label: 'Data Bundles' },
+    { to: '/dashboard/services', icon: Grid3x3, label: 'Services' },
     { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
-    { to: '/dashboard/orders', icon: ShoppingCart, label: 'Orders', badge: ordersBadgeCount },
-    { to: '/support', icon: HelpCircle, label: 'Support' },
+    { to: '/dashboard/more', icon: MoreHorizontal, label: 'More', match: ['/dashboard/more', '/dashboard/orders', '/dashboard/transactions', '/dashboard/profile', '/dashboard/settings', '/dashboard/notifications', '/dashboard/referral', '/dashboard/rewards'] },
   ];
 
   const renderBadge = (count?: number) => {
@@ -47,7 +49,7 @@ const BottomNav = () => {
       <nav aria-label="Primary" className="ds-bottom-nav-bar">
         <div className="flex items-center h-[56px] px-1">
           {tabs.map((tab) => {
-            const active = isActive(tab.to, tab.exact);
+            const active = isActive(tab);
             const Icon = tab.icon;
             return (
               <Link

@@ -63,6 +63,8 @@ const DashboardWallet = lazy(() => import("./pages/dashboard/DashboardWallet"));
 const DashboardOrders = lazy(() => import("./pages/dashboard/DashboardOrders"));
 const DashboardOrderDetail = lazy(() => import("./pages/dashboard/DashboardOrderDetail"));
 const DashboardBuyData = lazy(() => import("./pages/dashboard/DashboardBuyData"));
+const DashboardServices = lazy(() => import("./pages/dashboard/DashboardServices"));
+const DashboardMore = lazy(() => import("./pages/dashboard/DashboardMore"));
 const DashboardProfile = lazy(() => import("./pages/dashboard/DashboardProfile"));
 const DashboardSettings = lazy(() => import("./pages/dashboard/DashboardSettings"));
 const DashboardNotifications = lazy(() => import("./pages/dashboard/DashboardNotifications"));
@@ -369,6 +371,8 @@ const App = () => (
               {/* Dashboard routes — require authentication */}
               <Route path="/dashboard" element={<PrivateRoute><DashboardHome /></PrivateRoute>} />
               <Route path="/dashboard/buy" element={<PrivateRoute><DashboardBuyData /></PrivateRoute>} />
+              <Route path="/dashboard/services" element={<PrivateRoute><DashboardServices /></PrivateRoute>} />
+              <Route path="/dashboard/more" element={<PrivateRoute><DashboardMore /></PrivateRoute>} />
               <Route path="/dashboard/wallet" element={<PrivateRoute><DashboardWallet /></PrivateRoute>} />
               <Route path="/dashboard/orders" element={<PrivateRoute><DashboardOrders /></PrivateRoute>} />
               <Route path="/dashboard/orders/:orderId" element={<PrivateRoute><DashboardOrderDetail /></PrivateRoute>} />

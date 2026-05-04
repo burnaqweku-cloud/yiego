@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home, ShoppingCart, Wallet, ClipboardList, User, Settings,
-  HelpCircle, Search, ArrowLeft, Receipt, Gift, Sparkles
+  Search, ArrowLeft, Receipt, Gift, Sparkles, Grid3x3, MoreHorizontal,
 } from 'lucide-react';
 
 const DashboardSidebar = () => {
@@ -9,7 +9,8 @@ const DashboardSidebar = () => {
 
   const navItems = [
     { to: '/dashboard', icon: Home, label: 'Dashboard', exact: true },
-    { to: '/dashboard/buy', icon: ShoppingCart, label: 'Services' },
+    { to: '/dashboard/buy', icon: ShoppingCart, label: 'Data Bundles' },
+    { to: '/dashboard/services', icon: Grid3x3, label: 'Services' },
     { to: '/dashboard/orders', icon: ClipboardList, label: 'Orders' },
     { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
     { to: '/dashboard/transactions', icon: Receipt, label: 'Transactions' },
@@ -17,7 +18,7 @@ const DashboardSidebar = () => {
     { to: '/dashboard/referral', icon: Gift, label: 'Refer & Earn' },
     { to: '/dashboard/profile', icon: User, label: 'Profile' },
     { to: '/track-order', icon: Search, label: 'Track Order' },
-    { to: '/support', icon: HelpCircle, label: 'Support' },
+    { to: '/dashboard/more', icon: MoreHorizontal, label: 'More' },
     { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
 
