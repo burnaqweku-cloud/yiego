@@ -255,8 +255,9 @@ const App = () => (
             <PWATracker />
             <Toaster />
             <Sonner />
-            <WhatsAppChannelButton />
-            <GlobalAISupportChat />
+            {/* Floating widgets temporarily hidden */}
+            {/* <WhatsAppChannelButton /> */}
+            {/* <GlobalAISupportChat /> */}
             <CampaignBannerRenderer />
             <SecurityGateProvider>
             <MaintenanceGuard>
