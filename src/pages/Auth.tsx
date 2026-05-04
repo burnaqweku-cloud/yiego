@@ -12,6 +12,17 @@ import { z } from 'zod';
 import AuthLayout from '@/components/layout/AuthLayout';
 import SEOHead from '@/components/seo/SEOHead';
 import PasswordStrengthBar, { getStrength } from '@/components/auth/PasswordStrengthBar';
+import SocialAuthButtons from '@/components/auth/SocialAuthButtons';
+
+const SocialDivider = () => (
+  <div className="relative my-5 flex items-center">
+    <div className="flex-1 h-px bg-border/60" />
+    <span className="px-3 text-[10.5px] uppercase tracking-[0.2em] font-bold text-muted-foreground/70">
+      or with email
+    </span>
+    <div className="flex-1 h-px bg-border/60" />
+  </div>
+);
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -61,6 +72,8 @@ const Auth = () => {
         ))}
       </div>
 
+      <SocialAuthButtons />
+      <SocialDivider />
       {tab === 'login' ? <LoginForm /> : <SignupForm />}
 
       <p className="text-center text-[11px] text-muted-foreground mt-5">
@@ -403,7 +416,7 @@ const SignupForm = () => {
     }
 
     if (!agreedToTerms) {
-      setError('You must agree to the Terms of Service, Privacy Policy, and Disclaimer to continue.');
+      setError('You must agree to the Terms of Service and Privacy Policy to continue.');
       return;
     }
 
@@ -499,7 +512,7 @@ const SignupForm = () => {
       )}
       <div>
         <Label htmlFor="signupName" className="text-sm font-medium">Full Name</Label>
-        <PremiumInput id="signupName" name="name" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Kwame Asante" className="mt-2" maxLength={100} />
+        <PremiumInput id="signupName" name="name" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Nana Osei" className="mt-2" maxLength={100} />
       </div>
       <div>
         <Label htmlFor="signupUsername" className="text-sm font-medium">Username</Label>
@@ -510,7 +523,7 @@ const SignupForm = () => {
             autoComplete="username"
             value={username}
             onChange={(e) => handleUsernameChange(e.target.value)}
-            placeholder="kwame_asante"
+            placeholder="nana_osei"
             className="pr-11"
             maxLength={20}
           />
@@ -602,10 +615,8 @@ const SignupForm = () => {
         <p className="text-xs text-muted-foreground leading-relaxed">
           I agree to the{' '}
           <Link to="/terms" target="_blank" className="text-primary hover:underline font-medium">Terms of Service</Link>
-          {', '}
+          {' and '}
           <Link to="/privacy" target="_blank" className="text-primary hover:underline font-medium">Privacy Policy</Link>
-          {', and '}
-          <Link to="/disclaimer" target="_blank" className="text-primary hover:underline font-medium">Disclaimer</Link>
           {'.'}
         </p>
       </div>
