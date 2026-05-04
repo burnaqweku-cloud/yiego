@@ -42,7 +42,7 @@ const DashboardProfile = () => {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successCount, setSuccessCount] = useState(0);
-  const [loyaltyPoints, setLoyaltyPoints] = useState<number | null>(null);
+  const [, setLoyaltyPoints] = useState<number | null>(null);
   const [memberSince, setMemberSince] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
