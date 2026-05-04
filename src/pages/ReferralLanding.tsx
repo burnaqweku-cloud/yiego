@@ -572,7 +572,7 @@ function ReferralSignupForm({ referrerName, referralCode }: { referrerName: stri
     if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
 
     if (!agreedToTerms) {
-      setError('You must agree to the Terms of Service, Privacy Policy, and Disclaimer to continue.');
+      setError('You must agree to the Terms of Service and Privacy Policy to continue.');
       return;
     }
 
