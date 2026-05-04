@@ -93,7 +93,7 @@ const TrackOrder = () => {
               <Label htmlFor="orderId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Order ID</Label>
               <Input
                 id="orderId"
-                placeholder="DS-XXXXXXXX"
+                placeholder="YG-XXXXXXXX"
                 value={orderId}
                 onChange={(e) => setOrderId(e.target.value.toUpperCase())}
                 className="mt-2 font-mono h-11 bg-background/50"
