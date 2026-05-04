@@ -560,7 +560,7 @@ const SignupForm = () => {
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Min 8 characters"
+            placeholder="Min 6 characters"
             className="pr-11"
             maxLength={128}
           />
@@ -572,9 +572,6 @@ const SignupForm = () => {
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
-        </div>
-        <div className="mt-2">
-          <PasswordStrengthBar password={password} />
         </div>
       </div>
 
