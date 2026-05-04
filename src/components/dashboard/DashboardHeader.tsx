@@ -70,38 +70,51 @@ const DashboardHeader = () => {
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-12 z-50 bg-card rounded-xl border border-border card-shadow-elevated w-56 py-1.5 animate-page-in">
-                  <div className="px-4 py-3 border-b border-border flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 ring-2 ring-border">
-                      {avatarUrl ? (
-                        <img src={avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      ) : (
-                        <div className="w-full h-full gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm">
-                          {initials}
-                        </div>
-                      )}
+                <div className="absolute right-0 top-12 z-50 bg-card rounded-2xl border border-border shadow-2xl w-72 overflow-hidden animate-page-in">
+                  {/* Header block with gradient */}
+                  <div className="relative p-4 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-primary/30">
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-full h-full gradient-gold flex items-center justify-center text-primary-foreground font-bold">
+                            {initials}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold truncate">{profile?.full_name || 'YieGo user'}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">@{profile?.username || user?.email?.split('@')[0]}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold truncate">{profile?.full_name || 'User'}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                    </div>
+                    {(isAdmin || isStaff) && (
+                      <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-primary/15 text-primary border border-primary/25">
+                        <Shield className="w-2.5 h-2.5" /> {isAdmin ? 'Admin' : 'Staff'}
+                      </span>
+                    )}
                   </div>
-                  <div className="py-1">
-                    <Link to="/dashboard/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors duration-150">
-                      <User className="w-4 h-4" /> Profile
+
+                  <div className="py-1.5">
+                    <Link to="/dashboard/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted/60 transition-colors">
+                      <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><User className="w-4 h-4" /></span>
+                      <span className="font-medium">Profile</span>
                     </Link>
-                    <Link to="/dashboard/settings" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors duration-150">
-                      <Settings className="w-4 h-4" /> Settings
+                    <Link to="/dashboard/settings" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted/60 transition-colors">
+                      <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Settings className="w-4 h-4" /></span>
+                      <span className="font-medium">Settings</span>
                     </Link>
                     {(isAdmin || isStaff) && (
-                      <Link to="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors duration-150">
-                        <Shield className="w-4 h-4" /> Admin Panel
+                      <Link to="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted/60 transition-colors">
+                        <span className="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center"><Shield className="w-4 h-4" /></span>
+                        <span className="font-medium">Admin Panel</span>
                       </Link>
                     )}
                   </div>
-                  <div className="border-t border-border pt-1">
-                    <button onClick={() => { setMenuOpen(false); handleSignOut(); }} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/5 transition-colors duration-150 w-full text-left">
-                      <LogOut className="w-4 h-4" /> Sign Out
+                  <div className="border-t border-border">
+                    <button onClick={() => { setMenuOpen(false); handleSignOut(); }} className="flex items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/5 transition-colors w-full text-left">
+                      <span className="w-8 h-8 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center"><LogOut className="w-4 h-4" /></span>
+                      <span className="font-semibold">Sign Out</span>
                     </button>
                   </div>
                 </div>
