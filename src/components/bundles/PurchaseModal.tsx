@@ -250,227 +250,236 @@ const PurchaseModal = ({ bundle, open, onOpenChange, getSellingPrice }: Purchase
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-3xl p-0 overflow-hidden">
-        <div className="px-6 pt-6 pb-3">
-          <DialogHeader>
-            <DialogTitle className="font-display text-lg">Complete Your Purchase</DialogTitle>
-            <DialogDescription className="text-sm">
-              Enter your details for the data bundle delivery
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-3xl border border-border/60 bg-card shadow-[0_30px_80px_-20px_hsl(var(--primary)/0.25)]">
+        {/* ── HERO: Bundle summary with ambient accent ── */}
+        <div className="relative px-6 pt-6 pb-5 border-b border-border/50 bg-gradient-to-br from-primary/[0.04] via-transparent to-transparent">
+          <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+
+          <DialogHeader className="text-left mb-4">
+            <div className="inline-flex items-center gap-1.5 self-start text-[10px] font-bold uppercase tracking-[0.18em] text-primary mb-1.5">
+              <Sparkles className="w-3 h-3" /> Order summary
+            </div>
+            <DialogTitle className="font-display text-xl tracking-tight">
+              {bundle.bundle_size_gb}GB · {bundle.network}
+            </DialogTitle>
+            <DialogDescription className="text-[12.5px] mt-0.5">
+              Confirm recipient details to continue
             </DialogDescription>
           </DialogHeader>
-        </div>
 
-        {/* Bundle summary */}
-        <div className="mx-6 bg-secondary rounded-xl p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${NETWORK_COLORS[bundle.network as Network]}`}>
-              {bundle.network}
-            </span>
-            <div>
-              <p className="font-display font-bold text-lg">{bundle.bundle_size_gb}GB</p>
-              <NonExpiryBadge size="xs" className="mt-0.5" network={bundle.network} />
+          <div className="flex items-end justify-between">
+            <div className="space-y-1.5">
+              <span className={`inline-flex text-[10px] font-bold px-2.5 py-1 rounded-full ${NETWORK_COLORS[bundle.network as Network]}`}>
+                {bundle.network}
+              </span>
+              <NonExpiryBadge size="xs" network={bundle.network} />
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Bundle</p>
+              <p className="text-2xl font-display font-extrabold tabular leading-none mt-1">{formatPrice(displayPrice)}</p>
             </div>
           </div>
-          <p className="text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
         </div>
 
-        {/* Fee breakdown for guest pay */}
-        {!user && (
-          <div className="mx-6 mt-2 space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Bundle Price</span>
-              <span>{formatPrice(displayPrice)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Payment Fee (4%)</span>
-              <span>{formatPrice(processingFee)}</span>
-            </div>
-            <div className="flex justify-between font-semibold">
-              <span>Total Payable</span>
-              <span>{formatPrice(totalPayable)}</span>
-            </div>
-          </div>
-        )}
-
-        <div className="px-6 py-4 space-y-3">
-          <div>
-            <Label htmlFor="fullName" className="text-xs font-medium">Full Name *</Label>
+        {/* ── FORM ── */}
+        <div className="px-6 py-5 space-y-4">
+          {/* Field: Name */}
+          <div className="space-y-1.5">
+            <Label htmlFor="fullName" className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              Your name
+            </Label>
             <Input
               id="fullName"
               placeholder="e.g. Nana Osei"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               maxLength={100}
-              className="mt-1 h-11 rounded-xl"
+              className="h-12 rounded-xl bg-muted/30 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/40"
               disabled={paying}
             />
             {errors.name && (
-              <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+              <p className="text-[11px] text-destructive flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />{errors.name}
               </p>
             )}
           </div>
 
-          <div>
-            <Label htmlFor="phone" className="text-xs font-medium">Recipient Phone Number *</Label>
-            <Input
-              id="phone"
-              placeholder="0551234567"
-              value={phone}
-              onChange={(e) => handlePhoneChange(e.target.value)}
-              maxLength={10}
-              className="mt-1 h-11 rounded-xl"
-              inputMode="tel"
-              disabled={paying}
-            />
+          {/* Field: Phone */}
+          <div className="space-y-1.5">
+            <Label htmlFor="phone" className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              Recipient number
+            </Label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] font-semibold text-muted-foreground/80 tabular pointer-events-none">+233</span>
+              <Input
+                id="phone"
+                placeholder="55 123 4567"
+                value={phone}
+                onChange={(e) => handlePhoneChange(e.target.value.startsWith('0') ? e.target.value : e.target.value)}
+                maxLength={10}
+                className="h-12 rounded-xl pl-[58px] bg-muted/30 border-border/60 tabular focus-visible:ring-2 focus-visible:ring-primary/40"
+                inputMode="tel"
+                disabled={paying}
+              />
+            </div>
             {errors.phone ? (
-              <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+              <p className="text-[11px] text-destructive flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />{errors.phone}
               </p>
             ) : networkMismatchError ? (
-              <div className="mt-1 space-y-0.5">
-                <p className="text-[11px] text-destructive flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3 shrink-0" />{networkMismatchError}
-                </p>
-                <p className="text-[10px] text-muted-foreground pl-4">Tip: You may want to switch network</p>
-              </div>
+              <p className="text-[11px] text-destructive flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3 shrink-0" />{networkMismatchError}
+              </p>
             ) : duplicateBlocked ? (
               <DuplicateOrderAlert existingOrderId={existingOrderId} />
             ) : (
-              <p className="text-[10px] text-muted-foreground mt-1">
-                ⚠️ Check number carefully — no refunds for wrong numbers.
+              <p className="text-[10.5px] text-muted-foreground/80">
+                Double-check the number — refunds aren't possible for wrong numbers.
               </p>
             )}
           </div>
 
+          {/* Fee breakdown — guest only */}
+          {!user && (
+            <div className="rounded-2xl bg-muted/30 border border-border/50 p-3.5 space-y-1.5 text-[12.5px]">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Bundle</span>
+                <span className="tabular text-foreground/80">{formatPrice(displayPrice)}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Payment fee (4%)</span>
+                <span className="tabular text-foreground/80">{formatPrice(processingFee)}</span>
+              </div>
+              <div className="h-px bg-border/60 my-1" />
+              <div className="flex justify-between font-bold">
+                <span>Total</span>
+                <span className="tabular text-primary">{formatPrice(totalPayable)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Loyalty redemption (logged-in only) */}
+          {showRedeem && (
+            <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-3.5">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[12px] font-bold leading-none">Use loyalty points</p>
+                    <p className="text-[10px] text-muted-foreground mt-1 tabular">
+                      {(account?.points_balance ?? 0).toLocaleString()} pts available
+                    </p>
+                  </div>
+                </div>
+                {pointsToRedeem > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPointsToRedeem(0)}
+                    className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  max={maxRedeemPoints}
+                  step={1}
+                  value={pointsToRedeem || ''}
+                  onChange={(e) => {
+                    const v = Math.max(0, Math.min(maxRedeemPoints, Math.floor(Number(e.target.value) || 0)));
+                    setPointsToRedeem(v);
+                  }}
+                  placeholder={`Max ${maxRedeemPoints}`}
+                  className="h-9 rounded-lg text-sm tabular flex-1 bg-background"
+                  disabled={paying || redeeming}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3 rounded-lg text-[11px] font-semibold whitespace-nowrap"
+                  onClick={() => setPointsToRedeem(maxRedeemPoints)}
+                  disabled={paying || redeeming || maxRedeemPoints === 0}
+                >
+                  Max
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+                {pointsToRedeem > 0 ? (
+                  <>Redeems for <span className="text-primary font-semibold">{formatPrice(redeemValueGhs)}</span> wallet credit at checkout.</>
+                ) : (
+                  <>Up to {Math.round(maxRedeemPct * 100)}% ({formatPrice(maxRedeemGhs)}) redeemable here.</>
+                )}
+              </p>
+            </div>
+          )}
+
+          {/* Inline notice */}
           <ImportantNotice compact />
         </div>
 
-        {/* Loyalty redemption (logged-in only) */}
-        {showRedeem && (
-          <div className="mx-6 mb-3 surface-premium rounded-xl p-3.5 border border-primary/15">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
-                  <Sparkles className="w-3.5 h-3.5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold leading-none">Use loyalty points</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5 tabular">
-                    Balance: {(account?.points_balance ?? 0).toLocaleString()} pts
-                  </p>
-                </div>
-              </div>
-              {pointsToRedeem > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setPointsToRedeem(0)}
-                  className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min={0}
-                max={maxRedeemPoints}
-                step={1}
-                value={pointsToRedeem || ''}
-                onChange={(e) => {
-                  const v = Math.max(0, Math.min(maxRedeemPoints, Math.floor(Number(e.target.value) || 0)));
-                  setPointsToRedeem(v);
-                }}
-                placeholder={`Max ${maxRedeemPoints}`}
-                className="h-9 rounded-lg text-sm tabular flex-1"
-                disabled={paying || redeeming}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-9 px-3 rounded-lg text-[11px] font-semibold whitespace-nowrap"
-                onClick={() => setPointsToRedeem(maxRedeemPoints)}
-                disabled={paying || redeeming || maxRedeemPoints === 0}
-              >
-                Max
-              </Button>
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
-              {pointsToRedeem > 0 ? (
-                <>Redeems for <span className="text-primary font-semibold">{formatPrice(redeemValueGhs)}</span> wallet credit, applied at checkout.</>
-              ) : (
-                <>Up to {Math.round(maxRedeemPct * 100)}% of order ({formatPrice(maxRedeemGhs)}) redeemable here.</>
-              )}
-            </p>
-          </div>
-        )}
-
-        {/* Offline banner */}
+        {/* Status banners */}
         {!sysStatus.online && (
-          <div className="mx-6 mb-2 bg-destructive/10 border border-destructive/20 rounded-xl p-3 flex items-start gap-2">
+          <div className="mx-6 mb-3 bg-destructive/10 border border-destructive/20 rounded-xl p-3 flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground">{sysStatus.message}</p>
           </div>
         )}
-
-        {/* Network unavailable banner */}
         {sysStatus.online && !checkingAvailability && !networkAvailable && (
-          <div className="mx-6 mb-2">
+          <div className="mx-6 mb-3">
             <NetworkUnavailableBanner network={bundle.network} message={getNetworkMessage(bundleNetwork)} />
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="px-6 pb-6">
+        {/* ── STICKY ACTION FOOTER ── */}
+        <div className="px-6 py-4 border-t border-border/60 bg-background/60 backdrop-blur-sm">
           {user ? (
-            // Logged-in: go to checkout for wallet/paystack choice
             <Button
               onClick={handleProceedToCheckout}
-              className="w-full h-12 rounded-xl btn-press font-bold text-base gap-2"
+              className="w-full h-12 rounded-xl btn-press font-bold text-[15px] gap-2 shadow-[0_10px_24px_-8px_hsl(var(--primary)/0.5)]"
               size="lg"
               disabled={paying || redeeming || isBlocked}
             >
               {!sysStatus.online ? (
-                <><Lock className="w-4 h-4" /> System Offline</>
+                <><Lock className="w-4 h-4" /> System offline</>
               ) : checkingAvailability ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Checking availability...</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Checking availability…</>
               ) : !networkAvailable ? (
-                <><Lock className="w-4 h-4" /> {bundle.network} Unavailable</>
+                <><Lock className="w-4 h-4" /> {bundle.network} unavailable</>
               ) : redeeming ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Redeeming points...</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Redeeming points…</>
               ) : (
-                <>Proceed to Checkout <ArrowRight className="w-4 h-4" /></>
+                <>Proceed to checkout <ArrowRight className="w-4 h-4" /></>
               )}
             </Button>
           ) : (
-            // Guest: pay directly with Paystack
             <Button
               onClick={handleGuestPay}
-              className="w-full h-12 rounded-xl btn-press font-bold text-base gap-2"
+              className="w-full h-12 rounded-xl btn-press font-bold text-[15px] gap-2 shadow-[0_10px_24px_-8px_hsl(var(--primary)/0.5)]"
               size="lg"
               disabled={paying || isBlocked}
             >
               {!sysStatus.online ? (
-                <><Lock className="w-4 h-4" /> System Offline</>
+                <><Lock className="w-4 h-4" /> System offline</>
               ) : checkingAvailability ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Checking availability...</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Checking availability…</>
               ) : !networkAvailable ? (
-                <><Lock className="w-4 h-4" /> {bundle.network} Unavailable</>
+                <><Lock className="w-4 h-4" /> {bundle.network} unavailable</>
               ) : paying ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Redirecting to Paystack...
-                </>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting to Paystack…</>
               ) : (
-                <>
-                  <CreditCard className="w-4 h-4" />
-                  Pay with Paystack — {formatPrice(totalPayable)}
-                </>
+                <><CreditCard className="w-4 h-4" /> Pay {formatPrice(totalPayable)}</>
               )}
             </Button>
           )}
+          <p className="text-[10.5px] text-center text-muted-foreground mt-2.5 flex items-center justify-center gap-1.5">
+            <Lock className="w-2.5 h-2.5" /> Secured by Paystack · No account needed
+          </p>
         </div>
       </DialogContent>
     </Dialog>
