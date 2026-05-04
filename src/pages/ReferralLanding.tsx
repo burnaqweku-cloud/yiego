@@ -610,7 +610,7 @@ function ReferralSignupForm({ referrerName, referralCode }: { referrerName: stri
           await supabase.from('profiles').update({
             accepted_terms: true, accepted_terms_at: now, accepted_terms_version: 'v1.0',
             accepted_privacy: true, accepted_privacy_at: now, accepted_privacy_version: 'v1.0',
-            accepted_disclaimer: true, accepted_disclaimer_at: now, accepted_disclaimer_version: 'v1.0',
+            
           } as any).eq('id', user.id);
 
           // Attach referral — fire-and-forget
