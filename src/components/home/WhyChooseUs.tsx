@@ -9,8 +9,8 @@ const features = [
   },
   {
     icon: Zap,
-    title: 'Built for speed',
-    description: 'Most orders complete in seconds. Failed orders are auto-refunded back to your wallet — no chasing.',
+    title: 'Fast under normal conditions',
+    description: 'Most orders complete within minutes. If a delivery fails, the amount is auto-refunded to your wallet.',
   },
   {
     icon: Wallet,

@@ -122,10 +122,10 @@ const BuyData = () => {
               </div>
               <h1 className="text-3xl md:text-[2.7rem] font-display font-extrabold tracking-[-0.025em] leading-[1.05]">
                 Cheaper data, <br className="hidden sm:inline" />
-                <span className="text-gradient">delivered in seconds.</span>
+                <span className="text-gradient">delivered fast.</span>
               </h1>
               <p className="text-muted-foreground text-[14px] md:text-[15px] mt-4 max-w-xl leading-relaxed">
-                Pick your network. Pick your size. Pay with Mobile Money or your YieGo wallet — no account required.
+                Pick your network. Pick your size. Pay with Mobile Money or your YieGo wallet — most orders complete within a few minutes.
               </p>
 
               {isActiveAgent && (
@@ -286,7 +286,7 @@ const BuyData = () => {
         {!isLoading && filteredBundles.length > 0 && (
           <div className="mt-8 grid sm:grid-cols-3 gap-3 max-w-3xl mx-auto">
             {[
-              { icon: Zap, title: 'Fast delivery', desc: 'Most orders complete in seconds' },
+              { icon: Zap, title: 'Fast delivery', desc: 'Most orders complete in minutes' },
               { icon: Shield, title: 'Secure checkout', desc: 'Paystack-grade payments' },
               { icon: Tag, title: 'Genuinely cheaper', desc: 'Better than direct prices' },
             ].map((it) => (

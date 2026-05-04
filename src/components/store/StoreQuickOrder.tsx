@@ -132,7 +132,7 @@ const StoreQuickOrder = ({ products, getSellingPrice, onBuy, paying, agentWhatsA
           <Input
             value={name}
             onChange={e => { setName(e.target.value); setNameError(''); }}
-            placeholder="e.g. Kwame Asante"
+            placeholder="e.g. Ama Serwaa"
             maxLength={100}
             className="mt-1 h-10 rounded-xl"
           />

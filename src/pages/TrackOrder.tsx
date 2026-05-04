@@ -82,10 +82,10 @@ const TrackOrder = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-primary">Order tracker</span>
           </div>
           <h1 className="text-3xl md:text-[2.4rem] font-display font-extrabold tracking-[-0.025em] leading-[1.1]">
-            Where's your <span className="text-gradient">order?</span>
+            Track your <span className="text-gradient">YieGo order</span>
           </h1>
           <p className="text-muted-foreground text-[14px] mt-3 leading-relaxed">
-            Enter any YieGo reference to see live status — works for data bundles and every YieGo service, today and tomorrow.
+            Enter your order reference to check the latest status.
           </p>
         </div>
       </section>
@@ -151,7 +151,7 @@ const TrackOrder = () => {
             </div>
             <h3 className="font-display font-bold text-lg">Reference not found</h3>
             <p className="text-[13px] text-muted-foreground mt-1.5 max-w-sm mx-auto">
-              Double-check the reference and try again. Old DS- references still work — make sure there are no extra spaces.
+              Double-check the reference and try again — make sure there are no extra spaces.
             </p>
           </div>
         )}

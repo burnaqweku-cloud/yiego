@@ -13,8 +13,8 @@ const Index = () => {
   return (
     <Layout>
       <SEOHead
-        title="YieGo — Your Everyday Digital Wallet | Data, Airtime, Bills & Gift Cards in Ghana"
-        description="YieGo is the Ghanaian digital wallet for data bundles, airtime, bill payments, gift cards and more. One account, instant delivery, lowest prices."
+        title="YieGo — Your Everyday Digital Plug | Data, Airtime & Bills in Ghana"
+        description="YieGo is the Ghanaian digital wallet for data bundles, airtime, bill payments and more. One account, fast delivery, lower prices."
         path="/"
       />
       <HeroSection />

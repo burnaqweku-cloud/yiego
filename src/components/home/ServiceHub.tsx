@@ -4,7 +4,7 @@ import { Smartphone, Receipt, Sparkles, Tv, Send, ShoppingBag, ArrowRight } from
 // NOTE: Gift Cards intentionally excluded from public hub (deferred).
 const services = [
   { to: '/buy-data', icon: Smartphone, label: 'Data Bundles', desc: 'MTN · Telecel · AirtelTigo', live: true, accent: 'from-primary/25 to-primary/5' },
-  { to: '/dashboard', icon: Sparkles, label: 'Airtime', desc: 'Top up any line in seconds', accent: 'from-accent/25 to-accent/5' },
+  { to: '/dashboard', icon: Sparkles, label: 'Airtime', desc: 'Top up any line in moments', accent: 'from-accent/25 to-accent/5' },
   { to: '/dashboard', icon: Receipt, label: 'Bill Payments', desc: 'ECG, water, TV & more', accent: 'from-info/25 to-info/5' },
   { to: '/dashboard', icon: Tv, label: 'Subscriptions', desc: 'Netflix, Spotify & more', accent: 'from-primary/15 to-info/10' },
   { to: '/dashboard', icon: Send, label: 'Social Boosting', desc: 'Followers, views, engagement', accent: 'from-accent/20 to-primary/5' },
@@ -44,7 +44,7 @@ const ServiceHub = () => {
               </div>
               <h3 className="text-2xl md:text-3xl font-display font-bold tracking-tight">Data Bundles</h3>
               <p className="text-sm text-muted-foreground mt-2 max-w-sm">
-                The cheapest MTN, Telecel & AirtelTigo bundles in Ghana. Delivered in seconds, refunded automatically if anything fails.
+                The cheapest MTN, Telecel & AirtelTigo bundles in Ghana. Most orders complete in minutes — failed orders are auto-refunded.
               </p>
               <div className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-primary group-hover:gap-2.5 transition-all">
                 Buy data <ArrowRight className="w-4 h-4" />

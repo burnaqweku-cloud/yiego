@@ -163,7 +163,7 @@ const StoreCheckoutDrawer = ({
             <Input
               value={name}
               onChange={e => { setName(e.target.value); if (errors.name) setErrors(prev => ({ ...prev, name: '' })); }}
-              placeholder="e.g. Kwame Asante"
+              placeholder="e.g. Ama Serwaa"
               maxLength={100}
               className="mt-1 h-11 rounded-xl"
             />

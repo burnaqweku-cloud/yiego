@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, Zap, Wallet, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import AppBanner from './AppBanner';
 import { ThemeToggle } from './ThemeToggle';
 import Logo from './Logo';
@@ -12,30 +12,30 @@ interface AuthLayoutProps {
 }
 
 /**
- * YieGo auth layout — single centered "card on canvas" composition.
- * Distinct from a traditional split-screen: a textured ambient canvas with
- * a floating editorial card stack and trust rail below.
+ * Auth canvas — bold split with a tall narrative panel on the left and a
+ * focused form column on the right. Single ambient glow (no stacked greens).
  */
 const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
   return (
-    <div className="relative min-h-screen bg-background overflow-hidden">
-      {/* Ambient backdrop layers */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-card/40" />
-        <div className="absolute -top-32 -left-32 w-[520px] h-[520px] rounded-full bg-primary/15 blur-3xl" />
-        <div className="absolute -bottom-32 -right-32 w-[460px] h-[460px] rounded-full bg-accent/10 blur-3xl" />
+    <div className="relative min-h-screen bg-background">
+      {/* Single ambient backdrop — no stacked greens */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_-10%,hsl(var(--primary)/0.12),transparent_55%)]" />
         <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{ backgroundImage: 'radial-gradient(hsl(var(--foreground)) 1px, transparent 1px)', backgroundSize: '28px 28px' }}
+          className="absolute inset-0 opacity-[0.035]"
+          style={{
+            backgroundImage:
+              'linear-gradient(hsl(var(--foreground)/0.6) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)/0.6) 1px, transparent 1px)',
+            backgroundSize: '64px 64px',
+          }}
         />
       </div>
 
       <AppBanner />
 
-      {/* Top bar */}
       <header className="relative z-10 flex items-center justify-between px-5 md:px-10 py-4">
         <Link to="/" className="inline-flex items-center group" aria-label="YieGo home">
-          <Logo height="h-7" className="transition-transform group-hover:scale-[1.04]" />
+          <Logo height="h-7" />
         </Link>
         <div className="flex items-center gap-2">
           <Link
@@ -48,55 +48,59 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
         </div>
       </header>
 
-      {/* Main canvas */}
-      <main className="relative z-10 flex flex-col items-center px-5 pt-6 pb-16">
-        {/* Eyebrow strip */}
-        <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 mb-5">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          <span className="text-[10.5px] font-bold tracking-[0.18em] uppercase text-primary">YieGo Wallet</span>
-        </div>
-
-        {/* Headline */}
-        <div className="text-center max-w-md mb-7 px-2">
-          <h1 className="text-[1.7rem] md:text-[2.1rem] font-display font-extrabold tracking-[-0.025em] leading-[1.1]">
-            {title}
-          </h1>
-          <p className="text-[13.5px] text-muted-foreground mt-2.5 leading-relaxed">{subtitle}</p>
-        </div>
-
-        {/* Card stack */}
-        <div className="w-full max-w-[440px]">
-          {/* Floating accent ribbon (decoration above card) */}
-          <div className="relative h-2 mx-6 rounded-t-2xl bg-gradient-to-r from-primary/40 via-primary/70 to-primary/40 opacity-60" />
-          <div className="relative h-1 mx-10 rounded-t-2xl bg-primary/40 -mt-px" />
-
-          {/* The card */}
-          <div className="relative rounded-3xl border border-border/70 bg-card/95 backdrop-blur-xl shadow-[0_30px_80px_-20px_hsl(var(--foreground)/0.25),0_10px_30px_-10px_hsl(var(--primary)/0.15)] p-5 md:p-7">
-            {children}
+      <main className="relative z-10 grid lg:grid-cols-12 gap-10 px-5 md:px-10 pt-2 pb-16 max-w-7xl mx-auto">
+        {/* Narrative panel (lg+) */}
+        <aside className="hidden lg:flex lg:col-span-5 flex-col justify-between rounded-3xl border border-border/60 bg-card/50 backdrop-blur-md p-8 min-h-[560px] relative overflow-hidden">
+          <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-primary/10 blur-3xl" />
+          <div className="relative">
+            <span className="inline-flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.22em] text-primary">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" /> YieGo
+            </span>
+            <h2 className="mt-6 text-[2.2rem] font-display font-extrabold tracking-[-0.025em] leading-[1.05]">
+              Your everyday <br /> digital plug.
+            </h2>
+            <p className="mt-4 text-[14px] text-muted-foreground leading-relaxed max-w-sm">
+              One account for data, airtime, bills, subscriptions and more — built for how Ghana
+              actually spends online.
+            </p>
           </div>
-
-          {/* Trust rail */}
-          <div className="mt-6 grid grid-cols-3 gap-2">
+          <div className="relative space-y-3 text-[13px]">
             {[
-              { icon: Wallet, label: 'One wallet' },
-              { icon: Zap, label: 'Instant orders' },
-              { icon: ShieldCheck, label: 'Bank-grade security' },
-            ].map((b) => (
-              <div
-                key={b.label}
-                className="flex flex-col items-center gap-1.5 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm py-3 px-2 text-center"
-              >
-                <b.icon className="w-3.5 h-3.5 text-primary" />
-                <span className="text-[10.5px] font-semibold text-foreground/80 leading-tight">{b.label}</span>
+              'One wallet, every service',
+              'Pay with MoMo, card or your wallet',
+              'Track every order from start to delivery',
+            ].map((line) => (
+              <div key={line} className="flex items-center gap-2.5">
+                <div className="w-5 h-5 rounded-md bg-primary/15 flex items-center justify-center">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                </div>
+                <span className="text-foreground/85">{line}</span>
               </div>
             ))}
+            <div className="pt-4 mt-2 border-t border-border/60 flex items-center gap-2 text-[11.5px] text-muted-foreground">
+              <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+              Bank-grade security · Paystack-secured payments
+            </div>
           </div>
+        </aside>
 
-          {/* Footer line */}
-          <p className="text-center text-[11px] text-muted-foreground/70 mt-6">
-            © {new Date().getFullYear()} YieGo · Built for Ghana 🇬🇭
-          </p>
-        </div>
+        {/* Form column */}
+        <section className="lg:col-span-7 flex flex-col items-center">
+          <div className="w-full max-w-[460px]">
+            <div className="text-center lg:text-left mb-7">
+              <h1 className="text-[1.7rem] md:text-[2rem] font-display font-extrabold tracking-[-0.025em] leading-[1.1]">
+                {title}
+              </h1>
+              <p className="text-[13.5px] text-muted-foreground mt-2 leading-relaxed">{subtitle}</p>
+            </div>
+            <div className="rounded-3xl border border-border/70 bg-card shadow-[0_30px_80px_-30px_hsl(var(--foreground)/0.18)] p-5 md:p-7">
+              {children}
+            </div>
+            <p className="text-center text-[11px] text-muted-foreground/70 mt-6">
+              © {new Date().getFullYear()} YieGo · Built for Ghana 🇬🇭
+            </p>
+          </div>
+        </section>
       </main>
     </div>
   );

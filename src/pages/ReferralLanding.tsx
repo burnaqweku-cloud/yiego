@@ -688,7 +688,7 @@ function ReferralSignupForm({ referrerName, referralCode }: { referrerName: stri
         <Input
           id="rf-name" name="name" autoComplete="name"
           value={fullName} onChange={(e) => setFullName(e.target.value)}
-          placeholder="Kwame Asante" maxLength={100}
+          placeholder="Ama Serwaa" maxLength={100}
           className="mt-1.5 h-11 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus-visible:ring-yellow-400/50"
         />
       </div>

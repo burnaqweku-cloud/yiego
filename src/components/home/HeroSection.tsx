@@ -1,40 +1,37 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
-  ArrowRight, Wallet, Smartphone, Receipt, Sparkles, Zap, ShieldCheck, Tv, Send, CheckCircle2,
+  ArrowRight, Wallet, Smartphone, Receipt, Sparkles, Tv, ShieldCheck, CheckCircle2, Send,
 } from 'lucide-react';
 
 const HeroSection = () => {
   return (
     <section className="relative overflow-hidden border-b border-border/40">
-      {/* Layered backdrop */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-card/60" />
-        <div className="absolute top-[-10%] right-[-10%] w-[520px] h-[520px] rounded-full blur-3xl opacity-25 bg-primary" />
-        <div className="absolute bottom-[-15%] left-[-10%] w-[380px] h-[380px] rounded-full blur-3xl opacity-15 bg-accent" />
+        <div className="absolute top-[-12%] right-[-10%] w-[520px] h-[520px] rounded-full blur-3xl opacity-25 bg-primary" />
         <div
-          className="absolute inset-0 opacity-[0.025]"
+          className="absolute inset-0 opacity-[0.03]"
           style={{ backgroundImage: 'radial-gradient(hsl(var(--foreground)) 1px, transparent 1px)', backgroundSize: '32px 32px' }}
         />
       </div>
 
       <div className="container py-12 md:py-20 lg:py-24">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-          {/* Left: copy */}
+          {/* Copy */}
           <div className="lg:col-span-7 hero-stagger-1 animate-hero-in">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 mb-7">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               <span className="text-[11px] font-semibold tracking-wide text-primary uppercase">Now serving Ghana</span>
             </div>
 
-            <h1 className="text-[2.4rem] sm:text-5xl lg:text-[4.2rem] font-display font-extrabold tracking-[-0.035em] leading-[1.02] mb-6">
-              Pay for the things <br className="hidden sm:inline" />
-              you actually use.{' '}
-              <span className="text-gradient">In one tap.</span>
+            <h1 className="text-[2.6rem] sm:text-5xl lg:text-[4.4rem] font-display font-extrabold tracking-[-0.035em] leading-[1.02] mb-5">
+              Your everyday <br className="hidden sm:inline" />
+              <span className="text-gradient">digital plug.</span>
             </h1>
 
             <p className="text-base md:text-lg text-muted-foreground max-w-xl leading-relaxed mb-8">
-              Data, airtime, bills, social boosting, subscriptions — fund your YieGo wallet once and order in seconds. Built for how Ghana actually spends online.
+              Data, airtime, bills, subscriptions and more — one wallet, one account, built for how Ghana actually spends online.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -50,20 +47,17 @@ const HeroSection = () => {
               </Link>
             </div>
 
-            {/* Trust strip */}
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-8 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Paystack-secured</div>
-              <div className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5 text-primary" /> Instant delivery</div>
+              <div className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-primary" /> Fast delivery in minutes</div>
               <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-success" /> 47K+ Ghanaians on YieGo</div>
             </div>
           </div>
 
-          {/* Right: PRODUCT MOCKUP — clearly labeled as a preview, not a real wallet */}
+          {/* Mockup */}
           <div className="lg:col-span-5 hero-stagger-3 animate-hero-in">
             <div className="relative">
-              {/* Phone-like frame */}
               <div className="relative rounded-[28px] border border-border bg-gradient-to-br from-card via-card to-card/70 backdrop-blur-xl shadow-[0_30px_80px_-20px_hsl(var(--primary)/0.25),0_10px_30px_-10px_hsl(var(--foreground)/0.2)] overflow-hidden">
-                {/* Preview ribbon */}
                 <div className="flex items-center justify-between px-5 pt-4 pb-2">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-destructive/60" />
@@ -74,9 +68,7 @@ const HeroSection = () => {
                 </div>
 
                 <div className="px-5 pb-5">
-                  {/* Wallet card mockup */}
                   <div className="relative rounded-2xl p-5 bg-gradient-to-br from-foreground to-foreground/85 text-background overflow-hidden">
-                    {/* corner watermark */}
                     <div className="absolute top-2 right-3 text-[8.5px] uppercase tracking-[0.2em] font-bold text-background/50">Demo</div>
                     <div className="absolute -bottom-12 -right-8 w-40 h-40 rounded-full bg-primary/30 blur-2xl" />
 
@@ -96,7 +88,6 @@ const HeroSection = () => {
                     </div>
                   </div>
 
-                  {/* Service shortcuts */}
                   <div className="grid grid-cols-4 gap-2 mt-4">
                     {[
                       { icon: Smartphone, label: 'Data', live: true },
@@ -112,7 +103,6 @@ const HeroSection = () => {
                     ))}
                   </div>
 
-                  {/* Sample order list */}
                   <div className="mt-4">
                     <p className="text-[9.5px] uppercase tracking-[0.18em] font-bold text-muted-foreground/70 mb-2 px-1">Sample orders</p>
                     <div className="space-y-1.5">
@@ -136,20 +126,18 @@ const HeroSection = () => {
                   </div>
                 </div>
 
-                {/* Footer pill */}
                 <div className="border-t border-border/50 px-5 py-2.5 flex items-center justify-between bg-muted/30">
                   <span className="text-[9.5px] uppercase tracking-[0.18em] font-bold text-muted-foreground/70">Showcase · Not your balance</span>
                   <Send className="w-3 h-3 text-muted-foreground/60" />
                 </div>
               </div>
 
-              {/* Floating accent badges */}
               <div className="hidden md:flex absolute -top-3 -left-3 items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border shadow-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                <span className="text-[10.5px] font-semibold">Delivered · 4s</span>
+                <span className="text-[10.5px] font-semibold">Order tracked live</span>
               </div>
               <div className="hidden md:flex absolute -bottom-3 -right-3 items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border shadow-lg">
-                <Zap className="w-3 h-3 text-accent" />
+                <Sparkles className="w-3 h-3 text-accent" />
                 <span className="text-[10.5px] font-semibold">Up to 22% cheaper</span>
               </div>
             </div>
