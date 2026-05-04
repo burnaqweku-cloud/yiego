@@ -201,7 +201,7 @@ const Terms = () => {
 
         <div className="mt-8 flex flex-wrap gap-4 text-xs text-muted-foreground">
           <Link to="/privacy" className="hover:text-primary transition-colors duration-150">Privacy Policy</Link>
-          <Link to="/disclaimer" className="hover:text-primary transition-colors duration-150">Disclaimer</Link>
+          
           <Link to="/support" className="hover:text-primary transition-colors duration-150">Contact Support</Link>
         </div>
       </div>
