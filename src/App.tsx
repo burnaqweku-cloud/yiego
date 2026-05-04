@@ -23,6 +23,7 @@ import DomainRedirect from "@/components/seo/DomainRedirect";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import MaintenanceGuard from "./components/routing/MaintenanceGuard";
 import PWATracker from "./components/layout/PWATracker";
+import UpdateToast from "./components/layout/UpdateToast";
 import { useOneSignal } from "./hooks/useOneSignal";
 import { lazy, Suspense } from "react";
 
@@ -257,6 +258,7 @@ const App = () => (
             <PWATracker />
             <Toaster />
             <Sonner />
+            <UpdateToast />
             {/* Floating widgets temporarily hidden */}
             {/* <WhatsAppChannelButton /> */}
             {/* <GlobalAISupportChat /> */}
