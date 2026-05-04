@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom';
-import { Smartphone, Receipt, Gift, Sparkles, Tv, Music2, Send, ArrowRight } from 'lucide-react';
+import { Smartphone, Receipt, Sparkles, Tv, Send, ShoppingBag, ArrowRight } from 'lucide-react';
 
+// NOTE: Gift Cards intentionally excluded from public hub (deferred).
 const services = [
   { to: '/buy-data', icon: Smartphone, label: 'Data Bundles', desc: 'MTN · Telecel · AirtelTigo', live: true, accent: 'from-primary/25 to-primary/5' },
   { to: '/dashboard', icon: Sparkles, label: 'Airtime', desc: 'Top up any line in seconds', accent: 'from-accent/25 to-accent/5' },
   { to: '/dashboard', icon: Receipt, label: 'Bill Payments', desc: 'ECG, water, TV & more', accent: 'from-info/25 to-info/5' },
-  { to: '/dashboard', icon: Gift, label: 'Gift Cards', desc: 'iTunes, Steam, Amazon…', accent: 'from-primary/20 to-accent/10' },
-  { to: '/dashboard', icon: Send, label: 'Social Boosting', desc: 'Followers, views, engagement', accent: 'from-accent/20 to-primary/5' },
   { to: '/dashboard', icon: Tv, label: 'Subscriptions', desc: 'Netflix, Spotify & more', accent: 'from-primary/15 to-info/10' },
-  { to: '/dashboard', icon: Music2, label: 'Digital Products', desc: 'Software keys & vouchers', accent: 'from-info/15 to-primary/5' },
+  { to: '/dashboard', icon: Send, label: 'Social Boosting', desc: 'Followers, views, engagement', accent: 'from-accent/20 to-primary/5' },
+  { to: '/dashboard', icon: ShoppingBag, label: 'Digital Products', desc: 'Software keys & vouchers', accent: 'from-info/15 to-primary/5' },
 ];
 
 const ServiceHub = () => {
@@ -26,7 +26,6 @@ const ServiceHub = () => {
         </p>
       </div>
 
-      {/* Bento grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {/* Featured: Data */}
         <Link
@@ -54,7 +53,6 @@ const ServiceHub = () => {
           </div>
         </Link>
 
-        {/* Soon services */}
         {services.slice(1).map((s) => (
           <Link
             key={s.label}
