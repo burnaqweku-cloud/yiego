@@ -46,16 +46,8 @@ const ResetPassword = () => {
     e.preventDefault();
     setError('');
 
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-    if (!/[a-zA-Z]/.test(newPassword)) {
-      setError('Password must contain at least one letter');
-      return;
-    }
-    if (!/[\d\W_]/.test(newPassword)) {
-      setError('Password must contain at least one number or symbol');
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters');
       return;
     }
     if (newPassword !== confirmPassword) {
