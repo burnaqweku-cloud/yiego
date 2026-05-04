@@ -77,7 +77,7 @@ const LANDING_CONFIGS: Record<string, LandingConfig> = {
     h1: 'Cheap Data Bundles in Ghana',
     description: 'Compare and buy the cheapest data bundles from MTN, Telecel & AirtelTigo in Ghana on YieGo.',
     seoDescription: 'Find the cheapest data bundles in Ghana. Compare MTN, Telecel & AirtelTigo prices on YieGo.',
-    intro: 'Looking for cheap data bundles in Ghana? Datasika prices are genuinely much cheaper than buying directly from MTN, Telecel, or AirtelTigo. Compare and pick the size you need.',
+    intro: 'Looking for cheap data bundles in Ghana? YieGo prices are genuinely much cheaper than buying directly from MTN, Telecel, or AirtelTigo. Compare and pick the size you need.',
     keywords: 'cheap data bundles Ghana, affordable data Ghana, compare data prices Ghana',
     faqs: [
       { question: 'Which network has the cheapest data in Ghana?', answer: 'AirtelTigo generally offers the lowest per-GB prices, followed by Telecel and MTN. Prices vary by bundle size — see the live catalog.' },
@@ -146,7 +146,7 @@ const LANDING_CONFIGS: Record<string, LandingConfig> = {
     h1: 'Buy Cheap MTN Data Bundles in Ghana',
     description: 'Cheap MTN data bundles in Ghana. All sizes, valid for 90 days. Lowest prices on YieGo.',
     seoDescription: 'Buy cheap MTN data bundles in Ghana on YieGo. All MTN bundles valid for 90 days. Fast delivery via mobile money.',
-    intro: 'All MTN bundles on Datasika are valid for 90 days from purchase. YieGo is Ghana\'s go-to platform for cheap MTN data — sold by size (1GB, 2GB, 5GB, 10GB and more) at prices much lower than buying direct.',
+    intro: 'All MTN bundles on YieGo are valid for 90 days from purchase. YieGo is Ghana\'s go-to platform for cheap MTN data — sold by size (1GB, 2GB, 5GB, 10GB and more) at prices much lower than buying direct.',
     keywords: 'cheap MTN data bundles Ghana, buy MTN data online Ghana, MTN 90 days, MTN data top up Ghana',
     faqs: [
       { question: 'How cheap are MTN data bundles on YieGo?', answer: 'YieGo prices are genuinely much cheaper than buying directly from MTN. Same bundle, same network, far lower price.' },
@@ -162,7 +162,7 @@ const LANDING_CONFIGS: Record<string, LandingConfig> = {
     h1: 'Buy Cheap Telecel Data Bundles in Ghana',
     description: 'Cheap Telecel (formerly Vodafone) data bundles in Ghana. Non-expiry bundles. Lowest prices on YieGo.',
     seoDescription: 'Buy cheap Telecel data bundles in Ghana on YieGo. Non-expiry bundles. Fast delivery via Mobile Money.',
-    intro: 'Telecel bundles on Datasika are non-expiry — your data stays on the line until you use it. YieGo delivers Telecel bundles at the lowest prices online with secure Mobile Money or card payments.',
+    intro: 'Telecel bundles on YieGo are non-expiry — your data stays on the line until you use it. YieGo delivers Telecel bundles at the lowest prices online with secure Mobile Money or card payments.',
     keywords: 'cheap Telecel data bundles Ghana, Telecel non-expiry, Vodafone data bundle Ghana, Telecel data prices',
     faqs: [
       { question: 'How long do Telecel bundles last?', answer: 'Telecel bundles on YieGo are non-expiry — your data stays on the line until you use it.' },
@@ -178,7 +178,7 @@ const LANDING_CONFIGS: Record<string, LandingConfig> = {
     h1: 'Buy Cheap AirtelTigo Data Bundles in Ghana',
     description: 'Cheap AirtelTigo (AT) data bundles in Ghana. All sizes, non-expiry. Lowest prices on YieGo.',
     seoDescription: 'Buy cheap AirtelTigo (AT) data bundles in Ghana on YieGo. Non-expiry bundles. Pay with AirtelTigo Money or any mobile money.',
-    intro: 'AirtelTigo bundles on Datasika are non-expiry — your data stays on the line until you use it. YieGo prices are much cheaper than buying directly from AirtelTigo.',
+    intro: 'AirtelTigo bundles on YieGo are non-expiry — your data stays on the line until you use it. YieGo prices are much cheaper than buying directly from AirtelTigo.',
     keywords: 'cheap AirtelTigo data bundles Ghana, AT non-expiry, AirtelTigo data prices, AT data top up Ghana',
     faqs: [
       { question: 'How long do AirtelTigo bundles last?', answer: 'AirtelTigo bundles on YieGo are non-expiry — your data stays on the line until you use it.' },

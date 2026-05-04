@@ -61,7 +61,7 @@ const AppBanner = () => {
       }}
     >
       <img
-        src="/datasika-icon.png?v=2"
+        src="/yiego-icon.png?v=2"
         alt="YieGo"
         className="w-10 h-10 rounded-xl shrink-0"
         loading="eager"

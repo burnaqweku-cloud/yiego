@@ -29,7 +29,7 @@ const BlogStructuredData = ({ post }: { post: BlogPost }) => {
       publisher: {
         '@type': 'Organization',
         name: 'YieGo',
-        logo: { '@type': 'ImageObject', url: 'https://yiego.com/datasika-logo.png' },
+        logo: { '@type': 'ImageObject', url: 'https://yiego.com/yiego-logo.png' },
       },
       mainEntityOfPage: {
         '@type': 'WebPage',

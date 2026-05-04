@@ -25,11 +25,11 @@ const YieGoLoader = ({ size = 'md', text, label, className, fullScreen }: YieGoL
 
   const loader = (
     <div className={cn('flex flex-col items-center justify-center gap-3', className)}>
-      <div className={cn('datasika-loader relative', s.ring)}>
+      <div className={cn('yiego-loader relative', s.ring)}>
         {/* Outer spinning ring */}
-        <div className="datasika-ring absolute inset-0 rounded-full" />
+        <div className="yiego-ring absolute inset-0 rounded-full" />
         {/* Inner pulsing dot */}
-        <div className={cn('datasika-dot absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary', s.dot)} />
+        <div className={cn('yiego-dot absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary', s.dot)} />
       </div>
       {displayText && (
         <p className={cn('text-muted-foreground font-medium animate-pulse', s.text)}>{displayText}</p>

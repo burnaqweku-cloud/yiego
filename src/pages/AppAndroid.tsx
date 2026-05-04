@@ -31,7 +31,7 @@ const AppAndroid = () => {
         <div className="border border-border rounded-2xl p-6 bg-card card-shadow mb-6">
           <div className="flex gap-4 items-start">
             <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-md">
-              <img src="/datasika-icon.png" alt="YieGo" className="w-full h-full object-cover" />
+              <img src="/yiego-icon.png" alt="YieGo" className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold mb-0.5">YieGo</h1>
@@ -112,7 +112,7 @@ const AppAndroid = () => {
             <div>
               <p className="text-sm font-semibold mb-0.5">Verified & Safe</p>
               <p className="text-xs text-muted-foreground">
-                Only download from <span className="font-semibold text-foreground">datasika.shop</span>. 
+                Only download from <span className="font-semibold text-foreground">yiego.com</span>. 
                 Do not install APKs from unknown third-party sources.
               </p>
             </div>

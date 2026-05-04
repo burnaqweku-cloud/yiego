@@ -25,7 +25,7 @@ const OpenInSafariMessage = () => (
   <Layout>
     <div className="container py-12 max-w-md mx-auto px-4 text-center">
       <div className="w-20 h-20 rounded-[1.25rem] mx-auto mb-5 overflow-hidden shadow-md border border-border">
-        <img src="/datasika-icon.png?v=2" alt="YieGo" className="w-full h-full object-cover" />
+        <img src="/yiego-icon.png?v=2" alt="YieGo" className="w-full h-full object-cover" />
       </div>
       <h1 className="text-2xl font-bold mb-2 text-foreground">Open in Safari</h1>
       <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
@@ -66,7 +66,7 @@ const SafariInstallGuide = () => (
       {/* Header */}
       <div className="text-center mb-8">
         <div className="w-20 h-20 rounded-[1.25rem] mx-auto mb-4 overflow-hidden shadow-md border border-border">
-          <img src="/datasika-icon.png?v=2" alt="YieGo" className="w-full h-full object-cover" />
+          <img src="/yiego-icon.png?v=2" alt="YieGo" className="w-full h-full object-cover" />
         </div>
         <h1 className="text-2xl font-bold mb-1.5 text-foreground">Install YieGo</h1>
         <p className="text-muted-foreground text-sm leading-relaxed">
@@ -148,7 +148,7 @@ const SafariInstallGuide = () => (
             </div>
             <div className="flex items-center gap-3 bg-card rounded-lg p-3 border border-border">
               <div className="w-10 h-10 rounded-xl overflow-hidden border border-border shadow-sm">
-                <img src="/datasika-icon.png?v=2" alt="YieGo" className="w-full h-full object-cover" />
+                <img src="/yiego-icon.png?v=2" alt="YieGo" className="w-full h-full object-cover" />
               </div>
               <div>
                 <p className="text-xs font-semibold text-foreground">YieGo</p>

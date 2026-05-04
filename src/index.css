@@ -636,29 +636,29 @@
 }
 
 /* ═══════════════════════════════════════════════
-   DATASIKA PREMIUM LOADER
+   YIEGO PREMIUM LOADER
    ═══════════════════════════════════════════════ */
 
-@keyframes datasika-ring-spin {
+@keyframes yiego-ring-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-@keyframes datasika-dot-pulse {
+@keyframes yiego-dot-pulse {
   0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
   50% { transform: translate(-50%, -50%) scale(1.4); opacity: 0.5; }
 }
 
-.datasika-ring {
+.yiego-ring {
   border: 3px solid hsl(var(--border));
   border-top-color: hsl(var(--primary));
   border-right-color: hsl(var(--primary) / 0.4);
   border-radius: 50%;
-  animation: datasika-ring-spin 0.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  animation: yiego-ring-spin 0.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 
-.datasika-dot {
-  animation: datasika-dot-pulse 1.2s ease-in-out infinite;
+.yiego-dot {
+  animation: yiego-dot-pulse 1.2s ease-in-out infinite;
 }
 
 /* ═══════════════════════════════════════════════
@@ -747,8 +747,8 @@
   .pulse-dot,
   .blink-colon,
   .shimmer,
-  .datasika-ring,
-  .datasika-dot,
+  .yiego-ring,
+  .yiego-dot,
   .wa-fab,
   .wa-badge {
     animation: none !important;
@@ -835,7 +835,7 @@
 }
 
 /* ═══════════════════════════════════════════════
-   DATASIKA BOTTOM NAV — flat white, premium minimal
+   YIEGO BOTTOM NAV — flat white, premium minimal
    ═══════════════════════════════════════════════
    - Pure white bar, rounded top corners only
    - Pinned to true viewport bottom (iOS-stable)
@@ -1208,7 +1208,7 @@ select:focus-visible {
 }
 
 /* ═══════════════════════════════════════════════
-   DATASIKA PREMIUM TOAST STYLES
+   YIEGO PREMIUM TOAST STYLES
    ═══════════════════════════════════════════════ */
 
 /* Base glass toast — light */

@@ -6,9 +6,9 @@ const STRUCTURED_DATA = [
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'YieGo',
-    alternateName: 'Datasika',
+    alternateName: 'YieGo',
     url: 'https://yiego.com',
-    logo: 'https://yiego.com/datasika-logo.png',
+    logo: 'https://yiego.com/yiego-logo.png',
     foundingDate: '2025',
     description:
       "Ghana's cheapest platform for buying MTN, Telecel, and AirtelTigo data bundles online. Lowest prices, fast delivery, plus earn as a data reseller.",
@@ -43,8 +43,8 @@ const STRUCTURED_DATA = [
     '@type': 'LocalBusiness',
     name: 'YieGo',
     url: 'https://yiego.com',
-    image: 'https://yiego.com/datasika-logo.png',
-    logo: 'https://yiego.com/datasika-logo.png',
+    image: 'https://yiego.com/yiego-logo.png',
+    logo: 'https://yiego.com/yiego-logo.png',
     description:
       'Internet data bundle delivery platform serving MTN, Telecel & AirtelTigo networks across Ghana. Founded 2025.',
     foundingDate: '2025',

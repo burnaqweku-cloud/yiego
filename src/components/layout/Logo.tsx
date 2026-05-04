@@ -1,7 +1,7 @@
 import { useTheme } from '@/contexts/ThemeContext';
 
-const LIGHT_LOGO = '/datasika-logo.png';
-const DARK_LOGO = '/datasika-logo-light.png';
+const LIGHT_LOGO = '/yiego-logo.png';
+const DARK_LOGO = '/yiego-logo.png';
 
 interface LogoProps {
   className?: string;

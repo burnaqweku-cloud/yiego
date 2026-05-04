@@ -9,8 +9,8 @@ const CANONICAL_DOMAIN = 'https://yiego.com';
  *
  * This handles:
  *   www.yiego.com  → yiego.com
- *   datasika.shop     → yiego.com
- *   www.datasika.shop → yiego.com
+ *   yiego.com     → yiego.com
+ *   www.yiego.com → yiego.com
  *
  * For proper 301 redirects, server-side config (DNS / edge / CDN) is also needed.
  * This acts as a client-side safety net.

@@ -69,8 +69,8 @@ export const NETWORK_BORDER_COLORS: Record<Network, string> = {
 
 export const FAQ_DATA = [
   {
-    question: 'Is Datasika really cheaper than buying data directly from MTN, Telecel, or AirtelTigo?',
-    answer: 'Yes — Datasika prices are genuinely much cheaper than buying direct. Same bundle, same network, far lower price.',
+    question: 'Is YieGo really cheaper than buying data directly from MTN, Telecel, or AirtelTigo?',
+    answer: 'Yes — YieGo prices are genuinely much cheaper than buying direct. Same bundle, same network, far lower price.',
   },
   {
     question: 'How fast is data delivered after I pay?',
@@ -101,8 +101,8 @@ export const FAQ_DATA = [
     answer: 'Apply for free on the Become an Agent page. Once approved, activate your store subscription to get your personal store link, set your prices, and start earning when customers buy through your store.',
   },
   {
-    question: 'Is Datasika safe to use?',
-    answer: 'Yes — payments are processed through Paystack, the site is SSL-encrypted, and Datasika has served 50,000+ Ghanaians since launching in 2025.',
+    question: 'Is YieGo safe to use?',
+    answer: 'Yes — payments are processed through Paystack, the site is SSL-encrypted, and YieGo has served 50,000+ Ghanaians since launching in 2025.',
   },
 ];
 

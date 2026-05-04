@@ -24,7 +24,7 @@ const AppRedirect = () => {
       <div className="container py-16 max-w-2xl mx-auto">
         <div className="text-center mb-10">
           <div className="w-20 h-20 rounded-2xl mx-auto mb-6 overflow-hidden card-shadow">
-            <img src="/datasika-icon.png" alt="YieGo" className="w-full h-full object-cover" />
+            <img src="/yiego-icon.png" alt="YieGo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-3xl font-bold mb-3">Get the YieGo App</h1>
           <p className="text-muted-foreground">Choose your platform to install YieGo on your device.</p>
