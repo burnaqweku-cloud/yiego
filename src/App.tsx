@@ -286,7 +286,7 @@ const App = () => (
               <Route path="/ai-support" element={<AISupport />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
-              <Route path="/disclaimer" element={<Disclaimer />} />
+              <Route path="/disclaimer" element={<Navigate to="/terms" replace />} />
               <Route path="/app" element={<AppRedirect />} />
               <Route path="/app/android" element={<AppAndroid />} />
               <Route path="/app/ios" element={<AppIOS />} />
