@@ -263,7 +263,7 @@ export default function TgSignup() {
               autoComplete="name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Kofi Mensah"
+              placeholder="Nana Osei"
               disabled={submitting}
               maxLength={100}
             />

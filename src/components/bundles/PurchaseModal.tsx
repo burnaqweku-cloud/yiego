@@ -297,7 +297,7 @@ const PurchaseModal = ({ bundle, open, onOpenChange, getSellingPrice }: Purchase
             <Label htmlFor="fullName" className="text-xs font-medium">Full Name *</Label>
             <Input
               id="fullName"
-              placeholder="e.g. Kofi Mensah"
+              placeholder="e.g. Nana Osei"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               maxLength={100}

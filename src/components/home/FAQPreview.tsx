@@ -7,24 +7,24 @@ import { useScrollReveal } from '@/hooks/useScrollReveal';
 // Broader, platform-wide questions — not data-only.
 const HOMEPAGE_FAQS = [
   {
-    q: 'What can I actually do on YieGo?',
-    a: 'YieGo is a digital wallet for everyday services in Ghana — buy data bundles today, with airtime, bills, subscriptions, social boosting and more rolling out.',
+    q: 'What can I do on YieGo?',
+    a: 'YieGo is your everyday digital wallet for Ghana — buy data bundles today, with airtime, bills, subscriptions and social boosting rolling out next.',
   },
   {
-    q: 'How fast are orders processed?',
-    a: 'Most orders complete in seconds. In rare cases delivery can take a few minutes; if anything fails, you are automatically refunded to your wallet.',
+    q: 'How long do data bundle orders take?',
+    a: 'Most data orders are delivered within a few minutes under normal conditions. During network validation or heavy traffic, delivery may take longer. You can always track your order status.',
   },
   {
-    q: 'How do I fund my wallet?',
-    a: 'Top up securely via Paystack using MTN MoMo, Telecel Cash, AirtelTigo Money, Visa or Mastercard. Funds reflect immediately.',
+    q: 'Can I track my orders?',
+    a: 'Yes — every order has a unique YieGo reference. Use the Track page or your dashboard to see live status, history and delivery details.',
   },
   {
-    q: 'Can I track my order?',
-    a: 'Yes — every order has a unique reference. Use the Track page or your dashboard to see live status, history and delivery details.',
+    q: 'How do payments and wallet funding work?',
+    a: 'Top up securely via Paystack with MTN MoMo, Telecel Cash, AirtelTigo Money, Visa or Mastercard. Funds reflect immediately and you can pay from your wallet at checkout.',
   },
   {
-    q: 'How do I get help if something goes wrong?',
-    a: 'Reach our team via live chat (9am–9pm), the in-app AI assistant 24/7, or email support@yiego.com. Most issues are resolved on the first message.',
+    q: 'What should I do if an order delays?',
+    a: 'Your order is safely recorded and queued. If it has not delivered after a reasonable wait, contact support with your reference and our team will look into it.',
   },
 ];
 

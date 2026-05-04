@@ -42,7 +42,7 @@ const NetworkCards = () => {
           </h2>
         </div>
         <p className="text-sm text-muted-foreground max-w-sm">
-          Pick a network, pick a size, get delivered in seconds. Same bundle, lower price.
+          Pick a network, pick a size, and pay. Same bundle, lower price — delivery usually in minutes.
         </p>
       </div>
 
