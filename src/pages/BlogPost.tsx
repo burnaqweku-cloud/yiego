@@ -148,7 +148,7 @@ const BlogPost = () => {
           <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
           <h3 className="font-display font-bold text-xl tracking-tight">Skip the queues. Order on YieGo.</h3>
           <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">
-            Cheaper data, instant delivery, full tracking — all from one wallet.
+            Cheaper data, fast delivery, full tracking — all from one wallet.
           </p>
           <Link to="/buy-data" className="inline-flex items-center gap-2 px-6 h-11 mt-5 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)] hover:opacity-95 transition-opacity">
             Buy data now <ArrowRight className="w-4 h-4" />
