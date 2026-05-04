@@ -408,16 +408,8 @@ const SignupForm = () => {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-    if (!/[a-zA-Z]/.test(password)) {
-      setError('Password must contain at least one letter');
-      return;
-    }
-    if (!/[\d\W_]/.test(password)) {
-      setError('Password must contain at least one number or symbol');
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
       return;
     }
 
