@@ -119,9 +119,6 @@ const TrackOrder = () => {
             </div>
           )}
 
-          <p className="mt-3 text-[11.5px] text-muted-foreground/80 leading-relaxed">
-            Accepts <span className="font-mono font-semibold text-foreground/80">YG-</span>, <span className="font-mono">DS-</span>, <span className="font-mono">AGT-</span>, <span className="font-mono">WS-</span>, <span className="font-mono">TG-</span> and <span className="font-mono">RWD-</span> references.
-          </p>
         </div>
 
         {/* Empty state — first visit */}
