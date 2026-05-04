@@ -1,0 +1,1 @@
+ALTER TABLE public.admin_support_tickets ADD COLUMN IF NOT EXISTS manager_review boolean NOT NULL DEFAULT false;

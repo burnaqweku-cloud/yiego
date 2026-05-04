@@ -1,0 +1,1 @@
+ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS activation_promo_reset_applied boolean NOT NULL DEFAULT false;

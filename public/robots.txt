@@ -1,0 +1,34 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /agent/dashboard
+Disallow: /agent/orders
+Disallow: /agent/earnings
+Disallow: /agent/withdrawals
+Disallow: /agent/transactions
+Disallow: /agent/store-settings
+Disallow: /agent/pricing
+Disallow: /agent/activate
+Disallow: /agent/customers
+Disallow: /agent/marketing
+Disallow: /agent/wholesale
+Disallow: /agent/bulk-purchase
+Disallow: /agent/bulk-orders
+Disallow: /checkout
+Disallow: /order-confirmation
+Disallow: /paystack/
+Disallow: /reset-password
+Disallow: /reward
+Disallow: /reward-activation
+Disallow: /reward-unlocked
+Disallow: /tg/
+Disallow: /banned
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+Sitemap: https://datasika.com/sitemap.xml

@@ -1,0 +1,32 @@
+import { useTheme } from '@/contexts/ThemeContext';
+
+const LIGHT_LOGO = '/datasika-logo.png';
+const DARK_LOGO = '/datasika-logo-light.png';
+
+interface LogoProps {
+  className?: string;
+  height?: string;
+  loading?: 'eager' | 'lazy';
+}
+
+/**
+ * Theme-aware DataSika logo.
+ * Shows dark-text logo in light mode, light-text logo in dark mode.
+ * Smooth crossfade transition on theme toggle.
+ */
+const Logo = ({ className = '', height = 'h-9', loading = 'eager' }: LogoProps) => {
+  const { theme } = useTheme();
+  const src = theme === 'dark' ? DARK_LOGO : LIGHT_LOGO;
+
+  return (
+    <img
+      key={theme}
+      src={src}
+      alt="DataSika"
+      className={`${height} w-auto object-contain animate-[logo-fade_200ms_ease-out] ${className}`}
+      loading={loading}
+    />
+  );
+};
+
+export default Logo;

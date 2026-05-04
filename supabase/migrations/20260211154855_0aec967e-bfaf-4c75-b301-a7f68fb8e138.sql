@@ -1,0 +1,2 @@
+ALTER TABLE public.site_notices DROP CONSTRAINT site_notices_severity_check;
+ALTER TABLE public.site_notices ADD CONSTRAINT site_notices_severity_check CHECK (severity IN ('info', 'warning', 'outage', 'success'));

@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Service role inserts point transactions" ON public.point_transactions;
