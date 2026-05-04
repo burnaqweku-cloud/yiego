@@ -14,7 +14,7 @@ import SEOHead from '@/components/seo/SEOHead';
 import PasswordStrengthBar, { getStrength } from '@/components/auth/PasswordStrengthBar';
 
 const emailSchema = z.string().email('Please enter a valid email address');
-const passwordSchema = z.string().min(8, 'Password must be at least 8 characters');
+const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
 const usernameSchema = z.string()
   .min(3, 'Username must be at least 3 characters')
   .max(20, 'Username must be 20 characters or less')
