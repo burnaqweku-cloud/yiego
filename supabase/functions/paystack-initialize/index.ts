@@ -41,11 +41,12 @@ function calculateProcessingFee(baseAmount: number): { processingFee: number; to
   return { processingFee, totalPayable };
 }
 
-/** Generate a unique order ID like DS-XXXXXXXX.
- * The prefix defaults to "DS-" to preserve byte-identical behaviour for the
- * website. Trusted server-side callers (e.g. the Telegram bot) may pass a
- * different prefix via the optional `order_id_prefix` request param. */
-function generateOrderId(prefix = "DS-"): string {
+/** Generate a unique order ID like YG-XXXXXXXX.
+ * The default prefix is "YG-" (YieGo public-facing brand). Legacy DS-prefixed
+ * orders continue to work via lookup since lookup is prefix-agnostic.
+ * Trusted server-side callers (e.g. the Telegram bot) may pass a different
+ * prefix via the optional `order_id_prefix` request param. */
+function generateOrderId(prefix = "YG-"): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let result = prefix;
   for (let i = 0; i < 8; i++) {
