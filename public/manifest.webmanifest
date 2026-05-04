@@ -1,7 +1,7 @@
 {
   "name": "YieGo — Your everyday digital plug",
   "short_name": "YieGo",
-  "description": "Buy data, airtime, bills, gift cards, boosting, subscriptions and more from one simple wallet.",
+  "description": "Buy data and airtime fast in Ghana — MTN, Telecel, AirtelTigo. One wallet, one tap.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
