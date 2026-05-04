@@ -144,15 +144,14 @@ const BlogPost = () => {
         />
 
         {/* CTA */}
-        <div className="mt-12 p-6 bg-primary/5 border border-primary/20 rounded-2xl text-center">
-          <h3 className="font-display font-bold text-lg mb-2">Ready to Buy Data?</h3>
-          <p className="text-muted-foreground text-sm mb-4">
-            Get affordable MTN, Telecel & AirtelTigo data bundles with fast delivery.
+        <div className="mt-12 relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-card via-card to-card/60 p-7 text-center">
+          <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
+          <h3 className="font-display font-bold text-xl tracking-tight">Skip the queues. Order on YieGo.</h3>
+          <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">
+            Cheaper data, instant delivery, full tracking — all from one wallet.
           </p>
-          <Link to="/buy-data">
-            <Button className="gap-2">
-              Buy Data Now <ArrowRight className="w-4 h-4" />
-            </Button>
+          <Link to="/buy-data" className="inline-flex items-center gap-2 px-6 h-11 mt-5 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)] hover:opacity-95 transition-opacity">
+            Buy data now <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 

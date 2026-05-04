@@ -117,26 +117,34 @@ const Support = () => {
 
       <div className="min-h-[80vh]">
         {/* ─── HERO SECTION ─── */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 via-primary/[0.02] to-transparent">
-          <div className="container max-w-3xl py-10 md:py-14 px-4 text-center space-y-4">
-            <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/10 flex items-center justify-center mx-auto shadow-lg shadow-primary/5">
-              <Headphones className="w-10 h-10 text-primary" />
+        <section className="relative overflow-hidden border-b border-border/40">
+          <div className="absolute inset-0 -z-10">
+            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[560px] h-[400px] rounded-full bg-primary/15 blur-3xl" />
+            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(hsl(var(--foreground)) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+          </div>
+          <div className="container max-w-3xl py-10 md:py-14 px-4 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 mb-4">
+              <Headphones className="w-3 h-3 text-primary" />
+              <span className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-primary">Support hub</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-display font-bold tracking-tight">
+            <h1 className="text-3xl md:text-[2.4rem] font-display font-extrabold tracking-[-0.025em] leading-[1.1]">
               {isLoggedIn && firstName ? (
-                <>Welcome back, <span className="text-primary">{firstName}</span></>
+                <>Hey <span className="text-gradient">{firstName}</span>, how can we help?</>
               ) : (
-                'Support Center'
+                <>How can we <span className="text-gradient">help you?</span></>
               )}
             </h1>
-            <p className="text-base text-muted-foreground max-w-md mx-auto leading-relaxed">
-              Your one-stop hub for help. Chat with our AI assistant, track tickets, and get instant answers.
+            <p className="text-[14px] text-muted-foreground max-w-md mx-auto leading-relaxed mt-3">
+              Chat with our team, track your tickets, and get instant answers — all in one place.
             </p>
-            <div className="pt-2">
-              <Button onClick={openChat} size="lg" className="h-13 px-8 text-sm font-bold gap-2.5 rounded-xl shadow-md shadow-primary/20">
-                <MessageCircle className="w-5 h-5" />
-                Start Support Chat
+            <div className="pt-5 flex flex-wrap items-center justify-center gap-2">
+              <Button onClick={openChat} size="lg" className="h-12 px-6 text-sm font-bold gap-2 rounded-full shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)]">
+                <MessageCircle className="w-4 h-4" />
+                Start support chat
               </Button>
+              <a href="/faq" className="inline-flex items-center gap-1.5 px-5 h-12 rounded-full border border-border bg-card text-sm font-semibold hover:border-primary/40 transition-colors">
+                Browse FAQs
+              </a>
             </div>
           </div>
         </section>
