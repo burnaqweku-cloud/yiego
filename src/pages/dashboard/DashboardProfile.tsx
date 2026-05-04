@@ -202,7 +202,7 @@ const DashboardProfile = () => {
               <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
                 <Sparkles className="w-3 h-3" /> Points
               </div>
-              <div className="mt-1 text-base sm:text-lg font-display font-bold tabular-nums">{loyaltyPoints ?? 0}</div>
+              <div className="mt-1 text-base sm:text-lg font-display font-bold tabular-nums">{(loyaltyAccount as any)?.points_balance ?? 0}</div>
             </div>
           </div>
         </div>
