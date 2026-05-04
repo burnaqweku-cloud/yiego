@@ -1,30 +1,30 @@
 import Layout from '@/components/layout/Layout';
 import HeroSection from '@/components/home/HeroSection';
+import ServiceHub from '@/components/home/ServiceHub';
+import HowItWorks from '@/components/home/HowItWorks';
 import NetworkCards from '@/components/home/NetworkCards';
 import WhyChooseUs from '@/components/home/WhyChooseUs';
-import AccountBenefits from '@/components/home/AccountBenefits';
 import FAQPreview from '@/components/home/FAQPreview';
-import SupportSection from '@/components/home/SupportSection';
-import SEOContentSection from '@/components/home/SEOContentSection';
 import BlogPreview from '@/components/home/BlogPreview';
+import FinalCTA from '@/components/home/FinalCTA';
 import SEOHead from '@/components/seo/SEOHead';
 
 const Index = () => {
   return (
     <Layout>
       <SEOHead
-        title="YieGo — Ghana's Cheapest Data Bundles | Buy MTN, Telecel & AirtelTigo Online"
-        description="Buy the cheapest MTN, Telecel & AirtelTigo data bundles in Ghana on YieGo. Instant delivery, lowest prices, plus earn money as a data reseller. Top up now."
+        title="YieGo — Your Everyday Digital Wallet | Data, Airtime, Bills & Gift Cards in Ghana"
+        description="YieGo is the Ghanaian digital wallet for data bundles, airtime, bill payments, gift cards and more. One account, instant delivery, lowest prices."
         path="/"
       />
       <HeroSection />
+      <ServiceHub />
+      <HowItWorks />
       <NetworkCards />
       <WhyChooseUs />
-      <AccountBenefits />
-      <SEOContentSection />
       <BlogPreview />
       <FAQPreview />
-      <SupportSection />
+      <FinalCTA />
     </Layout>
   );
 };
