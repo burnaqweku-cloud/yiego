@@ -11,7 +11,7 @@ import { useGlobalSystemStatus } from '@/contexts/SystemStatusContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Shield, Zap, Tag } from 'lucide-react';
 import SEOHead from '@/components/seo/SEOHead';
-import AgentPromoBanner from '@/components/bundles/AgentPromoBanner';
+
 import { useAgent } from '@/hooks/useAgent';
 import { useAgentSubscriptionState } from '@/hooks/useAgentSubscriptionState';
 import { useNetworkAvailability } from '@/hooks/useNetworkAvailability';
@@ -233,7 +233,6 @@ const BuyData = () => {
         onOpenChange={setModalOpen}
         getSellingPrice={getPriceForBundle}
       />
-      <AgentPromoBanner />
     </Layout>
   );
 };

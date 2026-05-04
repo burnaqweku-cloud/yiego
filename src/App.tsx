@@ -16,6 +16,7 @@ import PublicRoute from "@/components/routing/PublicRoute";
 import PrivateRoute from "@/components/routing/PrivateRoute";
 import AgentRoute from "@/components/routing/AgentRoute";
 import AdminRoute from "@/components/routing/AdminRoute";
+import AgentFeatureGate from "@/components/routing/AgentFeatureGate";
 import { PageTrackerProvider } from "@/components/layout/PageTrackerProvider";
 import StructuredData from "@/components/seo/StructuredData";
 import DomainRedirect from "@/components/seo/DomainRedirect";
@@ -333,36 +334,36 @@ const App = () => (
               <Route path="/reward-unlocked" element={<PrivateRoute><RewardUnlocked /></PrivateRoute>} />
 
               {/* Agent store — public, no YieGo branding */}
-              <Route path="/store/:slug" element={<AgentStore />} />
+              <Route path="/store/:slug" element={<AgentFeatureGate><AgentStore /></AgentFeatureGate>} />
 
               {/* Agent smart router — public landing page, redirects logged-in agents */}
-              <Route path="/agent" element={<AgentRouter />} />
+              <Route path="/agent" element={<AgentFeatureGate><AgentRouter /></AgentFeatureGate>} />
 
               {/* Become an agent — accessible to guests and logged-in users */}
-              <Route path="/become-an-agent" element={<BecomeAgent />} />
+              <Route path="/become-an-agent" element={<AgentFeatureGate><BecomeAgent /></AgentFeatureGate>} />
 
               {/* Agent activation — requires auth + approved agent */}
-              <Route path="/agent/activate" element={<PrivateRoute><AgentActivate /></PrivateRoute>} />
-              <Route path="/agent/subscription/callback" element={<PrivateRoute><AgentSubscriptionCallback /></PrivateRoute>} />
+              <Route path="/agent/activate" element={<AgentFeatureGate><PrivateRoute><AgentActivate /></PrivateRoute></AgentFeatureGate>} />
+              <Route path="/agent/subscription/callback" element={<AgentFeatureGate><PrivateRoute><AgentSubscriptionCallback /></PrivateRoute></AgentFeatureGate>} />
 
               {/* Agent dashboard — requires active agent */}
-              <Route path="/agent/dashboard" element={<AgentRoute><AgentDashboard /></AgentRoute>} />
-              <Route path="/agent/orders" element={<AgentRoute><AgentOrders /></AgentRoute>} />
-              <Route path="/agent/earnings" element={<AgentRoute><AgentEarnings /></AgentRoute>} />
-              <Route path="/agent/withdrawals" element={<AgentRoute><AgentWithdrawals /></AgentRoute>} />
-              <Route path="/agent/transactions" element={<AgentRoute><AgentTransactions /></AgentRoute>} />
-              <Route path="/agent/store-settings" element={<AgentRoute><AgentStoreSettings /></AgentRoute>} />
-              <Route path="/agent/pricing" element={<AgentRoute><AgentPricing /></AgentRoute>} />
-              <Route path="/agent/customers" element={<AgentRoute><AgentCustomers /></AgentRoute>} />
-              <Route path="/agent/support" element={<AgentRoute><AgentSupport /></AgentRoute>} />
-              <Route path="/agent/marketing" element={<AgentRoute><AgentMarketingTools /></AgentRoute>} />
-              <Route path="/agent/subscription" element={<AgentRoute><AgentSubscription /></AgentRoute>} />
-              <Route path="/agent/wholesale" element={<AgentRoute><AgentWholesale /></AgentRoute>} />
-              <Route path="/agent/bulk-purchase" element={<AgentRoute><AgentWholesale /></AgentRoute>} />
-              <Route path="/agent/wholesale/history" element={<AgentRoute><AgentWholesaleHistory /></AgentRoute>} />
-              <Route path="/agent/bulk-orders" element={<AgentRoute><AgentWholesaleHistory /></AgentRoute>} />
-              <Route path="/agent/wholesale/orders/:orderId" element={<AgentRoute><AgentWholesaleOrderDetail /></AgentRoute>} />
-              <Route path="/agent/bulk-purchase/orders/:orderId" element={<AgentRoute><AgentWholesaleOrderDetail /></AgentRoute>} />
+              <Route path="/agent/dashboard" element={<AgentFeatureGate><AgentRoute><AgentDashboard /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/orders" element={<AgentFeatureGate><AgentRoute><AgentOrders /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/earnings" element={<AgentFeatureGate><AgentRoute><AgentEarnings /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/withdrawals" element={<AgentFeatureGate><AgentRoute><AgentWithdrawals /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/transactions" element={<AgentFeatureGate><AgentRoute><AgentTransactions /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/store-settings" element={<AgentFeatureGate><AgentRoute><AgentStoreSettings /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/pricing" element={<AgentFeatureGate><AgentRoute><AgentPricing /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/customers" element={<AgentFeatureGate><AgentRoute><AgentCustomers /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/support" element={<AgentFeatureGate><AgentRoute><AgentSupport /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/marketing" element={<AgentFeatureGate><AgentRoute><AgentMarketingTools /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/subscription" element={<AgentFeatureGate><AgentRoute><AgentSubscription /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/wholesale" element={<AgentFeatureGate><AgentRoute><AgentWholesale /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/bulk-purchase" element={<AgentFeatureGate><AgentRoute><AgentWholesale /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/wholesale/history" element={<AgentFeatureGate><AgentRoute><AgentWholesaleHistory /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/bulk-orders" element={<AgentFeatureGate><AgentRoute><AgentWholesaleHistory /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/wholesale/orders/:orderId" element={<AgentFeatureGate><AgentRoute><AgentWholesaleOrderDetail /></AgentRoute></AgentFeatureGate>} />
+              <Route path="/agent/bulk-purchase/orders/:orderId" element={<AgentFeatureGate><AgentRoute><AgentWholesaleOrderDetail /></AgentRoute></AgentFeatureGate>} />
 
               {/* Dashboard routes — require authentication */}
               <Route path="/dashboard" element={<PrivateRoute><DashboardHome /></PrivateRoute>} />
