@@ -83,7 +83,7 @@ const TrackOrder = () => {
           </div>
           <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Order Tracker</span>
           <h1 className="text-3xl font-display font-bold mb-2 tracking-tight">Track Your Order</h1>
-          <p className="text-muted-foreground text-sm">Enter your Order ID to check delivery status</p>
+          <p className="text-muted-foreground text-sm">Enter your reference (YG-, DS-, AGT-, WS-, TG- or RWD-) to check delivery status</p>
         </div>
 
         {/* Search form */}
