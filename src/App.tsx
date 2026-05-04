@@ -42,7 +42,7 @@ const FAQ = lazy(() => import("./pages/FAQ"));
 const Support = lazy(() => import("./pages/Support"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
-const Disclaimer = lazy(() => import("./pages/Disclaimer"));
+
 const AppRedirect = lazy(() => import("./pages/AppRedirect"));
 const AppAndroid = lazy(() => import("./pages/AppAndroid"));
 const AppIOS = lazy(() => import("./pages/AppIOS"));
