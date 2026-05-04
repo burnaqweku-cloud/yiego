@@ -112,7 +112,7 @@ export const WHATSAPP_MESSAGE = 'Hello YieGo Support, I need help with my order.
 
 export const generateOrderId = (): string => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let result = 'DS-';
+  let result = 'YG-';
   for (let i = 0; i < 8; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
