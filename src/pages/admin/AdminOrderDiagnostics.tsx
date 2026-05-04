@@ -225,7 +225,7 @@ const AdminOrderDiagnostics = () => {
         const supplierCostFromProduct = product?.cost_price_ghs != null && Number(product.cost_price_ghs) > 0
           ? Number(product.cost_price_ghs)
           : (Number(o.supplier_cost_at_purchase) || 0);
-        const datasikaProfitComputed = resolvedBasePrice > 0 && supplierCostFromProduct > 0
+        const yiegoProfitComputed = resolvedBasePrice > 0 && supplierCostFromProduct > 0
           ? Math.max(0, Math.round((resolvedBasePrice - supplierCostFromProduct) * 100) / 100)
           : null;
 
@@ -245,7 +245,7 @@ const AdminOrderDiagnostics = () => {
           updates.agent_cost_price = resolvedBasePrice; // Fix the stored base price too
           updates.profit_ghs = profitComputed;          // Fix the legacy profit field
           if (supplierCostFromProduct > 0) updates.supplier_cost_at_purchase = supplierCostFromProduct;
-          if (datasikaProfitComputed != null) updates.yiego_profit_at_purchase = datasikaProfitComputed;
+          if (yiegoProfitComputed != null) updates.yiego_profit_at_purchase = yiegoProfitComputed;
           repaired++;
         }
 

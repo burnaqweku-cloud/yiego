@@ -52,7 +52,7 @@ const AppBanner = () => {
 
   return (
     <div
-      id="datasika-app-banner"
+      id="yiego-app-banner"
       className="flex items-center gap-3 px-4 py-2.5 relative z-[60] border-b border-border/60"
       style={{
         background: 'hsl(var(--card))',

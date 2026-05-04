@@ -39,8 +39,8 @@ const AgentPromoBanner = () => {
 
   // Hide WhatsApp widget + App banner while popup is open
   useEffect(() => {
-    const waEl = document.getElementById('datasika-wa-widget');
-    const appBannerEl = document.getElementById('datasika-app-banner');
+    const waEl = document.getElementById('yiego-wa-widget');
+    const appBannerEl = document.getElementById('yiego-app-banner');
     if (visible) {
       if (waEl) waEl.style.display = 'none';
       if (appBannerEl) appBannerEl.style.display = 'none';

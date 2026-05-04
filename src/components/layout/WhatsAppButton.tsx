@@ -152,7 +152,7 @@ const WhatsAppChannelButton = () => {
 
   return (
     <div
-      id="datasika-wa-widget"
+      id="yiego-wa-widget"
       className="fixed z-[9999] left-4 safe-area-floating-widget flex flex-col items-start gap-2"
       style={{
         opacity: isScrolling ? 0.35 : 1,

@@ -3,7 +3,7 @@ import { Download, ShieldCheck, Settings, CheckCircle, AlertTriangle, Star, User
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-const APK_URL = `https://nrsfvhztpzwkadwciizp.supabase.co/storage/v1/object/public/app-downloads/datasika.apk`;
+const APK_URL = `https://nrsfvhztpzwkadwciizp.supabase.co/storage/v1/object/public/app-downloads/yiego.apk`;
 
 const STEPS = [
   {
