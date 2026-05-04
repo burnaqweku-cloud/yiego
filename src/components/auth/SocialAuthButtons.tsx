@@ -1,0 +1,123 @@
+import { useEffect, useRef, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { lovable } from '@/integrations/lovable';
+
+// Telegram bot username — must match the bot whose token is in TELEGRAM_BOT_TOKEN.
+// We expose a public env var, falling back to the live bot to avoid empty widget.
+const TELEGRAM_BOT_USERNAME =
+  import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'YieGoBot';
+
+interface Props {
+  redirectTo?: string;
+}
+
+const SocialAuthButtons = ({ redirectTo }: Props) => {
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [tgLoading, setTgLoading] = useState(false);
+  const tgWrapRef = useRef<HTMLDivElement>(null);
+
+  // ───── Google ─────
+  const handleGoogle = async () => {
+    if (googleLoading) return;
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin + (redirectTo || '/dashboard'),
+      });
+      if (result.error) {
+        toast.error('Could not sign in with Google. Please try again.');
+        setGoogleLoading(false);
+      }
+      // If redirected, browser will navigate away.
+    } catch {
+      toast.error('Could not sign in with Google. Please try again.');
+      setGoogleLoading(false);
+    }
+  };
+
+  // ───── Telegram Login Widget ─────
+  useEffect(() => {
+    if (!tgWrapRef.current) return;
+    // Expose callback globally for the widget
+    (window as any).__yiegoTelegramAuth = async (user: Record<string, any>) => {
+      setTgLoading(true);
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-auth`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({
+              ...user,
+              redirect_to: window.location.origin + (redirectTo || '/dashboard'),
+            }),
+          },
+        );
+        const data = await res.json();
+        if (!res.ok || !data.action_link) {
+          toast.error('Telegram sign-in could not be completed. Please try again.');
+          setTgLoading(false);
+          return;
+        }
+        window.location.href = data.action_link;
+      } catch {
+        toast.error('Telegram sign-in could not be completed. Please try again.');
+        setTgLoading(false);
+      }
+    };
+
+    // Inject Telegram widget script
+    const script = document.createElement('script');
+    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.async = true;
+    script.setAttribute('data-telegram-login', TELEGRAM_BOT_USERNAME);
+    script.setAttribute('data-size', 'large');
+    script.setAttribute('data-radius', '12');
+    script.setAttribute('data-onauth', '__yiegoTelegramAuth(user)');
+    script.setAttribute('data-request-access', 'write');
+    tgWrapRef.current.innerHTML = '';
+    tgWrapRef.current.appendChild(script);
+
+    return () => {
+      try { delete (window as any).__yiegoTelegramAuth; } catch {}
+    };
+  }, [redirectTo]);
+
+  return (
+    <div className="space-y-2.5">
+      <button
+        type="button"
+        onClick={handleGoogle}
+        disabled={googleLoading}
+        className="w-full h-12 rounded-xl border border-border/70 bg-background hover:bg-muted/40 transition-colors flex items-center justify-center gap-2.5 text-sm font-semibold disabled:opacity-60 active:scale-[0.99]"
+      >
+        {googleLoading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" width="18" height="18">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83C6.71 7.31 9.14 5.38 12 5.38z"/>
+          </svg>
+        )}
+        Continue with Google
+      </button>
+
+      <div className="relative">
+        <div ref={tgWrapRef} className={`flex items-center justify-center min-h-[44px] ${tgLoading ? 'opacity-40 pointer-events-none' : ''}`} />
+        {tgLoading && (
+          <div className="absolute inset-0 flex items-center justify-center text-[12px] text-muted-foreground gap-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Connecting Telegram…
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default SocialAuthButtons;
