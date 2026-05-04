@@ -1,129 +1,104 @@
 import Layout from '@/components/layout/Layout';
-import { Download, ShieldCheck, Settings, CheckCircle, AlertTriangle, Star, Users, HardDrive, Smartphone } from 'lucide-react';
+import { Smartphone, ShieldCheck, Bell, Zap, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
 
-const APK_URL = `https://nrsfvhztpzwkadwciizp.supabase.co/storage/v1/object/public/app-downloads/yiego.apk`;
-
-const STEPS = [
-  {
-    icon: Download,
-    title: 'Download the APK',
-    description: 'Tap the download button to get the YieGo APK file.',
-  },
-  {
-    icon: Settings,
-    title: 'Allow unknown sources',
-    description: 'Go to Settings → Security → Enable "Install from unknown sources" for your browser.',
-  },
-  {
-    icon: CheckCircle,
-    title: 'Install & open',
-    description: 'Open the downloaded file, tap "Install", then "Open" to launch YieGo.',
-  },
+const PERKS = [
+  { icon: Zap, title: 'Faster checkout', desc: 'Open YieGo from your home screen — no browser bars in the way.' },
+  { icon: Bell, title: 'Stay updated', desc: 'Get gentle nudges on order delivery and wallet activity.' },
+  { icon: ShieldCheck, title: 'Same secure platform', desc: 'Bank-grade payments via Paystack, encrypted wallet.' },
 ];
 
 const AppAndroid = () => {
   return (
     <Layout>
-      <div className="container py-8 max-w-lg mx-auto px-4">
-        {/* App Header Card */}
-        <div className="border border-border rounded-2xl p-6 bg-card card-shadow mb-6">
-          <div className="flex gap-4 items-start">
-            <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-md">
-              <img src="/yiego-icon.png" alt="YieGo" className="w-full h-full object-cover" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold mb-0.5">YieGo</h1>
-              <p className="text-sm text-primary font-medium mb-2">YieGo Technologies</p>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5 fill-primary text-primary" />
-                  4.8
-                </span>
-                <span>•</span>
-                <span>10K+ downloads</span>
+      <div className="container py-8 md:py-12 max-w-lg mx-auto px-4">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 mb-4">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            <span className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-primary">YieGo for Android</span>
+          </div>
+          <div className="w-20 h-20 rounded-[1.4rem] mx-auto mb-5 overflow-hidden ring-1 ring-border/60 shadow-md">
+            <img src="/yiego-icon.png?v=2" alt="YieGo" className="w-full h-full object-cover" />
+          </div>
+          <h1 className="text-2xl md:text-[1.75rem] font-display font-extrabold tracking-tight">Install YieGo</h1>
+          <p className="text-[14px] text-muted-foreground mt-2 leading-relaxed max-w-md mx-auto">
+            Add YieGo to your home screen for the fastest experience. The dedicated Android app is launching soon.
+          </p>
+        </div>
+
+        {/* Coming-soon download card */}
+        <div className="rounded-3xl border border-border/70 bg-card p-5 md:p-6 mb-6 shadow-[0_20px_50px_-30px_hsl(var(--primary)/0.25)]">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center">
+                <Smartphone className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-bold leading-tight">YieGo Android App</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5 inline-flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" /> Launching soon
+                </p>
               </div>
             </div>
+            <span className="text-[9.5px] uppercase tracking-wider font-bold px-2 py-1 rounded-md bg-muted text-muted-foreground">v1 prep</span>
           </div>
-
-          {/* Stats Row */}
-          <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-border">
-            <div className="text-center">
-              <p className="text-sm font-bold">4.8 ★</p>
-              <p className="text-[11px] text-muted-foreground">1.2K reviews</p>
-            </div>
-            <div className="text-center border-x border-border">
-              <p className="text-sm font-bold">32 MB</p>
-              <p className="text-[11px] text-muted-foreground">Size</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-bold">v7.2.0</p>
-              <p className="text-[11px] text-muted-foreground">Version</p>
-            </div>
-          </div>
-
-          {/* Download Button */}
-          <a href={APK_URL} download="YieGo.apk" className="block mt-5">
-            <Button className="w-full btn-press gap-2 font-bold h-12 text-base rounded-xl">
-              <Download className="w-5 h-5" />
-              Download APK
-            </Button>
-          </a>
-        </div>
-
-        {/* About */}
-        <div className="border border-border rounded-2xl p-5 bg-card card-shadow mb-6">
-          <h2 className="text-base font-bold mb-2">About this app</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            YieGo is the fastest way to buy affordable internet data bundles in Ghana. 
-            Supports MTN, Telecel, AirtelTigo & AT networks with instant delivery directly to your phone.
+          <Button
+            disabled
+            className="w-full h-12 rounded-xl font-bold text-[14px] gap-2 cursor-not-allowed opacity-90"
+          >
+            Download — Coming soon
+          </Button>
+          <p className="text-[11px] text-muted-foreground text-center mt-3 leading-relaxed">
+            We'll publish the APK here once it's ready. In the meantime, install YieGo as a web app — it works offline-ready and feels native.
           </p>
-          <div className="flex flex-wrap gap-2 mt-3">
-            <Badge variant="secondary" className="text-[11px]">Data Bundles</Badge>
-            <Badge variant="secondary" className="text-[11px]">Mobile Money</Badge>
-            <Badge variant="secondary" className="text-[11px]">Instant Delivery</Badge>
-            <Badge variant="secondary" className="text-[11px]">Ghana</Badge>
-          </div>
         </div>
 
-        {/* Install Steps */}
-        <div className="border border-border rounded-2xl p-5 bg-card card-shadow mb-6">
-          <h2 className="text-base font-bold mb-4">How to install</h2>
-          <div className="space-y-4">
-            {STEPS.map((step, i) => (
-              <div key={i} className="flex gap-3 items-start">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <step.icon className="w-4 h-4 text-primary" />
+        {/* Add to home (PWA) */}
+        <div className="rounded-3xl border border-border/70 bg-card p-5 md:p-6 mb-6">
+          <h2 className="text-[15px] font-display font-bold mb-4">Get the YieGo experience now</h2>
+          <ol className="space-y-3">
+            {[
+              'Open YieGo in Chrome.',
+              'Tap the ⋮ menu in the top-right corner.',
+              'Choose "Install app" or "Add to Home screen".',
+              'Confirm — YieGo will appear like any other app.',
+            ].map((step, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="w-7 h-7 rounded-lg bg-primary text-primary-foreground text-[12px] font-bold flex items-center justify-center shrink-0">
+                  {i + 1}
+                </span>
+                <span className="text-[13.5px] text-foreground/85 leading-relaxed pt-0.5">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* Why */}
+        <div className="rounded-3xl border border-border/70 bg-card p-5 md:p-6 mb-6">
+          <h3 className="text-[15px] font-display font-bold mb-4">Why install?</h3>
+          <div className="space-y-3">
+            {PERKS.map((p, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center shrink-0">
+                  <p.icon className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">{`${i + 1}. ${step.title}`}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
+                  <p className="text-[13.5px] font-semibold leading-tight">{p.title}</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">{p.desc}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Safety & Warning */}
-        <div className="space-y-3">
-          <div className="border border-border rounded-xl p-4 bg-card flex gap-3 items-start">
-            <ShieldCheck className="w-5 h-5 text-success shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold mb-0.5">Verified & Safe</p>
-              <p className="text-xs text-muted-foreground">
-                Only download from <span className="font-semibold text-foreground">yiego.com</span>. 
-                Do not install APKs from unknown third-party sources.
-              </p>
-            </div>
-          </div>
-
-          <div className="border border-primary/20 rounded-xl p-4 bg-primary/5 flex gap-3 items-start">
-            <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <p className="text-xs text-muted-foreground">
-              If blocked, go to <span className="font-medium text-foreground">Settings → Apps → Special Access → Install unknown apps</span> and allow your browser.
-            </p>
-          </div>
+        <div className="flex gap-2">
+          <Link to="/" className="flex-1">
+            <Button variant="outline" className="w-full rounded-xl h-11">Back to YieGo</Button>
+          </Link>
+          <Link to="/buy-data" className="flex-1">
+            <Button className="w-full rounded-xl h-11 font-semibold">Buy data instead</Button>
+          </Link>
         </div>
       </div>
     </Layout>

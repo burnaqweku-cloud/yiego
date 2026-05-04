@@ -35,8 +35,6 @@ const linkGroups = [
     links: [
       { to: '/terms', label: 'Terms of Service' },
       { to: '/privacy', label: 'Privacy Policy' },
-      { to: '/disclaimer', label: 'Disclaimer' },
-      { to: '/referral-terms', label: 'Referral Terms' },
     ],
   },
 ];
@@ -45,7 +43,6 @@ const Footer = () => {
   return (
     <footer className="relative z-10 pb-20 md:pb-0 border-t border-border/60 bg-gradient-to-b from-background to-card/40">
       <div className="container pt-16 pb-8">
-        {/* Top: brand block + CTA */}
         <div className="grid lg:grid-cols-12 gap-10 pb-12 border-b border-border/40">
           <div className="lg:col-span-5">
             <Link to="/" className="inline-block mb-5">
@@ -67,7 +64,6 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Link columns */}
           <div className="lg:col-span-7 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8">
             {linkGroups.map((group) => (
               <div key={group.title}>
@@ -87,7 +83,6 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Bottom: legal bar */}
         <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-3">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground/80">
             <span>© {new Date().getFullYear()} YieGo</span>

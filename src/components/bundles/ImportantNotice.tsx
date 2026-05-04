@@ -1,50 +1,51 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, Clock, PackageSearch, MessageCircle } from 'lucide-react';
 
 interface ImportantNoticeProps {
   compact?: boolean;
   className?: string;
 }
 
-const ImportantNotice = ({ compact = false, className = '' }: ImportantNoticeProps) => {
-  const items = [
-    { text: 'Delivery times may vary based on network conditions and order volume.', bold: true },
-    { text: 'Phone number must not owe airtime.' },
-    { text: 'This service does not work on Turbonet SIM cards.' },
-    { text: 'Do not place another order for the same number until the current order is completed.' },
-    { text: 'No refunds for wrong numbers. Double-check the number before you pay.' },
-  ];
+const POINTS = [
+  { icon: ShieldCheck, text: 'Double-check the recipient number before paying. Wrong numbers cannot be refunded.' },
+  { icon: Clock, text: 'Most orders deliver in a few minutes. During network validation or high traffic, delivery can take longer.' },
+  { icon: PackageSearch, text: 'Every order is safely recorded and queued. Track its progress from the Track page or your orders.' },
+  { icon: MessageCircle, text: 'Need help? Contact support with your order reference and we\'ll look into it.' },
+];
 
+const ImportantNotice = ({ compact = false, className = '' }: ImportantNoticeProps) => {
   if (compact) {
     return (
-      <div className={`bg-accent/8 border border-accent/20 rounded-xl p-3 ${className}`}>
-        <div className="flex items-start gap-2">
-          <AlertTriangle className="w-3.5 h-3.5 text-accent mt-0.5 shrink-0" />
-          <div className="space-y-0.5">
-            <p className="text-[11px] font-semibold text-foreground">Important Notice</p>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
-              <strong>Delivery times may vary.</strong> Phone must not owe airtime. No refunds for wrong numbers.
-            </p>
-          </div>
+      <div className={`relative overflow-hidden rounded-2xl border border-border/60 bg-card/70 backdrop-blur-sm p-3.5 ${className}`}>
+        <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-accent/60" />
+        <div className="pl-2.5">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary/90">Before you pay</p>
+          <p className="text-[11.5px] text-muted-foreground leading-relaxed mt-1">
+            Verify the recipient number. Delivery time may vary — your order is safely recorded and trackable.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`bg-accent/8 border border-accent/20 rounded-2xl p-4 md:p-5 ${className}`}>
-      <div className="flex items-center gap-2 mb-3">
-        <AlertTriangle className="w-4 h-4 text-accent shrink-0" />
-        <h3 className="text-sm font-bold text-foreground">Important Notice</h3>
+    <div className={`relative overflow-hidden rounded-3xl border border-border/70 bg-card/80 backdrop-blur-md p-5 md:p-6 ${className}`}>
+      <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <div className="relative flex items-center gap-2.5 mb-4">
+        <div className="w-9 h-9 rounded-xl bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center">
+          <AlertTriangle className="w-4 h-4 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-[15px] font-display font-bold leading-tight">Good to know</h3>
+          <p className="text-[11px] text-muted-foreground mt-0.5">A quick read before you place an order.</p>
+        </div>
       </div>
-      <ul className="space-y-1.5 text-xs text-muted-foreground leading-relaxed">
-        {items.map((item, i) => (
-          <li key={i} className="flex items-start gap-2">
-            <span className="text-accent mt-0.5 shrink-0">•</span>
-            {item.bold ? (
-              <span className="font-semibold text-foreground">{item.text}</span>
-            ) : (
-              <span>{item.text}</span>
-            )}
+      <ul className="grid sm:grid-cols-2 gap-2.5">
+        {POINTS.map((p, i) => (
+          <li key={i} className="flex items-start gap-2.5 p-3 rounded-2xl bg-background/60 border border-border/50">
+            <div className="w-7 h-7 rounded-lg bg-primary/8 ring-1 ring-primary/15 flex items-center justify-center shrink-0 mt-0.5">
+              <p.icon className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <span className="text-[12.5px] text-foreground/80 leading-relaxed">{p.text}</span>
           </li>
         ))}
       </ul>
