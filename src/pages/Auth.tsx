@@ -28,68 +28,57 @@ const Auth = () => {
 
   return (
     <AuthLayout
-      title={tab === 'login' ? 'Sign In to YieGo' : 'Create Your YieGo Account'}
+      title={tab === 'login' ? 'Welcome back' : 'Create your account'}
       subtitle={tab === 'login'
-        ? 'Access your wallet, orders, and fast checkout'
-        : 'Join thousands of Ghanaians buying data the smart way'}
+        ? 'Sign in to your YieGo wallet to continue.'
+        : 'Join thousands of Ghanaians on the everyday digital wallet.'}
     >
       <SEOHead
         title={tab === 'login' ? 'Sign In to YieGo' : 'Create Your YieGo Account'}
         description={tab === 'login'
-          ? 'Sign in to your YieGo account to manage your wallet, orders, and buy affordable data bundles in Ghana.'
-          : 'Create a free YieGo account for fast checkout, wallet top-ups, and order tracking for MTN, Telecel & AirtelTigo data bundles.'}
+          ? 'Sign in to your YieGo account to manage your wallet, orders, and digital services in Ghana.'
+          : 'Create a free YieGo account for fast checkout, wallet top-ups and order tracking.'}
         path="/auth"
         noIndex
       />
 
-      {/* Premium Tabs */}
-      <div className="flex bg-muted/50 dark:bg-muted/30 backdrop-blur-sm rounded-2xl p-1 mb-6 ring-1 ring-border/60" role="tablist">
+      {/* Segmented tab control */}
+      <div className="relative flex items-center bg-muted/60 rounded-full p-1 mb-6 border border-border/50" role="tablist">
         {(['login', 'signup'] as const).map((t) => (
           <button
             key={t}
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 active:scale-[0.98] ${
+            className={`relative flex-1 py-2 text-[12.5px] font-semibold rounded-full transition-all duration-200 active:scale-[0.97] ${
               tab === t
-                ? 'bg-card text-foreground shadow-[0_2px_10px_-2px_hsl(var(--primary)/0.2)] ring-1 ring-primary/25'
+                ? 'bg-foreground text-background shadow-[0_2px_10px_-2px_hsl(var(--foreground)/0.35)]'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            {t === 'login' ? 'Sign In' : 'Create Account'}
+            {t === 'login' ? 'Sign in' : 'Create account'}
           </button>
         ))}
       </div>
 
       {tab === 'login' ? <LoginForm /> : <SignupForm />}
 
-      {/* Benefits */}
-      {tab === 'signup' && (
-        <div className="mt-6 grid grid-cols-3 gap-3">
-          {[
-            { icon: Wallet, label: 'Wallet System' },
-            { icon: ClipboardList, label: 'Order History' },
-            { icon: Zap, label: 'Fast Checkout' },
-          ].map((b) => (
-            <div key={b.label} className="text-center p-3 rounded-xl surface-premium">
-              <div className="w-7 h-7 mx-auto mb-1.5 rounded-lg bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center">
-                <b.icon className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <span className="text-[10px] font-semibold text-foreground/80">{b.label}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <p className="text-center text-[11px] text-muted-foreground mt-5">
+        {tab === 'login' ? 'New to YieGo?' : 'Already on YieGo?'}{' '}
+        <button
+          onClick={() => setTab(tab === 'login' ? 'signup' : 'login')}
+          className="font-semibold text-primary hover:underline"
+        >
+          {tab === 'login' ? 'Create an account' : 'Sign in instead'}
+        </button>
+      </p>
     </AuthLayout>
   );
 };
 
 /* ─── AUTH CARD WRAPPER ─── */
 const AuthCard = ({ children, ...props }: React.FormHTMLAttributes<HTMLFormElement>) => (
-  <form
-    {...props}
-    className="surface-premium rounded-3xl p-6 md:p-7 space-y-5 shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.25)]"
-  >
+  <form {...props} className="space-y-4">
     {children}
   </form>
 );
@@ -98,15 +87,15 @@ const AuthCard = ({ children, ...props }: React.FormHTMLAttributes<HTMLFormEleme
 const PremiumInput = (props: React.ComponentProps<typeof Input>) => (
   <Input
     {...props}
-    className={`h-12 bg-background dark:bg-[hsl(222_30%_8%)] border-border/60 dark:border-border/40 rounded-xl transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/60 ${props.className || ''}`}
+    className={`h-12 bg-background border-border/60 rounded-xl transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/55 ${props.className || ''}`}
   />
 );
 
-/* ─── GOLD GRADIENT BUTTON ─── */
+/* ─── PRIMARY BUTTON ─── */
 const GoldButton = ({ children, loading, ...props }: React.ComponentProps<typeof Button> & { loading?: boolean }) => (
   <Button
     {...props}
-    className="w-full h-12 text-sm font-bold rounded-xl transition-all duration-200 active:scale-[0.98] gradient-gold text-primary-foreground shadow-md hover:shadow-lg hover:shadow-primary/20"
+    className="w-full h-12 text-sm font-bold rounded-xl transition-all duration-200 active:scale-[0.98] bg-primary text-primary-foreground shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.6)] hover:opacity-95"
   >
     {loading ? (
       <span className="flex items-center gap-2">
