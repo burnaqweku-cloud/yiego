@@ -49,7 +49,7 @@ const BottomNav = () => {
       <nav aria-label="Primary" className="ds-bottom-nav-bar">
         <div className="flex items-center h-[56px] px-1">
           {tabs.map((tab) => {
-            const active = isActive(tab.to, tab.exact);
+            const active = isActive(tab);
             const Icon = tab.icon;
             return (
               <Link
