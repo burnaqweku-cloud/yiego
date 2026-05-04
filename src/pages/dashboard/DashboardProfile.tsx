@@ -3,6 +3,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import SEOHead from '@/components/seo/SEOHead';
 import { useAuth } from '@/hooks/useAuth';
 import { useAgent } from '@/hooks/useAgent';
+import { useWallet } from '@/hooks/useWallet';
 import { useLoyalty } from '@/hooks/useLoyalty';
 import { useUserOrders } from '@/hooks/useUserOrders';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +33,7 @@ const DashboardProfile = () => {
   const { isActiveAgent } = useAgent();
   const { wallet } = useWallet();
   const { orders } = useUserOrders();
+  const { account: loyaltyAccount } = useLoyalty();
 
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [username, setUsername] = useState(profile?.username || '');
