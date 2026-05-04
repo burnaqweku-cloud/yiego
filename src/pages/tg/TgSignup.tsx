@@ -49,7 +49,7 @@ function validate(v: {
 
   if (v.password.length < 6) e.password = "Password must be at least 6 characters";
 
-  if (!v.terms) e.terms = "You must agree to the Terms, Privacy & Disclaimer.";
+  if (!v.terms) e.terms = "You must agree to the Terms & Privacy Policy.";
 
   return e;
 }
