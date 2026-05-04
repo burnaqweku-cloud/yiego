@@ -335,7 +335,7 @@ export type Database = {
           customer_email: string | null
           customer_name: string | null
           customer_phone: string
-          yiego_profit_at_purchase: number | null
+          datasika_profit_at_purchase: number | null
           failure_reason: string | null
           id: string
           last_supplier_status: string | null
@@ -379,7 +379,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           customer_phone: string
-          yiego_profit_at_purchase?: number | null
+          datasika_profit_at_purchase?: number | null
           failure_reason?: string | null
           id?: string
           last_supplier_status?: string | null
@@ -423,7 +423,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string
-          yiego_profit_at_purchase?: number | null
+          datasika_profit_at_purchase?: number | null
           failure_reason?: string | null
           id?: string
           last_supplier_status?: string | null
@@ -5792,7 +5792,7 @@ export type Database = {
           cost_price_ghs: number | null
           created_at: string | null
           customer_name: string | null
-          yiego_profit: number | null
+          datasika_profit: number | null
           delivery_note: string | null
           failure_reason: string | null
           id: string | null
