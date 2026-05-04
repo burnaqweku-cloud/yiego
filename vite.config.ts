@@ -23,11 +23,17 @@ export default defineConfig(({ mode }) => ({
         // Force new SW to activate immediately — no stale UI
         skipWaiting: true,
         clientsClaim: true,
-        // Cache static assets only — never intercept API/auth requests
+        cleanupOutdatedCaches: true,
+        // Precache hashed build assets ONLY — NEVER precache HTML (keeps app shell fresh on every visit)
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
-        globPatterns: ["**/*.{js,css,html,ico,svg,woff2,woff,ttf}"],
+        globPatterns: ["**/*.{js,css,ico,svg,woff2,woff,ttf}"],
         // Exclude large PNGs from precache — they'll be cached at runtime instead
-        globIgnores: ["**/datasika-icon*.png", "**/OneSignalSDKWorker.js", "**/OneSignalSDKUpdaterWorker.js"],
+        globIgnores: [
+          "**/datasika-icon*.png",
+          "**/OneSignalSDKWorker.js",
+          "**/OneSignalSDKUpdaterWorker.js",
+          "**/index.html",
+        ],
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [
           /^\/api/,
@@ -39,6 +45,17 @@ export default defineConfig(({ mode }) => ({
           /^\/~oauth/,
         ],
         runtimeCaching: [
+          {
+            // HTML navigations: NetworkFirst so new deploys appear on next nav (no stale shell)
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "html-navigations",
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             // Cache Google Fonts
             urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
