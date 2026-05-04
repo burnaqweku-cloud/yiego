@@ -1,27 +1,20 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home, ShoppingCart, Wallet, ClipboardList, User, Settings,
-  HelpCircle, Search, ArrowLeft, ArrowDownCircle, Receipt, Store, Gift, Package, Sparkles
+  HelpCircle, Search, ArrowLeft, Receipt, Gift, Sparkles
 } from 'lucide-react';
-import { useAgent } from '@/hooks/useAgent';
 
 const DashboardSidebar = () => {
   const location = useLocation();
-  const { isActiveAgent } = useAgent();
 
   const navItems = [
     { to: '/dashboard', icon: Home, label: 'Dashboard', exact: true },
-    { to: '/dashboard/buy', icon: ShoppingCart, label: 'Buy Data' },
+    { to: '/dashboard/buy', icon: ShoppingCart, label: 'Services' },
     { to: '/dashboard/orders', icon: ClipboardList, label: 'Orders' },
     { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
     { to: '/dashboard/transactions', icon: Receipt, label: 'Transactions' },
-    ...(isActiveAgent ? [
-      { to: '/dashboard/bulk-purchase', icon: Package, label: 'Bulk Orders' },
-      { to: '/dashboard/bulk-orders', icon: Package, label: 'Bulk Orders History' },
-    ] : []),
     { to: '/dashboard/rewards', icon: Sparkles, label: 'Rewards' },
     { to: '/dashboard/referral', icon: Gift, label: 'Refer & Earn' },
-    { to: '/agent', icon: Store, label: 'Agent Store' },
     { to: '/dashboard/profile', icon: User, label: 'Profile' },
     { to: '/track-order', icon: Search, label: 'Track Order' },
     { to: '/support', icon: HelpCircle, label: 'Support' },

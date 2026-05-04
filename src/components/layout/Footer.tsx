@@ -20,7 +20,6 @@ const linkGroups = [
       { to: '/dashboard/wallet', label: 'Wallet' },
       { to: '/dashboard/orders', label: 'My Orders' },
       { to: '/track-order', label: 'Track Order' },
-      { to: '/become-an-agent', label: 'Become an Agent' },
     ],
   },
   {
