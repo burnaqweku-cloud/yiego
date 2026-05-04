@@ -52,13 +52,12 @@ const DashboardProfile = () => {
     if (!user) return;
     supabase
       .from('profiles')
-      .select('referral_success_count, loyalty_points, created_at')
+      .select('referral_success_count, created_at')
       .eq('id', user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
           setSuccessCount((data as any).referral_success_count ?? 0);
-          setLoyaltyPoints((data as any).loyalty_points ?? 0);
           setMemberSince((data as any).created_at ?? null);
         }
       });
