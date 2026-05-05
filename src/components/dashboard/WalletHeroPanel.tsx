@@ -79,13 +79,13 @@ const WalletHeroPanel = ({ balance, totalOrders, totalSpent, loading, ordersLoad
         <div className="flex items-center gap-2 mb-4">
           <Link
             to="/dashboard/wallet"
-            className="flex-1 inline-flex items-center justify-center gap-1.5 h-11 rounded-full bg-background text-foreground text-sm font-bold hover:bg-background/90 transition-colors active:scale-[0.98]"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 h-11 rounded-full bg-white text-[hsl(160_22%_10%)] text-sm font-bold shadow-[0_8px_20px_-8px_hsl(0_0%_0%/0.35)] hover:bg-white/95 transition-all active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" /> Fund wallet
           </Link>
           <Link
             to="/dashboard/transactions"
-            className="inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-full bg-white/15 hover:bg-white/25 text-sm font-semibold transition-colors active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-full bg-white/10 hover:bg-white/20 text-sm font-semibold border border-white/15 backdrop-blur-md transition-all active:scale-[0.98]"
           >
             <Receipt className="w-4 h-4" /> History
           </Link>
