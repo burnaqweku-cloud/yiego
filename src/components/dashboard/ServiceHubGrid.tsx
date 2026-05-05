@@ -40,9 +40,11 @@ const ServiceTile = ({ service }: { service: Service }) => {
   const Icon = service.icon;
 
   const inner = (
-    <div className="relative h-full p-3.5 sm:p-4 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.98]">
+    <div className="group relative h-full p-3.5 sm:p-4 rounded-2xl glass-card hover:border-primary/40 hover:shadow-[0_18px_40px_-18px_hsl(156_60%_20%/0.35)] hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.98] overflow-hidden">
+      {/* sheen */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent" />
       <div className="flex items-start justify-between mb-3">
-        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${toneStyles[service.tone]}`}>
+        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${toneStyles[service.tone]} shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.3)]`}>
           <Icon className="w-[22px] h-[22px]" strokeWidth={1.9} />
         </div>
         {isLive ? (
@@ -66,7 +68,7 @@ const ServiceTile = ({ service }: { service: Service }) => {
 };
 
 const ServiceHubGrid = () => (
-  <section className="rounded-2xl border border-border/70 bg-card/40 p-4 sm:p-5">
+  <section className="rounded-3xl glass-card p-4 sm:p-5">
     <div className="flex items-center justify-between mb-4">
       <div>
         <h2 className="text-sm sm:text-base font-display font-bold tracking-tight">Services</h2>
