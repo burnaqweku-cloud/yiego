@@ -992,19 +992,18 @@
 
 .ds-bottom-nav-bar {
   pointer-events: auto;
-  background: hsl(0 0% 100%);
-  border-top-left-radius: 22px;
-  border-top-right-radius: 22px;
-  /* Subtle top hairline + soft shadow above the bar */
+  background: hsl(0 0% 100% / 0.72);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-top-left-radius: 26px;
+  border-top-right-radius: 26px;
+  border-top: 1px solid hsl(0 0% 100% / 0.7);
   box-shadow:
-    0 -1px 0 hsl(0 0% 0% / 0.04),
-    0 -8px 28px -10px hsl(0 0% 0% / 0.12),
-    0 -2px 6px -2px hsl(0 0% 0% / 0.05);
-  /* Tighter top so icon row sits visually higher inside the bar */
+    0 -1px 0 hsl(var(--border) / 0.4),
+    0 -10px 30px -10px hsl(156 60% 18% / 0.18),
+    0 -2px 6px -2px hsl(0 0% 0% / 0.04);
   padding-top: 6px;
-  /* Safe-area as bottom padding + extra breathing space below icons */
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
-  /* Comfortable side padding — keeps first/last icons clear of curved edges */
   padding-left: max(env(safe-area-inset-left, 0px), 12px);
   padding-right: max(env(safe-area-inset-right, 0px), 12px);
 }
@@ -1016,11 +1015,12 @@
 }
 .dark .ds-bottom-nav-bar {
   --ds-nav-ink: hsl(210 22% 96%);
-  --ds-nav-surface: hsl(224 35% 9%);
-  background: var(--ds-nav-surface);
+  --ds-nav-surface: hsl(160 24% 8%);
+  background: hsl(160 24% 8% / 0.7);
+  border-top-color: hsl(0 0% 100% / 0.08);
   box-shadow:
     0 -1px 0 hsl(0 0% 100% / 0.06),
-    0 -8px 28px -10px hsl(0 0% 0% / 0.6),
+    0 -10px 30px -10px hsl(0 0% 0% / 0.6),
     0 -2px 6px -2px hsl(0 0% 0% / 0.4);
 }
 
