@@ -55,7 +55,7 @@ const SAMPLE_VARS: Record<string, string> = {
   network: 'MTN',
   bundle: '5GB',
   phone: '0551234567',
-  order_id: 'DS-XYZ789',
+  order_id: 'YG-XYZ789',
 };
 
 interface SmsLog {

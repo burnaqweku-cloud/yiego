@@ -562,7 +562,7 @@ const AdminTransactions = () => {
       }
 
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-      let orderId = "DS-";
+      let orderId = "YG-";
       for (let i = 0; i < 8; i++) orderId += chars.charAt(Math.floor(Math.random() * chars.length));
 
       const meta = tx.metadata || {};

@@ -273,6 +273,106 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ─── ACTION: dry_run_route ───────────────────────────────
+    // Resolves which supplier WOULD be used for a given product, without
+    // placing a real order. Returns supplier code, active state, secret
+    // readiness, and (for DataCart) provider mapping.
+    if (action === "dry_run_route") {
+      const productId = body.product_id as string | undefined;
+      if (!productId) {
+        return new Response(JSON.stringify({ ok: false, error: "product_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: product } = await supabase
+        .from("products")
+        .select("id, network, bundle_size_gb, active")
+        .eq("id", productId)
+        .maybeSingle();
+      if (!product) {
+        return new Response(JSON.stringify({ ok: false, error: "Product not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Routing lookup
+      const { data: rule } = await supabase
+        .from("routing_rules")
+        .select("id, supplier_id, status, suppliers!inner(code, name, is_active)")
+        .eq("product_id", productId)
+        .eq("status", "ACTIVE")
+        .maybeSingle();
+
+      let supplierCode = "SUPPLIER_A";
+      let supplierName = "Supplier A";
+      let supplierActive = true;
+      let routedBy: "rule" | "fallback" = "fallback";
+      if (rule?.suppliers) {
+        supplierCode = rule.suppliers.code;
+        supplierName = rule.suppliers.name;
+        supplierActive = !!rule.suppliers.is_active;
+        routedBy = "rule";
+      }
+
+      // Credential / setup readiness
+      const secretsByCode: Record<string, string[]> = {
+        SUPPLIER_A: ["SUPPLIER_A_API_BASE_URL|SUPPLIER_API_BASE_URL", "SUPPLIER_A_API_KEY|SUPPLIER_API_KEY"],
+        DATACART: ["DATACART_API_KEY"],
+        DATAMART: ["DATAMART_API_KEY"],
+        AFROHUBGH: ["AFROHUBGH_API_BASE_URL", "AFROHUBGH_API_KEY"],
+      };
+      const required = secretsByCode[supplierCode] || [];
+      const missingSecrets = required.filter((spec) => {
+        const opts = spec.split("|");
+        return !opts.some((k) => !!Deno.env.get(k));
+      });
+
+      // DataCart provider mapping check
+      let mappingStatus: { ok: boolean; detail?: string } = { ok: true };
+      if (supplierCode === "DATACART") {
+        try {
+          const { resolveDataCartProviderMapping } = await import("../_shared/datacart-catalog.ts");
+          const resolved = await resolveDataCartProviderMapping(supabase, {
+            network: product.network,
+            sizeGb: Number(product.bundle_size_gb),
+            productId,
+          });
+          mappingStatus = resolved.ok
+            ? { ok: true }
+            : { ok: false, detail: resolved.error || "Missing DataCart mapping" };
+        } catch (err) {
+          mappingStatus = { ok: false, detail: String(err) };
+        }
+      }
+
+      const wouldDispatch = supplierActive && missingSecrets.length === 0 && mappingStatus.ok;
+      const blockers: string[] = [];
+      if (!supplierActive) blockers.push(`${supplierName} is inactive`);
+      if (missingSecrets.length) blockers.push(`Missing secrets: ${missingSecrets.join(", ")}`);
+      if (!mappingStatus.ok) blockers.push(mappingStatus.detail || "Missing product mapping");
+
+      return new Response(JSON.stringify({
+        ok: true,
+        product: {
+          id: product.id,
+          network: product.network,
+          bundle_size_gb: product.bundle_size_gb,
+        },
+        routed_by: routedBy,
+        supplier_code: supplierCode,
+        supplier_name: supplierName,
+        supplier_active: supplierActive,
+        missing_secrets: missingSecrets,
+        mapping_ok: mappingStatus.ok,
+        mapping_detail: mappingStatus.detail || null,
+        would_dispatch: wouldDispatch,
+        blockers,
+      }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

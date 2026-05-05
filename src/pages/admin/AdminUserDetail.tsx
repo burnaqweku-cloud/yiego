@@ -565,7 +565,7 @@ const WalletAdjustDialog = ({ currentBalance, onConfirm, onClose }: { currentBal
           </div>
           <div>
             <Label>Reason (required for audit log)</Label>
-            <Textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Refund for failed order DS-XYZ123" className="mt-1" rows={2} />
+            <Textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Refund for failed order YG-XYZ123" className="mt-1" rows={2} />
           </div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>

@@ -99,7 +99,7 @@ const CreateTicketForm = ({ ticketType, agentInfo, onSubmit, onBack }: CreateTic
         {showOrderId && (
           <div>
             <Label>Order ID {ticketType === 'user' ? '(optional)' : ''}</Label>
-            <Input value={orderId} onChange={e => setOrderId(e.target.value)} placeholder="DS-XXXXXXXX" className="mt-1" />
+            <Input value={orderId} onChange={e => setOrderId(e.target.value)} placeholder="YG-XXXXXXXX" className="mt-1" />
           </div>
         )}
 

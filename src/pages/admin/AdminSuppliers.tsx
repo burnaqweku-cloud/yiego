@@ -6,8 +6,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import {
   RefreshCw, CheckCircle, XCircle, Zap, TestTube, Wallet,
-  Clock, Globe, Shield
+  Clock, Globe, Shield, AlertTriangle
 } from 'lucide-react';
+
+const SETUP_NOTES: Record<string, { secrets: string[]; note?: string }> = {
+  SUPPLIER_A: { secrets: ['SUPPLIER_A_API_BASE_URL or SUPPLIER_API_BASE_URL', 'SUPPLIER_A_API_KEY or SUPPLIER_API_KEY'] },
+  DATACART: { secrets: ['DATACART_API_KEY', 'DATACART_WEBHOOK_SECRET'], note: 'Requires product mapping in Routing.' },
+  DATAMART: { secrets: ['DATAMART_API_KEY', 'DATAMART_WEBHOOK_SECRET'] },
+  AFROHUBGH: {
+    secrets: ['AFROHUBGH_API_BASE_URL', 'AFROHUBGH_API_KEY', 'AFROHUBGH_WEBHOOK_SECRET'],
+    note: 'Setup-required. Endpoint shape pending final API docs — do not enable for live orders yet.',
+  },
+};
 
 interface Supplier {
   id: string;
@@ -162,6 +172,24 @@ const AdminSuppliers = () => {
                     <Shield className="w-3 h-3" /> API Key Secured
                   </span>
                 </div>
+
+                {/* Setup notes */}
+                {SETUP_NOTES[supplier.code] && (
+                  <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 p-3 text-[11px] space-y-1">
+                    <div className="flex items-center gap-1.5 font-semibold text-muted-foreground uppercase tracking-wide">
+                      <AlertTriangle className="w-3 h-3" />
+                      Required secrets
+                    </div>
+                    <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
+                      {SETUP_NOTES[supplier.code].secrets.map((s) => (
+                        <li key={s} className="font-mono">{s}</li>
+                      ))}
+                    </ul>
+                    {SETUP_NOTES[supplier.code].note && (
+                      <p className="text-muted-foreground italic pt-1">{SETUP_NOTES[supplier.code].note}</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2 border-t border-border">

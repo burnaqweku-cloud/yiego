@@ -221,7 +221,7 @@ const CreateTicketDialog = ({ onClose }: { onClose: () => void }) => {
               <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label>Linked Order ID (optional)</Label><Input value={orderId} onChange={e => setOrderId(e.target.value)} placeholder="DS-XXXXXXXX" className="mt-1" /></div>
+          <div><Label>Linked Order ID (optional)</Label><Input value={orderId} onChange={e => setOrderId(e.target.value)} placeholder="YG-XXXXXXXX" className="mt-1" /></div>
           <div><Label>Description</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Detailed description..." className="mt-1" rows={3} /></div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>

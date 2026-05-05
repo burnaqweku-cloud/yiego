@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { RefreshCw, Route, CheckCircle, AlertCircle } from 'lucide-react';
+import { RefreshCw, Route, CheckCircle, AlertCircle, FlaskConical } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -38,6 +38,7 @@ const AdminRouting = () => {
   const [rules, setRules] = useState<RoutingRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [testing, setTesting] = useState<string | null>(null);
   const [filterNetwork, setFilterNetwork] = useState<string>('all');
 
   const fetchAll = useCallback(async () => {
@@ -93,6 +94,25 @@ const AdminRouting = () => {
       toast.error('Failed to update route');
     }
     setSaving(null);
+  };
+
+  const handleDryRun = async (productId: string) => {
+    setTesting(productId);
+    try {
+      const { data, error } = await supabase.functions.invoke('supplier-admin', {
+        body: { action: 'dry_run_route', product_id: productId },
+      });
+      if (error || !data?.ok) {
+        toast.error('Dry run failed: ' + (error?.message || data?.error || 'unknown'));
+      } else if (data.would_dispatch) {
+        toast.success(`✓ Would dispatch via ${data.supplier_name} (${data.routed_by})`);
+      } else {
+        toast.warning(`⚠ ${data.supplier_name}: ${data.blockers.join(' • ')}`, { duration: 8000 });
+      }
+    } catch (err: any) {
+      toast.error('Network error: ' + err?.message);
+    }
+    setTesting(null);
   };
 
   const filteredProducts = filterNetwork === 'all'
@@ -219,16 +239,28 @@ const AdminRouting = () => {
                         </Select>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {isDefault ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                            Default
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
-                            <CheckCircle className="w-3 h-3" />
-                            {currentSupplier?.name || 'Assigned'}
-                          </span>
-                        )}
+                        <div className="flex items-center justify-center gap-2">
+                          {isDefault ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                              Default
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
+                              <CheckCircle className="w-3 h-3" />
+                              {currentSupplier?.name || 'Assigned'}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDryRun(product.id)}
+                            disabled={testing === product.id}
+                            className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border border-border hover:bg-muted/50 disabled:opacity-50"
+                            title="Dry-run route resolution (no real order)"
+                          >
+                            <FlaskConical className="w-3 h-3" />
+                            {testing === product.id ? '...' : 'Test'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
