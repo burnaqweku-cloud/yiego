@@ -15,7 +15,8 @@ function getGreeting() {
 
 const DashboardGreetingCard = ({ name, isAgent }: DashboardGreetingCardProps) => {
   const greeting = getGreeting();
-  const firstName = name?.split(' ')[0] || 'there';
+  const trimmed = (name || '').trim();
+  const firstName = trimmed && trimmed.toLowerCase() !== 'user' ? trimmed.split(/\s+/)[0] : '';
 
   return (
     <div
