@@ -355,12 +355,17 @@ async function sendToSupplierA(
   }
 }
 
-// ─── AfroHubGH adapter (Supplier D — scaffold, setup-required) ─────
-// Real endpoints/payload shape will be wired once AfroHubGH credentials &
-// API docs are available. Until then we fail fast with a clear admin-only
-// SETUP_REQUIRED code so orders are never silently lost or faked.
+// ─── AfroHubGH adapter (Supplier D) ───────────────────────────
+// Endpoints confirmed from AfroHubGH docs:
+//   POST {BASE}/v1/orders            { network_id, plan_id, phone_numbers[], client_reference, notes }
+//   GET  {BASE}/v1/account/balance   → { success, data: { balance, currency, wallet_status } }
+//   GET  {BASE}/v1/orders/:reference → full order details
+//   GET  {BASE}/v1/orders/:reference/status → quick status
+// Auth: Authorization: Bearer ahg_live_xxxx
+// Requires per-product mapping (network_id + plan_id UUIDs) in supplier_plan_mappings
+// before any live dispatch. If mapping is missing, fail-fast with MAPPING_REQUIRED.
 async function sendToAfroHubGH(
-  payload: { network: string; phone_number: string; data_amount: string },
+  payload: { network: string; phone_number: string; data_amount: string; network_id?: string; plan_id?: string },
   clientReference?: string,
   attempt = 1,
 ): Promise<{ ok: boolean; status: number; body: Record<string, unknown> }> {
@@ -370,30 +375,37 @@ async function sendToAfroHubGH(
   const debug: Record<string, unknown> = {
     supplier_code: "AFROHUBGH",
     request_body: payload,
-    setup_required: !baseUrl || !apiKey,
   };
 
   if (!baseUrl || !apiKey) {
     return {
-      ok: false,
-      status: 0,
+      ok: false, status: 0,
       body: {
-        error: "SETUP_REQUIRED",
-        code: "SETUP_REQUIRED",
-        error_code: "SETUP_REQUIRED",
+        error: "SETUP_REQUIRED", code: "SETUP_REQUIRED", error_code: "SETUP_REQUIRED",
         message: "AfroHubGH supplier is not configured. Add AFROHUBGH_API_BASE_URL and AFROHUBGH_API_KEY secrets.",
-        debug,
+        debug: { ...debug, setup_required: true },
       },
     };
   }
 
-  // TODO(afrohubgh): finalize endpoint path + request shape per AfroHubGH API docs.
-  const url = baseUrl.replace(/\/+$/, "") + "/orders";
+  if (!payload.network_id || !payload.plan_id) {
+    return {
+      ok: false, status: 0,
+      body: {
+        error: "MAPPING_REQUIRED", code: "MAPPING_REQUIRED", error_code: "MAPPING_REQUIRED",
+        message: "AfroHubGH requires network_id + plan_id mapping for this product. Configure in Admin → Routing.",
+        debug: { ...debug, mapping_required: true },
+      },
+    };
+  }
+
+  const url = baseUrl.replace(/\/+$/, "") + "/v1/orders";
   const body = {
-    network: payload.network,
-    phone_number: payload.phone_number.replace(/\s/g, ""),
-    data_amount: String(payload.data_amount),
-    reference: clientReference || `YG-${Date.now()}`,
+    network_id: payload.network_id,
+    plan_id: payload.plan_id,
+    phone_numbers: [payload.phone_number.replace(/\s/g, "")],
+    client_reference: clientReference || `YG-${Date.now()}`,
+    notes: "YieGo",
   };
   debug.request_url = url;
   debug.request_body = body;
@@ -402,10 +414,7 @@ async function sendToAfroHubGH(
     console.log(`[AfroHubGH Attempt ${attempt}] ${url}`);
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
       body: JSON.stringify(body),
     });
     const bodyText = await response.text();
@@ -414,12 +423,16 @@ async function sendToAfroHubGH(
     debug.http_status = response.status;
     debug.response_text = bodyText;
 
-    if (response.ok) return { ok: true, status: response.status, body: { ...parsed, debug } };
+    // AfroHubGH success shape: { success: true, data: { order_id, reference, status, ... } }
+    if (response.ok && (parsed as any)?.success !== false) {
+      return { ok: true, status: response.status, body: { ...parsed, debug } };
+    }
     if (response.status >= 500 && attempt < MAX_RETRIES) {
       await new Promise((r) => setTimeout(r, 1000 * attempt));
       return sendToAfroHubGH(payload, clientReference, attempt + 1);
     }
-    debug.error_message = parsed.message || parsed.error || `HTTP ${response.status}`;
+    const errObj: any = (parsed as any)?.error;
+    debug.error_message = errObj?.message || errObj?.code || (parsed as any)?.message || `HTTP ${response.status}`;
     return { ok: false, status: response.status, body: { ...parsed, debug } };
   } catch (err) {
     console.error(`[AfroHubGH Attempt ${attempt}] Network error:`, err);
@@ -438,11 +451,14 @@ export async function getAfroHubGHBalance(): Promise<{ ok: boolean; balance: num
   const apiKey = Deno.env.get("AFROHUBGH_API_KEY");
   if (!baseUrl || !apiKey) return { ok: false, balance: null, error: "AfroHubGH not configured (SETUP_REQUIRED)" };
   try {
-    const url = baseUrl.replace(/\/+$/, "") + "/balance";
+    const url = baseUrl.replace(/\/+$/, "") + "/v1/account/balance";
     const response = await fetch(url, { headers: { "Authorization": `Bearer ${apiKey}` } });
     const data: any = await response.json().catch(() => ({}));
-    if (response.ok) return { ok: true, balance: Number(data.balance ?? data.available_balance ?? 0) };
-    return { ok: false, balance: null, error: data.message || `HTTP ${response.status}` };
+    if (response.ok && data?.success !== false) {
+      const balance = Number(data?.data?.balance ?? data?.balance ?? 0);
+      return { ok: true, balance };
+    }
+    return { ok: false, balance: null, error: data?.error?.message || data?.message || `HTTP ${response.status}` };
   } catch (err) {
     return { ok: false, balance: null, error: String(err) };
   }
