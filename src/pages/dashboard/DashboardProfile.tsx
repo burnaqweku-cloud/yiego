@@ -163,7 +163,7 @@ const DashboardProfile = () => {
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-display font-black truncate">{profile?.full_name || 'YieGo user'}</h1>
+                <h1 className="text-xl sm:text-2xl font-display font-black truncate">{displayName === 'there' ? 'Add your name' : displayName}</h1>
                 {isActiveAgent && (
                   <Badge className="bg-primary/15 text-primary border-primary/25 text-[10px] gap-1">
                     <ShieldCheck className="w-3 h-3" /> Agent
