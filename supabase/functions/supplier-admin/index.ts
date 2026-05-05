@@ -42,6 +42,7 @@ async function getAdminUser(req: Request): Promise<{ userId: string; supabase: a
 function getBalanceChecker(code: string) {
   if (code === "DATAMART") return getDataMartBalance;
   if (code === "DATACART") return getDataCartBalance;
+  if (code === "AFROHUBGH") return getAfroHubGHBalance;
   return getSupplierABalance;
 }
 
