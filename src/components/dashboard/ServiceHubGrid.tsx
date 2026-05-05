@@ -40,10 +40,10 @@ const ServiceTile = ({ service }: { service: Service }) => {
   const Icon = service.icon;
 
   const inner = (
-    <div className="relative h-full p-3.5 sm:p-4 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-150 active:scale-[0.98]">
+    <div className="relative h-full p-3.5 sm:p-4 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.98]">
       <div className="flex items-start justify-between mb-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${toneStyles[service.tone]}`}>
-          <Icon className="w-5 h-5" strokeWidth={2} />
+        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${toneStyles[service.tone]}`}>
+          <Icon className="w-[22px] h-[22px]" strokeWidth={1.9} />
         </div>
         {isLive ? (
           <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
