@@ -178,8 +178,8 @@ const DashboardProfile = () => {
               </div>
               <button onClick={copyUsername} className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <AtSign className="w-3.5 h-3.5" />
-                <span className="font-medium">{profile?.username || 'user'}</span>
-                {profile?.username && <Copy className="w-3 h-3 opacity-60" />}
+                <span className="font-medium">{usernameDisplay || 'set a username'}</span>
+                {usernameDisplay && <Copy className="w-3 h-3 opacity-60" />}
               </button>
               <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-1">
                 <Calendar className="w-3 h-3" /> Member since {memberSinceFmt}
