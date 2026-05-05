@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
-  Smartphone, Phone, Receipt, Gift, TrendingUp,
-  Tv, Package, MoreHorizontal, LucideIcon,
+  Wifi, PhoneCall, ReceiptText, Gift, Rocket,
+  PlayCircle, Boxes, Layers3, LucideIcon,
 } from 'lucide-react';
 
 type Service = {
@@ -14,25 +14,25 @@ type Service = {
 };
 
 const SERVICES: Service[] = [
-  { to: '/dashboard/buy', icon: Smartphone, label: 'Data Bundles', desc: 'MTN, Telecel, AirtelTigo', status: 'live', tone: 'primary' },
-  { icon: Phone, label: 'Airtime', desc: 'Top up any number', status: 'soon', tone: 'emerald' },
-  { icon: Receipt, label: 'Bills', desc: 'Electricity, water & TV', status: 'soon', tone: 'amber' },
+  { to: '/dashboard/buy', icon: Wifi, label: 'Data Bundles', desc: 'MTN, Telecel, AirtelTigo', status: 'live', tone: 'primary' },
+  { icon: PhoneCall, label: 'Airtime', desc: 'Top up any number', status: 'soon', tone: 'emerald' },
+  { icon: ReceiptText, label: 'Bills', desc: 'Electricity, water & TV', status: 'soon', tone: 'amber' },
   { icon: Gift, label: 'Gift Cards', desc: 'Global brands', status: 'soon', tone: 'rose' },
-  { icon: TrendingUp, label: 'Social Boosting', desc: 'Followers & engagement', status: 'soon', tone: 'sky' },
-  { icon: Tv, label: 'Subscriptions', desc: 'Streaming & SaaS', status: 'soon', tone: 'violet' },
-  { icon: Package, label: 'Digital Products', desc: 'Vouchers & codes', status: 'soon', tone: 'fuchsia' },
-  { icon: MoreHorizontal, label: 'More Services', desc: 'Coming soon', status: 'soon', tone: 'slate' },
+  { icon: Rocket, label: 'Social Boosting', desc: 'Followers & engagement', status: 'soon', tone: 'sky' },
+  { icon: PlayCircle, label: 'Subscriptions', desc: 'Streaming & SaaS', status: 'soon', tone: 'violet' },
+  { icon: Boxes, label: 'Digital Products', desc: 'Vouchers & codes', status: 'soon', tone: 'fuchsia' },
+  { icon: Layers3, label: 'More Services', desc: 'Coming soon', status: 'soon', tone: 'slate' },
 ];
 
 const toneStyles: Record<Service['tone'], string> = {
-  primary: 'bg-primary/10 text-primary',
-  emerald: 'bg-emerald-500/10 text-emerald-500',
-  amber: 'bg-amber-500/10 text-amber-500',
-  rose: 'bg-rose-500/10 text-rose-500',
-  sky: 'bg-sky-500/10 text-sky-500',
-  violet: 'bg-violet-500/10 text-violet-500',
-  fuchsia: 'bg-fuchsia-500/10 text-fuchsia-500',
-  slate: 'bg-muted text-muted-foreground',
+  primary: 'bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20',
+  emerald: 'bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 text-emerald-500 ring-1 ring-emerald-500/20',
+  amber: 'bg-gradient-to-br from-amber-500/20 to-amber-500/5 text-amber-500 ring-1 ring-amber-500/20',
+  rose: 'bg-gradient-to-br from-rose-500/20 to-rose-500/5 text-rose-500 ring-1 ring-rose-500/20',
+  sky: 'bg-gradient-to-br from-sky-500/20 to-sky-500/5 text-sky-500 ring-1 ring-sky-500/20',
+  violet: 'bg-gradient-to-br from-violet-500/20 to-violet-500/5 text-violet-500 ring-1 ring-violet-500/20',
+  fuchsia: 'bg-gradient-to-br from-fuchsia-500/20 to-fuchsia-500/5 text-fuchsia-500 ring-1 ring-fuchsia-500/20',
+  slate: 'bg-muted text-muted-foreground ring-1 ring-border/50',
 };
 
 const ServiceTile = ({ service }: { service: Service }) => {
@@ -40,10 +40,10 @@ const ServiceTile = ({ service }: { service: Service }) => {
   const Icon = service.icon;
 
   const inner = (
-    <div className="relative h-full p-3.5 sm:p-4 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-150 active:scale-[0.98]">
+    <div className="relative h-full p-3.5 sm:p-4 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.98]">
       <div className="flex items-start justify-between mb-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${toneStyles[service.tone]}`}>
-          <Icon className="w-5 h-5" strokeWidth={2} />
+        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${toneStyles[service.tone]}`}>
+          <Icon className="w-[22px] h-[22px]" strokeWidth={1.9} />
         </div>
         {isLive ? (
           <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">

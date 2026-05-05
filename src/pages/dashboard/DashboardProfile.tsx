@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { getDisplayName, getUsernameDisplay, getInitials } from '@/lib/user-display';
 
 const ELITE_THRESHOLD = 95;
 
@@ -126,7 +127,9 @@ const DashboardProfile = () => {
     ? new Date(memberSince).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
     : '—';
 
-  const initials = (profile?.full_name?.[0] || user?.email?.[0] || 'U').toUpperCase();
+  const initials = getInitials(profile, user);
+  const displayName = getDisplayName(profile, user);
+  const usernameDisplay = getUsernameDisplay(profile, user);
 
   return (
     <DashboardLayout>
@@ -160,7 +163,7 @@ const DashboardProfile = () => {
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-display font-black truncate">{profile?.full_name || 'YieGo user'}</h1>
+                <h1 className="text-xl sm:text-2xl font-display font-black truncate">{displayName === 'there' ? 'Add your name' : displayName}</h1>
                 {isActiveAgent && (
                   <Badge className="bg-primary/15 text-primary border-primary/25 text-[10px] gap-1">
                     <ShieldCheck className="w-3 h-3" /> Agent
@@ -175,8 +178,8 @@ const DashboardProfile = () => {
               </div>
               <button onClick={copyUsername} className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <AtSign className="w-3.5 h-3.5" />
-                <span className="font-medium">{profile?.username || 'user'}</span>
-                {profile?.username && <Copy className="w-3 h-3 opacity-60" />}
+                <span className="font-medium">{usernameDisplay || 'set a username'}</span>
+                {usernameDisplay && <Copy className="w-3 h-3 opacity-60" />}
               </button>
               <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-1">
                 <Calendar className="w-3 h-3" /> Member since {memberSinceFmt}

@@ -47,7 +47,7 @@ const BottomNav = () => {
   return (
     <div className="ds-bottom-nav-root md:hidden">
       <nav aria-label="Primary" className="ds-bottom-nav-bar">
-        <div className="flex items-center h-[56px] px-1">
+        <div className="flex items-end justify-around h-[62px] px-2 pb-1.5 pt-1.5">
           {tabs.map((tab) => {
             const active = isActive(tab);
             const Icon = tab.icon;
@@ -57,34 +57,39 @@ const BottomNav = () => {
                 to={tab.to}
                 aria-label={tab.label}
                 aria-current={active ? 'page' : undefined}
-                className="relative flex items-center justify-center flex-1 h-full select-none active:opacity-60 transition-opacity"
+                className="relative flex flex-col items-center justify-center flex-1 h-full select-none active:scale-[0.94] transition-transform"
               >
-                <span className="relative inline-flex flex-col items-center justify-center">
+                <span
+                  className="relative inline-flex items-center justify-center transition-all duration-200 ease-out"
+                  style={{
+                    width: 46,
+                    height: 30,
+                    borderRadius: 9999,
+                    background: active ? 'hsl(var(--primary) / 0.14)' : 'transparent',
+                    boxShadow: active ? 'inset 0 0 0 1px hsl(var(--primary) / 0.25)' : 'none',
+                  }}
+                >
                   <Icon
                     className="transition-all duration-200 ease-out"
                     style={{
-                      width: 22,
-                      height: 22,
-                      color: 'var(--ds-nav-ink)',
-                      strokeWidth: 1.9,
+                      width: 21,
+                      height: 21,
+                      color: active ? 'hsl(var(--primary))' : 'var(--ds-nav-ink)',
+                      strokeWidth: active ? 2.2 : 1.8,
                       fill: 'none',
-                      opacity: active ? 1 : 0.55,
-                      transform: active ? 'scale(1.06)' : 'scale(1)',
-                    }}
-                  />
-                  <span
-                    aria-hidden
-                    className="transition-all duration-200 ease-out"
-                    style={{
-                      marginTop: 4,
-                      width: active ? 4 : 0,
-                      height: 4,
-                      borderRadius: 9999,
-                      background: 'var(--ds-nav-ink)',
-                      opacity: active ? 1 : 0,
+                      opacity: active ? 1 : 0.62,
                     }}
                   />
                   {renderBadge(tab.badge)}
+                </span>
+                <span
+                  className="mt-0.5 text-[10px] font-semibold tracking-tight transition-colors duration-200"
+                  style={{
+                    color: active ? 'hsl(var(--primary))' : 'var(--ds-nav-ink)',
+                    opacity: active ? 1 : 0.6,
+                  }}
+                >
+                  {tab.label}
                 </span>
               </Link>
             );

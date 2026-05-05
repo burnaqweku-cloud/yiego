@@ -6,6 +6,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { toast } from 'sonner';
 import Logo from '@/components/layout/Logo';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { getDisplayName, getUsernameDisplay, getInitials } from '@/lib/user-display';
 
 const DashboardHeader = () => {
   const { user, profile, isAdmin, isStaff, signOut } = useAuth();
@@ -20,7 +21,9 @@ const DashboardHeader = () => {
   };
 
   const avatarUrl = profile?.avatar_url;
-  const initials = (profile?.full_name?.[0] || user?.email?.[0] || 'U').toUpperCase();
+  const displayName = getDisplayName(profile, user);
+  const username = getUsernameDisplay(profile, user);
+  const initials = getInitials(profile, user);
 
   return (
     <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border/80">
@@ -84,8 +87,8 @@ const DashboardHeader = () => {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold truncate">{profile?.full_name || 'YieGo user'}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">@{profile?.username || user?.email?.split('@')[0]}</p>
+                        <p className="text-sm font-bold truncate">{displayName}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{username ? `@${username}` : (user?.email || 'Set username in profile')}</p>
                       </div>
                     </div>
                     {(isAdmin || isStaff) && (
