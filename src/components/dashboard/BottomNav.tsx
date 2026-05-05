@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Smartphone, Grid3x3, Wallet, MoreHorizontal } from 'lucide-react';
+import { Home, Wifi, LayoutGrid, Wallet, Sparkles } from 'lucide-react';
 
 type Tab = {
   to: string;
@@ -20,11 +20,11 @@ const BottomNav = () => {
   };
 
   const tabs: Tab[] = [
-    { to: '/dashboard', icon: Home, label: 'Dashboard', exact: true },
-    { to: '/dashboard/buy', icon: Smartphone, label: 'Data Bundles' },
-    { to: '/dashboard/services', icon: Grid3x3, label: 'Services' },
+    { to: '/dashboard', icon: Home, label: 'Home', exact: true },
+    { to: '/dashboard/buy', icon: Wifi, label: 'Bundles' },
+    { to: '/dashboard/services', icon: LayoutGrid, label: 'Services' },
     { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
-    { to: '/dashboard/more', icon: MoreHorizontal, label: 'More', match: ['/dashboard/more', '/dashboard/orders', '/dashboard/transactions', '/dashboard/profile', '/dashboard/settings', '/dashboard/notifications', '/dashboard/referral', '/dashboard/rewards'] },
+    { to: '/dashboard/more', icon: Sparkles, label: 'More', match: ['/dashboard/more', '/dashboard/orders', '/dashboard/transactions', '/dashboard/profile', '/dashboard/settings', '/dashboard/notifications', '/dashboard/referral', '/dashboard/rewards'] },
   ];
 
   const renderBadge = (count?: number) => {
@@ -59,14 +59,29 @@ const BottomNav = () => {
                 aria-current={active ? 'page' : undefined}
                 className="relative flex flex-col items-center justify-center flex-1 h-full select-none active:scale-[0.94] transition-transform"
               >
+                {/* Premium top indicator bar */}
                 <span
-                  className="relative inline-flex items-center justify-center transition-all duration-200 ease-out"
+                  aria-hidden
+                  className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] rounded-b-full transition-all duration-300 ease-out"
                   style={{
-                    width: 46,
-                    height: 30,
-                    borderRadius: 9999,
-                    background: active ? 'hsl(var(--primary) / 0.14)' : 'transparent',
-                    boxShadow: active ? 'inset 0 0 0 1px hsl(var(--primary) / 0.25)' : 'none',
+                    width: active ? 26 : 0,
+                    background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6))',
+                    boxShadow: active ? '0 0 12px hsl(var(--primary) / 0.55)' : 'none',
+                  }}
+                />
+                <span
+                  className="relative inline-flex items-center justify-center transition-all duration-300 ease-out"
+                  style={{
+                    width: 50,
+                    height: 32,
+                    borderRadius: 12,
+                    background: active
+                      ? 'linear-gradient(135deg, hsl(var(--primary) / 0.20), hsl(var(--primary) / 0.08))'
+                      : 'transparent',
+                    boxShadow: active
+                      ? 'inset 0 0 0 1px hsl(var(--primary) / 0.30), 0 6px 14px -8px hsl(var(--primary) / 0.45)'
+                      : 'none',
+                    backdropFilter: active ? 'blur(8px)' : 'none',
                   }}
                 >
                   <Icon
