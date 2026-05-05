@@ -21,7 +21,9 @@ const DashboardHeader = () => {
   };
 
   const avatarUrl = profile?.avatar_url;
-  const initials = (profile?.full_name?.[0] || user?.email?.[0] || 'U').toUpperCase();
+  const displayName = getDisplayName(profile, user);
+  const username = getUsernameDisplay(profile, user);
+  const initials = getInitials(profile, user);
 
   return (
     <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border/80">
