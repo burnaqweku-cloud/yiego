@@ -393,7 +393,7 @@ async function sendToAfroHubGH(
     network: payload.network,
     phone_number: payload.phone_number.replace(/\s/g, ""),
     data_amount: String(payload.data_amount),
-    reference: clientReference || `DS-${Date.now()}`,
+    reference: clientReference || `YG-${Date.now()}`,
   };
   debug.request_url = url;
   debug.request_body = body;
@@ -590,7 +590,7 @@ async function sendToDataCart(
     network_id: providerIds.networkId,
     plan_id: providerIds.planId,
     phone_number: cleanPhone,
-    client_reference: clientReference || `DS-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    client_reference: clientReference || `YG-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
   };
 
   const debug: Record<string, unknown> = {

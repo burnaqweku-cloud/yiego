@@ -489,7 +489,7 @@ Deno.serve(async (req) => {
       processingFee = fees.processingFee;
       totalPayable = fees.totalPayable;
 
-      const orderId = generateOrderId(cleanOrderPrefix || "DS-");
+      const orderId = generateOrderId(cleanOrderPrefix || "YG-");
       // Default reference prefix "ORD" preserves byte-identical behaviour for
       // all existing (web) callers. Telegram bot passes "TGORD" so refs stay
       // distinguishable.
