@@ -148,14 +148,22 @@ const DashboardBulkPurchase = () => {
   };
 
   const handleSubmit = async () => {
-    if (!user || validRecipients.length === 0) return;
+    const useItems = mode === 'paste' ? validParsed.map(p => ({
+      id: crypto.randomUUID(),
+      phone: p.phone!,
+      bundleSizeGb: p.gb!,
+      productId: p.productId!,
+    })) : validRecipients;
+
+    if (!user || useItems.length === 0) return;
 
     if (!isNetworkAvailable(network as Network)) {
-      toast.error(`${network} orders are temporarily unavailable`);
+      toast.error(`${network} bundles are temporarily paused`);
       return;
     }
 
-    if (walletBalance < totalCost) {
+    const cost = mode === 'paste' ? pasteTotalCost : totalCost;
+    if (walletBalance < cost) {
       toast.error('Insufficient wallet balance');
       return;
     }
@@ -164,11 +172,11 @@ const DashboardBulkPurchase = () => {
     try {
       const { data: batch } = await supabase.from('wholesale_batches' as any).insert({
         agent_user_id: user.id,
-        raw_input_text: validRecipients.map(r => `${r.phone} ${r.bundleSizeGb}GB ${network}`).join('\n'),
-        parsed_count: validRecipients.length,
-        valid_count: validRecipients.length,
+        raw_input_text: useItems.map(r => `${r.phone} ${r.bundleSizeGb}GB ${network}`).join('\n'),
+        parsed_count: useItems.length,
+        valid_count: useItems.length,
         invalid_count: 0,
-        total_cost: totalCost,
+        total_cost: cost,
         status: 'pending',
       }).select().single();
 
@@ -178,7 +186,7 @@ const DashboardBulkPurchase = () => {
         body: {
           action: 'place_bulk',
           batch_id: batchId,
-          items: validRecipients.map(r => {
+          items: useItems.map(r => {
             const prod = bundles.find(b => b.id === r.productId);
             return {
               network: prod?.network || network,
