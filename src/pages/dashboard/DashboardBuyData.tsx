@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertCircle, CheckCircle, Wallet, CreditCard, Zap, Loader2, Tag, AlertTriangle, Layers, Info } from 'lucide-react';
+import BundleCard from '@/components/bundles/BundleCard';
 import { Link } from 'react-router-dom';
 import { generateOrderId } from '@/data/bundles';
 import { toast } from 'sonner';
@@ -247,8 +248,20 @@ const DashboardBuyData = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-5 max-w-2xl">
-        <h1 className="text-xl font-display font-bold">Buy Data</h1>
+      <div className="p-4 md:p-6 space-y-5 max-w-3xl mx-auto">
+        {/* Page header */}
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">Connectivity</p>
+            <h1 className="text-2xl md:text-3xl font-display font-extrabold tracking-tight mt-1">Data Bundles</h1>
+            <p className="text-xs text-muted-foreground mt-1">MTN · Telecel · AirtelTigo — pay from wallet or Paystack.</p>
+          </div>
+          <Link to="/dashboard/bulk-purchase">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 rounded-full">
+              <Layers className="w-3.5 h-3.5" /> Bulk
+            </Button>
+          </Link>
+        </div>
 
         {/* Live delivery chip */}
         {sysStatus.online && (
@@ -282,18 +295,10 @@ const DashboardBuyData = () => {
           </div>
         )}
 
-
         {useAgentPrices && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-              <Tag className="w-3.5 h-3.5" />
-              Agent prices applied
-            </div>
-            <Link to="/dashboard/bulk-purchase">
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-7">
-                <Layers className="w-3.5 h-3.5" /> Bulk Orders
-              </Button>
-            </Link>
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+            <Tag className="w-3.5 h-3.5" />
+            Agent prices applied
           </div>
         )}
 
