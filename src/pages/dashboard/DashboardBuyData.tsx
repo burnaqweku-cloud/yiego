@@ -308,8 +308,8 @@ const DashboardBuyData = () => {
             <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setSelectedNetwork(null)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors btn-press ${
-                  !selectedNetwork ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all btn-press ${
+                  !selectedNetwork ? 'bg-primary text-primary-foreground shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.5)]' : 'bg-card border border-border text-muted-foreground hover:border-primary/30'
                 }`}
               >
                 All
@@ -318,8 +318,8 @@ const DashboardBuyData = () => {
                 <button
                   key={n}
                   onClick={() => setSelectedNetwork(n)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors btn-press ${
-                    selectedNetwork === n ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all btn-press ${
+                    selectedNetwork === n ? 'bg-primary text-primary-foreground shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.5)]' : 'bg-card border border-border text-muted-foreground hover:border-primary/30'
                   }`}
                 >
                   {n}
@@ -330,31 +330,16 @@ const DashboardBuyData = () => {
             {isLoading ? (
               <div className="grid grid-cols-2 gap-3">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} className="h-[130px] w-full rounded-xl" />
+                  <Skeleton key={i} className="h-[180px] w-full rounded-3xl" />
                 ))}
               </div>
             ) : activeBundles.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8 text-center">No bundles available</p>
+              <p className="text-sm text-muted-foreground py-8 text-center">No bundles available right now.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {activeBundles.map((b) => {
-                  const price = getBundlePrice(b);
-                  return (
-                    <button
-                      key={b.id}
-                      onClick={() => handleSelectBundle(b)}
-                      className="bg-card rounded-xl p-4 border border-border card-shadow-light text-left interactive-card animate-fade-in"
-                    >
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${NETWORK_COLORS[b.network as Network] || 'bg-muted'}`}>
-                        {b.network}
-                      </span>
-                      <p className="text-lg font-display font-bold mt-2">{b.bundle_size_gb}GB</p>
-                      {b.description && <p className="text-[10px] text-muted-foreground">{b.description}</p>}
-                      <p className="text-primary font-semibold text-sm">{formatPrice(price)}</p>
-                      <NonExpiryBadge size="xs" className="mt-1" network={b.network} />
-                    </button>
-                  );
-                })}
+              <div className="grid grid-cols-2 gap-3 md:gap-4">
+                {activeBundles.map((b) => (
+                  <BundleCard key={b.id} bundle={b} onBuy={handleSelectBundle} sellingPrice={getBundlePrice(b)} />
+                ))}
               </div>
             )}
 
