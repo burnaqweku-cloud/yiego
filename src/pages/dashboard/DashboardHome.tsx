@@ -46,7 +46,8 @@ const DashboardHome = () => {
     return () => { cancelled = true; };
   }, [user, orders.length]);
 
-  const firstName = profile?.full_name?.split(' ')[0] || 'there';
+  const firstName = getFirstName(profile, user);
+  const hasName = firstName && firstName !== 'there';
 
   return (
     <DashboardLayout>
