@@ -87,8 +87,8 @@ const DashboardHeader = () => {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold truncate">{profile?.full_name || 'YieGo user'}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">@{profile?.username || user?.email?.split('@')[0]}</p>
+                        <p className="text-sm font-bold truncate">{displayName}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{username ? `@${username}` : (user?.email || 'Set username in profile')}</p>
                       </div>
                     </div>
                     {(isAdmin || isStaff) && (
