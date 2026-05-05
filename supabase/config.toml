@@ -2,3 +2,6 @@ project_id = "qmhhqzlkyxhvrsycture"
 
 [functions.telegram-auth]
 verify_jwt = false
+
+[functions.afrohubgh-webhook]
+verify_jwt = false
