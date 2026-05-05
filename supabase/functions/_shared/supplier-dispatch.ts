@@ -306,8 +306,9 @@ async function sendToSupplierA(
   payload: { network: string; phone_number: string; data_amount: string },
   attempt = 1
 ): Promise<{ ok: boolean; status: number; body: Record<string, unknown> }> {
-  const baseUrl = Deno.env.get("SUPPLIER_API_BASE_URL");
-  const apiKey = Deno.env.get("SUPPLIER_API_KEY");
+  // Prefer supplier-specific secrets; fall back to legacy SUPPLIER_API_* for backward compatibility
+  const baseUrl = Deno.env.get("SUPPLIER_A_API_BASE_URL") || Deno.env.get("SUPPLIER_API_BASE_URL");
+  const apiKey = Deno.env.get("SUPPLIER_A_API_KEY") || Deno.env.get("SUPPLIER_API_KEY");
   if (!baseUrl || !apiKey) {
     return { ok: false, status: 0, body: { error: "Supplier A API not configured" } };
   }
