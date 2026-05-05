@@ -952,6 +952,8 @@ export async function dispatchToSupplier(
       : buildDataCartFailureResult(mappingErrorCode, mappingErrorMessage);
   } else if (supplierCode === "DATAMART") {
     result = await sendToDataMart(payload);
+  } else if (supplierCode === "AFROHUBGH") {
+    result = await sendToAfroHubGH(payload, opts?.orderId);
   } else {
     result = await sendToSupplierA(payload);
   }
