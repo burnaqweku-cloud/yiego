@@ -26,7 +26,7 @@ const DashboardHeader = () => {
   const initials = getInitials(profile, user);
 
   return (
-    <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border/80">
+    <header className="sticky top-0 z-40 no-glass bg-card/70 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/40 dark:border-white/[0.06] shadow-[0_1px_0_0_hsl(var(--border)/0.4),0_8px_24px_-16px_hsl(156_60%_18%/0.18)]">
       <div className="flex items-center justify-between h-14 px-4">
         {/* Logo */}
         <Link to="/dashboard" className="flex items-center shrink-0">
