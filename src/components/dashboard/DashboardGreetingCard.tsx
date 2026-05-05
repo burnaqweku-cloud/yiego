@@ -39,7 +39,7 @@ const DashboardGreetingCard = ({ name, isAgent }: DashboardGreetingCardProps) =>
         </div>
         <div className="min-w-0 flex-1">
           <h1 className="text-lg md:text-xl font-display font-bold text-primary-foreground truncate">
-            {greeting}, {firstName} <span className="wave-emoji">👋</span>
+            {greeting}{firstName ? `, ${firstName}` : ''} <span className="wave-emoji">👋</span>
           </h1>
           <p className="text-xs text-primary-foreground/70 font-medium mt-0.5 tracking-wide">
             Fast Data Delivery Platform
