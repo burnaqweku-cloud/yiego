@@ -83,13 +83,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, attempt = 0) => {
     const { data } = await supabase
       .from('profiles')
       .select('full_name, phone, email, username, avatar_url')
       .eq('id', userId)
       .maybeSingle();
-    if (data) setProfile(data as any);
+    if (data) {
+      // Backfill missing fields from auth metadata (handles older accounts / OAuth users)
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        const meta: any = authUser?.user_metadata || {};
+        const patch: Record<string, any> = {};
+        if (!data.full_name && (meta.full_name || meta.name)) patch.full_name = (meta.full_name || meta.name).trim();
+        if (!data.username && meta.username) patch.username = String(meta.username).trim();
+        if (!data.phone && meta.phone) patch.phone = String(meta.phone).trim();
+        if (!data.email && authUser?.email) patch.email = authUser.email;
+        if (Object.keys(patch).length) {
+          await supabase.from('profiles').update(patch).eq('id', userId);
+          Object.assign(data, patch);
+        }
+      } catch {}
+      setProfile(data as any);
+    } else if (attempt < 3) {
+      // Profile row may not exist yet right after signup (trigger race) — retry
+      setTimeout(() => fetchProfile(userId, attempt + 1), 400 * (attempt + 1));
+    }
   };
 
   const checkRoles = async (userId: string) => {
