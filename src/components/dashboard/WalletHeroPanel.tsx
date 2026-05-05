@@ -36,15 +36,13 @@ const WalletHeroPanel = ({ balance, totalOrders, totalSpent, loading, ordersLoad
 
   return (
     <section
-      className="relative overflow-hidden rounded-3xl p-5 sm:p-6 text-primary-foreground"
-      style={{
-        background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--gold-glow, var(--primary))) 100%)',
-        boxShadow: '0 20px 60px -20px hsl(var(--primary) / 0.45)',
-      }}
+      className="glass-hero-emerald relative overflow-hidden rounded-3xl p-5 sm:p-6 text-primary-foreground"
     >
       {/* decorative orbs */}
-      <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-16 -left-10 w-48 h-48 rounded-full bg-black/10 blur-3xl pointer-events-none" />
+      <div className="absolute -top-20 -right-16 w-60 h-60 rounded-full bg-white/15 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-20 -left-12 w-52 h-52 rounded-full bg-[hsl(42_96%_60%/0.18)] blur-3xl pointer-events-none" />
+      {/* top sheen */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
 
       <div className="relative">
         <div className="flex items-start justify-between mb-5">
