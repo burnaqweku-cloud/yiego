@@ -20,7 +20,7 @@ const DashboardSystemStatus = ({ status, loading }: DashboardSystemStatusProps) 
 
   if (loading) {
     return (
-      <div className="rounded-2xl p-4 border border-border bg-card">
+      <div className="rounded-2xl p-4 glass-card">
         <div className="flex items-center gap-3 mb-3">
           <Skeleton className="w-3 h-3 rounded-full" />
           <Skeleton className="h-4 w-28" />

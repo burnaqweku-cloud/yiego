@@ -15,7 +15,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // a nested scroll container combined with position:fixed children causes the
   // bottom nav to drift / detach as the dynamic browser chrome collapses.
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col dashboard-ambient">
       <DashboardHeader />
       <div className="flex flex-1 w-full">
         <DashboardSidebar />

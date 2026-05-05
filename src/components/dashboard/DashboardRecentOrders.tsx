@@ -42,7 +42,7 @@ const DashboardRecentOrders = ({ orders, loading }: DashboardRecentOrdersProps) 
   const recent = orders.slice(0, 5);
 
   return (
-    <section className="rounded-2xl border border-border/70 bg-card overflow-hidden">
+    <section className="rounded-3xl glass-card overflow-hidden">
       <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between border-b border-border/60">
         <div>
           <h3 className="text-sm font-bold tracking-tight">Recent orders</h3>
