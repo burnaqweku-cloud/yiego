@@ -684,8 +684,8 @@ export async function getDataMartBalance(): Promise<{ ok: boolean; balance: numb
 
 // ─── Supplier A Balance Check ───────────────────────────────
 export async function getSupplierABalance(): Promise<{ ok: boolean; balance: number | null; error?: string }> {
-  const baseUrl = Deno.env.get("SUPPLIER_API_BASE_URL");
-  const apiKey = Deno.env.get("SUPPLIER_API_KEY");
+  const baseUrl = Deno.env.get("SUPPLIER_A_API_BASE_URL") || Deno.env.get("SUPPLIER_API_BASE_URL");
+  const apiKey = Deno.env.get("SUPPLIER_A_API_KEY") || Deno.env.get("SUPPLIER_API_KEY");
   if (!baseUrl || !apiKey) return { ok: false, balance: null, error: "Supplier A not configured" };
 
   try {
