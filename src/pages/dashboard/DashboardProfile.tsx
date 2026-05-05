@@ -127,7 +127,9 @@ const DashboardProfile = () => {
     ? new Date(memberSince).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
     : '—';
 
-  const initials = (profile?.full_name?.[0] || user?.email?.[0] || 'U').toUpperCase();
+  const initials = getInitials(profile, user);
+  const displayName = getDisplayName(profile, user);
+  const usernameDisplay = getUsernameDisplay(profile, user);
 
   return (
     <DashboardLayout>
