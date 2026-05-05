@@ -40,13 +40,46 @@ const DashboardBulkPurchase = () => {
   const { status: sysStatus } = useGlobalSystemStatus();
   const { isNetworkAvailable, getNetworkMessage } = useNetworkAvailability();
 
+  const [mode, setMode] = useState<'rows' | 'paste'>('rows');
   const [network, setNetwork] = useState('');
   const [recipients, setRecipients] = useState<RecipientRow[]>([]);
   const [addPhone, setAddPhone] = useState('');
   const [addGb, setAddGb] = useState('');
   const [addError, setAddError] = useState('');
+  const [pasteText, setPasteText] = useState('');
   const [placing, setPlacing] = useState(false);
   const [results, setResults] = useState<any[] | null>(null);
+
+  // Paste parsing
+  type ParsedLine = { line: number; raw: string; phone?: string; gb?: number; productId?: string; ok: boolean; error?: string };
+  const parsedLines: ParsedLine[] = useMemo(() => {
+    if (!pasteText.trim() || !network) return [];
+    const products = bundles.filter(b => b.active && b.network === network);
+    return pasteText.split('\n').map((raw, i) => {
+      const line = i + 1;
+      const trimmed = raw.trim();
+      if (!trimmed) return { line, raw, ok: false, error: 'Empty line' };
+      const parts = trimmed.split(/[\s,;\t]+/).filter(Boolean);
+      if (parts.length < 2) return { line, raw, ok: false, error: 'Need: phone gb' };
+      const phone = parts[0].replace(/[^0-9]/g, '');
+      const gb = parseFloat(parts[1].replace(/[^0-9.]/g, ''));
+      if (!validateGhanaPhone(phone)) return { line, raw, phone, ok: false, error: 'Invalid Ghana number' };
+      if (!gb || gb <= 0) return { line, raw, phone, gb, ok: false, error: 'Invalid GB value' };
+      const matches = products.filter(p => Number(p.bundle_size_gb) === gb);
+      if (matches.length === 0) return { line, raw, phone, gb, ok: false, error: `No ${gb}GB bundle for ${network}` };
+      if (matches.length > 1) return { line, raw, phone, gb, ok: false, error: 'Multiple matches — use row entry' };
+      return { line, raw, phone, gb, productId: matches[0].id, ok: true };
+    });
+  }, [pasteText, bundles, network]);
+
+  const validParsed = parsedLines.filter(p => p.ok);
+  const invalidParsed = parsedLines.filter(p => !p.ok && p.raw.trim());
+  const pasteTotalCost = useMemo(() => {
+    return validParsed.reduce((s, p) => {
+      const prod = bundles.find(b => b.id === p.productId);
+      return prod ? s + getAgentPrice(prod) : s;
+    }, 0);
+  }, [validParsed, bundles, getAgentPrice]);
 
   const filteredProducts = useMemo(() =>
     network ? bundles.filter(b => b.active && b.network === network) : [],
