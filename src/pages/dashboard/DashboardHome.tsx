@@ -65,10 +65,10 @@ const DashboardHome = () => {
         <header className="flex items-end justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-bold">
-              {getGreeting()}
+              {getGreeting()}{hasName ? ',' : ''}
             </p>
             <h1 className="text-xl sm:text-2xl font-display font-bold tracking-tight truncate">
-              {firstName} 👋
+              {hasName ? firstName : 'Welcome'} 👋
             </h1>
             <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5 leading-snug">
               Manage your wallet, services, and orders from one place.
