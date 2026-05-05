@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import SEOHead from '@/components/seo/SEOHead';
 import SiteNoticeBanner from '@/components/layout/SiteNoticeBanner';
 import { getExactCount, sumColumn } from '@/lib/db-counts';
+import { getFirstName } from '@/lib/user-display';
 
 function getGreeting() {
   const h = new Date().getHours();
