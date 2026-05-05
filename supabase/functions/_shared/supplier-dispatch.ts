@@ -355,6 +355,99 @@ async function sendToSupplierA(
   }
 }
 
+// ─── AfroHubGH adapter (Supplier D — scaffold, setup-required) ─────
+// Real endpoints/payload shape will be wired once AfroHubGH credentials &
+// API docs are available. Until then we fail fast with a clear admin-only
+// SETUP_REQUIRED code so orders are never silently lost or faked.
+async function sendToAfroHubGH(
+  payload: { network: string; phone_number: string; data_amount: string },
+  clientReference?: string,
+  attempt = 1,
+): Promise<{ ok: boolean; status: number; body: Record<string, unknown> }> {
+  const baseUrl = Deno.env.get("AFROHUBGH_API_BASE_URL");
+  const apiKey = Deno.env.get("AFROHUBGH_API_KEY");
+
+  const debug: Record<string, unknown> = {
+    supplier_code: "AFROHUBGH",
+    request_body: payload,
+    setup_required: !baseUrl || !apiKey,
+  };
+
+  if (!baseUrl || !apiKey) {
+    return {
+      ok: false,
+      status: 0,
+      body: {
+        error: "SETUP_REQUIRED",
+        code: "SETUP_REQUIRED",
+        error_code: "SETUP_REQUIRED",
+        message: "AfroHubGH supplier is not configured. Add AFROHUBGH_API_BASE_URL and AFROHUBGH_API_KEY secrets.",
+        debug,
+      },
+    };
+  }
+
+  // TODO(afrohubgh): finalize endpoint path + request shape per AfroHubGH API docs.
+  const url = baseUrl.replace(/\/+$/, "") + "/orders";
+  const body = {
+    network: payload.network,
+    phone_number: payload.phone_number.replace(/\s/g, ""),
+    data_amount: String(payload.data_amount),
+    reference: clientReference || `DS-${Date.now()}`,
+  };
+  debug.request_url = url;
+  debug.request_body = body;
+
+  try {
+    console.log(`[AfroHubGH Attempt ${attempt}] ${url}`);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const bodyText = await response.text();
+    let parsed: Record<string, unknown>;
+    try { parsed = JSON.parse(bodyText); } catch { parsed = { raw: bodyText }; }
+    debug.http_status = response.status;
+    debug.response_text = bodyText;
+
+    if (response.ok) return { ok: true, status: response.status, body: { ...parsed, debug } };
+    if (response.status >= 500 && attempt < MAX_RETRIES) {
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+      return sendToAfroHubGH(payload, clientReference, attempt + 1);
+    }
+    debug.error_message = parsed.message || parsed.error || `HTTP ${response.status}`;
+    return { ok: false, status: response.status, body: { ...parsed, debug } };
+  } catch (err) {
+    console.error(`[AfroHubGH Attempt ${attempt}] Network error:`, err);
+    debug.http_status = 0;
+    debug.error_message = String(err);
+    if (attempt < MAX_RETRIES) {
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+      return sendToAfroHubGH(payload, clientReference, attempt + 1);
+    }
+    return { ok: false, status: 0, body: { error: String(err), debug } };
+  }
+}
+
+export async function getAfroHubGHBalance(): Promise<{ ok: boolean; balance: number | null; error?: string }> {
+  const baseUrl = Deno.env.get("AFROHUBGH_API_BASE_URL");
+  const apiKey = Deno.env.get("AFROHUBGH_API_KEY");
+  if (!baseUrl || !apiKey) return { ok: false, balance: null, error: "AfroHubGH not configured (SETUP_REQUIRED)" };
+  try {
+    const url = baseUrl.replace(/\/+$/, "") + "/balance";
+    const response = await fetch(url, { headers: { "Authorization": `Bearer ${apiKey}` } });
+    const data: any = await response.json().catch(() => ({}));
+    if (response.ok) return { ok: true, balance: Number(data.balance ?? data.available_balance ?? 0) };
+    return { ok: false, balance: null, error: data.message || `HTTP ${response.status}` };
+  } catch (err) {
+    return { ok: false, balance: null, error: String(err) };
+  }
+}
+
 // ─── DataMart adapter ───────────────────────────────────────
 async function sendToDataMart(
   payload: { network: string; phone_number: string; data_amount: string },
