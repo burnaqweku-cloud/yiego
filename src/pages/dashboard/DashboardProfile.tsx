@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { getDisplayName, getUsernameDisplay, getInitials } from '@/lib/user-display';
 
 const ELITE_THRESHOLD = 95;
 
