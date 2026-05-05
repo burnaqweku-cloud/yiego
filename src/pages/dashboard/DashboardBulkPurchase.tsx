@@ -19,8 +19,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  Wallet, Plus, Trash2, Loader2, AlertTriangle, CheckCircle2, Package, Users
+  Wallet, Plus, Trash2, Loader2, AlertTriangle, CheckCircle2, Package, Users, Rows3, ClipboardPaste, X
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 interface RecipientRow {
   id: string;
@@ -39,13 +40,46 @@ const DashboardBulkPurchase = () => {
   const { status: sysStatus } = useGlobalSystemStatus();
   const { isNetworkAvailable, getNetworkMessage } = useNetworkAvailability();
 
+  const [mode, setMode] = useState<'rows' | 'paste'>('rows');
   const [network, setNetwork] = useState('');
   const [recipients, setRecipients] = useState<RecipientRow[]>([]);
   const [addPhone, setAddPhone] = useState('');
   const [addGb, setAddGb] = useState('');
   const [addError, setAddError] = useState('');
+  const [pasteText, setPasteText] = useState('');
   const [placing, setPlacing] = useState(false);
   const [results, setResults] = useState<any[] | null>(null);
+
+  // Paste parsing
+  type ParsedLine = { line: number; raw: string; phone?: string; gb?: number; productId?: string; ok: boolean; error?: string };
+  const parsedLines: ParsedLine[] = useMemo(() => {
+    if (!pasteText.trim() || !network) return [];
+    const products = bundles.filter(b => b.active && b.network === network);
+    return pasteText.split('\n').map((raw, i) => {
+      const line = i + 1;
+      const trimmed = raw.trim();
+      if (!trimmed) return { line, raw, ok: false, error: 'Empty line' };
+      const parts = trimmed.split(/[\s,;\t]+/).filter(Boolean);
+      if (parts.length < 2) return { line, raw, ok: false, error: 'Need: phone gb' };
+      const phone = parts[0].replace(/[^0-9]/g, '');
+      const gb = parseFloat(parts[1].replace(/[^0-9.]/g, ''));
+      if (!validateGhanaPhone(phone)) return { line, raw, phone, ok: false, error: 'Invalid Ghana number' };
+      if (!gb || gb <= 0) return { line, raw, phone, gb, ok: false, error: 'Invalid GB value' };
+      const matches = products.filter(p => Number(p.bundle_size_gb) === gb);
+      if (matches.length === 0) return { line, raw, phone, gb, ok: false, error: `No ${gb}GB bundle for ${network}` };
+      if (matches.length > 1) return { line, raw, phone, gb, ok: false, error: 'Multiple matches — use row entry' };
+      return { line, raw, phone, gb, productId: matches[0].id, ok: true };
+    });
+  }, [pasteText, bundles, network]);
+
+  const validParsed = parsedLines.filter(p => p.ok);
+  const invalidParsed = parsedLines.filter(p => !p.ok && p.raw.trim());
+  const pasteTotalCost = useMemo(() => {
+    return validParsed.reduce((s, p) => {
+      const prod = bundles.find(b => b.id === p.productId);
+      return prod ? s + getAgentPrice(prod) : s;
+    }, 0);
+  }, [validParsed, bundles, getAgentPrice]);
 
   const filteredProducts = useMemo(() =>
     network ? bundles.filter(b => b.active && b.network === network) : [],
@@ -114,14 +148,22 @@ const DashboardBulkPurchase = () => {
   };
 
   const handleSubmit = async () => {
-    if (!user || validRecipients.length === 0) return;
+    const useItems = mode === 'paste' ? validParsed.map(p => ({
+      id: crypto.randomUUID(),
+      phone: p.phone!,
+      bundleSizeGb: p.gb!,
+      productId: p.productId!,
+    })) : validRecipients;
+
+    if (!user || useItems.length === 0) return;
 
     if (!isNetworkAvailable(network as Network)) {
-      toast.error(`${network} orders are temporarily unavailable`);
+      toast.error(`${network} bundles are temporarily paused`);
       return;
     }
 
-    if (walletBalance < totalCost) {
+    const cost = mode === 'paste' ? pasteTotalCost : totalCost;
+    if (walletBalance < cost) {
       toast.error('Insufficient wallet balance');
       return;
     }
@@ -130,11 +172,11 @@ const DashboardBulkPurchase = () => {
     try {
       const { data: batch } = await supabase.from('wholesale_batches' as any).insert({
         agent_user_id: user.id,
-        raw_input_text: validRecipients.map(r => `${r.phone} ${r.bundleSizeGb}GB ${network}`).join('\n'),
-        parsed_count: validRecipients.length,
-        valid_count: validRecipients.length,
+        raw_input_text: useItems.map(r => `${r.phone} ${r.bundleSizeGb}GB ${network}`).join('\n'),
+        parsed_count: useItems.length,
+        valid_count: useItems.length,
         invalid_count: 0,
-        total_cost: totalCost,
+        total_cost: cost,
         status: 'pending',
       }).select().single();
 
@@ -144,7 +186,7 @@ const DashboardBulkPurchase = () => {
         body: {
           action: 'place_bulk',
           batch_id: batchId,
-          items: validRecipients.map(r => {
+          items: useItems.map(r => {
             const prod = bundles.find(b => b.id === r.productId);
             return {
               network: prod?.network || network,
@@ -208,10 +250,11 @@ const DashboardBulkPurchase = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-5 max-w-2xl">
+      <div className="p-4 md:p-6 space-y-5 max-w-2xl mx-auto">
         <div>
-          <h1 className="text-xl font-display font-bold">Bulk Orders</h1>
-          <p className="text-sm text-muted-foreground">Paid from your main wallet. Agent pricing applied.</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">Bulk</p>
+          <h1 className="text-2xl md:text-3xl font-display font-extrabold tracking-tight mt-1">Bulk Bundles</h1>
+          <p className="text-sm text-muted-foreground mt-1">Send data to many numbers at once. Paid from your wallet.</p>
         </div>
 
         {!sysStatus.online && (
@@ -220,16 +263,6 @@ const DashboardBulkPurchase = () => {
             <p className="text-sm text-muted-foreground">{sysStatus.message}</p>
           </div>
         )}
-
-        {/* Info strip */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary" className="gap-1.5 text-xs">
-            <Wallet className="w-3 h-3" /> Paid from Wallet
-          </Badge>
-          <Badge variant="secondary" className="gap-1.5 text-xs">
-            <Package className="w-3 h-3" /> Agent Price
-          </Badge>
-        </div>
 
         {/* Wallet */}
         <Card className="border-primary/20 bg-primary/5">
@@ -252,8 +285,8 @@ const DashboardBulkPurchase = () => {
             <Card>
               <CardContent className="p-4 space-y-4">
                 <div>
-                  <Label className="text-sm font-medium mb-1.5 block">Step 1: Select Network</Label>
-                  <Select value={network} onValueChange={(v) => { setNetwork(v); setRecipients([]); }}>
+                  <Label className="text-sm font-medium mb-1.5 block">1. Choose network</Label>
+                  <Select value={network} onValueChange={(v) => { setNetwork(v); setRecipients([]); setPasteText(''); }}>
                     <SelectTrigger><SelectValue placeholder="Select network" /></SelectTrigger>
                     <SelectContent>
                       {NETWORKS.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
@@ -263,109 +296,161 @@ const DashboardBulkPurchase = () => {
               </CardContent>
             </Card>
 
-            {/* Step 2: Add Recipients with per-row bundle */}
+            {/* Step 2: Mode toggle + entry */}
             {network && (
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Users className="w-4 h-4" />
-                    Step 2: Add Recipients ({recipients.length}/50)
+                    2. Add recipients
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-end gap-2">
-                    <div className="flex-1 space-y-1">
-                      <Label className="text-xs">Phone Number</Label>
-                      <Input
-                        placeholder="e.g. 0551234567"
-                        value={addPhone}
-                        onChange={(e) => { setAddPhone(e.target.value.replace(/[^0-9]/g, '')); setAddError(''); }}
-                        maxLength={10}
-                        inputMode="tel"
-                        className="h-10"
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddRecipient()}
-                      />
-                    </div>
-                    <div className="w-24 space-y-1">
-                      <Label className="text-xs">GB</Label>
-                      <Input
-                        placeholder="e.g. 2"
-                        value={addGb}
-                        onChange={(e) => { setAddGb(e.target.value.replace(/[^0-9.]/g, '')); setAddError(''); }}
-                        inputMode="decimal"
-                        className="h-10"
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddRecipient()}
-                      />
-                    </div>
-                    <Button size="icon" className="shrink-0 h-10 w-10" onClick={handleAddRecipient}>
-                      <Plus className="w-4 h-4" />
-                    </Button>
+                <CardContent className="space-y-4">
+                  {/* Mode toggle */}
+                  <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-xl">
+                    <button
+                      onClick={() => setMode('rows')}
+                      className={`text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 ${mode === 'rows' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                    >
+                      <Rows3 className="w-3.5 h-3.5" /> Add one by one
+                    </button>
+                    <button
+                      onClick={() => setMode('paste')}
+                      className={`text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 ${mode === 'paste' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                    >
+                      <ClipboardPaste className="w-3.5 h-3.5" /> Paste list
+                    </button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">Enter GB only. Example: 1 = 1GB, 2 = 2GB</p>
-                  {addError && <p className="text-destructive text-[11px]">{addError}</p>}
 
-                  {/* Recipients list */}
-                  {recipients.length > 0 && (
-                    <div className="max-h-64 overflow-y-auto space-y-1.5 border border-border rounded-lg p-2">
-                      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 text-[10px] font-medium text-muted-foreground border-b border-border pb-1 mb-1">
-                        <span>Phone</span>
-                        <span>GB</span>
-                        <span>Price</span>
-                        <span></span>
-                      </div>
-                      {recipients.map((row) => (
-                        <div key={row.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 items-center text-xs py-1 border-b border-border/50 last:border-0">
-                          <span className="font-mono">{row.phone}</span>
-                          <span>{row.bundleSizeGb}GB</span>
-                          <span className="text-muted-foreground">GHS {getRowPrice(row).toFixed(2)}</span>
-                          <button onClick={() => removeRow(row.id)} className="p-1 hover:bg-destructive/10 rounded transition-colors">
-                            <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
-                          </button>
+                  {mode === 'rows' && (
+                    <>
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-xs">Phone number</Label>
+                          <Input
+                            placeholder="0551234567"
+                            value={addPhone}
+                            onChange={(e) => { setAddPhone(e.target.value.replace(/[^0-9]/g, '')); setAddError(''); }}
+                            maxLength={10}
+                            inputMode="tel"
+                            className="h-10"
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddRecipient()}
+                          />
                         </div>
-                      ))}
-                    </div>
+                        <div className="w-24 space-y-1">
+                          <Label className="text-xs">GB</Label>
+                          <Input
+                            placeholder="2"
+                            value={addGb}
+                            onChange={(e) => { setAddGb(e.target.value.replace(/[^0-9.]/g, '')); setAddError(''); }}
+                            inputMode="decimal"
+                            className="h-10"
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddRecipient()}
+                          />
+                        </div>
+                        <Button size="icon" className="shrink-0 h-10 w-10" onClick={handleAddRecipient}>
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Up to 50 numbers per batch. Example: 1 = 1GB.</p>
+                      {addError && <p className="text-destructive text-[11px]">{addError}</p>}
+
+                      {recipients.length > 0 && (
+                        <div className="max-h-64 overflow-y-auto space-y-1.5 border border-border rounded-lg p-2">
+                          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 text-[10px] font-medium text-muted-foreground border-b border-border pb-1 mb-1">
+                            <span>Phone</span><span>GB</span><span>Price</span><span></span>
+                          </div>
+                          {recipients.map((row) => (
+                            <div key={row.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 items-center text-xs py-1 border-b border-border/50 last:border-0">
+                              <span className="font-mono">{row.phone}</span>
+                              <span>{row.bundleSizeGb}GB</span>
+                              <span className="text-muted-foreground">GHS {getRowPrice(row).toFixed(2)}</span>
+                              <button onClick={() => removeRow(row.id)} className="p-1 hover:bg-destructive/10 rounded transition-colors">
+                                <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {mode === 'paste' && (
+                    <>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Paste your list — one order per line</Label>
+                        <Textarea
+                          value={pasteText}
+                          onChange={(e) => setPasteText(e.target.value)}
+                          rows={6}
+                          placeholder={'0240000000 10\n0550000000 5\n0200000000 2'}
+                          className="font-mono text-xs"
+                        />
+                        <p className="text-[10px] text-muted-foreground">Format: <span className="font-mono">phone gb</span>. Example: <span className="font-mono">0551234567 5</span> = 5GB to that number.</p>
+                      </div>
+
+                      {parsedLines.length > 0 && (
+                        <div className="rounded-lg border border-border max-h-64 overflow-y-auto divide-y divide-border/50">
+                          {parsedLines.filter(p => p.raw.trim()).map(p => (
+                            <div key={p.line} className={`flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs ${p.ok ? '' : 'bg-destructive/5'}`}>
+                              <span className="font-mono truncate flex-1">
+                                <span className="text-muted-foreground mr-2">L{p.line}</span>{p.raw.trim()}
+                              </span>
+                              {p.ok ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-success shrink-0">
+                                  <CheckCircle2 className="w-3 h-3" /> {p.gb}GB
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-destructive shrink-0">
+                                  <X className="w-3 h-3" /> {p.error}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {parsedLines.length > 0 && (
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span>{validParsed.length} valid · {invalidParsed.length} invalid</span>
+                          <span>Total: <span className="font-bold text-foreground">GHS {pasteTotalCost.toFixed(2)}</span></span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
             )}
 
             {/* Summary */}
-            {validRecipients.length > 0 && (
+            {((mode === 'rows' && validRecipients.length > 0) || (mode === 'paste' && validParsed.length > 0)) && (
               <Card>
                 <CardContent className="p-4 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Network</span>
-                    <span className="font-medium">{network}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Recipients</span>
-                    <span className="font-bold">{validRecipients.length}</span>
-                  </div>
-                  <div className="border-t border-border pt-2 flex justify-between">
-                    <span className="font-semibold">Total Cost</span>
-                    <span className="font-bold text-lg">GHS {totalCost.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Wallet balance</span>
-                    <span>GHS {walletBalance.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Balance after</span>
-                    <span className={walletBalance - totalCost < 0 ? 'text-destructive font-bold' : ''}>
-                      GHS {(walletBalance - totalCost).toFixed(2)}
-                    </span>
-                  </div>
+                  {(() => {
+                    const count = mode === 'paste' ? validParsed.length : validRecipients.length;
+                    const cost = mode === 'paste' ? pasteTotalCost : totalCost;
+                    return (
+                      <>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Network</span><span className="font-medium">{network}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Recipients</span><span className="font-bold">{count}</span></div>
+                        <div className="border-t border-border pt-2 flex justify-between">
+                          <span className="font-semibold">Total cost</span>
+                          <span className="font-bold text-lg">GHS {cost.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Wallet balance</span><span>GHS {walletBalance.toFixed(2)}</span></div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Balance after</span>
+                          <span className={walletBalance - cost < 0 ? 'text-destructive font-bold' : ''}>
+                            GHS {(walletBalance - cost).toFixed(2)}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             )}
 
-            {walletBalance < totalCost && totalCost > 0 && (
-              <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-sm flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" /> Insufficient wallet balance
-              </div>
-            )}
-
-            {validRecipients.length > 0 && (
+            {((mode === 'rows' && validRecipients.length > 0) || (mode === 'paste' && validParsed.length > 0)) && (
               <>
                 {network && !isNetworkAvailable(network as Network) && (
                   <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-sm flex items-center gap-2">
@@ -373,25 +458,32 @@ const DashboardBulkPurchase = () => {
                     <span className="text-muted-foreground">{getNetworkMessage(network as Network)}</span>
                   </div>
                 )}
-                <Button
-                  className="w-full"
-                  size="lg"
-                  disabled={placing || walletBalance < totalCost || validRecipients.length === 0 || !sysStatus.online || !isNetworkAvailable(network as Network)}
-                  onClick={handleSubmit}
-                >
-                  {!sysStatus.online ? (
-                    <><AlertTriangle className="w-4 h-4 mr-2" /> System Offline</>
-                  ) : (
-                    <>
-                      {placing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Package className="w-4 h-4 mr-2" />}
-                      Place Bulk Order ({validRecipients.length} recipients)
-                    </>
-                  )}
-                </Button>
+                {(() => {
+                  const count = mode === 'paste' ? validParsed.length : validRecipients.length;
+                  const cost = mode === 'paste' ? pasteTotalCost : totalCost;
+                  return (
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      disabled={placing || walletBalance < cost || count === 0 || !sysStatus.online || !isNetworkAvailable(network as Network)}
+                      onClick={handleSubmit}
+                    >
+                      {!sysStatus.online ? (
+                        <><AlertTriangle className="w-4 h-4 mr-2" /> System offline</>
+                      ) : (
+                        <>
+                          {placing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Package className="w-4 h-4 mr-2" />}
+                          Send {count} bundle{count > 1 ? 's' : ''}
+                        </>
+                      )}
+                    </Button>
+                  );
+                })()}
               </>
             )}
           </>
         )}
+        <div aria-hidden className="h-24 md:h-6" />
       </div>
     </DashboardLayout>
   );

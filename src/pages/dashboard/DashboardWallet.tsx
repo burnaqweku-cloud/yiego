@@ -131,7 +131,7 @@ const DashboardWallet = () => {
     if (!manualAvailable && depositTab === 'manual') setDepositTab('paystack');
   }, [manualAvailable, depositTab]);
 
-  const quickAmounts = [20, 50, 100, 200, 500];
+  const quickAmounts = [25, 60, 120, 250, 400];
 
   // Manual deposit submit is handled inside ManualDepositFlow component
 
@@ -598,11 +598,11 @@ const DashboardWallet = () => {
       <Dialog open={depositOpen} onOpenChange={setDepositOpen}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display">Deposit Funds</DialogTitle>
+            <DialogTitle className="font-display">Top up your wallet</DialogTitle>
             <DialogDescription>
               {depositTab === 'paystack'
-                ? 'Fund your wallet via Paystack (MoMo, Telecel Cash, AirtelTigo Money, or Card).'
-                : 'Enter the amount you want to deposit to continue.'}
+                ? 'Fund instantly via Paystack — MoMo, Telecel Cash, AirtelTigo Money or card.'
+                : 'Send the exact amount via MoMo and submit the transaction ID to credit your wallet.'}
             </DialogDescription>
           </DialogHeader>
 

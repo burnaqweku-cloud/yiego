@@ -49,7 +49,7 @@ export const ManualDepositFlow = ({ settings, onClose, onCredited }: Props) => {
   const tickRef = useRef<number | null>(null);
 
   const numAmount = useMemo(() => parseFloat(amount) || 0, [amount]);
-  const quickAmounts = [20, 50, 100, 200, 500];
+  const quickAmounts = [25, 60, 120, 250, 400];
 
   const copy = (value: string, label: string) => {
     if (!value) return;

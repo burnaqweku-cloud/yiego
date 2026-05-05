@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertCircle, CheckCircle, Wallet, CreditCard, Zap, Loader2, Tag, AlertTriangle, Layers, Info } from 'lucide-react';
+import BundleCard from '@/components/bundles/BundleCard';
 import { Link } from 'react-router-dom';
 import { generateOrderId } from '@/data/bundles';
 import { toast } from 'sonner';
@@ -247,8 +248,20 @@ const DashboardBuyData = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-5 max-w-2xl">
-        <h1 className="text-xl font-display font-bold">Buy Data</h1>
+      <div className="p-4 md:p-6 space-y-5 max-w-3xl mx-auto">
+        {/* Page header */}
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">Connectivity</p>
+            <h1 className="text-2xl md:text-3xl font-display font-extrabold tracking-tight mt-1">Data Bundles</h1>
+            <p className="text-xs text-muted-foreground mt-1">MTN · Telecel · AirtelTigo — pay from wallet or Paystack.</p>
+          </div>
+          <Link to="/dashboard/bulk-purchase">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 rounded-full">
+              <Layers className="w-3.5 h-3.5" /> Bulk
+            </Button>
+          </Link>
+        </div>
 
         {/* Live delivery chip */}
         {sysStatus.online && (
@@ -282,18 +295,10 @@ const DashboardBuyData = () => {
           </div>
         )}
 
-
         {useAgentPrices && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-              <Tag className="w-3.5 h-3.5" />
-              Agent prices applied
-            </div>
-            <Link to="/dashboard/bulk-purchase">
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-7">
-                <Layers className="w-3.5 h-3.5" /> Bulk Orders
-              </Button>
-            </Link>
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+            <Tag className="w-3.5 h-3.5" />
+            Agent prices applied
           </div>
         )}
 
@@ -303,8 +308,8 @@ const DashboardBuyData = () => {
             <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setSelectedNetwork(null)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors btn-press ${
-                  !selectedNetwork ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all btn-press ${
+                  !selectedNetwork ? 'bg-primary text-primary-foreground shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.5)]' : 'bg-card border border-border text-muted-foreground hover:border-primary/30'
                 }`}
               >
                 All
@@ -313,8 +318,8 @@ const DashboardBuyData = () => {
                 <button
                   key={n}
                   onClick={() => setSelectedNetwork(n)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors btn-press ${
-                    selectedNetwork === n ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all btn-press ${
+                    selectedNetwork === n ? 'bg-primary text-primary-foreground shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.5)]' : 'bg-card border border-border text-muted-foreground hover:border-primary/30'
                   }`}
                 >
                   {n}
@@ -325,31 +330,16 @@ const DashboardBuyData = () => {
             {isLoading ? (
               <div className="grid grid-cols-2 gap-3">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} className="h-[130px] w-full rounded-xl" />
+                  <Skeleton key={i} className="h-[180px] w-full rounded-3xl" />
                 ))}
               </div>
             ) : activeBundles.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8 text-center">No bundles available</p>
+              <p className="text-sm text-muted-foreground py-8 text-center">No bundles available right now.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {activeBundles.map((b) => {
-                  const price = getBundlePrice(b);
-                  return (
-                    <button
-                      key={b.id}
-                      onClick={() => handleSelectBundle(b)}
-                      className="bg-card rounded-xl p-4 border border-border card-shadow-light text-left interactive-card animate-fade-in"
-                    >
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${NETWORK_COLORS[b.network as Network] || 'bg-muted'}`}>
-                        {b.network}
-                      </span>
-                      <p className="text-lg font-display font-bold mt-2">{b.bundle_size_gb}GB</p>
-                      {b.description && <p className="text-[10px] text-muted-foreground">{b.description}</p>}
-                      <p className="text-primary font-semibold text-sm">{formatPrice(price)}</p>
-                      <NonExpiryBadge size="xs" className="mt-1" network={b.network} />
-                    </button>
-                  );
-                })}
+              <div className="grid grid-cols-2 gap-3 md:gap-4">
+                {activeBundles.map((b) => (
+                  <BundleCard key={b.id} bundle={b} onBuy={handleSelectBundle} sellingPrice={getBundlePrice(b)} />
+                ))}
               </div>
             )}
 
