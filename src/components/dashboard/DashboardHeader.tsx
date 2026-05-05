@@ -6,6 +6,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { toast } from 'sonner';
 import Logo from '@/components/layout/Logo';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { getDisplayName, getUsernameDisplay, getInitials } from '@/lib/user-display';
 
 const DashboardHeader = () => {
   const { user, profile, isAdmin, isStaff, signOut } = useAuth();
