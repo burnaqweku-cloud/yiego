@@ -19,8 +19,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  Wallet, Plus, Trash2, Loader2, AlertTriangle, CheckCircle2, Package, Users
+  Wallet, Plus, Trash2, Loader2, AlertTriangle, CheckCircle2, Package, Users, Rows3, ClipboardPaste, X
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 interface RecipientRow {
   id: string;
