@@ -13,7 +13,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, RotateCcw, CheckCircle, RefreshCw, Download, Filter, ChevronLeft, ChevronRight, DollarSign, PackagePlus, Loader2, Send } from 'lucide-react';
+import {
+  Search, RotateCcw, CheckCircle, RefreshCw, Download, Filter, ChevronLeft, ChevronRight,
+  DollarSign, PackagePlus, Loader2, Send, ShoppingCart, ArrowRight, Wifi, PhoneCall,
+  ReceiptText, PlayCircle, Boxes, TrendingUp, Clock, XCircle, LucideIcon,
+} from 'lucide-react';
 // NOTE: RotateCcw is still used by RetryDispatchSection (Insufficient Funds recovery) below.
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -146,6 +150,9 @@ const AdminOrders = () => {
   // Read search param from URL (e.g. from AI ticket quick link)
   const [urlSearchParams] = useSearchParams();
   const initialSearch = urlSearchParams.get('search') || '';
+
+  // Service tab — currently only data orders exist; others are placeholders for future services
+  const [serviceTab, setServiceTab] = useState<'data' | 'airtime' | 'bills' | 'subscriptions' | 'digital'>('data');
 
   const [search, setSearch] = useState(initialSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
@@ -468,251 +475,325 @@ const AdminOrders = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-display font-bold">Orders</h2>
-            <p className="text-muted-foreground text-sm">
-              {totalCount} orders{statusFilter !== 'All' ? ` (${statusFilter})` : ''}
+      <div className="space-y-5">
+        {/* ── Header ── */}
+        <header className="flex items-end justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="h-px w-5 bg-gradient-to-r from-transparent to-primary" />
+              <span className="text-[10.5px] font-bold uppercase tracking-[0.2em] text-primary">Operations</span>
+            </div>
+            <h1 className="text-2xl md:text-[1.85rem] font-display font-extrabold tracking-[-0.025em] leading-[1.05]">
+              Orders
+            </h1>
+            <p className="text-[12.5px] text-muted-foreground mt-1 inline-flex items-center gap-2">
+              <span className="font-bold text-foreground tabular">{totalCount.toLocaleString('en-US')}</span>
+              order{totalCount === 1 ? '' : 's'}{statusFilter !== 'All' ? ` · ${statusFilter}` : ''}
               {isFetching && !isLoading && (
-                <span className="ml-2 inline-flex items-center gap-1 text-primary">
-                  <Loader2 className="w-3 h-3 animate-spin" /> Updating…
+                <span className="inline-flex items-center gap-1 text-primary">
+                  <Loader2 className="w-3 h-3 animate-spin" /> updating
                 </span>
               )}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             {isAdmin && (
-              <Button size="sm" asChild className="gap-1.5 text-xs">
-                <Link to="/admin/orders/create"><PackagePlus className="w-3.5 h-3.5" /> Create Order</Link>
-              </Button>
+              <Link to="/admin/orders/create">
+                <Button
+                  size="sm"
+                  className="gap-1.5 text-[12px] h-9 rounded-full font-bold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.55)] hover:-translate-y-0.5 transition-all"
+                >
+                  <PackagePlus className="w-3.5 h-3.5" /> New order
+                </Button>
+              </Link>
             )}
-            <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5 text-xs hidden sm:flex">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              className="gap-1.5 text-[12px] h-9 rounded-full bg-card/60 backdrop-blur-sm hover:border-primary/35 hidden sm:flex"
+            >
               <Download className="w-3.5 h-3.5" /> Export
             </Button>
-            <Button variant="outline" size="sm" onClick={invalidateOrders} className="gap-1.5">
-              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-            </Button>
+            <button
+              onClick={invalidateOrders}
+              className="w-10 h-10 rounded-full border border-border/70 bg-card/70 backdrop-blur-md text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-card transition-all flex items-center justify-center group shrink-0"
+              aria-label="Refresh orders"
+            >
+              <RefreshCw className={`w-4 h-4 transition-transform duration-500 ${isFetching ? 'animate-spin' : 'group-hover:rotate-180'}`} />
+            </button>
           </div>
-        </div>
+        </header>
 
-        {/* Revenue summary */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <div className="bg-card rounded-xl p-3 border border-border card-shadow">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Revenue (Paid)</p>
-            <p className="text-lg font-display font-bold mt-1">{formatPrice(revenue)}</p>
-          </div>
-          <div className="bg-card rounded-xl p-3 border border-border card-shadow">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Profit (Tracked)</p>
-            <p className="text-lg font-display font-bold mt-1">{formatPrice(profit)}</p>
-          </div>
-          <div className="bg-card rounded-xl p-3 border border-border card-shadow">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Processing</p>
-            <p className="text-lg font-display font-bold mt-1 text-primary">{processingCount}</p>
-          </div>
-          <div className="bg-card rounded-xl p-3 border border-border card-shadow">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Delivered</p>
-            <p className="text-lg font-display font-bold mt-1 text-success">{deliveredCount}</p>
-          </div>
-          <div className="bg-card rounded-xl p-3 border border-border card-shadow">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Failed</p>
-            <p className="text-lg font-display font-bold mt-1 text-destructive">{failedCount}</p>
-          </div>
-        </div>
+        {/* ── Service tabs ── */}
+        <ServiceTabs current={serviceTab} onChange={setServiceTab} />
 
-        {/* Filters */}
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Search by Order ID, phone, name..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        {serviceTab !== 'data' ? (
+          <ComingSoonState service={serviceTab} />
+        ) : (
+          <>
+            {/* ── Stat cards ── */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3">
+              <OrderStat icon={DollarSign} tone="emerald" label="Revenue" value={formatPrice(revenue)} sub="paid orders" />
+              <OrderStat icon={TrendingUp} label="Profit" tone="primary" value={formatPrice(profit)} sub="tracked" />
+              <OrderStat icon={Clock} tone="sky" label="Processing" value={processingCount.toLocaleString('en-US')} sub="in flight" />
+              <OrderStat icon={CheckCircle} tone="emerald" label="Delivered" value={deliveredCount.toLocaleString('en-US')} />
+              <OrderStat icon={XCircle} tone="rose" label="Failed" value={failedCount.toLocaleString('en-US')} />
             </div>
-            <Select value={networkFilter} onValueChange={v => { setNetworkFilter(v); setPage(0); }}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All Networks</SelectItem>
-                <SelectItem value="MTN">MTN</SelectItem>
-                <SelectItem value="Telecel">Telecel</SelectItem>
-                <SelectItem value="AirtelTigo">AirtelTigo</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={paymentFilter} onValueChange={v => { setPaymentFilter(v); setPage(0); }}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All Payments</SelectItem>
-                <SelectItem value="wallet">Wallet</SelectItem>
-                <SelectItem value="paystack">Paystack</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sourceFilter} onValueChange={v => { setSourceFilter(v); setPage(0); }}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All Sources</SelectItem>
-                <SelectItem value="Guest">Guest</SelectItem>
-                <SelectItem value="Logged-in">Logged-in</SelectItem>
-                <SelectItem value="Agent">Agent Store</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={typeFilter} onValueChange={v => { setTypeFilter(v); setPage(0); }}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All Types</SelectItem>
-                <SelectItem value="Normal">Normal</SelectItem>
-                <SelectItem value="Reward">🎁 Reward</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {['All', ...STATUSES].map(s => (
-              <button key={s} onClick={() => { setStatusFilter(s as any); setPage(0); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}>
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* Bulk Actions Bar */}
-        {selectedIds.size > 0 && isAdmin && (
-          <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 animate-hero-in">
-            <span className="text-sm font-semibold text-primary">{selectedIds.size} selected</span>
-            <div className="flex gap-2 flex-wrap">
-              <Button size="sm" variant="outline" disabled={bulkProcessing} onClick={() => handleBulkStatus('Pending')} className="gap-1 text-xs h-8">Pending</Button>
-              <Button size="sm" variant="outline" disabled={bulkProcessing} onClick={() => handleBulkStatus('Processing')} className="gap-1 text-xs h-8">Processing</Button>
-              <Button size="sm" variant="default" disabled={bulkProcessing} onClick={() => handleBulkStatus('Delivered')} className="gap-1 text-xs h-8">
-                <CheckCircle className="w-3 h-3" /> Delivered
-              </Button>
-              <Button size="sm" variant="outline" disabled={bulkProcessing} onClick={() => handleBulkStatus('Reprocessed')} className="gap-1 text-xs h-8 border-violet-400/60 text-violet-700 hover:bg-violet-100 dark:text-violet-300 dark:hover:bg-violet-900/30">Reprocessed</Button>
-              <Button size="sm" variant="destructive" disabled={bulkProcessing} onClick={() => handleBulkStatus('Failed')} className="gap-1 text-xs h-8">Failed</Button>
-              <Button size="sm" variant="outline" disabled={bulkProcessing} onClick={handleBulkVoid} className="gap-1 text-xs h-8 border-slate-400 text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">Mark as Voided</Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={bulkProcessing}
-                onClick={handleCreateDispatchBatch}
-                className="gap-1 text-xs h-8 border-primary/40 text-primary hover:bg-primary/10"
-                title="Create a manual dispatch batch from selected orders. Does not charge or refund anyone."
-              >
-                {bulkProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-                Create Dispatch Batch
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())} className="text-xs h-8">Clear</Button>
-            </div>
-          </div>
-        )}
+            {/* ── Search + Selects ── */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70 pointer-events-none" />
+                  <Input
+                    placeholder="Search by Order ID, phone, name…"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="pl-11 h-11 rounded-2xl bg-muted/30 border-border/60 focus:bg-background"
+                  />
+                </div>
+                <div className="grid grid-cols-2 sm:flex gap-2">
+                  <Select value={networkFilter} onValueChange={v => { setNetworkFilter(v); setPage(0); }}>
+                    <SelectTrigger className="sm:w-36 h-11 rounded-2xl bg-card/60 backdrop-blur-sm border-border/60 hover:border-primary/35 transition-colors text-[12px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">All Networks</SelectItem>
+                      <SelectItem value="MTN">MTN</SelectItem>
+                      <SelectItem value="Telecel">Telecel</SelectItem>
+                      <SelectItem value="AirtelTigo">AirtelTigo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={paymentFilter} onValueChange={v => { setPaymentFilter(v); setPage(0); }}>
+                    <SelectTrigger className="sm:w-36 h-11 rounded-2xl bg-card/60 backdrop-blur-sm border-border/60 hover:border-primary/35 transition-colors text-[12px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">All Payments</SelectItem>
+                      <SelectItem value="wallet">Wallet</SelectItem>
+                      <SelectItem value="paystack">Paystack</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={sourceFilter} onValueChange={v => { setSourceFilter(v); setPage(0); }}>
+                    <SelectTrigger className="sm:w-36 h-11 rounded-2xl bg-card/60 backdrop-blur-sm border-border/60 hover:border-primary/35 transition-colors text-[12px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">All Sources</SelectItem>
+                      <SelectItem value="Guest">Guest</SelectItem>
+                      <SelectItem value="Logged-in">Logged-in</SelectItem>
+                      <SelectItem value="Agent">Agent Store</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={typeFilter} onValueChange={v => { setTypeFilter(v); setPage(0); }}>
+                    <SelectTrigger className="sm:w-36 h-11 rounded-2xl bg-card/60 backdrop-blur-sm border-border/60 hover:border-primary/35 transition-colors text-[12px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">All Types</SelectItem>
+                      <SelectItem value="Normal">Normal</SelectItem>
+                      <SelectItem value="Reward">🎁 Reward</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-        {/* Orders table */}
-        {isLoading ? (
-          <div className="bg-card rounded-xl border border-border overflow-hidden">
-            <div className="border-b border-border bg-muted/30 px-4 py-3">
-              <div className="flex gap-4">
-                {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-4 w-20" />)}
+              {/* Status pill rail */}
+              <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 snap-row">
+                {['All', ...STATUSES].map(s => {
+                  const active = statusFilter === s;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => { setStatusFilter(s as any); setPage(0); }}
+                      className={`shrink-0 inline-flex items-center px-3.5 h-9 rounded-full text-[11.5px] font-semibold transition-all duration-200 ${
+                        active
+                          ? 'bg-primary text-primary-foreground shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.55)]'
+                          : 'bg-card/70 backdrop-blur-sm border border-border/70 text-foreground/75 hover:text-foreground hover:border-primary/40'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-            <div className="divide-y divide-border">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="px-4 py-3 flex gap-4 items-center">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-20 hidden lg:block" />
-                  <Skeleton className="h-4 w-28" />
-                  <Skeleton className="h-4 w-12 hidden sm:block" />
-                  <Skeleton className="h-4 w-10" />
-                  <Skeleton className="h-4 w-16 hidden md:block" />
-                  <Skeleton className="h-6 w-20" />
-                  <Skeleton className="h-7 w-16 ml-auto" />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="bg-card rounded-xl border border-border overflow-x-auto">
-            {orders.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground text-sm">No orders match your filter.</div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    {isAdmin && (
-                      <th className="px-3 py-3 w-10">
-                        <input type="checkbox" checked={selectedIds.size === orders.length && orders.length > 0} onChange={toggleSelectAll} className="rounded border-border" />
-                      </th>
-                    )}
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Order ID</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">User / Source</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Recipient</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">Network</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Bundle</th>
-                    <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Amount</th>
-                    <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Profit</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Source</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map(order => (
-                    <tr key={order.order_id} className={`border-b border-border last:border-0 hover:bg-muted/30 ${selectedIds.has(order.order_id) ? 'bg-primary/[0.03]' : ''} ${order.status === 'Voided' ? 'opacity-60' : ''}`}>
-                      {isAdmin && (
-                        <td className="px-3 py-3">
-                          <input type="checkbox" checked={selectedIds.has(order.order_id)} onChange={() => toggleSelect(order.order_id)} className="rounded border-border" />
-                        </td>
-                      )}
-                      <td className="px-4 py-3 font-mono font-semibold text-primary text-xs">{order.order_id}</td>
-                      <td className="px-4 py-3 hidden lg:table-cell text-xs">{order.user_name}</td>
-                      <td className="px-4 py-3 text-xs">{order.recipient_number}</td>
-                      <td className="px-4 py-3 hidden sm:table-cell text-xs">{order.network}</td>
-                      <td className="px-4 py-3 text-xs">{order.bundle_size_gb}GB</td>
-                      <td className="px-4 py-3 text-right hidden md:table-cell font-medium text-xs">{formatPrice(Number(order.amount_ghs))}</td>
-                      <td className="px-4 py-3 text-right hidden lg:table-cell text-xs">
-                        {order.profit_ghs != null ? <span className="text-success font-medium">{formatPrice(Number(order.profit_ghs))}</span> : '—'}
-                      </td>
-                      <td className="px-4 py-3 hidden md:table-cell">
-                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                          order.order_source?.startsWith('Agent') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
-                          : order.order_source === 'Guest' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
-                          : 'bg-primary/10 text-primary'
-                        }`}>
-                          {order.order_source || 'Direct'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3"><StatusBadge status={order.status} /></td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex gap-1 justify-end">
-                          {order.status === 'Pending Payment' && isAdmin && (
-                            <Button size="sm" variant="default" onClick={() => handleMarkPaid(order)} className="gap-1 text-[10px] h-7 px-2">
-                              <CheckCircle className="w-3 h-3" /> Paid
-                            </Button>
-                          )}
-                          {isInBulkDispatch(order) && (
-                            <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 whitespace-nowrap">
-                              Bulk Queue
-                            </span>
-                          )}
-                          <Button size="sm" variant="outline" onClick={() => setEditOrder(order)} className="text-[10px] h-7 px-2">Details</Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount}
-            </p>
-            <div className="flex gap-1">
-              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+            {/* ── Bulk actions bar ── */}
+            {selectedIds.size > 0 && isAdmin && (
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/[0.08] via-card to-card border border-primary/30 p-3.5 animate-hero-in">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent pointer-events-none" />
+                <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-primary px-3 py-1 rounded-full bg-primary/10 ring-1 ring-primary/25 shrink-0">
+                    <CheckCircle className="w-3 h-3" />
+                    {selectedIds.size} selected
+                  </span>
+                  <div className="flex gap-1.5 flex-wrap flex-1">
+                    <Button size="sm" variant="outline" disabled={bulkProcessing} onClick={() => handleBulkStatus('Pending')} className="gap-1 text-[11.5px] h-8 rounded-full">Pending</Button>
+                    <Button size="sm" variant="outline" disabled={bulkProcessing} onClick={() => handleBulkStatus('Processing')} className="gap-1 text-[11.5px] h-8 rounded-full">Processing</Button>
+                    <Button size="sm" disabled={bulkProcessing} onClick={() => handleBulkStatus('Delivered')} className="gap-1 text-[11.5px] h-8 rounded-full">
+                      <CheckCircle className="w-3 h-3" /> Delivered
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={bulkProcessing} onClick={() => handleBulkStatus('Reprocessed')} className="gap-1 text-[11.5px] h-8 rounded-full border-violet-400/60 text-violet-700 hover:bg-violet-100 dark:text-violet-300 dark:hover:bg-violet-900/30">Reprocessed</Button>
+                    <Button size="sm" variant="destructive" disabled={bulkProcessing} onClick={() => handleBulkStatus('Failed')} className="gap-1 text-[11.5px] h-8 rounded-full">Failed</Button>
+                    <Button size="sm" variant="outline" disabled={bulkProcessing} onClick={handleBulkVoid} className="gap-1 text-[11.5px] h-8 rounded-full border-slate-400/60">Void</Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={bulkProcessing}
+                      onClick={handleCreateDispatchBatch}
+                      className="gap-1 text-[11.5px] h-8 rounded-full border-primary/40 text-primary hover:bg-primary/10"
+                      title="Create a manual dispatch batch from selected orders. Does not charge or refund anyone."
+                    >
+                      {bulkProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                      Dispatch batch
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())} className="text-[11.5px] h-8 rounded-full ml-auto">Clear</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Orders table ── */}
+            {isLoading ? (
+              <div className="rounded-2xl glass-card overflow-hidden">
+                <div className="border-b border-border/60 bg-muted/30 px-5 py-3.5">
+                  <div className="flex gap-4">
+                    {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-3.5 w-20" />)}
+                  </div>
+                </div>
+                <div className="divide-y divide-border/50">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <div key={i} className="px-5 py-3.5 flex gap-4 items-center">
+                      <Skeleton className="h-3.5 w-24" />
+                      <Skeleton className="h-3.5 w-20 hidden lg:block" />
+                      <Skeleton className="h-3.5 w-28" />
+                      <Skeleton className="h-3.5 w-12 hidden sm:block" />
+                      <Skeleton className="h-3.5 w-10" />
+                      <Skeleton className="h-3.5 w-16 hidden md:block" />
+                      <Skeleton className="h-5 w-20 rounded-full" />
+                      <Skeleton className="h-7 w-16 ml-auto rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="rounded-2xl glass-card p-16 text-center">
+                <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/20 mx-auto mb-5 flex items-center justify-center shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.4)]">
+                  <ShoppingCart className="w-7 h-7 text-primary" strokeWidth={1.8} />
+                </div>
+                <h3 className="font-display font-bold text-xl tracking-tight">No orders match your filter</h3>
+                <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-sm mx-auto">
+                  Adjust the search or status filter above, or clear all filters to see every order.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-2xl glass-card overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border/60 bg-muted/30">
+                      {isAdmin && (
+                        <th className="px-3 py-3 w-10">
+                          <input type="checkbox" checked={selectedIds.size === orders.length && orders.length > 0} onChange={toggleSelectAll} className="rounded border-border" />
+                        </th>
+                      )}
+                      <th className="text-left px-4 py-3 font-bold text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70">Order ID</th>
+                      <th className="text-left px-4 py-3 font-bold text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70 hidden lg:table-cell">User</th>
+                      <th className="text-left px-4 py-3 font-bold text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70">Recipient</th>
+                      <th className="text-left px-4 py-3 font-bold text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70 hidden sm:table-cell">Network</th>
+                      <th className="text-left px-4 py-3 font-bold text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70">Bundle</th>
+                      <th className="text-right px-4 py-3 font-bold text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70 hidden md:table-cell">Amount</th>
+                      <th className="text-right px-4 py-3 font-bold text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70 hidden lg:table-cell">Profit</th>
+                      <th className="text-left px-4 py-3 font-bold text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70 hidden md:table-cell">Source</th>
+                      <th className="text-left px-4 py-3 font-bold text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70">Status</th>
+                      <th className="text-right px-4 py-3 font-bold text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map(order => {
+                      const rail = order.network === 'MTN' ? 'bg-mtn'
+                        : order.network === 'Telecel' ? 'bg-telecel'
+                        : order.network === 'AirtelTigo' ? 'bg-airteltigo'
+                        : 'bg-primary';
+                      return (
+                        <tr
+                          key={order.order_id}
+                          className={`border-b border-border/40 last:border-0 hover:bg-primary/[0.03] transition-colors group relative ${
+                            selectedIds.has(order.order_id) ? 'bg-primary/[0.05]' : ''
+                          } ${order.status === 'Voided' ? 'opacity-60' : ''}`}
+                        >
+                          {isAdmin && (
+                            <td className="px-3 py-3.5">
+                              <input type="checkbox" checked={selectedIds.has(order.order_id)} onChange={() => toggleSelect(order.order_id)} className="rounded border-border" />
+                            </td>
+                          )}
+                          <td className="relative px-4 py-3.5 font-mono font-bold text-primary text-xs">
+                            <span className={`absolute left-0 top-2 bottom-2 w-1 rounded-r-full ${rail} opacity-80 group-hover:opacity-100 transition-opacity`} />
+                            {order.order_id}
+                          </td>
+                          <td className="px-4 py-3.5 hidden lg:table-cell text-xs">{order.user_name}</td>
+                          <td className="px-4 py-3.5 text-xs tabular">{order.recipient_number}</td>
+                          <td className="px-4 py-3.5 hidden sm:table-cell text-xs font-semibold">{order.network}</td>
+                          <td className="px-4 py-3.5 text-xs">
+                            <span className="font-bold">{order.bundle_size_gb}</span><span className="text-muted-foreground">GB</span>
+                          </td>
+                          <td className="px-4 py-3.5 text-right hidden md:table-cell font-bold text-xs tabular">{formatPrice(Number(order.amount_ghs))}</td>
+                          <td className="px-4 py-3.5 text-right hidden lg:table-cell text-xs">
+                            {order.profit_ghs != null ? <span className="text-emerald-600 dark:text-emerald-400 font-bold tabular">{formatPrice(Number(order.profit_ghs))}</span> : <span className="text-muted-foreground/60">—</span>}
+                          </td>
+                          <td className="px-4 py-3.5 hidden md:table-cell">
+                            <SourcePill source={order.order_source} />
+                          </td>
+                          <td className="px-4 py-3.5"><StatusBadge status={order.status} /></td>
+                          <td className="px-4 py-3.5 text-right">
+                            <div className="flex gap-1.5 justify-end items-center">
+                              {order.status === 'Pending Payment' && isAdmin && (
+                                <Button size="sm" onClick={() => handleMarkPaid(order)} className="gap-1 text-[10.5px] h-7 px-2.5 rounded-full">
+                                  <CheckCircle className="w-3 h-3" /> Paid
+                                </Button>
+                              )}
+                              {isInBulkDispatch(order) && (
+                                <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-500/12 text-amber-600 dark:text-amber-400 border border-amber-500/30 whitespace-nowrap">
+                                  Bulk
+                                </span>
+                              )}
+                              <Button size="sm" variant="outline" onClick={() => setEditOrder(order)} className="text-[10.5px] h-7 px-3 rounded-full bg-card/60 backdrop-blur-sm hover:border-primary/35">
+                                Details
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* ── Pagination ── */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11.5px] text-muted-foreground tabular">
+                  Showing <span className="font-bold text-foreground">{page * PAGE_SIZE + 1}</span>–<span className="font-bold text-foreground">{Math.min((page + 1) * PAGE_SIZE, totalCount)}</span> of <span className="font-bold text-foreground">{totalCount.toLocaleString('en-US')}</span>
+                </p>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 px-3 text-[12px] rounded-full bg-card/60 backdrop-blur-sm hover:border-primary/35"
+                    disabled={page === 0}
+                    onClick={() => setPage(p => p - 1)}
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline ml-1">Prev</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 px-3 text-[12px] rounded-full bg-card/60 backdrop-blur-sm hover:border-primary/35"
+                    disabled={page >= totalPages - 1}
+                    onClick={() => setPage(p => p + 1)}
+                  >
+                    <span className="hidden sm:inline mr-1">Next</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -1289,6 +1370,134 @@ const OrderDetailDialog = ({ order, isAdmin, isAdminOrStaff, onClose, onUpdate, 
         </div>
       </DialogContent>
     </Dialog>
+  );
+};
+
+// ─── Service tabs ────────────────────────────────────────────────
+type ServiceKey = 'data' | 'airtime' | 'bills' | 'subscriptions' | 'digital';
+
+const SERVICES: { key: ServiceKey; label: string; icon: LucideIcon; status: 'live' | 'soon' }[] = [
+  { key: 'data', label: 'Data Bundles', icon: Wifi, status: 'live' },
+  { key: 'airtime', label: 'Airtime', icon: PhoneCall, status: 'soon' },
+  { key: 'bills', label: 'Bills', icon: ReceiptText, status: 'soon' },
+  { key: 'subscriptions', label: 'Subscriptions', icon: PlayCircle, status: 'soon' },
+  { key: 'digital', label: 'Digital Products', icon: Boxes, status: 'soon' },
+];
+
+const ServiceTabs = ({
+  current,
+  onChange,
+}: {
+  current: ServiceKey;
+  onChange: (s: ServiceKey) => void;
+}) => (
+  <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 snap-row">
+    {SERVICES.map((s) => {
+      const active = current === s.key;
+      const Icon = s.icon;
+      return (
+        <button
+          key={s.key}
+          onClick={() => onChange(s.key)}
+          className={`shrink-0 inline-flex items-center gap-2 px-4 h-10 rounded-full text-[12px] font-semibold transition-all duration-200 ${
+            active
+              ? 'bg-primary text-primary-foreground shadow-[0_8px_20px_-6px_hsl(var(--primary)/0.55)]'
+              : 'bg-card/70 backdrop-blur-sm border border-border/70 text-foreground/75 hover:text-foreground hover:border-primary/40'
+          }`}
+        >
+          <Icon className="w-3.5 h-3.5" strokeWidth={2} />
+          {s.label}
+          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+            s.status === 'live'
+              ? active
+                ? 'bg-primary-foreground/20 text-primary-foreground'
+                : 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+              : active
+                ? 'bg-primary-foreground/20 text-primary-foreground'
+                : 'bg-muted/60 text-muted-foreground/80 border border-border/40'
+          }`}>
+            {s.status === 'live' ? 'Live' : 'Soon'}
+          </span>
+        </button>
+      );
+    })}
+  </div>
+);
+
+const ComingSoonState = ({ service }: { service: ServiceKey }) => {
+  const meta = SERVICES.find(s => s.key === service);
+  if (!meta) return null;
+  const Icon = meta.icon;
+  return (
+    <div className="rounded-3xl glass-card p-12 text-center max-w-2xl mx-auto">
+      <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/20 mx-auto mb-5 flex items-center justify-center shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.4)]">
+        <Icon className="w-7 h-7 text-primary" strokeWidth={1.8} />
+      </div>
+      <span className="inline-flex items-center gap-1 text-[9.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/12 text-amber-600 dark:text-amber-400 border border-amber-500/30 mb-3">
+        <span className="w-1 h-1 rounded-full bg-amber-500" /> Coming soon
+      </span>
+      <h3 className="font-display font-bold text-xl tracking-tight">{meta.label} orders</h3>
+      <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-md mx-auto">
+        This service hasn't launched yet. Once {meta.label.toLowerCase()} go live, all related orders will appear and be manageable from this tab — same dashboard, same controls.
+      </p>
+      <div className="inline-flex items-center gap-1.5 mt-5 px-3 py-1.5 rounded-full border border-border/70 bg-card/60 backdrop-blur-sm text-[11px] font-medium text-muted-foreground">
+        <Clock className="w-3 h-3 text-primary" /> Reserved · admin-ready
+      </div>
+    </div>
+  );
+};
+
+// ─── Stat tile ──────────────────────────────────────────────────
+const STAT_TONES: Record<string, { tile: string; rail: string }> = {
+  primary: { tile: 'from-primary/20 to-primary/5 text-primary ring-primary/25', rail: 'bg-primary' },
+  emerald: { tile: 'from-emerald-500/20 to-emerald-500/5 text-emerald-600 dark:text-emerald-400 ring-emerald-500/25', rail: 'bg-emerald-500' },
+  sky: { tile: 'from-sky-500/20 to-sky-500/5 text-sky-600 dark:text-sky-400 ring-sky-500/25', rail: 'bg-sky-500' },
+  rose: { tile: 'from-rose-500/20 to-rose-500/5 text-rose-600 dark:text-rose-400 ring-rose-500/25', rail: 'bg-rose-500' },
+  amber: { tile: 'from-amber-500/20 to-amber-500/5 text-amber-600 dark:text-amber-400 ring-amber-500/25', rail: 'bg-amber-500' },
+};
+
+const OrderStat = ({
+  icon: Icon,
+  tone,
+  label,
+  value,
+  sub,
+}: {
+  icon: LucideIcon;
+  tone: keyof typeof STAT_TONES;
+  label: string;
+  value: string;
+  sub?: string;
+}) => {
+  const t = STAT_TONES[tone];
+  return (
+    <div className="relative rounded-xl glass-card p-3.5 overflow-hidden">
+      <span className={`absolute left-0 top-2 bottom-2 w-1 rounded-r-full ${t.rail} opacity-80`} />
+      <div className="relative">
+        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ring-1 ${t.tile} flex items-center justify-center shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.2)] mb-2`}>
+          <Icon className="w-3.5 h-3.5" strokeWidth={2} />
+        </div>
+        <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70">{label}</p>
+        <p className="text-[15px] font-display font-extrabold tabular leading-tight mt-1 truncate">{value}</p>
+        {sub && <p className="text-[10px] text-muted-foreground/85 leading-tight mt-0.5">{sub}</p>}
+      </div>
+    </div>
+  );
+};
+
+// ─── Source pill ────────────────────────────────────────────────
+const SourcePill = ({ source }: { source?: string }) => {
+  const isAgent = source?.startsWith('Agent');
+  const isGuest = source === 'Guest';
+  const cls = isAgent
+    ? 'bg-violet-500/12 text-violet-600 dark:text-violet-400 border border-violet-500/25'
+    : isGuest
+      ? 'bg-amber-500/12 text-amber-600 dark:text-amber-400 border border-amber-500/25'
+      : 'bg-primary/10 text-primary border border-primary/25';
+  return (
+    <span className={`inline-flex items-center text-[9.5px] font-bold tracking-wide px-2 py-0.5 rounded-full ${cls}`}>
+      {source || 'Direct'}
+    </span>
   );
 };
 
