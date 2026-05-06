@@ -5890,6 +5890,27 @@ export type Database = {
           normal_revenue: number
         }[]
       }
+      admin_list_users: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_status?: string
+        }
+        Returns: {
+          agent_status: string
+          avatar_url: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string
+          suspended: boolean
+          total_count: number
+          username: string
+          wallet_balance: number
+        }[]
+      }
       admin_orders_summary: {
         Args: never
         Returns: {
@@ -5903,6 +5924,16 @@ export type Database = {
       admin_set_telegram_points_ban: {
         Args: { p_banned: boolean; p_reason?: string; p_target_user_id: string }
         Returns: Json
+      }
+      admin_user_stats: {
+        Args: never
+        Returns: {
+          active: number
+          agents: number
+          new_week: number
+          suspended: number
+          total: number
+        }[]
       }
       approve_manual_deposit: {
         Args: { p_admin_note?: string; p_txn_id: string }
