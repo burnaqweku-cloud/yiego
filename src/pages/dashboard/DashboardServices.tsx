@@ -2,9 +2,10 @@ import { Link } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import SEOHead from '@/components/seo/SEOHead';
 import {
-  Smartphone, Phone, Receipt, Gift, TrendingUp,
+  Smartphone, Phone, Receipt, Gift,
   Tv, Package, Plane, Banknote, Gamepad2, GraduationCap,
-  ShoppingBag, Sparkles, Zap, Globe, LucideIcon,
+  ShoppingBag, Sparkles, Zap, Globe, Wifi, ReceiptText, Layers,
+  ArrowRight, Bell, Activity, LucideIcon,
 } from 'lucide-react';
 
 type Tone = 'primary' | 'emerald' | 'amber' | 'rose' | 'sky' | 'violet' | 'fuchsia' | 'slate' | 'indigo' | 'teal';
@@ -19,15 +20,19 @@ type Service = {
 };
 
 type Category = {
+  id: string;
   title: string;
   caption: string;
+  icon: LucideIcon;
   services: Service[];
 };
 
 const categories: Category[] = [
   {
+    id: 'connectivity',
     title: 'Connectivity',
     caption: 'Stay online without the stress',
+    icon: Wifi,
     services: [
       { to: '/dashboard/buy', icon: Smartphone, label: 'Data Bundles', desc: 'MTN, Telecel, AirtelTigo', status: 'live', tone: 'primary' },
       { icon: Phone, label: 'Airtime Top-up', desc: 'Instant credit to any number', status: 'soon', tone: 'emerald' },
@@ -36,8 +41,10 @@ const categories: Category[] = [
     ],
   },
   {
+    id: 'bills',
     title: 'Bills & Utilities',
     caption: 'Pay everyday bills in seconds',
+    icon: ReceiptText,
     services: [
       { icon: Receipt, label: 'Electricity (ECG)', desc: 'Prepaid token top-ups', status: 'soon', tone: 'amber' },
       { icon: Receipt, label: 'Water (GWCL)', desc: 'Pay your water bill', status: 'soon', tone: 'sky' },
@@ -46,8 +53,10 @@ const categories: Category[] = [
     ],
   },
   {
+    id: 'lifestyle',
     title: 'Lifestyle',
     caption: 'Treat yourself or someone special',
+    icon: Sparkles,
     services: [
       { icon: Gift, label: 'Gift Cards', desc: 'Amazon, iTunes, Steam', status: 'soon', tone: 'rose' },
       { icon: Gamepad2, label: 'Gaming Credits', desc: 'PlayStation, Xbox, Steam', status: 'soon', tone: 'fuchsia' },
@@ -56,10 +65,11 @@ const categories: Category[] = [
     ],
   },
   {
+    id: 'growth',
     title: 'Growth',
     caption: 'Level up your hustle',
+    icon: GraduationCap,
     services: [
-      { icon: TrendingUp, label: 'Social Boosting', desc: 'Followers & engagement', status: 'soon', tone: 'sky' },
       { icon: Sparkles, label: 'AI Subscriptions', desc: 'ChatGPT, Midjourney & more', status: 'soon', tone: 'violet' },
       { icon: GraduationCap, label: 'Online Courses', desc: 'Skill-up vouchers', status: 'soon', tone: 'emerald' },
       { icon: Package, label: 'Digital Products', desc: 'Codes, vouchers & licenses', status: 'soon', tone: 'fuchsia' },
@@ -67,17 +77,17 @@ const categories: Category[] = [
   },
 ];
 
-const toneStyles: Record<Tone, string> = {
-  primary: 'bg-primary/10 text-primary',
-  emerald: 'bg-emerald-500/10 text-emerald-500',
-  amber: 'bg-amber-500/10 text-amber-500',
-  rose: 'bg-rose-500/10 text-rose-500',
-  sky: 'bg-sky-500/10 text-sky-500',
-  violet: 'bg-violet-500/10 text-violet-500',
-  fuchsia: 'bg-fuchsia-500/10 text-fuchsia-500',
-  slate: 'bg-muted text-muted-foreground',
-  indigo: 'bg-indigo-500/10 text-indigo-500',
-  teal: 'bg-teal-500/10 text-teal-500',
+const toneTile: Record<Tone, string> = {
+  primary: 'bg-gradient-to-br from-primary/22 to-primary/5 text-primary ring-1 ring-primary/25',
+  emerald: 'bg-gradient-to-br from-emerald-500/22 to-emerald-500/5 text-emerald-500 ring-1 ring-emerald-500/25',
+  amber: 'bg-gradient-to-br from-amber-500/22 to-amber-500/5 text-amber-500 ring-1 ring-amber-500/25',
+  rose: 'bg-gradient-to-br from-rose-500/22 to-rose-500/5 text-rose-500 ring-1 ring-rose-500/25',
+  sky: 'bg-gradient-to-br from-sky-500/22 to-sky-500/5 text-sky-500 ring-1 ring-sky-500/25',
+  violet: 'bg-gradient-to-br from-violet-500/22 to-violet-500/5 text-violet-500 ring-1 ring-violet-500/25',
+  fuchsia: 'bg-gradient-to-br from-fuchsia-500/22 to-fuchsia-500/5 text-fuchsia-500 ring-1 ring-fuchsia-500/25',
+  slate: 'bg-muted text-muted-foreground ring-1 ring-border/50',
+  indigo: 'bg-gradient-to-br from-indigo-500/22 to-indigo-500/5 text-indigo-500 ring-1 ring-indigo-500/25',
+  teal: 'bg-gradient-to-br from-teal-500/22 to-teal-500/5 text-teal-500 ring-1 ring-teal-500/25',
 };
 
 const ServiceTile = ({ service }: { service: Service }) => {
@@ -85,67 +95,136 @@ const ServiceTile = ({ service }: { service: Service }) => {
   const Icon = service.icon;
 
   const inner = (
-    <div className="relative h-full p-3.5 sm:p-4 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-150 active:scale-[0.98]">
-      <div className="flex items-start justify-between mb-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${toneStyles[service.tone]}`}>
-          <Icon className="w-5 h-5" strokeWidth={2} />
+    <div
+      className={`group relative h-full p-3.5 rounded-2xl glass-card overflow-hidden transition-all duration-300 ${
+        isLive
+          ? 'hover:border-primary/45 hover:-translate-y-1 hover:shadow-[0_18px_40px_-18px_hsl(var(--primary)/0.4)]'
+          : 'hover:border-primary/25 hover:-translate-y-0.5 cursor-not-allowed'
+      }`}
+    >
+      {/* Top sheen on hover */}
+      <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/45 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      {/* Live indicator brand glow blob */}
+      {isLive && (
+        <span className="absolute -bottom-12 -right-10 w-32 h-32 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
+      )}
+
+      <div className="relative">
+        <div className="flex items-start justify-between mb-3">
+          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${toneTile[service.tone]} shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.25)] group-hover:scale-105 transition-transform duration-300`}>
+            <Icon className="w-[20px] h-[20px]" strokeWidth={1.9} />
+          </div>
+          {isLive ? (
+            <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/25">
+              <span className="relative flex w-1.5 h-1.5">
+                <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-60" />
+                <span className="relative w-1.5 h-1.5 rounded-full bg-primary" />
+              </span>
+              Live
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[8.5px] font-bold uppercase tracking-[0.14em] text-muted-foreground/80 px-1.5 py-0.5 rounded-md bg-muted/60 border border-border/40">
+              <span className="w-1 h-1 rounded-full bg-muted-foreground/40" /> Soon
+            </span>
+          )}
         </div>
+        <div className="text-[13px] font-bold leading-tight tracking-tight">{service.label}</div>
+        <div className="text-[10.5px] text-muted-foreground leading-snug mt-1 line-clamp-2">{service.desc}</div>
+
+        {/* Hover footer cue */}
         {isLive ? (
-          <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Live
-          </span>
+          <div className="mt-3 inline-flex items-center gap-1 text-[10.5px] font-bold text-primary opacity-90 group-hover:gap-1.5 transition-all">
+            Open <ArrowRight className="w-2.5 h-2.5" />
+          </div>
         ) : (
-          <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70">Soon</span>
+          <div className="mt-3 inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground/70">
+            <Bell className="w-2.5 h-2.5" /> We'll notify you
+          </div>
         )}
       </div>
-      <div className="text-[13px] sm:text-sm font-bold leading-tight mb-0.5">{service.label}</div>
-      <div className="text-[10.5px] sm:text-[11px] text-muted-foreground leading-tight line-clamp-2">{service.desc}</div>
     </div>
   );
 
   if (isLive && service.to) {
     return <Link to={service.to} className="block h-full">{inner}</Link>;
   }
-  return <div className="h-full cursor-not-allowed opacity-90">{inner}</div>;
+  return <div className="h-full">{inner}</div>;
 };
 
 const DashboardServices = () => {
+  const allServices = categories.flatMap((c) => c.services);
+  const liveCount = allServices.filter((s) => s.status === 'live').length;
+  const soonCount = allServices.length - liveCount;
+
   return (
     <DashboardLayout>
       <SEOHead title="Services | YieGo" description="All YieGo services in one place." path="/dashboard/services" noIndex />
 
-      <div className="px-4 md:px-6 lg:px-8 pt-4 pb-6 max-w-6xl mx-auto space-y-6">
-        {/* Hero */}
-        <header className="relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-6">
-          <div className="relative">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-primary font-bold">YieGo Hub</p>
-            <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight mt-1">All your services</h1>
-            <p className="text-sm text-muted-foreground mt-1.5 max-w-md">
-              Data, airtime, bills, gift cards and more — every essential digital service in one premium experience.
-            </p>
+      <div className="px-4 md:px-6 lg:px-8 pt-4 pb-24 md:pb-8 max-w-6xl mx-auto space-y-6">
+        {/* ── Compact header ── */}
+        <header>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="h-px w-5 bg-gradient-to-r from-transparent to-primary" />
+            <span className="text-[10.5px] font-bold uppercase tracking-[0.2em] text-primary">YieGo hub</span>
           </div>
-          <div aria-hidden className="absolute -right-10 -bottom-10 w-44 h-44 rounded-full bg-primary/10 blur-2xl" />
+          <h1 className="text-2xl md:text-[1.85rem] font-display font-extrabold tracking-[-0.025em] leading-[1.05]">
+            Every service, <span className="text-gradient">one wallet.</span>
+          </h1>
+          <p className="text-[12.5px] text-muted-foreground mt-1.5 max-w-md leading-relaxed">
+            Data, airtime, bills, vouchers and more — added to YieGo as each service goes live.
+          </p>
         </header>
 
-        {categories.map((cat) => (
-          <section key={cat.title}>
-            <div className="flex items-end justify-between mb-3">
-              <div>
-                <h2 className="text-base sm:text-lg font-display font-bold tracking-tight">{cat.title}</h2>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{cat.caption}</p>
-              </div>
-              <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground/70">
-                {cat.services.filter((s) => s.status === 'live').length}/{cat.services.length} live
-              </span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
-              {cat.services.map((s) => <ServiceTile key={s.label} service={s} />)}
-            </div>
-          </section>
-        ))}
+        {/* ── Status pill row ── */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/70 bg-card/60 backdrop-blur-sm text-[11px] font-medium text-muted-foreground">
+            <Layers className="w-3 h-3 text-primary" />
+            <span className="tabular font-bold text-foreground">{allServices.length}</span> total
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-sm text-[11px] font-bold text-primary shadow-[0_4px_16px_-8px_hsl(var(--primary)/0.35)]">
+            <span className="relative flex w-1.5 h-1.5">
+              <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-60" />
+              <span className="relative w-1.5 h-1.5 rounded-full bg-primary" />
+            </span>
+            <span className="tabular">{liveCount}</span> live now
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/70 bg-card/60 backdrop-blur-sm text-[11px] font-medium text-muted-foreground">
+            <Activity className="w-3 h-3" />
+            <span className="tabular font-bold text-foreground">{soonCount}</span> launching soon
+          </span>
+        </div>
 
-        <div aria-hidden className="h-20 md:h-2" />
+        {/* ── Category sections ── */}
+        {categories.map((cat) => {
+          const liveInCat = cat.services.filter((s) => s.status === 'live').length;
+          const Icon = cat.icon;
+          return (
+            <section key={cat.id} className="space-y-3.5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/20 text-primary flex items-center justify-center shrink-0 shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.3)]">
+                    <Icon className="w-4 h-4" strokeWidth={2} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="h-px w-4 bg-gradient-to-r from-transparent to-primary/70" />
+                      <h2 className="text-[12.5px] font-bold uppercase tracking-[0.18em] text-foreground/85">{cat.title}</h2>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{cat.caption}</p>
+                  </div>
+                </div>
+                <span className="text-[9.5px] uppercase tracking-[0.16em] font-bold text-muted-foreground/70 tabular shrink-0">
+                  {liveInCat}/{cat.services.length} live
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                {cat.services.map((s) => <ServiceTile key={s.label} service={s} />)}
+              </div>
+            </section>
+          );
+        })}
+
+        <div aria-hidden className="h-2" />
       </div>
     </DashboardLayout>
   );

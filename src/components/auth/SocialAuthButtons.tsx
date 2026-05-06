@@ -33,8 +33,10 @@ const SocialAuthButtons = ({ redirectTo }: Props) => {
         type="button"
         onClick={handleGoogle}
         disabled={googleLoading}
-        className="w-full h-12 rounded-xl border border-border/70 bg-background hover:bg-muted/40 transition-colors flex items-center justify-center gap-2.5 text-sm font-semibold disabled:opacity-60 active:scale-[0.99]"
+        className="group relative w-full h-12 rounded-xl border border-border/70 bg-card/60 backdrop-blur-md hover:bg-card hover:border-primary/40 transition-all duration-300 flex items-center justify-center gap-2.5 text-sm font-semibold disabled:opacity-60 active:scale-[0.99] hover:shadow-[0_8px_24px_-12px_hsl(var(--primary)/0.35)] overflow-hidden"
       >
+        {/* Top sheen on hover */}
+        <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         {googleLoading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (

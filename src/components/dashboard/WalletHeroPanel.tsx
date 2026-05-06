@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDownCircle, Eye, EyeOff, Receipt, ShieldCheck, Plus } from 'lucide-react';
+import { Eye, EyeOff, Receipt, Plus, TrendingUp, Wallet, ShieldCheck, ArrowRight } from 'lucide-react';
 import { formatPrice } from '@/data/bundles';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -35,79 +35,117 @@ const WalletHeroPanel = ({ balance, totalOrders, totalSpent, loading, ordersLoad
   const [hidden, setHidden] = useState(false);
 
   return (
-    <section
-      className="glass-hero-emerald relative overflow-hidden rounded-3xl p-5 sm:p-6 text-primary-foreground"
-    >
-      {/* decorative orbs */}
-      <div className="absolute -top-20 -right-16 w-60 h-60 rounded-full bg-white/15 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-20 -left-12 w-52 h-52 rounded-full bg-[hsl(42_96%_60%/0.18)] blur-3xl pointer-events-none" />
-      {/* top sheen */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
+    <section className="relative overflow-hidden rounded-3xl glass-card p-5 sm:p-7">
+      {/* Subtle indigo + gold ambient glows */}
+      <div className="absolute -top-24 -right-20 w-72 h-72 rounded-full bg-primary/18 blur-3xl pointer-events-none glow-drift" />
+      <div className="absolute -bottom-24 -left-16 w-60 h-60 rounded-full bg-accent/10 blur-3xl pointer-events-none glow-drift-slow" />
+      {/* Gradient hairline top edge */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/45 to-transparent pointer-events-none" />
+      {/* Noise grain */}
+      <div className="noise-overlay" />
 
       <div className="relative">
-        <div className="flex items-start justify-between mb-5">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-bold text-primary-foreground/80">
-              <ShieldCheck className="w-3 h-3" /> YieGo Wallet
-            </div>
-            <p className="text-[11px] text-primary-foreground/70 mt-1.5 max-w-[18rem] leading-snug">
-              Fund once. Pay for any service. Track everything.
-            </p>
+        {/* Top row */}
+        <div className="flex items-start justify-between mb-5 sm:mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm shadow-[inset_0_1px_0_0_hsl(var(--primary)/0.25)]">
+            <span className="relative flex w-1.5 h-1.5">
+              <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-60" />
+              <span className="relative w-1.5 h-1.5 rounded-full bg-primary" />
+            </span>
+            <ShieldCheck className="w-3 h-3 text-primary" />
+            <span className="text-[10.5px] uppercase tracking-[0.18em] font-bold text-primary">YieGo Wallet</span>
           </div>
           <button
             onClick={() => setHidden((h) => !h)}
             aria-label={hidden ? 'Show balance' : 'Hide balance'}
-            className="p-2 -m-2 rounded-full hover:bg-white/10 transition-colors"
+            className="w-9 h-9 rounded-full hover:bg-muted/60 transition-colors flex items-center justify-center text-muted-foreground hover:text-foreground"
           >
             {hidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
 
-        <div className="mb-5">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-primary-foreground/70 mb-1.5">
-            Available balance
-          </p>
-          {loading ? (
-            <Skeleton className="h-10 w-44 bg-white/20" />
-          ) : (
-            <p className="text-[2.25rem] sm:text-[2.5rem] leading-none font-display font-bold tracking-tight tabular">
-              {hidden ? '••••••' : formatPrice(Number(animated.toFixed(2)))}
+        {/* Balance with link to wallet page */}
+        <Link
+          to="/dashboard/wallet"
+          className="group block mb-6 sm:mb-7 -mx-1 px-1 py-1 rounded-2xl hover:bg-primary/[0.04] transition-colors"
+        >
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <p className="text-[10.5px] uppercase tracking-[0.22em] font-bold text-muted-foreground/70">
+              Available balance
             </p>
+            <span className="text-[10.5px] font-semibold text-primary inline-flex items-center gap-1 group-hover:gap-1.5 transition-all opacity-70 group-hover:opacity-100">
+              Manage <ArrowRight className="w-2.5 h-2.5" />
+            </span>
+          </div>
+          {loading ? (
+            <Skeleton className="h-14 w-56" />
+          ) : (
+            <div className="flex items-baseline gap-2">
+              <span className="text-[10.5px] font-bold text-muted-foreground/70 mb-1.5">GHS</span>
+              <p className="text-[2.6rem] sm:text-[3.1rem] md:text-[3.4rem] leading-[0.95] font-display font-extrabold tracking-[-0.04em] tabular text-foreground">
+                {hidden
+                  ? '••••••'
+                  : Number(animated.toFixed(2)).toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+              </p>
+            </div>
           )}
-        </div>
+        </Link>
 
-        <div className="flex items-center gap-2 mb-4">
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 mb-6">
           <Link
             to="/dashboard/wallet"
-            className="flex-1 inline-flex items-center justify-center gap-1.5 h-11 rounded-full bg-white text-[hsl(160_22%_10%)] text-sm font-bold shadow-[0_8px_20px_-8px_hsl(0_0%_0%/0.35)] hover:bg-white/95 transition-all active:scale-[0.98]"
+            className="group flex-1 inline-flex items-center justify-center gap-1.5 h-12 rounded-full bg-primary text-primary-foreground text-[13.5px] font-bold shadow-[0_12px_28px_-10px_hsl(var(--primary)/0.55)] hover:shadow-[0_16px_32px_-10px_hsl(var(--primary)/0.65)] hover:-translate-y-0.5 transition-all active:scale-[0.98]"
           >
-            <Plus className="w-4 h-4" /> Fund wallet
+            <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" /> Fund wallet
           </Link>
           <Link
             to="/dashboard/transactions"
-            className="inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-full bg-white/10 hover:bg-white/20 text-sm font-semibold border border-white/15 backdrop-blur-md transition-all active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-1.5 h-12 px-5 rounded-full bg-card/70 hover:bg-card border border-border/70 backdrop-blur-md text-[13px] font-semibold text-foreground/85 hover:text-foreground hover:border-primary/35 transition-all active:scale-[0.98]"
           >
             <Receipt className="w-4 h-4" /> History
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/15">
-          <div>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-primary-foreground/70">Orders</p>
-            <p className="text-base font-bold tabular mt-1">
-              {ordersLoading ? '—' : Number(totalOrders || 0).toLocaleString('en-US')}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] uppercase tracking-widest font-bold text-primary-foreground/70">Total spent</p>
-            <p className="text-base font-bold tabular mt-1">
-              {ordersLoading ? '—' : formatPrice(totalSpent)}
-            </p>
-          </div>
+        {/* Stats grid */}
+        <div className="grid grid-cols-2 gap-3 pt-5 border-t border-border/60">
+          <Stat
+            icon={Wallet}
+            label="Orders"
+            value={ordersLoading ? '—' : Number(totalOrders || 0).toLocaleString('en-US')}
+          />
+          <Stat
+            icon={TrendingUp}
+            label="Total spent"
+            value={ordersLoading ? '—' : formatPrice(totalSpent)}
+            align="right"
+          />
         </div>
       </div>
     </section>
   );
 };
+
+const Stat = ({
+  icon: Icon,
+  label,
+  value,
+  align = 'left',
+}: {
+  icon: typeof Wallet;
+  label: string;
+  value: string;
+  align?: 'left' | 'right';
+}) => (
+  <div className={`flex flex-col ${align === 'right' ? 'items-end text-right' : 'items-start text-left'}`}>
+    <div className="inline-flex items-center gap-1 text-[9.5px] uppercase tracking-[0.18em] font-bold text-muted-foreground/70 mb-1.5">
+      <Icon className="w-2.5 h-2.5 text-primary" /> {label}
+    </div>
+    <p className="text-[14px] font-bold tabular leading-tight">{value}</p>
+  </div>
+);
 
 export default WalletHeroPanel;

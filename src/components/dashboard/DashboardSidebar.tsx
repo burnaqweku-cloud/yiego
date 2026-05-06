@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home, ShoppingCart, Wallet, ClipboardList, User, Settings,
-  Search, ArrowLeft, Receipt, Gift, Sparkles, Grid3x3, MoreHorizontal,
+  Search, ArrowLeft, Receipt, Grid3x3, MoreHorizontal,
 } from 'lucide-react';
 
 const DashboardSidebar = () => {
@@ -14,8 +14,6 @@ const DashboardSidebar = () => {
     { to: '/dashboard/orders', icon: ClipboardList, label: 'Orders' },
     { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
     { to: '/dashboard/transactions', icon: Receipt, label: 'Transactions' },
-    { to: '/dashboard/rewards', icon: Sparkles, label: 'Rewards' },
-    { to: '/dashboard/referral', icon: Gift, label: 'Refer & Earn' },
     { to: '/dashboard/profile', icon: User, label: 'Profile' },
     { to: '/track-order', icon: Search, label: 'Track Order' },
     { to: '/dashboard/more', icon: MoreHorizontal, label: 'More' },

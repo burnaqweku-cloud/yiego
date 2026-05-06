@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu, X, LogOut, Shield, LayoutDashboard, Smartphone, Receipt,
-  Sparkles, ArrowRight, LifeBuoy, ChevronDown, Send, Tv, Search, PackageSearch,
+  Sparkles, ArrowRight, LifeBuoy, ChevronDown, Tv, Search, PackageSearch,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,7 +23,6 @@ const SERVICES = [
   { to: '/dashboard', label: 'Airtime', icon: Sparkles, status: 'Soon', desc: 'Top up any line instantly' },
   { to: '/dashboard', label: 'Bill Payments', icon: Receipt, status: 'Soon', desc: 'ECG, water, TV & more' },
   { to: '/dashboard', label: 'Subscriptions', icon: Tv, status: 'Soon', desc: 'Netflix, Spotify & more' },
-  { to: '/dashboard', label: 'Social Boosting', icon: Send, status: 'Soon', desc: 'Followers, views, engagement' },
 ];
 
 const Navbar = () => {
@@ -59,10 +58,16 @@ const Navbar = () => {
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-background/80 backdrop-blur-xl border-b border-border/60 shadow-[0_1px_0_0_hsl(var(--border)/0.4)]'
-          : 'bg-transparent border-b border-transparent'
+          ? 'bg-background/75 backdrop-blur-xl backdrop-saturate-150 shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.12)]'
+          : 'bg-transparent'
       }`}
     >
+      {/* Gradient hairline that appears on scroll */}
+      <div
+        className={`absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent transition-opacity duration-300 ${
+          scrolled ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
       <nav className="container flex items-center justify-between h-14">
         {/* Logo */}
         <Link to="/" className="flex items-center shrink-0 group" aria-label="YieGo home">
@@ -71,17 +76,17 @@ const Navbar = () => {
 
         {/* Desktop nav (centered, sleek) */}
         <div className="hidden lg:flex items-center absolute left-1/2 -translate-x-1/2">
-          <div className="flex items-center gap-0.5 rounded-full border border-border/60 bg-card/60 backdrop-blur-md px-1 py-1">
+          <div className="flex items-center gap-0.5 rounded-full border border-border/60 bg-card/70 backdrop-blur-xl backdrop-saturate-150 px-1 py-1 shadow-[0_4px_24px_-12px_hsl(var(--primary)/0.18)]">
             {PRIMARY_LINKS.map((link) => {
               const active = location.pathname === link.to;
               return (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-all duration-200 ${
+                  className={`relative px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-all duration-200 ${
                     active
-                      ? 'bg-foreground text-background'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      ? 'bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.5)]'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                   }`}
                 >
                   {link.label}
@@ -92,32 +97,36 @@ const Navbar = () => {
               <button
                 onClick={() => setServicesOpen((v) => !v)}
                 onBlur={() => setTimeout(() => setServicesOpen(false), 150)}
-                className="flex items-center gap-1 px-3.5 py-1.5 rounded-full text-[12.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+                className="flex items-center gap-1 px-3.5 py-1.5 rounded-full text-[12.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
               >
                 Services
                 <ChevronDown className={`w-3 h-3 transition-transform ${servicesOpen ? 'rotate-180' : ''}`} />
               </button>
               {servicesOpen && (
-                <div className="absolute right-1/2 translate-x-1/2 top-[calc(100%+8px)] w-[340px] rounded-2xl border border-border bg-popover/95 backdrop-blur-xl shadow-2xl p-1.5 animate-page-in">
-                  {SERVICES.map((s) => (
-                    <Link
-                      key={s.label}
-                      to={s.to}
-                      className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/60 transition-colors group"
-                    >
-                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                        <s.icon className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-[13px]">{s.label}</span>
-                          <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${s.status === 'Live' ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>{s.status}</span>
+                <div className="absolute right-1/2 translate-x-1/2 top-[calc(100%+10px)] w-[340px] rounded-2xl border border-border/70 bg-popover/95 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_24px_60px_-20px_hsl(var(--primary)/0.3),0_8px_24px_-8px_hsl(0_0%_0%/0.15)] overflow-hidden animate-page-in">
+                  {/* gradient top edge */}
+                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+                  <div className="p-1.5">
+                    {SERVICES.map((s) => (
+                      <Link
+                        key={s.label}
+                        to={s.to}
+                        className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-primary/5 transition-colors group"
+                      >
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/15 flex items-center justify-center shrink-0 group-hover:ring-primary/30 transition-all">
+                          <s.icon className="w-4 h-4 text-primary" />
                         </div>
-                        <div className="text-[11px] text-muted-foreground">{s.desc}</div>
-                      </div>
-                      <ArrowRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </Link>
-                  ))}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-[13px]">{s.label}</span>
+                            <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${s.status === 'Live' ? 'bg-primary/15 text-primary border border-primary/25' : 'bg-muted text-muted-foreground'}`}>{s.status}</span>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">{s.desc}</div>
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-primary opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -153,7 +162,7 @@ const Navbar = () => {
             <>
               <Link to="/auth"><Button variant="ghost" size="sm" className="rounded-full font-medium h-9">Sign in</Button></Link>
               <Link to="/auth?tab=signup">
-                <Button size="sm" className="rounded-full font-semibold px-4 h-9 gap-1.5">
+                <Button size="sm" className="rounded-full font-semibold px-4 h-9 gap-1.5 shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.55)] hover:shadow-[0_10px_24px_-8px_hsl(var(--primary)/0.65)] hover:-translate-y-0.5 transition-all">
                   Get started
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>

@@ -1,4 +1,4 @@
-import { CalendarDays, Infinity } from 'lucide-react';
+import { Clock, Infinity } from 'lucide-react';
 
 interface ValidityBadgeProps {
   network?: string;
@@ -9,9 +9,9 @@ interface ValidityBadgeProps {
 }
 
 const sizeClasses = {
-  xs: 'text-[9px] px-1.5 py-0.5 gap-0.5',
-  sm: 'text-[10px] px-2 py-0.5 gap-1',
-  md: 'text-xs px-2.5 py-1 gap-1',
+  xs: 'text-[9px] px-2 py-0.5 gap-1',
+  sm: 'text-[10px] px-2.5 py-1 gap-1.5',
+  md: 'text-xs px-3 py-1.5 gap-1.5',
 };
 
 const iconSizes = {
@@ -60,13 +60,13 @@ const ValidityBadge = ({ network, days, size = 'sm', className = '' }: ValidityB
     useInfinityIcon = false;
   }
 
-  const Icon = useInfinityIcon ? Infinity : CalendarDays;
+  const Icon = useInfinityIcon ? Infinity : Clock;
 
   return (
     <span
-      className={`inline-flex items-center font-semibold rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center font-bold tracking-wide rounded-full bg-gradient-to-r from-emerald-500/15 via-emerald-500/8 to-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 backdrop-blur-sm shadow-[inset_0_1px_0_0_rgb(16_185_129/0.18)] ${sizeClasses[size]} ${className}`}
     >
-      <Icon className={iconSizes[size]} />
+      <Icon className={iconSizes[size]} strokeWidth={2.2} />
       {label}
     </span>
   );

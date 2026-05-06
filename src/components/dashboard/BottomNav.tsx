@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Wifi, LayoutGrid, Wallet, Sparkles } from 'lucide-react';
+import { Home, Wifi, LayoutGrid, Wallet, Megaphone } from 'lucide-react';
 
 type Tab = {
   to: string;
@@ -24,7 +24,7 @@ const BottomNav = () => {
     { to: '/dashboard/buy', icon: Wifi, label: 'Bundles' },
     { to: '/dashboard/services', icon: LayoutGrid, label: 'Services' },
     { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
-    { to: '/dashboard/more', icon: Sparkles, label: 'More', match: ['/dashboard/more', '/dashboard/orders', '/dashboard/transactions', '/dashboard/profile', '/dashboard/settings', '/dashboard/notifications', '/dashboard/referral', '/dashboard/rewards'] },
+    { to: '/dashboard/channel', icon: Megaphone, label: 'Channel', match: ['/dashboard/channel'] },
   ];
 
   const renderBadge = (count?: number) => {

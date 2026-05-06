@@ -4,44 +4,45 @@
 
 @layer base {
 :root {
-    /* ── YieGo Light ── */
-    --background: 150 20% 98%;
-    --foreground: 160 18% 9%;
+    /* ── YieGo Light (Indigo) ── */
+    --background: 220 20% 98%;
+    --foreground: 225 18% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 160 18% 9%;
-    --card-elevated: 150 20% 97%;
-    --card-elevated-foreground: 160 18% 9%;
+    --card-foreground: 225 18% 11%;
+    --card-elevated: 220 20% 97%;
+    --card-elevated-foreground: 225 18% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 160 18% 9%;
+    --popover-foreground: 225 18% 11%;
 
-    /* Emerald primary */
-    --primary: 156 78% 38%;
+    /* Indigo primary */
+    --primary: 224 76% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 150 18% 95%;
-    --secondary-foreground: 160 16% 22%;
+    --secondary: 220 18% 95%;
+    --secondary-foreground: 225 16% 22%;
 
-    --muted: 150 14% 95%;
-    --muted-foreground: 160 8% 42%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 225 8% 42%;
 
     /* Warm gold accent — used sparingly */
     --accent: 42 96% 52%;
-    --accent-foreground: 160 18% 9%;
+    --accent-foreground: 225 18% 11%;
 
     --destructive: 0 78% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 156 78% 38%;
+    /* Success — independent green for semantic clarity */
+    --success: 145 62% 42%;
     --success-foreground: 0 0% 100%;
 
     --info: 200 78% 45%;
     --info-foreground: 0 0% 100%;
 
-    --border: 150 14% 90%;
-    --input: 150 14% 93%;
-    --ring: 156 78% 38%;
+    --border: 220 14% 90%;
+    --input: 220 14% 93%;
+    --ring: 224 76% 50%;
 
     --radius: 1rem;
 
@@ -50,100 +51,100 @@
     --mtn-foreground: 0 0% 7%;
     --telecel: 0 85% 50%;
     --telecel-foreground: 0 0% 100%;
-    --airteltigo: 210 85% 45%;
+    --airteltigo: 198 88% 48%;
     --airteltigo-foreground: 0 0% 100%;
 
     /* Brand tokens */
-    --brand: 156 78% 38%;
+    --brand: 224 76% 50%;
     --brand-foreground: 0 0% 100%;
-    --brand-glow: 156 80% 55%;
+    --brand-glow: 230 88% 65%;
     --gold: 42 96% 52%;
-    --gold-foreground: 160 18% 9%;
+    --gold-foreground: 225 18% 11%;
     --gold-glow: 42 96% 65%;
     --glow-gold: none;
     --glow-gold-strong: none;
     --glow-brand: none;
 
-    --hero-gradient: linear-gradient(145deg, hsl(160 22% 6%), hsl(158 28% 9%), hsl(156 32% 12%));
-    --card-shadow: 0 1px 4px 0 hsl(160 18% 6% / 0.05), 0 1px 2px -1px hsl(160 18% 6% / 0.04);
-    --card-shadow-hover: 0 10px 28px -6px hsl(156 60% 12% / 0.12), 0 4px 8px -2px hsl(160 18% 6% / 0.06);
-    --card-shadow-elevated: 0 16px 40px -8px hsl(156 60% 10% / 0.14), 0 6px 16px -4px hsl(160 18% 6% / 0.07);
+    --hero-gradient: linear-gradient(145deg, hsl(228 22% 6%), hsl(226 28% 9%), hsl(225 32% 12%));
+    --card-shadow: 0 1px 4px 0 hsl(225 18% 6% / 0.05), 0 1px 2px -1px hsl(225 18% 6% / 0.04);
+    --card-shadow-hover: 0 10px 28px -6px hsl(225 60% 12% / 0.12), 0 4px 8px -2px hsl(225 18% 6% / 0.06);
+    --card-shadow-elevated: 0 16px 40px -8px hsl(225 60% 10% / 0.14), 0 6px 16px -4px hsl(225 18% 6% / 0.07);
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 160 14% 22%;
-    --sidebar-primary: 156 78% 38%;
+    --sidebar-foreground: 225 14% 22%;
+    --sidebar-primary: 224 76% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 150 14% 95%;
-    --sidebar-accent-foreground: 160 16% 16%;
-    --sidebar-border: 150 14% 90%;
-    --sidebar-ring: 156 78% 38%;
+    --sidebar-accent: 220 14% 95%;
+    --sidebar-accent-foreground: 225 16% 16%;
+    --sidebar-border: 220 14% 90%;
+    --sidebar-ring: 224 76% 50%;
   }
 
   .dark {
-    /* ── YieGo Premium Charcoal Dark ── */
-    --background: 160 22% 5%;
-    --foreground: 150 18% 96%;
+    /* ── YieGo Premium Indigo Dark ── */
+    --background: 225 28% 6%;
+    --foreground: 220 18% 96%;
 
-    --card: 160 24% 8%;
-    --card-foreground: 150 18% 96%;
+    --card: 225 28% 9%;
+    --card-foreground: 220 18% 96%;
 
-    --card-elevated: 158 22% 11%;
-    --card-elevated-foreground: 150 18% 96%;
+    --card-elevated: 225 26% 12%;
+    --card-elevated-foreground: 220 18% 96%;
 
-    --popover: 160 24% 9%;
-    --popover-foreground: 150 18% 96%;
+    --popover: 225 28% 10%;
+    --popover-foreground: 220 18% 96%;
 
-    /* Emerald primary — slightly brighter for dark contrast */
-    --primary: 156 78% 46%;
-    --primary-foreground: 160 22% 5%;
+    /* Indigo primary — brighter for dark contrast */
+    --primary: 228 88% 65%;
+    --primary-foreground: 225 28% 6%;
 
-    --secondary: 158 18% 13%;
-    --secondary-foreground: 150 14% 88%;
+    --secondary: 225 22% 14%;
+    --secondary-foreground: 220 14% 88%;
 
-    --muted: 158 16% 13%;
-    --muted-foreground: 150 10% 65%;
+    --muted: 225 20% 14%;
+    --muted-foreground: 220 10% 65%;
 
     /* Gold accent for dark — used sparingly */
     --accent: 42 96% 58%;
-    --accent-foreground: 160 22% 5%;
+    --accent-foreground: 225 28% 6%;
 
     --destructive: 0 70% 54%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 156 78% 46%;
-    --success-foreground: 160 22% 5%;
+    --success: 145 62% 50%;
+    --success-foreground: 0 0% 100%;
 
     --info: 200 78% 56%;
     --info-foreground: 0 0% 100%;
 
-    --border: 158 16% 17%;
-    --input: 158 18% 11%;
-    --ring: 156 78% 46%;
+    --border: 225 20% 18%;
+    --input: 225 22% 12%;
+    --ring: 228 88% 65%;
 
-    --card-shadow: 0 2px 12px 0 hsl(160 30% 2% / 0.55), 0 1px 3px 0 hsl(160 30% 2% / 0.3);
-    --card-shadow-hover: 0 8px 28px -4px hsl(160 30% 2% / 0.65), 0 2px 8px -2px hsl(160 30% 2% / 0.4);
-    --card-shadow-elevated: 0 16px 48px -8px hsl(160 30% 2% / 0.75), 0 4px 16px -4px hsl(160 30% 2% / 0.5);
+    --card-shadow: 0 2px 12px 0 hsl(225 30% 2% / 0.55), 0 1px 3px 0 hsl(225 30% 2% / 0.3);
+    --card-shadow-hover: 0 8px 28px -4px hsl(225 30% 2% / 0.65), 0 2px 8px -2px hsl(225 30% 2% / 0.4);
+    --card-shadow-elevated: 0 16px 48px -8px hsl(225 30% 2% / 0.75), 0 4px 16px -4px hsl(225 30% 2% / 0.5);
 
     /* Brand glow */
-    --glow-brand: 0 0 20px hsl(156 78% 46% / 0.22), 0 0 48px hsl(156 78% 46% / 0.10);
+    --glow-brand: 0 0 20px hsl(228 88% 65% / 0.22), 0 0 48px hsl(228 88% 65% / 0.10);
     --glow-gold: 0 0 18px hsl(42 96% 58% / 0.18), 0 0 36px hsl(42 96% 58% / 0.08);
     --glow-gold-strong: 0 0 24px hsl(42 96% 58% / 0.28), 0 0 48px hsl(42 96% 58% / 0.12);
 
-    --brand: 156 78% 46%;
-    --brand-foreground: 160 22% 5%;
-    --brand-glow: 156 80% 60%;
+    --brand: 228 88% 65%;
+    --brand-foreground: 225 28% 6%;
+    --brand-glow: 232 95% 75%;
     --gold: 42 96% 58%;
-    --gold-foreground: 160 22% 5%;
+    --gold-foreground: 225 28% 6%;
     --gold-glow: 42 96% 70%;
 
-    --sidebar-background: 160 26% 4%;
-    --sidebar-foreground: 150 16% 88%;
-    --sidebar-primary: 156 78% 46%;
-    --sidebar-primary-foreground: 160 22% 5%;
-    --sidebar-accent: 158 18% 11%;
-    --sidebar-accent-foreground: 150 18% 88%;
-    --sidebar-border: 158 16% 14%;
-    --sidebar-ring: 156 78% 46%;
+    --sidebar-background: 225 30% 5%;
+    --sidebar-foreground: 220 16% 88%;
+    --sidebar-primary: 228 88% 65%;
+    --sidebar-primary-foreground: 225 28% 6%;
+    --sidebar-accent: 225 22% 12%;
+    --sidebar-accent-foreground: 220 18% 88%;
+    --sidebar-border: 225 20% 14%;
+    --sidebar-ring: 228 88% 65%;
   }
 }
 
@@ -282,6 +283,34 @@
   to { opacity: 1; }
 }
 
+/* ═══════════════════════════════════════════════
+   PREMIUM NOISE / GRAIN OVERLAY
+   ═══════════════════════════════════════════════
+   SVG fractal-noise data URI — adds the subtle film-grain texture
+   that gives modern landing pages (Linear, Vercel, Stripe) their
+   tactile, premium feel. Use as a pointer-events:none overlay. */
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+.dark .noise-overlay { opacity: 0.09; }
+
+/* Slow ambient drift for hero glow blobs */
+@keyframes glow-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, 20px) scale(1.06); }
+}
+.glow-drift { animation: glow-drift 14s ease-in-out infinite; will-change: transform; }
+.glow-drift-slow { animation: glow-drift 22s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-drift, .glow-drift-slow { animation: none !important; }
+}
+
 @layer utilities {
   .hero-gradient {
     background: var(--hero-gradient);
@@ -397,13 +426,13 @@
     box-shadow:
       0 1px 0 0 hsl(0 0% 100% / 0.85) inset,
       0 0 0 1px hsl(var(--border) / 0.35),
-      0 2px 6px -2px hsl(160 18% 6% / 0.06),
-      0 18px 48px -20px hsl(156 60% 18% / 0.22);
+      0 2px 6px -2px hsl(225 18% 6% / 0.06),
+      0 18px 48px -20px hsl(225 60% 18% / 0.22);
   }
   .dark .glass-card {
     background:
       linear-gradient(180deg, hsl(0 0% 100% / 0.06) 0%, hsl(0 0% 100% / 0.015) 60%, transparent 100%) border-box,
-      linear-gradient(150deg, hsl(160 22% 12% / 0.65) 0%, hsl(158 24% 7% / 0.45) 100%);
+      linear-gradient(150deg, hsl(225 24% 12% / 0.65) 0%, hsl(225 26% 7% / 0.45) 100%);
     border-color: hsl(0 0% 100% / 0.09);
     box-shadow:
       0 1px 0 0 hsl(0 0% 100% / 0.06) inset,
@@ -420,30 +449,30 @@
     border: 1px solid hsl(0 0% 100% / 0.7);
     box-shadow:
       0 1px 0 0 hsl(0 0% 100% / 0.9) inset,
-      0 8px 24px -10px hsl(156 60% 12% / 0.20),
-      0 28px 70px -28px hsl(156 60% 12% / 0.28);
+      0 8px 24px -10px hsl(225 60% 12% / 0.20),
+      0 28px 70px -28px hsl(225 60% 12% / 0.28);
   }
   .dark .glass-card-strong {
     background:
       linear-gradient(180deg, hsl(0 0% 100% / 0.07) 0%, hsl(0 0% 100% / 0.02) 60%, transparent 100%) border-box,
-      linear-gradient(150deg, hsl(160 22% 14% / 0.78) 0%, hsl(158 24% 8% / 0.55) 100%);
+      linear-gradient(150deg, hsl(225 24% 14% / 0.78) 0%, hsl(225 26% 8% / 0.55) 100%);
     border-color: hsl(0 0% 100% / 0.10);
     box-shadow:
       0 1px 0 0 hsl(0 0% 100% / 0.07) inset,
       0 28px 70px -28px hsl(0 0% 0% / 0.7);
   }
 
-  /* Premium green hero glass for wallet */
+  /* Premium hero glass surface (legacy class name kept; now indigo) */
   .glass-hero-emerald {
     position: relative;
     background:
-      radial-gradient(120% 100% at 0% 0%, hsl(156 80% 60% / 0.40) 0%, transparent 55%),
+      radial-gradient(120% 100% at 0% 0%, hsl(228 90% 70% / 0.40) 0%, transparent 55%),
       radial-gradient(120% 100% at 100% 100%, hsl(42 96% 65% / 0.26) 0%, transparent 55%),
-      linear-gradient(135deg, hsl(156 78% 28%) 0%, hsl(160 70% 16%) 100%);
+      linear-gradient(135deg, hsl(225 75% 30%) 0%, hsl(228 70% 18%) 100%);
     border: 1px solid hsl(0 0% 100% / 0.18);
     box-shadow:
       0 1px 0 0 hsl(0 0% 100% / 0.22) inset,
-      0 30px 80px -24px hsl(156 78% 18% / 0.6);
+      0 30px 80px -24px hsl(225 75% 18% / 0.6);
   }
 
   /* Dashboard ambient background — richer, more visible */
@@ -458,16 +487,16 @@
     z-index: -1;
     pointer-events: none;
     background:
-      radial-gradient(55% 38% at 10% -2%, hsl(156 78% 55% / 0.18) 0%, transparent 65%),
+      radial-gradient(55% 38% at 10% -2%, hsl(225 80% 60% / 0.18) 0%, transparent 65%),
       radial-gradient(45% 35% at 100% 5%, hsl(42 96% 60% / 0.14) 0%, transparent 65%),
-      radial-gradient(60% 45% at 90% 100%, hsl(156 70% 45% / 0.12) 0%, transparent 70%),
-      radial-gradient(55% 45% at 0% 95%, hsl(180 60% 50% / 0.08) 0%, transparent 70%);
+      radial-gradient(60% 45% at 90% 100%, hsl(225 70% 50% / 0.12) 0%, transparent 70%),
+      radial-gradient(55% 45% at 0% 95%, hsl(200 60% 50% / 0.08) 0%, transparent 70%);
   }
   .dark .dashboard-ambient::before {
     background:
-      radial-gradient(55% 38% at 10% -2%, hsl(156 78% 45% / 0.28) 0%, transparent 65%),
+      radial-gradient(55% 38% at 10% -2%, hsl(228 85% 60% / 0.28) 0%, transparent 65%),
       radial-gradient(45% 35% at 100% 5%, hsl(42 96% 55% / 0.14) 0%, transparent 65%),
-      radial-gradient(60% 45% at 90% 100%, hsl(156 60% 30% / 0.18) 0%, transparent 70%),
+      radial-gradient(60% 45% at 90% 100%, hsl(225 60% 35% / 0.18) 0%, transparent 70%),
       radial-gradient(55% 45% at 0% 95%, hsl(200 60% 35% / 0.12) 0%, transparent 70%);
   }
 
@@ -486,13 +515,13 @@
     box-shadow:
       0 1px 0 0 hsl(0 0% 100% / 0.8) inset,
       0 0 0 1px hsl(var(--border) / 0.3),
-      0 2px 6px -2px hsl(160 18% 6% / 0.05),
-      0 18px 48px -20px hsl(156 60% 18% / 0.18);
+      0 2px 6px -2px hsl(225 18% 6% / 0.05),
+      0 18px 48px -20px hsl(225 60% 18% / 0.18);
   }
   .dark .dashboard-ambient :where(.bg-card):not(.glass-hero-emerald):not(.no-glass):not([data-no-glass]) {
     background:
       linear-gradient(180deg, hsl(0 0% 100% / 0.06) 0%, hsl(0 0% 100% / 0.015) 60%, transparent 100%) border-box,
-      linear-gradient(150deg, hsl(160 22% 12% / 0.62) 0%, hsl(158 24% 7% / 0.42) 100%) !important;
+      linear-gradient(150deg, hsl(225 24% 12% / 0.62) 0%, hsl(225 26% 7% / 0.42) 100%) !important;
     border-color: hsl(0 0% 100% / 0.09);
     box-shadow:
       0 1px 0 0 hsl(0 0% 100% / 0.06) inset,
@@ -1000,7 +1029,7 @@
   border-top: 1px solid hsl(0 0% 100% / 0.7);
   box-shadow:
     0 -1px 0 hsl(var(--border) / 0.4),
-    0 -10px 30px -10px hsl(156 60% 18% / 0.18),
+    0 -10px 30px -10px hsl(225 60% 18% / 0.18),
     0 -2px 6px -2px hsl(0 0% 0% / 0.04);
   padding-top: 6px;
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
@@ -1014,9 +1043,9 @@
   --ds-nav-surface: hsl(0 0% 100%);
 }
 .dark .ds-bottom-nav-bar {
-  --ds-nav-ink: hsl(210 22% 96%);
-  --ds-nav-surface: hsl(160 24% 8%);
-  background: hsl(160 24% 8% / 0.7);
+  --ds-nav-ink: hsl(220 22% 96%);
+  --ds-nav-surface: hsl(225 28% 9%);
+  background: hsl(225 28% 9% / 0.7);
   border-top-color: hsl(0 0% 100% / 0.08);
   box-shadow:
     0 -1px 0 hsl(0 0% 100% / 0.06),

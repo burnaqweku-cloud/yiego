@@ -15,12 +15,12 @@ import PasswordStrengthBar, { getStrength } from '@/components/auth/PasswordStre
 import SocialAuthButtons from '@/components/auth/SocialAuthButtons';
 
 const SocialDivider = () => (
-  <div className="relative my-5 flex items-center">
-    <div className="flex-1 h-px bg-border/60" />
-    <span className="px-3 text-[10.5px] uppercase tracking-[0.2em] font-bold text-muted-foreground/70">
+  <div className="relative my-6 flex items-center">
+    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+    <span className="px-3.5 text-[10px] uppercase tracking-[0.22em] font-bold text-muted-foreground/70">
       or with email
     </span>
-    <div className="flex-1 h-px bg-border/60" />
+    <div className="flex-1 h-px bg-gradient-to-l from-transparent via-border to-transparent" />
   </div>
 );
 
@@ -54,16 +54,16 @@ const Auth = () => {
       />
 
       {/* Segmented tab control */}
-      <div className="relative flex items-center bg-muted/60 rounded-full p-1 mb-6 border border-border/50" role="tablist">
+      <div className="relative flex items-center bg-muted/50 backdrop-blur-sm rounded-full p-1 mb-6 border border-border/60 shadow-[inset_0_1px_0_0_hsl(var(--background)/0.5)]" role="tablist">
         {(['login', 'signup'] as const).map((t) => (
           <button
             key={t}
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`relative flex-1 py-2 text-[12.5px] font-semibold rounded-full transition-all duration-200 active:scale-[0.97] ${
+            className={`relative flex-1 py-2 text-[12.5px] font-semibold rounded-full transition-all duration-300 active:scale-[0.97] ${
               tab === t
-                ? 'bg-foreground text-background shadow-[0_2px_10px_-2px_hsl(var(--foreground)/0.35)]'
+                ? 'bg-primary text-primary-foreground shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.55)]'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -76,11 +76,11 @@ const Auth = () => {
       <SocialDivider />
       {tab === 'login' ? <LoginForm /> : <SignupForm />}
 
-      <p className="text-center text-[11px] text-muted-foreground mt-5">
+      <p className="text-center text-[11.5px] text-muted-foreground mt-6">
         {tab === 'login' ? 'New to YieGo?' : 'Already on YieGo?'}{' '}
         <button
           onClick={() => setTab(tab === 'login' ? 'signup' : 'login')}
-          className="font-semibold text-primary hover:underline"
+          className="font-semibold text-primary hover:underline underline-offset-2 transition-all"
         >
           {tab === 'login' ? 'Create an account' : 'Sign in instead'}
         </button>
@@ -100,7 +100,7 @@ const AuthCard = ({ children, ...props }: React.FormHTMLAttributes<HTMLFormEleme
 const PremiumInput = (props: React.ComponentProps<typeof Input>) => (
   <Input
     {...props}
-    className={`h-12 bg-background border-border/60 rounded-xl transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/55 ${props.className || ''}`}
+    className={`h-12 bg-muted/30 border-border/60 rounded-xl transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-background placeholder:text-muted-foreground/55 ${props.className || ''}`}
   />
 );
 
@@ -108,7 +108,7 @@ const PremiumInput = (props: React.ComponentProps<typeof Input>) => (
 const GoldButton = ({ children, loading, ...props }: React.ComponentProps<typeof Button> & { loading?: boolean }) => (
   <Button
     {...props}
-    className="w-full h-12 text-sm font-bold rounded-xl transition-all duration-200 active:scale-[0.98] bg-primary text-primary-foreground shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.6)] hover:opacity-95"
+    className="w-full h-12 text-sm font-bold rounded-xl transition-all duration-300 active:scale-[0.98] bg-primary text-primary-foreground shadow-[0_12px_28px_-10px_hsl(var(--primary)/0.6)] hover:shadow-[0_16px_36px_-10px_hsl(var(--primary)/0.7)] hover:-translate-y-0.5"
   >
     {loading ? (
       <span className="flex items-center gap-2">
@@ -269,7 +269,7 @@ const LoginForm = () => {
         </div>
       )}
       <div>
-        <Label htmlFor="loginIdentifier" className="text-sm font-medium">Email or Username</Label>
+        <Label htmlFor="loginIdentifier" className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Email or Username</Label>
         <PremiumInput
           id="loginIdentifier"
           name="username"
@@ -283,7 +283,7 @@ const LoginForm = () => {
         />
       </div>
       <div>
-        <Label htmlFor="loginPassword" className="text-sm font-medium">Password</Label>
+        <Label htmlFor="loginPassword" className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Password</Label>
         <div className="relative mt-2">
           <PremiumInput
             id="loginPassword"
@@ -350,7 +350,6 @@ const SignupForm = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [referralCode, setReferralCode] = useState(searchParams.get('ref') || '');
 
   const checkUsername = async (value: string) => {
     if (!value || value.length < 3) {
@@ -421,7 +420,7 @@ const SignupForm = () => {
     }
 
     setLoading(true);
-    const trimmedRefCode = (referralCode || searchParams.get('ref') || '').trim().toUpperCase();
+    const trimmedRefCode = (searchParams.get('ref') || '').trim().toUpperCase();
     const { error: authError } = await signUp(email, password, {
       full_name: fullName.trim(),
       phone: phone.trim(),
@@ -454,13 +453,13 @@ const SignupForm = () => {
           accepted_privacy: true, accepted_privacy_at: now, accepted_privacy_version: 'v1.0',
           
           ...(deviceHash ? { device_hash: deviceHash } : {}),
-          ...((referralCode || searchParams.get('ref') || '').trim()
+          ...((searchParams.get('ref') || '').trim()
             ? { referral_source: localStorage.getItem('ds_referral_source') === 'landing' ? 'landing_page' : 'referral_code' }
             : {}),
         } as any).eq('id', user.id);
 
         // Process referral code if provided (non-blocking)
-        const code = (referralCode || searchParams.get('ref') || '').trim();
+        const code = (searchParams.get('ref') || '').trim();
         if (code && user.id) {
           try {
             await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/referral-register`, {
@@ -480,7 +479,7 @@ const SignupForm = () => {
 
     const params = new URLSearchParams(window.location.search);
     const next = params.get('next');
-    const refCode = (referralCode || searchParams.get('ref') || '').trim();
+    const refCode = (searchParams.get('ref') || '').trim();
     const lsSource = localStorage.getItem('ds_referral_source');
     const lsCode = localStorage.getItem('ds_referral_code');
     const lsTs = Number(localStorage.getItem('ds_referral_ts') || '0');
@@ -511,11 +510,11 @@ const SignupForm = () => {
         </div>
       )}
       <div>
-        <Label htmlFor="signupName" className="text-sm font-medium">Full Name</Label>
+        <Label htmlFor="signupName" className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Full Name</Label>
         <PremiumInput id="signupName" name="name" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Nana Osei" className="mt-2" maxLength={100} />
       </div>
       <div>
-        <Label htmlFor="signupUsername" className="text-sm font-medium">Username</Label>
+        <Label htmlFor="signupUsername" className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Username</Label>
         <div className="relative mt-2">
           <PremiumInput
             id="signupUsername"
@@ -545,15 +544,15 @@ const SignupForm = () => {
         )}
       </div>
       <div>
-        <Label htmlFor="signupPhone" className="text-sm font-medium">Phone Number</Label>
+        <Label htmlFor="signupPhone" className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Phone Number</Label>
         <PremiumInput id="signupPhone" name="tel" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0551234567" className="mt-2" maxLength={10} />
       </div>
       <div>
-        <Label htmlFor="signupEmail" className="text-sm font-medium">Email</Label>
+        <Label htmlFor="signupEmail" className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Email</Label>
         <PremiumInput id="signupEmail" name="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="mt-2" maxLength={255} />
       </div>
       <div>
-        <Label htmlFor="signupPassword" className="text-sm font-medium">Password</Label>
+        <Label htmlFor="signupPassword" className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Password</Label>
         <div className="relative mt-2">
           <PremiumInput
             id="signupPassword"
@@ -575,22 +574,6 @@ const SignupForm = () => {
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
-      </div>
-
-      {/* Referral Code */}
-      <div>
-        <Label htmlFor="referralCode" className="text-sm font-medium text-muted-foreground">Referral Code <span className="text-xs">(optional)</span></Label>
-        <PremiumInput
-          id="referralCode"
-          value={referralCode}
-          onChange={(e) => setReferralCode(e.target.value.trim().slice(0, 20))}
-          placeholder="Enter code (e.g. ABC12345)"
-          className="mt-2 font-mono uppercase"
-          maxLength={20}
-        />
-        <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
-          Got a friend's code? Both of you earn rewards on your first delivered order.
-        </p>
       </div>
 
       {/* Legal Agreement Checkbox */}

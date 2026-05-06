@@ -5,7 +5,7 @@ const features = [
   {
     icon: Layers,
     title: 'One wallet, every service',
-    description: 'Data, airtime, bills, social boosting and more — managed from one balance, one history, one account.',
+    description: 'Data, airtime, bills, subscriptions and more — managed from one balance, one history, one account.',
   },
   {
     icon: Zap,
@@ -39,14 +39,17 @@ const WhyChooseUs = () => {
 
   return (
     <section className="container py-16 md:py-24" ref={ref}>
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 reveal-on-scroll">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 reveal-on-scroll">
         <div className="max-w-xl">
-          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Why YieGo</span>
-          <h2 className="text-3xl md:text-4xl font-display font-extrabold tracking-tight mt-3 leading-tight">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <span className="h-px w-8 bg-gradient-to-r from-transparent to-primary" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Why YieGo</span>
+          </div>
+          <h2 className="text-3xl md:text-[2.6rem] font-display font-extrabold tracking-[-0.03em] leading-[1.05]">
             Built for everyday <span className="text-gradient">digital life</span>.
           </h2>
         </div>
-        <p className="text-sm text-muted-foreground max-w-sm">
+        <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
           Not just another data shop. YieGo is a full digital services platform engineered for Ghana.
         </p>
       </div>
@@ -55,16 +58,18 @@ const WhyChooseUs = () => {
         {features.map((feature) => (
           <div
             key={feature.title}
-            className="reveal-on-scroll group relative overflow-hidden rounded-3xl border border-border bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_20px_40px_-20px_hsl(var(--primary)/0.3)]"
+            className="reveal-on-scroll group relative overflow-hidden rounded-3xl border border-border bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_24px_48px_-20px_hsl(var(--primary)/0.35)]"
           >
-            {/* Subtle corner glow on hover */}
-            <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-primary/0 group-hover:bg-primary/10 blur-3xl transition-colors duration-500" />
+            {/* Top-edge sheen on hover */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            {/* Corner glow on hover */}
+            <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-primary/0 group-hover:bg-primary/12 blur-3xl transition-colors duration-700" />
 
             <div className="relative">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/20 flex items-center justify-center mb-5">
-                <feature.icon className="w-5 h-5 text-primary" />
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/25 flex items-center justify-center mb-5 shadow-[0_4px_16px_-6px_hsl(var(--primary)/0.4)] group-hover:scale-105 group-hover:shadow-[0_8px_24px_-6px_hsl(var(--primary)/0.55)] transition-all duration-300">
+                <feature.icon className="w-5 h-5 text-primary" strokeWidth={1.9} />
               </div>
-              <h3 className="font-display font-bold text-[15px] tracking-tight mb-1.5">{feature.title}</h3>
+              <h3 className="font-display font-bold text-[15.5px] tracking-tight mb-1.5">{feature.title}</h3>
               <p className="text-[13px] text-muted-foreground leading-relaxed">{feature.description}</p>
             </div>
           </div>

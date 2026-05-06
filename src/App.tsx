@@ -77,7 +77,7 @@ const DashboardBulkOrders = lazy(() => import("./pages/dashboard/DashboardBulkOr
 const DashboardRewards = lazy(() => import("./pages/dashboard/DashboardRewards"));
 const RewardActivation = lazy(() => import("./pages/RewardActivation"));
 const RewardUnlocked = lazy(() => import("./pages/RewardUnlocked"));
-const ConnectTelegram = lazy(() => import("./pages/dashboard/ConnectTelegram"));
+const DashboardChannel = lazy(() => import("./pages/dashboard/DashboardChannel"));
 
 // Telegram Mini Apps (lazy) — only loaded when /tg/* routes are hit
 const TgMiniAppLayout = lazy(() => import("./pages/tg/TgMiniAppLayout"));
@@ -333,10 +333,10 @@ const App = () => (
               <Route path="/invite/:referral_code" element={<ReferralLanding />} />
               <Route path="/referral-terms" element={<ReferralTerms />} />
 
-              {/* Reward activation flow */}
-              <Route path="/reward-activation" element={<PrivateRoute><RewardActivation /></PrivateRoute>} />
-              <Route path="/reward" element={<PrivateRoute><RewardActivation /></PrivateRoute>} />
-              <Route path="/reward-unlocked" element={<PrivateRoute><RewardUnlocked /></PrivateRoute>} />
+              {/* Reward activation flow — admin/staff only (feature hidden from normal users) */}
+              <Route path="/reward-activation" element={<AdminRoute><RewardActivation /></AdminRoute>} />
+              <Route path="/reward" element={<AdminRoute><RewardActivation /></AdminRoute>} />
+              <Route path="/reward-unlocked" element={<AdminRoute><RewardUnlocked /></AdminRoute>} />
 
               {/* Agent store — public, no YieGo branding */}
               <Route path="/store/:slug" element={<AgentFeatureGate><AgentStore /></AgentFeatureGate>} />
@@ -381,12 +381,13 @@ const App = () => (
               <Route path="/dashboard/profile" element={<PrivateRoute><DashboardProfile /></PrivateRoute>} />
               <Route path="/dashboard/settings" element={<PrivateRoute><DashboardSettings /></PrivateRoute>} />
               <Route path="/dashboard/notifications" element={<PrivateRoute><DashboardNotifications /></PrivateRoute>} />
-              <Route path="/dashboard/connect-telegram" element={<PrivateRoute><ConnectTelegram /></PrivateRoute>} />
+              <Route path="/dashboard/channel" element={<PrivateRoute><DashboardChannel /></PrivateRoute>} />
               <Route path="/dashboard/transactions" element={<PrivateRoute><DashboardTransactions /></PrivateRoute>} />
               <Route path="/dashboard/support" element={<PrivateRoute><DashboardSupport /></PrivateRoute>} />
-              <Route path="/dashboard/referral" element={<PrivateRoute><DashboardReferral /></PrivateRoute>} />
-              <Route path="/dashboard/rewards" element={<PrivateRoute><DashboardRewards /></PrivateRoute>} />
-              <Route path="/rewards" element={<PrivateRoute><DashboardRewards /></PrivateRoute>} />
+              {/* Reward & referral pages — admin/staff only (feature hidden from normal users) */}
+              <Route path="/dashboard/referral" element={<AdminRoute><DashboardReferral /></AdminRoute>} />
+              <Route path="/dashboard/rewards" element={<AdminRoute><DashboardRewards /></AdminRoute>} />
+              <Route path="/rewards" element={<AdminRoute><DashboardRewards /></AdminRoute>} />
               <Route path="/dashboard/bulk-purchase" element={<PrivateRoute><DashboardBulkPurchase /></PrivateRoute>} />
               <Route path="/dashboard/bulk-orders" element={<PrivateRoute><DashboardBulkOrders /></PrivateRoute>} />
 

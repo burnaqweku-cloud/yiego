@@ -1,5 +1,6 @@
 import Layout from '@/components/layout/Layout';
 import HeroSection from '@/components/home/HeroSection';
+import TrustBand from '@/components/home/TrustBand';
 import ServiceHub from '@/components/home/ServiceHub';
 import HowItWorks from '@/components/home/HowItWorks';
 import NetworkCards from '@/components/home/NetworkCards';
@@ -18,6 +19,7 @@ const Index = () => {
         path="/"
       />
       <HeroSection />
+      <TrustBand />
       <ServiceHub />
       <HowItWorks />
       <NetworkCards />

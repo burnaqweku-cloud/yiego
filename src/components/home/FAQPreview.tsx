@@ -8,7 +8,7 @@ import { useScrollReveal } from '@/hooks/useScrollReveal';
 const HOMEPAGE_FAQS = [
   {
     q: 'What can I do on YieGo?',
-    a: 'YieGo is your everyday digital wallet for Ghana — buy data bundles today, with airtime, bills, subscriptions and social boosting rolling out next.',
+    a: 'YieGo is your everyday digital wallet for Ghana — buy data bundles today, with airtime, bills and subscriptions rolling out next.',
   },
   {
     q: 'How long do data bundle orders take?',
@@ -32,27 +32,35 @@ const FAQPreview = () => {
   const ref = useScrollReveal();
 
   return (
-    <section className="py-16 md:py-24" ref={ref}>
-      <div className="container">
+    <section className="py-20 md:py-28 relative overflow-hidden" ref={ref}>
+      {/* Ambient indigo wash */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-[-10%] w-[400px] h-[400px] rounded-full bg-primary/[0.05] blur-3xl" />
+      </div>
+      <div className="container relative">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-start">
           {/* Left: heading + support callout */}
-          <div className="lg:col-span-4 reveal-on-scroll">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">FAQ</span>
-            <h2 className="text-3xl md:text-4xl font-display font-extrabold tracking-tight mt-3 leading-tight">
-              Quick answers <br /> for everyday users.
+          <div className="lg:col-span-4 reveal-on-scroll lg:sticky lg:top-24">
+            <div className="inline-flex items-center gap-2 mb-4">
+              <span className="h-px w-8 bg-gradient-to-r from-transparent to-primary" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">FAQ</span>
+            </div>
+            <h2 className="text-3xl md:text-[2.6rem] font-display font-extrabold tracking-[-0.03em] leading-[1.05]">
+              Quick answers <br />
+              for <span className="text-gradient">everyday users.</span>
             </h2>
-            <p className="text-sm text-muted-foreground mt-4 max-w-sm leading-relaxed">
+            <p className="text-sm text-muted-foreground mt-5 max-w-sm leading-relaxed">
               The essentials, in plain language. Need something specific? Our team is one tap away.
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-2">
+            <div className="mt-7 flex flex-wrap gap-2">
               <Link to="/faq">
-                <Button variant="outline" className="rounded-full gap-2 h-10">
+                <Button variant="outline" className="rounded-full gap-2 h-10 backdrop-blur-sm bg-card/40 hover:bg-card/80 hover:border-primary/40">
                   All FAQs <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>
               <Link to="/support">
-                <Button variant="ghost" className="rounded-full gap-2 h-10">
+                <Button variant="ghost" className="rounded-full gap-2 h-10 hover:bg-primary/5 hover:text-primary">
                   <MessageCircle className="w-3.5 h-3.5" /> Talk to support
                 </Button>
               </Link>
@@ -66,12 +74,15 @@ const FAQPreview = () => {
                 <AccordionItem
                   key={i}
                   value={`faq-${i}`}
-                  className="border border-border bg-card rounded-2xl px-5 data-[state=open]:border-primary/40 data-[state=open]:shadow-[0_10px_30px_-15px_hsl(var(--primary)/0.3)] transition-all"
+                  className="group border border-border bg-card/70 backdrop-blur-sm rounded-2xl px-5 data-[state=open]:border-primary/40 data-[state=open]:bg-card data-[state=open]:shadow-[0_18px_40px_-18px_hsl(var(--primary)/0.35)] hover:border-primary/25 transition-all duration-300"
                 >
-                  <AccordionTrigger className="text-left font-semibold hover:no-underline py-4 text-[14px]">
-                    {faq.q}
+                  <AccordionTrigger className="text-left font-semibold hover:no-underline py-4 text-[14px] gap-3">
+                    <span className="flex items-center gap-3">
+                      <span className="w-1 h-1 rounded-full bg-primary opacity-0 group-data-[state=open]:opacity-100 transition-opacity" />
+                      {faq.q}
+                    </span>
                   </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground pb-4 text-[13.5px] leading-relaxed">
+                  <AccordionContent className="text-muted-foreground pb-4 text-[13.5px] leading-relaxed pl-4 border-l border-primary/20 ml-1">
                     {faq.a}
                   </AccordionContent>
                 </AccordionItem>
