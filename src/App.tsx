@@ -25,7 +25,13 @@ import MaintenanceGuard from "./components/routing/MaintenanceGuard";
 import PWATracker from "./components/layout/PWATracker";
 import UpdateToast from "./components/layout/UpdateToast";
 import { useOneSignal } from "./hooks/useOneSignal";
+import { useVersionPoll } from "./hooks/useVersionPoll";
 import { lazy, Suspense } from "react";
+
+const VersionWatcher = () => {
+  useVersionPoll();
+  return null;
+};
 
 // ─── Eagerly loaded pages (public / critical path) ───
 import Index from "./pages/Index";
@@ -259,6 +265,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <UpdateToast />
+            <VersionWatcher />
             {/* Floating widgets temporarily hidden */}
             {/* <WhatsAppChannelButton /> */}
             {/* <GlobalAISupportChat /> */}

@@ -1,11 +1,38 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
-import path from "path";
+import path from "node:path";
+import fs from "node:fs";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
+const BUILD_VERSION = String(Date.now());
+
+// Writes dist/version.json at the end of every production build.
+// The runtime polls this file to detect new deployments and auto-reload.
+function writeVersionFile() {
+  return {
+    name: "yiego-write-version-json",
+    apply: "build" as const,
+    closeBundle() {
+      const outDir = path.resolve(__dirname, "dist");
+      try {
+        if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(outDir, "version.json"),
+          JSON.stringify({ version: BUILD_VERSION, builtAt: new Date().toISOString() }),
+        );
+      } catch (err) {
+        console.warn("[version.json] write failed:", err);
+      }
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    __BUILD_VERSION__: JSON.stringify(BUILD_VERSION),
+  },
   server: {
     host: "::",
     port: 8080,
@@ -43,6 +70,7 @@ export default defineConfig(({ mode }) => ({
           /^\/supabase/,
           /^\/OneSignalSDK/,
           /^\/~oauth/,
+          /^\/version\.json/,
         ],
         runtimeCaching: [
           {
@@ -80,6 +108,7 @@ export default defineConfig(({ mode }) => ({
       },
       manifest: false, // We use our own public/manifest.json
     }),
+    writeVersionFile(),
   ].filter(Boolean),
   resolve: {
     alias: {
