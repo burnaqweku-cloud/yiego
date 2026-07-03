@@ -32,7 +32,7 @@ export default function PaymentsPromo() {
 
         <pre
           aria-hidden="true"
-          className="no-scrollbar mt-4 overflow-x-auto rounded-xl bg-ink p-3.5 font-mono text-[11px] leading-[1.8] text-white/75"
+          className="no-scrollbar mt-4 overflow-x-auto rounded-2xl bg-ink p-4 font-mono text-[11px] leading-[1.8] text-white/75"
         >
           <span className="text-white/40">{"$ "}</span>
           <span className="text-white/90">curl</span>
@@ -52,13 +52,13 @@ export default function PaymentsPromo() {
           {" currency=GHS"}
         </pre>
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           {FEATURES.map(({ icon: Icon, label }) => (
             <span
               key={label}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
+              className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
             >
-              <Icon size={14} strokeWidth={2} />
+              <Icon size={13} strokeWidth={1.75} className="text-primary" />
               {label}
             </span>
           ))}

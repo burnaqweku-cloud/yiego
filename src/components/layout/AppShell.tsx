@@ -14,7 +14,7 @@ export default function AppShell() {
 
       <div className="lg:pl-[264px]">
         <TopBar />
-        <main className="mx-auto w-full max-w-[1200px] px-4 pb-24 pt-4 lg:px-8 lg:pb-16 lg:pt-8">
+        <main className="mx-auto w-full max-w-[1240px] px-4 pb-28 pt-5 lg:px-10 lg:pb-16 lg:pt-8">
           <Outlet />
         </main>
       </div>

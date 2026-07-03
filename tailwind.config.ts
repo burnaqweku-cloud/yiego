@@ -22,6 +22,7 @@ export default {
         card: "hsl(var(--card))",
         muted: {
           DEFAULT: "hsl(var(--muted))",
+          strong: "hsl(var(--muted-strong))",
           foreground: "hsl(var(--muted-foreground))",
         },
         primary: {
@@ -52,14 +53,16 @@ export default {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 4px)",
-        sm: "calc(var(--radius) - 8px)",
+        md: "calc(var(--radius) - 5px)",
+        sm: "calc(var(--radius) - 9px)",
       },
       boxShadow: {
-        card: "0 1px 2px rgb(16 40 32 / 0.04), 0 4px 16px rgb(16 40 32 / 0.05)",
-        lift: "0 2px 4px rgb(16 40 32 / 0.05), 0 12px 28px rgb(16 40 32 / 0.10)",
-        nav: "0 -8px 24px rgb(16 40 32 / 0.06)",
-        glow: "0 18px 40px -16px hsl(var(--primary) / 0.45)",
+        /* Whisper-soft — cards lift off the near-white page by tone first,
+           shadow second. */
+        card: "0 1px 2px rgb(15 36 30 / 0.03), 0 2px 8px -4px rgb(15 36 30 / 0.05)",
+        lift: "0 2px 6px -2px rgb(15 36 30 / 0.06), 0 14px 32px -12px rgb(15 36 30 / 0.14)",
+        nav: "0 -6px 20px rgb(15 36 30 / 0.05)",
+        glow: "0 22px 50px -24px hsl(var(--primary) / 0.55)",
       },
       keyframes: {
         "fade-up": {

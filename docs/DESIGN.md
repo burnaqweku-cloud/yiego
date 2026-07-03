@@ -8,6 +8,23 @@ The bar: **Paystack-level corporate quality.** Clean, restrained, expensive-feel
 Never busy, never loud, never cheap. A developer should look at this and trust it with
 their money; a market trader should find Buy Data in 2 seconds.
 
+## v2 — Cleaner & Modern (CURRENT target)
+
+A refinement pass over v1. The guiding move: **calm the color, add air, soften depth.**
+- **Neutral-at-rest, color-on-intent.** Service & quick-action icon chips rest on `bg-muted`
+  (light neutral) with a **green icon** (`text-primary`); on hover the chip blooms to
+  `bg-primary text-white`. No more grids of saturated mint fills. The balance hero is the
+  ONE resting splash of color on the page.
+- **Softer surfaces.** Whisper-soft `shadow-card`, lighter `border`, larger radii (cards
+  `rounded-[22px]`, hero `rounded-[26px]`). Depth comes from tone (near-white page vs white
+  card) first, shadow second.
+- **More breathing room.** Section gaps `gap-6`/`lg:gap-7`, card padding `p-5 sm:p-6`,
+  generous grid `gap-y-6`.
+- **Lighter iconography.** Lucide `strokeWidth={1.75}` on tile/list icons for a refined feel.
+- **Even alignment.** Service labels reserve a 2-line box (`min-h-[2.1rem]`) so every row
+  lines up regardless of 1- or 2-line names.
+- Amounts carry meaning: activity icon chips are neutral; the green amount signals money-in.
+
 ---
 
 ## 1. Brand & palette

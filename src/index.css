@@ -8,40 +8,42 @@
    ──────────────────────────────────────────────── */
 @layer base {
   :root {
-    /* Surfaces */
-    --background: 150 25% 98%;
+    /* Surfaces — near-white with a faint cool-green cast; cards sit a hair
+       brighter than the page so depth comes from tone, not heavy shadow. */
+    --background: 156 16% 98%;
     --card: 0 0% 100%;
-    --muted: 150 16% 94%;
-    --border: 150 12% 90%;
-    --input: 150 12% 88%;
+    --muted: 156 16% 95.5%;
+    --muted-strong: 156 12% 90%;
+    --border: 152 12% 92.5%;
+    --input: 152 12% 89%;
 
     /* Text */
-    --foreground: 170 30% 10%;
-    --muted-foreground: 165 8% 40%;
+    --foreground: 174 28% 11%;
+    --muted-foreground: 168 7% 44%;
 
     /* Brand */
-    --primary: 152 60% 38%;
-    --primary-strong: 154 64% 29%;
-    --primary-soft: 150 55% 93%;
+    --primary: 152 58% 39%;
+    --primary-strong: 154 62% 30%;
+    --primary-soft: 150 46% 94%;
     --primary-foreground: 0 0% 100%;
 
     /* Deep ink (hero surfaces: balance card, sidebar accents) */
-    --ink: 172 30% 9%;
-    --ink-soft: 165 25% 16%;
+    --ink: 173 34% 8%;
+    --ink-soft: 168 26% 14%;
     --ink-foreground: 0 0% 100%;
 
     /* Accent + semantic */
     --amber: 38 95% 53%;
     --amber-soft: 40 100% 94%;
-    --success: 152 60% 38%;
-    --success-soft: 150 55% 93%;
+    --success: 152 58% 39%;
+    --success-soft: 150 46% 94%;
     --danger: 0 70% 50%;
     --danger-soft: 0 86% 96%;
     --warning: 38 95% 53%;
     --info: 205 90% 45%;
 
-    --ring: 152 60% 38%;
-    --radius: 1rem;
+    --ring: 152 58% 39%;
+    --radius: 1.15rem;
   }
 
   * {

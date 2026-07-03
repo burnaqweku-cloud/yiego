@@ -30,7 +30,8 @@ if (!executablePath) {
   process.exit(1);
 }
 
-const PORT = 9333;
+// Derive a per-process debugging port so parallel runs don't collide.
+const PORT = Number(process.env.YIEGO_SHOT_PORT) || 9300 + (process.pid % 500);
 const profileDir = mkdtempSync(join(tmpdir(), "yiego-shot-"));
 
 const proc = spawn(

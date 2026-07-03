@@ -21,12 +21,12 @@ export default function QuickActions() {
           key={label}
           type="button"
           onClick={() => comingSoonToast(label)}
-          className="group flex flex-col items-center gap-2 rounded-2xl border border-border bg-card py-3.5 shadow-card transition-all duration-150 hover:shadow-lift active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="group flex flex-col items-center gap-2.5 rounded-2xl border border-border bg-card py-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary-strong transition-colors duration-150 group-hover:bg-primary group-hover:text-primary-foreground">
-            <Icon size={20} />
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-primary transition-colors duration-200 group-hover:bg-primary group-hover:text-white">
+            <Icon size={20} strokeWidth={1.75} />
           </span>
-          <span className="text-xs font-medium text-muted-foreground transition-colors duration-150 group-hover:text-foreground">
+          <span className="text-[13px] font-medium text-muted-foreground transition-colors duration-150 group-hover:text-foreground">
             {label}
           </span>
         </button>

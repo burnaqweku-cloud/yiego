@@ -43,16 +43,9 @@ export default function RecentActivity() {
             const Icon = TX_ICONS[tx.type];
             const moneyIn = tx.amount > 0;
             return (
-              <li key={tx.id} className="flex items-center gap-3 py-3">
-                <span
-                  className={cn(
-                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                    moneyIn
-                      ? "bg-success-soft text-primary-strong"
-                      : "bg-muted text-foreground/70",
-                  )}
-                >
-                  <Icon size={18} />
+              <li key={tx.id} className="flex items-center gap-3.5 py-3.5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground/70">
+                  <Icon size={18} strokeWidth={1.75} />
                 </span>
 
                 <div className="min-w-0 flex-1">
