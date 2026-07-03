@@ -1,3 +1,110 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ────────────────────────────────────────────────
+   YieGo design tokens — single source of truth.
+   Brand: emerald green + deep ink, amber accent.
+   ──────────────────────────────────────────────── */
+@layer base {
+  :root {
+    /* Surfaces */
+    --background: 150 25% 98%;
+    --card: 0 0% 100%;
+    --muted: 150 16% 94%;
+    --border: 150 12% 90%;
+    --input: 150 12% 88%;
+
+    /* Text */
+    --foreground: 170 30% 10%;
+    --muted-foreground: 165 8% 40%;
+
+    /* Brand */
+    --primary: 152 60% 38%;
+    --primary-strong: 154 64% 29%;
+    --primary-soft: 150 55% 93%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Deep ink (hero surfaces: balance card, sidebar accents) */
+    --ink: 172 30% 9%;
+    --ink-soft: 165 25% 16%;
+    --ink-foreground: 0 0% 100%;
+
+    /* Accent + semantic */
+    --amber: 38 95% 53%;
+    --amber-soft: 40 100% 94%;
+    --success: 152 60% 38%;
+    --success-soft: 150 55% 93%;
+    --danger: 0 70% 50%;
+    --danger-soft: 0 86% 96%;
+    --warning: 38 95% 53%;
+    --info: 205 90% 45%;
+
+    --ring: 152 60% 38%;
+    --radius: 1rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    @apply bg-primary-soft text-primary-strong;
+  }
+
+  /* Subtle desktop scrollbar */
+  @media (min-width: 1024px) {
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: hsl(150 10% 82%);
+      border-radius: 8px;
+      border: 3px solid hsl(var(--background));
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: hsl(150 8% 70%);
+    }
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbars on horizontal pill/chip rows while keeping scroll */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Amount figures always align (wallet balance, transaction amounts) */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* iOS safe-area helpers */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .h-safe-bottom {
+    height: env(safe-area-inset-bottom);
+  }
+}

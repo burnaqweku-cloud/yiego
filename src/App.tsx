@@ -1,12 +1,23 @@
-const App = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-white text-gray-900">
-      <div className="text-center px-6">
-        <h1 className="text-4xl font-bold">YieGo</h1>
-        <p className="mt-3 text-gray-500">Blank project — building from scratch.</p>
-      </div>
-    </div>
-  );
-};
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Toaster } from "sonner";
+import AppShell from "@/components/layout/AppShell";
+import Dashboard from "./pages/Dashboard";
+import ComingSoon from "./pages/ComingSoon";
+
+const App = () => (
+  <BrowserRouter>
+    <Toaster position="top-center" />
+    <Routes>
+      <Route element={<AppShell />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/services" element={<ComingSoon />} />
+        <Route path="/payments" element={<ComingSoon />} />
+        <Route path="/wallet" element={<ComingSoon />} />
+        <Route path="/more" element={<ComingSoon />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  </BrowserRouter>
+);
 
 export default App;

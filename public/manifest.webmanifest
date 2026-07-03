@@ -1,13 +1,13 @@
 {
   "name": "YieGo — Your everyday digital plug",
   "short_name": "YieGo",
-  "description": "Buy data and airtime fast in Ghana — MTN, Telecel, AirtelTigo. One wallet, one tap.",
-  "start_url": "/dashboard",
+  "description": "Data, airtime, bills, payments and 20+ digital services in Ghana — one wallet, one tap.",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#0a0f0d",
-  "background_color": "#0a0f0d",
+  "theme_color": "#101e1c",
+  "background_color": "#f7faf9",
   "icons": [
     {
       "src": "/favicon.png?v=2",
