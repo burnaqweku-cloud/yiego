@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowDownToLine, Plus, Sparkles } from "lucide-react";
 import GuillocheMesh from "@/components/fx/GuillocheMesh";
-import { formatGHS } from "@/lib/format";
+import { formatGHS, formatAmountParts } from "@/lib/format";
 import { comingSoonToast } from "@/lib/toasts";
 import { useCountUp } from "@/hooks/useCountUp";
 import { MOCK_WALLET } from "@/data/mock";
@@ -10,6 +10,7 @@ import { MOCK_WALLET } from "@/data/mock";
 export default function BalanceCard() {
   const [hidden, setHidden] = useState(false);
   const animatedBalance = useCountUp(MOCK_WALLET.balance);
+  const { symbol, value } = formatAmountParts(animatedBalance);
 
   return (
     <div className="onyx-wallet group relative flex h-full flex-col overflow-hidden rounded-[26px] p-6 sm:p-7">
@@ -23,9 +24,10 @@ export default function BalanceCard() {
             Total balance
           </p>
           <div className="mt-3 flex min-w-0 items-end gap-3">
-            <span className="onyx-balance tnum">
-              {hidden ? "GH₵ ••••••" : formatGHS(animatedBalance)}
-            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="onyx-cur">{symbol}</span>
+              <span className="onyx-balance tnum">{hidden ? "••••••" : value}</span>
+            </div>
             <button
               type="button"
               onClick={() => setHidden((v) => !v)}

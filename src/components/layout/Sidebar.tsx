@@ -27,7 +27,9 @@ export default function Sidebar() {
               className={({ isActive }) =>
                 cn(
                   "onyx-navitem group flex items-center gap-3 rounded-xl px-3.5 py-3 text-[14.5px] font-medium tracking-tight",
-                  isActive ? "onyx-navitem-on" : "text-muted-foreground hover:text-foreground",
+                  isActive
+                    ? "onyx-navitem-on"
+                    : "text-muted-foreground hover:bg-white/[0.03] hover:text-foreground",
                 )
               }
             >
