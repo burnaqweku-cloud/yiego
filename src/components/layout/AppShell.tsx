@@ -1,21 +1,27 @@
 import { Outlet } from "react-router-dom";
-import TopBar from "@/components/layout/TopBar";
+import AuroraBackground from "@/components/fx/AuroraBackground";
 import Sidebar from "@/components/layout/Sidebar";
+import TopBar from "@/components/layout/TopBar";
 import BottomNav from "@/components/layout/BottomNav";
 
 /**
- * The frame of the whole product: fixed Sidebar (lg+), sticky TopBar,
- * fixed BottomNav (< lg) and a centered, padded content area.
+ * The frame of the whole product: dark canvas + ambient aurora, a fixed
+ * rail on desktop, a floating pill nav on mobile, and a padded content
+ * column with the top bar.
  */
 export default function AppShell() {
   return (
-    <div className="min-h-dvh bg-background">
-      <Sidebar />
+    <div className="onyx-canvas">
+      <AuroraBackground />
 
-      <div className="lg:pl-[264px]">
-        <TopBar />
-        <main className="mx-auto w-full max-w-[1240px] px-4 pb-28 pt-5 lg:px-10 lg:pb-16 lg:pt-8">
-          <Outlet />
+      <div className="relative z-10 mx-auto flex w-full max-w-[1440px]">
+        <Sidebar />
+
+        <main className="relative min-w-0 flex-1 px-5 pb-32 pt-6 sm:px-8 lg:px-10 lg:pb-14 lg:pt-9">
+          <TopBar />
+          <div className="mt-7">
+            <Outlet />
+          </div>
         </main>
       </div>
 

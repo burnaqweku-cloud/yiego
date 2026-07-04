@@ -1,34 +1,30 @@
 import { Smartphone, Tv, Wifi, Zap, type LucideIcon } from "lucide-react";
 import { comingSoonToast } from "@/lib/toasts";
 
-interface QuickAction {
-  label: string;
-  icon: LucideIcon;
-}
-
-const ACTIONS: QuickAction[] = [
-  { label: "Buy Data", icon: Wifi },
-  { label: "Airtime", icon: Smartphone },
-  { label: "Electricity", icon: Zap },
-  { label: "TV Subs", icon: Tv },
+const ACTIONS: { label: string; icon: LucideIcon; tint: string; hint: string }[] = [
+  { label: "Buy Data", icon: Wifi, tint: "#22C387", hint: "MTN · Telecel · AT" },
+  { label: "Airtime", icon: Smartphone, tint: "#4FD6E8", hint: "All networks" },
+  { label: "Electricity", icon: Zap, tint: "#F5B544", hint: "ECG prepaid" },
+  { label: "TV Subs", icon: Tv, tint: "#45C7C2", hint: "DStv · GOtv" },
 ];
 
 export default function QuickActions() {
   return (
-    <div className="grid grid-cols-4 gap-3">
-      {ACTIONS.map(({ label, icon: Icon }) => (
+    <div className="grid grid-cols-4 gap-3 sm:gap-4">
+      {ACTIONS.map(({ label, icon: Icon, tint, hint }) => (
         <button
           key={label}
           type="button"
+          className="onyx-quick group"
           onClick={() => comingSoonToast(label)}
-          className="group flex flex-col items-center gap-2.5 rounded-2xl border border-border bg-card py-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-primary transition-colors duration-200 group-hover:bg-primary group-hover:text-white">
-            <Icon size={20} strokeWidth={1.75} />
+          <span className="onyx-quick-icon" style={{ ["--tint" as string]: tint }}>
+            <Icon size={20} strokeWidth={2.1} />
           </span>
-          <span className="text-[13px] font-medium text-muted-foreground transition-colors duration-150 group-hover:text-foreground">
+          <span className="mt-2.5 text-[12.5px] font-semibold tracking-tight text-[#d6e2db] sm:text-[13.5px]">
             {label}
           </span>
+          <span className="mt-0.5 hidden text-[11px] text-faint-foreground sm:block">{hint}</span>
         </button>
       ))}
     </div>

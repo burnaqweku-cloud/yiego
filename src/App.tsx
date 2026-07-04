@@ -6,14 +6,14 @@ import ComingSoon from "./pages/ComingSoon";
 
 const App = () => (
   <BrowserRouter>
-    <Toaster position="top-center" />
+    <Toaster position="top-center" theme="dark" richColors={false} />
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/services" element={<ComingSoon />} />
         <Route path="/payments" element={<ComingSoon />} />
         <Route path="/wallet" element={<ComingSoon />} />
-        <Route path="/more" element={<ComingSoon />} />
+        <Route path="/account" element={<ComingSoon />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

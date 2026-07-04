@@ -7,7 +7,7 @@ const SECTION_TITLES: Record<string, string> = {
   "/services": "Services",
   "/payments": "Payments",
   "/wallet": "Wallet",
-  "/more": "More",
+  "/account": "Account",
 };
 
 export default function ComingSoon() {
@@ -15,19 +15,26 @@ export default function ComingSoon() {
   const section = SECTION_TITLES[pathname] ?? "This page";
 
   return (
-    <div className="flex min-h-[calc(100dvh-176px)] animate-fade-up flex-col items-center justify-center text-center lg:min-h-[calc(100dvh-160px)]">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary-strong">
-        <Hammer className="size-6" />
-      </div>
-      <h1 className="mt-5 font-display text-xl font-semibold tracking-tight">
+    <div className="onyx-rise flex min-h-[calc(100dvh-240px)] flex-col items-center justify-center text-center">
+      <span
+        className="grid h-16 w-16 place-items-center rounded-[20px] text-primary-glow"
+        style={{
+          background: "linear-gradient(180deg, rgba(34,195,135,0.16), rgba(34,195,135,0.04))",
+          border: "1px solid rgba(124,240,180,0.16)",
+          boxShadow: "0 18px 40px -20px rgba(34,195,135,0.5)",
+        }}
+      >
+        <Hammer size={26} />
+      </span>
+      <h1 className="mt-6 font-display text-2xl font-semibold tracking-tight text-white">
         {section} is coming soon
       </h1>
-      <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
+      <p className="mt-2.5 max-w-xs text-sm leading-relaxed text-muted-foreground">
         We're building YieGo piece by piece — this section is next on the list.
       </p>
-      <Link to="/" className={cn(buttonVariants({ variant: "soft" }), "mt-6")}>
-        <ArrowLeft />
-        Back to Overview
+      <Link to="/" className={cn(buttonVariants({ variant: "soft" }), "mt-7 gap-2")}>
+        <ArrowLeft className="h-4 w-4" />
+        Back to Home
       </Link>
     </div>
   );

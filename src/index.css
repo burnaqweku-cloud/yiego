@@ -2,47 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ────────────────────────────────────────────────
-   YieGo design tokens — single source of truth.
-   Brand: emerald green + deep ink, amber accent.
-   ──────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   YieGo · ONYX — dark-first, luminous design system.
+   Near-black canvas, emerald light as the source, precise surfaces.
+   Tokens live here; reusable "onyx-*" surface classes below.
+   ══════════════════════════════════════════════════════════════ */
 @layer base {
   :root {
-    /* Surfaces — near-white with a faint cool-green cast; cards sit a hair
-       brighter than the page so depth comes from tone, not heavy shadow. */
-    --background: 156 16% 98%;
-    --card: 0 0% 100%;
-    --muted: 156 16% 95.5%;
-    --muted-strong: 156 12% 90%;
-    --border: 152 12% 92.5%;
-    --input: 152 12% 89%;
+    color-scheme: dark;
+
+    /* Surfaces (near-black with a deep-green undertone) */
+    --background: 156 16% 4%;
+    --surface: 152 16% 6.5%;
+    --card: 150 16% 7.5%;
+    --muted: 150 10% 13%;
+    --muted-strong: 150 9% 19%;
+    --border: 150 9% 15%;
+    --input: 150 9% 18%;
 
     /* Text */
-    --foreground: 174 28% 11%;
-    --muted-foreground: 168 7% 44%;
+    --foreground: 146 26% 93%;
+    --muted-foreground: 150 8% 62%;
+    --faint-foreground: 150 9% 54%;
 
-    /* Brand */
-    --primary: 152 58% 39%;
-    --primary-strong: 154 62% 30%;
-    --primary-soft: 150 46% 94%;
-    --primary-foreground: 0 0% 100%;
-
-    /* Deep ink (hero surfaces: balance card, sidebar accents) */
-    --ink: 173 34% 8%;
-    --ink-soft: 168 26% 14%;
-    --ink-foreground: 0 0% 100%;
+    /* Brand — emerald with a luminous lime glow */
+    --primary: 157 71% 45%;
+    --primary-strong: 154 80% 36%;
+    --primary-glow: 151 78% 71%;
+    --primary-soft: 156 42% 11%;
+    --primary-foreground: 156 62% 5%;
 
     /* Accent + semantic */
-    --amber: 38 95% 53%;
-    --amber-soft: 40 100% 94%;
-    --success: 152 58% 39%;
-    --success-soft: 150 46% 94%;
-    --danger: 0 70% 50%;
-    --danger-soft: 0 86% 96%;
-    --warning: 38 95% 53%;
-    --info: 205 90% 45%;
+    --amber: 38 90% 61%;
+    --amber-soft: 38 42% 13%;
+    --success: 152 71% 55%;
+    --success-soft: 152 40% 12%;
+    --danger: 4 78% 62%;
+    --danger-soft: 4 40% 14%;
+    --info: 191 72% 60%;
 
-    --ring: 152 58% 39%;
+    --ring: 151 78% 71%;
     --radius: 1.15rem;
   }
 
@@ -53,39 +52,756 @@
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
+    background: #080b0a;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
     text-rendering: optimizeLegibility;
+    overflow-x: hidden;
   }
 
   ::selection {
-    @apply bg-primary-soft text-primary-strong;
+    background: hsl(var(--primary) / 0.28);
+    color: hsl(var(--foreground));
   }
 
-  /* Subtle desktop scrollbar */
+  /* Focus ring — luminous; follows each element's own radius. */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring) / 0.7);
+  }
+
   @media (min-width: 1024px) {
     ::-webkit-scrollbar {
-      width: 10px;
-      height: 10px;
+      width: 11px;
+      height: 11px;
     }
     ::-webkit-scrollbar-track {
       background: transparent;
     }
     ::-webkit-scrollbar-thumb {
-      background: hsl(150 10% 82%);
-      border-radius: 8px;
-      border: 3px solid hsl(var(--background));
+      background: hsl(150 8% 18%);
+      border-radius: 10px;
+      border: 3px solid #080b0a;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: hsl(150 8% 70%);
+      background: hsl(150 8% 26%);
     }
   }
 }
 
+/* ─────────────────────────────────────────────────────────────
+   ONYX surfaces & effects — reusable across components.
+   Wrapped in @layer components so Tailwind utilities (hidden,
+   responsive variants, etc.) reliably win over them.
+   ───────────────────────────────────────────────────────────── */
+@layer components {
+  /* App canvas + ambient aurora (mounted once in AppShell) */
+  .onyx-canvas {
+    position: relative;
+    min-height: 100dvh;
+    background:
+      radial-gradient(120% 90% at 78% -8%, #0d1a14 0%, rgba(13, 26, 20, 0) 46%),
+      radial-gradient(90% 70% at 8% 4%, #0a1511 0%, rgba(10, 21, 17, 0) 40%),
+      #080b0a;
+  }
+  .onyx-aurora {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .onyx-aurora span {
+    position: absolute;
+    display: block;
+    border-radius: 50%;
+    filter: blur(90px);
+  }
+  .onyx-aurora-a {
+    top: -18%;
+    right: -6%;
+    width: 46vw;
+    height: 46vw;
+    max-width: 720px;
+    max-height: 720px;
+    background: radial-gradient(circle, rgba(34, 195, 135, 0.28) 0%, rgba(34, 195, 135, 0) 68%);
+    animation: onyxFloatA 16s ease-in-out infinite;
+  }
+  .onyx-aurora-b {
+    bottom: -20%;
+    left: -10%;
+    width: 42vw;
+    height: 42vw;
+    max-width: 640px;
+    max-height: 640px;
+    background: radial-gradient(circle, rgba(79, 214, 232, 0.13) 0%, rgba(79, 214, 232, 0) 66%);
+    animation: onyxFloatB 20s ease-in-out infinite;
+  }
+  .onyx-grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.5;
+    mix-blend-mode: overlay;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.35) 0.5px, transparent 0.5px);
+    background-size: 3px 3px;
+  }
+
+  /* Elevated glass panel — the default card surface */
+  .onyx-panel {
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(180deg, rgba(15, 24, 19, 0.92) 0%, rgba(9, 14, 12, 0.92) 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 30px 60px -34px rgba(0, 0, 0, 0.8);
+  }
+
+  /* Monogram mark */
+  .onyx-monogram {
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #04120c;
+    background: linear-gradient(150deg, #7cf0b4 0%, #22c387 60%, #12a46b 100%);
+    box-shadow: 0 8px 22px -8px rgba(34, 195, 135, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  /* Rail (desktop sidebar) */
+  .onyx-rail {
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(180deg, rgba(12, 20, 16, 0.6) 0%, rgba(8, 11, 10, 0.2) 100%);
+    backdrop-filter: blur(8px);
+  }
+  .onyx-navitem {
+    position: relative;
+    border: 1px solid transparent;
+    transition: color 0.2s, background 0.2s, border-color 0.2s;
+  }
+  .onyx-navitem-on {
+    color: #fff;
+    background: linear-gradient(180deg, rgba(34, 195, 135, 0.16) 0%, rgba(34, 195, 135, 0.05) 100%);
+    border-color: rgba(124, 240, 180, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 26px -14px rgba(34, 195, 135, 0.5);
+  }
+  .onyx-navdot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #7cf0b4;
+    box-shadow: 0 0 10px #7cf0b4;
+  }
+  .onyx-railcard {
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(180deg, rgba(16, 26, 21, 0.9), rgba(10, 16, 13, 0.9));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  /* Top bar controls */
+  .onyx-search {
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    padding: 11px 14px;
+    background: rgba(12, 20, 16, 0.5);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+  .onyx-kbd {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: #6e8b7d;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 1px 7px;
+    line-height: 1.4;
+  }
+  .onyx-iconbtn {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+    color: #9baaa1;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(12, 20, 16, 0.5);
+    transition: color 0.2s, border-color 0.2s, transform 0.2s;
+  }
+  .onyx-iconbtn:hover {
+    color: #eaf2ed;
+    border-color: rgba(124, 240, 180, 0.3);
+    transform: translateY(-1px);
+  }
+  .onyx-bell-dot {
+    position: absolute;
+    top: 10px;
+    right: 11px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #f5b544;
+    box-shadow: 0 0 8px #f5b544;
+  }
+  .onyx-userchip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px 6px 6px;
+    border-radius: 40px;
+    min-height: 44px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(12, 20, 16, 0.5);
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .onyx-userchip:hover {
+    border-color: rgba(124, 240, 180, 0.3);
+    transform: translateY(-1px);
+  }
+  .onyx-avatar {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 600;
+    font-size: 12.5px;
+    color: #04120c;
+    background: linear-gradient(150deg, #7cf0b4, #22c387);
+  }
+
+  /* Buttons */
+  .onyx-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 20px;
+    border-radius: 14px;
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #04120c;
+    background: linear-gradient(180deg, #7cf0b4 0%, #22c387 100%);
+    box-shadow: 0 12px 30px -10px rgba(34, 195, 135, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transition: transform 0.18s, box-shadow 0.18s, filter 0.18s;
+  }
+  .onyx-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 40px -12px rgba(34, 195, 135, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    filter: brightness(1.04);
+  }
+  .onyx-btn-primary:active {
+    transform: translateY(0);
+  }
+  .onyx-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 20px;
+    border-radius: 14px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #d6e2db;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: border-color 0.18s, background 0.18s, transform 0.18s;
+  }
+  .onyx-btn-ghost:hover {
+    border-color: rgba(124, 240, 180, 0.35);
+    background: rgba(124, 240, 180, 0.07);
+    transform: translateY(-2px);
+  }
+
+  /* Wallet — the jewel */
+  .onyx-wallet {
+    position: relative;
+    z-index: 1;
+    border: 1px solid rgba(124, 240, 180, 0.14);
+    background: linear-gradient(157deg, #16281f 0%, #0e1b15 42%, #0a1310 100%);
+    box-shadow:
+      0 40px 80px -30px rgba(0, 0, 0, 0.85),
+      0 0 0 1px rgba(255, 255, 255, 0.02),
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      inset 0 0 60px -20px rgba(34, 195, 135, 0.28);
+  }
+  .onyx-wallet-edge {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(120deg, rgba(124, 240, 180, 0.5), transparent 30%, transparent 70%, rgba(34, 195, 135, 0.28));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    padding: 1px;
+    opacity: 0.6;
+  }
+  .onyx-wallet-sheen {
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 55%;
+    height: 100%;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.1) 45%, rgba(124, 240, 180, 0.14) 52%, transparent);
+    transform: skewX(-16deg);
+    transition: left 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .onyx-wallet:hover .onyx-wallet-sheen {
+    left: 120%;
+  }
+  .onyx-wallet-mono {
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 700;
+    font-size: 30px;
+    letter-spacing: -0.03em;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(124, 240, 180, 0.3);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+    opacity: 0.9;
+  }
+  .onyx-balance {
+    font-family: "Space Grotesk", sans-serif;
+    font-size: clamp(32px, 8vw, 52px);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: #f2fbf6;
+    text-shadow: 0 0 32px rgba(124, 240, 180, 0.28), 0 2px 4px rgba(0, 0, 0, 0.4);
+  }
+  .onyx-eye {
+    position: relative;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #7cf0b4;
+    padding: 4px 11px;
+    border-radius: 40px;
+    min-height: 30px;
+    border: 1px solid rgba(124, 240, 180, 0.22);
+    background: rgba(124, 240, 180, 0.06);
+    transition: background 0.2s;
+  }
+  .onyx-eye::before {
+    content: "";
+    position: absolute;
+    inset: -7px;
+  }
+  .onyx-eye:hover {
+    background: rgba(124, 240, 180, 0.14);
+  }
+  .onyx-cashback {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #c8d6ce;
+    padding: 5px 12px;
+    border-radius: 40px;
+    border: 1px solid rgba(245, 181, 68, 0.22);
+    background: linear-gradient(90deg, rgba(245, 181, 68, 0.1), rgba(245, 181, 68, 0.02));
+  }
+  .onyx-cashback strong {
+    font-weight: 700;
+    color: #f5b544;
+    font-family: "Space Grotesk", sans-serif;
+  }
+  .onyx-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #3fdd9a;
+    box-shadow: 0 0 8px #3fdd9a;
+    animation: onyxPulse 2s ease-in-out infinite;
+  }
+
+  /* Flow panel */
+  .onyx-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #3fdd9a;
+    padding: 4px 10px;
+    border-radius: 40px;
+    background: rgba(63, 221, 154, 0.1);
+    border: 1px solid rgba(63, 221, 154, 0.2);
+  }
+  .onyx-bar {
+    flex: 1;
+    min-width: 0;
+    border-radius: 4px 4px 2px 2px;
+    background: linear-gradient(180deg, #4bd39a 0%, #22c387 55%, rgba(34, 195, 135, 0.12) 100%);
+    transform-origin: bottom;
+    animation: onyxGrow 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .onyx-bar:last-child {
+    background: linear-gradient(180deg, #7fe6b6 0%, #22c387 60%, rgba(34, 195, 135, 0.18) 100%);
+    box-shadow: 0 0 10px -3px rgba(124, 240, 180, 0.4);
+  }
+  .onyx-flowstat {
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  /* Quick actions */
+  .onyx-quick {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 96px;
+    border-radius: 18px;
+    padding: 14px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(180deg, rgba(16, 26, 21, 0.85), rgba(9, 14, 12, 0.85));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+  .onyx-quick:hover {
+    transform: translateY(-3px);
+    border-color: rgba(124, 240, 180, 0.3);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 34px -18px rgba(34, 195, 135, 0.5);
+  }
+  .onyx-quick-icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    color: var(--tint);
+    background: color-mix(in srgb, var(--tint) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tint) 34%, transparent);
+    box-shadow: 0 0 18px -6px var(--tint);
+    transition: transform 0.2s;
+  }
+  .onyx-quick:hover .onyx-quick-icon {
+    transform: scale(1.08);
+  }
+
+  /* Category pills */
+  .onyx-pill {
+    position: relative;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #8a988f;
+    padding: 9px 16px;
+    border-radius: 40px;
+    min-height: 40px;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.02);
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .onyx-pill::before {
+    content: "";
+    position: absolute;
+    inset: -2px 0;
+  }
+  .onyx-pill:hover {
+    color: #eaf2ed;
+    border-color: rgba(124, 240, 180, 0.25);
+  }
+  .onyx-pill-on {
+    color: #04120c;
+    border-color: transparent;
+    background: linear-gradient(180deg, #7cf0b4, #22c387);
+    box-shadow: 0 8px 20px -8px rgba(34, 195, 135, 0.6);
+  }
+
+  /* Service tiles */
+  .onyx-tile {
+    position: relative;
+    text-align: left;
+    overflow: hidden;
+    border-radius: 18px;
+    padding: 16px;
+    min-height: 130px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(180deg, rgba(15, 24, 19, 0.9), rgba(9, 14, 12, 0.9));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    animation: onyxRise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .onyx-tile:hover {
+    transform: translateY(-3px);
+    border-color: rgba(124, 240, 180, 0.28);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 20px 40px -20px rgba(34, 195, 135, 0.45);
+  }
+  .onyx-tile-icon {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    color: #7cf0b4;
+    background: linear-gradient(180deg, rgba(34, 195, 135, 0.16), rgba(34, 195, 135, 0.04));
+    border: 1px solid rgba(124, 240, 180, 0.16);
+    transition: transform 0.2s;
+  }
+  .onyx-tile:hover .onyx-tile-icon {
+    transform: scale(1.06);
+  }
+  .onyx-tile-go {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    color: #5c7a6c;
+    opacity: 0;
+    transform: translate(4px, 4px);
+    transition: opacity 0.2s, transform 0.2s, color 0.2s;
+  }
+  .onyx-tile:hover .onyx-tile-go {
+    opacity: 1;
+    transform: none;
+    color: #7cf0b4;
+  }
+  .onyx-badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 40px;
+  }
+  .onyx-badge.is-new {
+    color: #04120c;
+    background: linear-gradient(90deg, #7cf0b4, #22c387);
+  }
+  .onyx-badge.is-pop {
+    color: #f5b544;
+    background: rgba(245, 181, 68, 0.12);
+    border: 1px solid rgba(245, 181, 68, 0.28);
+  }
+
+  /* Developer terminal card */
+  .onyx-dev {
+    position: relative;
+    z-index: 1;
+    border: 1px solid rgba(124, 240, 180, 0.12);
+    background: linear-gradient(160deg, #0f1b15 0%, #0a1310 60%, #090d0b 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 30px 60px -34px rgba(0, 0, 0, 0.8);
+  }
+  .onyx-dev-glow {
+    position: absolute;
+    top: -30%;
+    right: -10%;
+    width: 340px;
+    height: 340px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(34, 195, 135, 0.22), transparent 66%);
+    filter: blur(10px);
+  }
+  .onyx-terminal {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #06100c;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 20px 40px -24px rgba(0, 0, 0, 0.8);
+  }
+  .onyx-terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .onyx-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .onyx-copy {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #9baaa1;
+    padding: 5px 10px;
+    border-radius: 8px;
+    min-height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(255, 255, 255, 0.03);
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .onyx-copy::before {
+    content: "";
+    position: absolute;
+    inset: -7px;
+  }
+  .onyx-copy:hover {
+    color: #7cf0b4;
+    border-color: rgba(124, 240, 180, 0.3);
+  }
+  .onyx-code {
+    margin: 0;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    line-height: 1.85;
+    color: #b7c6be;
+    white-space: pre;
+  }
+
+  /* Ghost link */
+  .onyx-ghostlink {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #7cf0b4;
+    min-height: 44px;
+    transition: opacity 0.2s;
+  }
+  .onyx-ghostlink:hover {
+    opacity: 0.75;
+  }
+
+  /* Activity rows */
+  .onyx-txrow {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 13px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .onyx-txrow:last-child {
+    border-bottom: 0;
+  }
+  .onyx-tx-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .onyx-tx-icon.is-in {
+    color: #3fdd9a;
+    background: rgba(63, 221, 154, 0.1);
+    border-color: rgba(63, 221, 154, 0.2);
+  }
+  .onyx-tx-icon.is-out {
+    color: #b7c6be;
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .onyx-status-ok {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #8a988f;
+  }
+  .onyx-status-pending {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #f5b544;
+    padding: 2px 8px;
+    border-radius: 40px;
+    margin-top: 2px;
+    background: rgba(245, 181, 68, 0.1);
+    border: 1px solid rgba(245, 181, 68, 0.24);
+  }
+
+  /* Mobile bottom nav — floating pill */
+  .onyx-bottomnav {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 40;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    padding: 8px 6px;
+    border-radius: 22px;
+    border: 1px solid rgba(124, 240, 180, 0.12);
+    background: linear-gradient(180deg, rgba(16, 26, 21, 0.92), rgba(9, 14, 12, 0.96));
+    backdrop-filter: blur(18px);
+    box-shadow: 0 20px 50px -18px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  .onyx-bn-item {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-height: 54px;
+    padding: 6px 2px;
+    border-radius: 14px;
+    font-size: 10.5px;
+    font-weight: 600;
+    transition: transform 0.15s;
+  }
+  .onyx-bn-item:active {
+    transform: scale(0.94);
+  }
+  .onyx-bn-glow {
+    position: absolute;
+    top: 4px;
+    width: 26px;
+    height: 3px;
+    border-radius: 40px;
+    background: #7cf0b4;
+    box-shadow: 0 0 12px #7cf0b4;
+  }
+
+  /* Shared entrance */
+  .onyx-rise {
+    animation: onyxRise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+}
+
+@keyframes onyxFloatA {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-3%, 4%) scale(1.08); }
+}
+@keyframes onyxFloatB {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(4%, -3%) scale(1.1); }
+}
+@keyframes onyxPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@keyframes onyxGrow {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+@keyframes onyxRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onyx-canvas *,
+  .onyx-aurora span,
+  .onyx-rise,
+  .onyx-bar {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 @layer utilities {
-  /* Hide scrollbars on horizontal pill/chip rows while keeping scroll */
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -93,20 +809,13 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-
-  /* Amount figures always align (wallet balance, transaction amounts) */
   .tnum {
     font-variant-numeric: tabular-nums;
   }
-
-  /* iOS safe-area helpers */
   .pt-safe {
     padding-top: env(safe-area-inset-top);
   }
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
-  }
-  .h-safe-bottom {
-    height: env(safe-area-inset-bottom);
   }
 }

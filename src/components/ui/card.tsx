@@ -1,14 +1,10 @@
 import { forwardRef, type HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-/** Standard white surface. Sections of the dashboard live in these. */
+/** The default elevated glass surface (Onyx panel). */
 const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn("rounded-[22px] border border-border bg-card shadow-card", className)}
-      {...props}
-    />
+    <div ref={ref} className={cn("onyx-panel rounded-[22px]", className)} {...props} />
   ),
 );
 Card.displayName = "Card";
@@ -28,7 +24,7 @@ const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingEleme
   ({ className, ...props }, ref) => (
     <h2
       ref={ref}
-      className={cn("font-display text-base font-semibold tracking-tight", className)}
+      className={cn("font-display text-[17px] font-semibold tracking-tight text-white", className)}
       {...props}
     />
   ),

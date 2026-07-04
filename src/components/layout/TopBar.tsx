@@ -1,98 +1,61 @@
-import { useLocation } from "react-router-dom";
-import { Bell, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { comingSoonToast } from "@/lib/toasts";
+import { NavLink } from "react-router-dom";
+import { Bell, Search, ShieldCheck } from "lucide-react";
+import Monogram from "@/components/brand/Monogram";
 import { MOCK_USER } from "@/data/mock";
-
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
-
-const dateFormatter = new Intl.DateTimeFormat("en-GH", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-});
-
-const PAGE_TITLES: Record<string, string> = {
-  "/": "Overview",
-  "/services": "Services",
-  "/payments": "Payments",
-  "/wallet": "Wallet",
-  "/more": "More",
-};
-
-function BellButton() {
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      aria-label="Notifications"
-      onClick={() => comingSoonToast("Notifications")}
-      className="relative h-11 w-11 rounded-full [&_svg]:size-5"
-    >
-      <Bell />
-      <span
-        aria-hidden
-        className="absolute right-2.5 top-2 h-2 w-2 rounded-full bg-primary ring-2 ring-background"
-      />
-    </Button>
-  );
-}
-
-function Avatar({ className = "h-10 w-10 text-sm" }: { className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={`flex shrink-0 select-none items-center justify-center rounded-full bg-primary-soft font-bold text-primary-strong ${className}`}
-    >
-      {MOCK_USER.initials}
-    </span>
-  );
-}
+import { comingSoonToast } from "@/lib/toasts";
 
 export default function TopBar() {
-  const { pathname } = useLocation();
-  const greeting = getGreeting();
-  const today = dateFormatter.format(new Date());
-  const title = PAGE_TITLES[pathname] ?? "Overview";
-
   return (
-    <header className="pt-safe sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md">
-      {/* Mobile */}
-      <div className="flex h-16 items-center gap-3 px-4 lg:hidden">
-        <Avatar />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-[15px] font-semibold tracking-tight">
-            {greeting}, {MOCK_USER.firstName} <span aria-hidden>👋</span>
-          </p>
-          <p className="truncate text-xs text-muted-foreground">{today}</p>
+    <header className="flex items-center gap-3 sm:gap-4">
+      {/* Mobile brand */}
+      <NavLink to="/" className="flex items-center gap-2.5 lg:hidden" aria-label="YieGo — Home">
+        <Monogram size={38} />
+        <div className="leading-tight">
+          <p className="font-display text-[16px] font-semibold tracking-tight text-white">YieGo</p>
+          <p className="text-[10px] text-faint-foreground">Your everyday digital plug</p>
         </div>
-        <BellButton />
-      </div>
+      </NavLink>
 
-      {/* Desktop */}
-      <div className="mx-auto hidden h-16 max-w-[1200px] items-center gap-6 px-8 lg:flex">
-        <h1 className="font-display text-lg font-semibold tracking-tight">{title}</h1>
+      {/* Desktop search (decorative) */}
+      <button
+        type="button"
+        onClick={() => comingSoonToast("Search")}
+        aria-label="Search services"
+        className="onyx-search ml-auto hidden max-w-[400px] flex-1 items-center gap-2.5 lg:flex"
+      >
+        <Search size={17} className="text-faint-foreground" />
+        <span className="flex-1 text-left text-[14px] text-[#5c6b63]">
+          Search services, pay a bill…
+        </span>
+        <kbd className="onyx-kbd">/</kbd>
+      </button>
 
-        <div className="flex min-w-0 flex-1 justify-center">
-          <div className="flex h-10 w-full max-w-md items-center gap-2.5 rounded-full bg-muted px-4 text-muted-foreground">
-            <Search className="size-4 shrink-0" />
-            <span className="truncate text-sm">Search services, transactions…</span>
-            <kbd className="ml-auto shrink-0 rounded-md border border-border bg-card px-1.5 py-px font-sans text-[11px] font-medium text-muted-foreground">
-              ⌘K
-            </kbd>
-          </div>
-        </div>
+      <button
+        type="button"
+        onClick={() => comingSoonToast("Notifications")}
+        aria-label="Notifications"
+        className="onyx-iconbtn relative ml-auto lg:ml-0"
+      >
+        <Bell size={18} />
+        <span className="onyx-bell-dot" aria-hidden="true" />
+      </button>
 
-        <div className="flex shrink-0 items-center gap-3">
-          <BellButton />
-          <Avatar className="h-9 w-9 text-[13px]" />
-        </div>
-      </div>
+      <button
+        type="button"
+        onClick={() => comingSoonToast("Account")}
+        aria-label={`Account: ${MOCK_USER.firstName} ${MOCK_USER.lastName}`}
+        className="onyx-userchip"
+      >
+        <span className="onyx-avatar">{MOCK_USER.initials}</span>
+        <span className="hidden text-left leading-tight sm:block">
+          <span className="block text-[13px] font-semibold tracking-tight text-foreground">
+            {MOCK_USER.firstName} {MOCK_USER.lastName}
+          </span>
+          <span className="flex items-center gap-1 text-[11px] text-primary-glow">
+            <ShieldCheck size={11} /> Verified
+          </span>
+        </span>
+      </button>
     </header>
   );
 }

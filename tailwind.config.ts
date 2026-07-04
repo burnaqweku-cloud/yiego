@@ -1,24 +1,28 @@
 import type { Config } from "tailwindcss";
 
 export default {
+  darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     container: {
       center: true,
       padding: "1rem",
-      screens: { "2xl": "1200px" },
+      screens: { "2xl": "1240px" },
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
-        display: ["Sora", "Inter", "system-ui", "sans-serif"],
+        sans: ["Manrope", "Inter", "system-ui", "-apple-system", "sans-serif"],
+        display: ["Space Grotesk", "Manrope", "system-ui", "sans-serif"],
+        mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
+        surface: "hsl(var(--surface))",
         foreground: "hsl(var(--foreground))",
+        "faint-foreground": "hsl(var(--faint-foreground))",
         card: "hsl(var(--card))",
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -28,13 +32,9 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           strong: "hsl(var(--primary-strong))",
+          glow: "hsl(var(--primary-glow))",
           soft: "hsl(var(--primary-soft))",
           foreground: "hsl(var(--primary-foreground))",
-        },
-        ink: {
-          DEFAULT: "hsl(var(--ink))",
-          soft: "hsl(var(--ink-soft))",
-          foreground: "hsl(var(--ink-foreground))",
         },
         amber: {
           DEFAULT: "hsl(var(--amber))",
@@ -48,7 +48,6 @@ export default {
           DEFAULT: "hsl(var(--danger))",
           soft: "hsl(var(--danger-soft))",
         },
-        warning: "hsl(var(--warning))",
         info: "hsl(var(--info))",
       },
       borderRadius: {
@@ -57,31 +56,22 @@ export default {
         sm: "calc(var(--radius) - 9px)",
       },
       boxShadow: {
-        /* Whisper-soft — cards lift off the near-white page by tone first,
-           shadow second. */
-        card: "0 1px 2px rgb(15 36 30 / 0.03), 0 2px 8px -4px rgb(15 36 30 / 0.05)",
-        lift: "0 2px 6px -2px rgb(15 36 30 / 0.06), 0 14px 32px -12px rgb(15 36 30 / 0.14)",
-        nav: "0 -6px 20px rgb(15 36 30 / 0.05)",
-        glow: "0 22px 50px -24px hsl(var(--primary) / 0.55)",
+        panel: "inset 0 1px 0 rgb(255 255 255 / 0.05), 0 30px 60px -34px rgb(0 0 0 / 0.8)",
+        glow: "0 12px 30px -10px hsl(var(--primary) / 0.55)",
       },
       keyframes: {
         "fade-up": {
-          from: { opacity: "0", transform: "translateY(10px)" },
+          from: { opacity: "0", transform: "translateY(12px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         "fade-in": {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
-        "scale-in": {
-          from: { opacity: "0", transform: "scale(0.96)" },
-          to: { opacity: "1", transform: "scale(1)" },
-        },
       },
       animation: {
-        "fade-up": "fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "fade-up": "fade-up 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both",
         "fade-in": "fade-in 0.4s ease-out both",
-        "scale-in": "scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both",
       },
     },
   },
