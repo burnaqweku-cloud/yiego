@@ -20,12 +20,8 @@ import SectionHeader from "@/components/ui/section-header";
 import StatTile from "@/components/ui/stat-tile";
 import ListRow from "@/components/ui/list-row";
 import BalanceCard from "@/components/dashboard/BalanceCard";
-import {
-  MOCK_TRANSACTIONS_ALL,
-  type MockTransaction,
-  type TxType,
-  type TxGroup,
-} from "@/data/mock";
+import { type MockTransaction, type TxType, type TxGroup } from "@/data/mock";
+import { useWallet } from "@/store/wallet";
 import { formatSigned } from "@/lib/format";
 import { comingSoonToast } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
@@ -113,9 +109,15 @@ function TxRow({ t }: { t: MockTransaction }) {
 }
 
 export default function Wallet() {
+  const { transactions } = useWallet();
   const [filter, setFilter] = useState<Filter>("all");
 
-  const visible = MOCK_TRANSACTIONS_ALL.filter((t) => matchesFilter(t, filter));
+  const visible = transactions.filter((t) => matchesFilter(t, filter));
+
+  const recentTx = transactions.filter((t) => t.group !== "Earlier");
+  const inflow = recentTx.filter((t) => t.amount > 0).reduce((a, t) => a + t.amount, 0);
+  const outflow = recentTx.filter((t) => t.amount < 0).reduce((a, t) => a + Math.abs(t.amount), 0);
+  const compact = (n: number) => "GH₵" + Math.round(n).toLocaleString("en-GH");
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -135,8 +137,8 @@ export default function Wallet() {
         className="onyx-rise grid grid-cols-3 gap-2.5 sm:gap-3"
         style={{ animationDelay: "120ms" }}
       >
-        <StatTile size="sm" label="In · 30d" value="GH₵1,420" delta="+ money in" tone="up" />
-        <StatTile size="sm" label="Out · 30d" value="GH₵989" delta="spent" tone="down" />
+        <StatTile size="sm" label="In" value={compact(inflow)} delta="money in" tone="up" />
+        <StatTile size="sm" label="Out" value={compact(outflow)} delta="spent" tone="down" />
         <StatTile size="sm" label="Cashback" value="GH₵12.50" delta="earned" tone="muted" />
       </section>
 

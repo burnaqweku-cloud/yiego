@@ -1,16 +1,15 @@
 import { ArrowUpRight } from "lucide-react";
 import { formatGHS } from "@/lib/format";
-import { MOCK_TRANSACTIONS } from "@/data/mock";
+import { useWallet } from "@/store/wallet";
 
 const BARS = [42, 55, 38, 64, 49, 72, 58, 81, 66, 90, 74, 96];
 
 /** "This week" money-flow panel — fills the space beside the wallet. */
 export default function FlowPanel() {
-  const inflow = MOCK_TRANSACTIONS.filter((t) => t.amount > 0).reduce((a, t) => a + t.amount, 0);
-  const outflow = MOCK_TRANSACTIONS.filter((t) => t.amount < 0).reduce(
-    (a, t) => a + Math.abs(t.amount),
-    0,
-  );
+  const { transactions } = useWallet();
+  const recent = transactions.filter((t) => t.group !== "Earlier");
+  const inflow = recent.filter((t) => t.amount > 0).reduce((a, t) => a + t.amount, 0);
+  const outflow = recent.filter((t) => t.amount < 0).reduce((a, t) => a + Math.abs(t.amount), 0);
 
   return (
     <div className="onyx-panel flex flex-col rounded-[26px] p-6">

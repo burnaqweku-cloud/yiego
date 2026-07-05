@@ -4,6 +4,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import SectionHeader from "@/components/ui/section-header";
 import { SERVICES, CATEGORIES, type CategoryId } from "@/data/services";
 import { comingSoonToast } from "@/lib/toasts";
+import { useFlows } from "@/store/flows";
 import { cn } from "@/lib/utils";
 
 type FilterId = CategoryId | "all";
@@ -43,6 +44,7 @@ export default function Services() {
 
   const total = matches.length;
   const activeCategory = filter === "all" ? null : CATEGORIES.find((c) => c.id === filter);
+  const { openBuyData } = useFlows();
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -144,7 +146,7 @@ export default function Services() {
                     type="button"
                     className="onyx-tile group"
                     style={{ animationDelay: `${Math.min(i * 22, 260)}ms` }}
-                    onClick={() => comingSoonToast(s.name)}
+                    onClick={() => (s.id === "data" ? openBuyData() : comingSoonToast(s.name))}
                   >
                     <div className="flex items-start justify-between">
                       <span className="onyx-tile-icon">

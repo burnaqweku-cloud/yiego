@@ -4,12 +4,15 @@ import GuillocheMesh from "@/components/fx/GuillocheMesh";
 import { formatGHS, formatAmountParts } from "@/lib/format";
 import { comingSoonToast } from "@/lib/toasts";
 import { useCountUp } from "@/hooks/useCountUp";
-import { MOCK_WALLET } from "@/data/mock";
+import { useWallet, CASHBACK } from "@/store/wallet";
+import { useFlows } from "@/store/flows";
 
 /** The wallet — a machined-metal jewel and the one splash of light on the page. */
 export default function BalanceCard() {
+  const { balance } = useWallet();
+  const { openAddMoney } = useFlows();
   const [hidden, setHidden] = useState(false);
-  const animatedBalance = useCountUp(MOCK_WALLET.balance);
+  const animatedBalance = useCountUp(balance);
   const { symbol, value } = formatAmountParts(animatedBalance);
 
   return (
@@ -40,7 +43,7 @@ export default function BalanceCard() {
 
           <div className="onyx-cashback mt-3.5">
             <Sparkles size={13} className="text-amber" />
-            <strong className="tnum">{formatGHS(MOCK_WALLET.cashback)}</strong> cashback earned
+            <strong className="tnum">{formatGHS(CASHBACK)}</strong> cashback earned
           </div>
         </div>
 
@@ -53,7 +56,7 @@ export default function BalanceCard() {
         <button
           type="button"
           className="onyx-btn-primary flex-1"
-          onClick={() => comingSoonToast("Add Money")}
+          onClick={openAddMoney}
         >
           <Plus size={17} strokeWidth={2.4} />
           Add Money

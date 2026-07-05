@@ -1,5 +1,6 @@
 import { Smartphone, Tv, Wifi, Zap, type LucideIcon } from "lucide-react";
 import { comingSoonToast } from "@/lib/toasts";
+import { useFlows } from "@/store/flows";
 
 const ACTIONS: { label: string; icon: LucideIcon; tint: string; hint: string }[] = [
   { label: "Buy Data", icon: Wifi, tint: "#22C387", hint: "MTN · Telecel · AT" },
@@ -9,6 +10,7 @@ const ACTIONS: { label: string; icon: LucideIcon; tint: string; hint: string }[]
 ];
 
 export default function QuickActions() {
+  const { openBuyData } = useFlows();
   return (
     <div className="grid grid-cols-4 gap-3 sm:gap-4">
       {ACTIONS.map(({ label, icon: Icon, tint, hint }) => (
@@ -16,7 +18,7 @@ export default function QuickActions() {
           key={label}
           type="button"
           className="onyx-quick group"
-          onClick={() => comingSoonToast(label)}
+          onClick={() => (label === "Buy Data" ? openBuyData() : comingSoonToast(label))}
         >
           <span className="onyx-quick-icon" style={{ ["--tint" as string]: tint }}>
             <Icon size={20} strokeWidth={2.1} />

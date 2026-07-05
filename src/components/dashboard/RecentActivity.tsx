@@ -1,10 +1,12 @@
 import { ArrowDownToLine, ArrowUpRight, ChevronRight, Clock } from "lucide-react";
 import { formatSigned } from "@/lib/format";
 import { comingSoonToast } from "@/lib/toasts";
-import { MOCK_TRANSACTIONS } from "@/data/mock";
+import { useWallet } from "@/store/wallet";
 import { cn } from "@/lib/utils";
 
 export default function RecentActivity() {
+  const { transactions } = useWallet();
+  const recent = transactions.slice(0, 5);
   return (
     <div className="onyx-panel rounded-[26px] p-6">
       <div className="flex items-center justify-between">
@@ -21,7 +23,7 @@ export default function RecentActivity() {
       </div>
 
       <ul className="mt-4 flex flex-col">
-        {MOCK_TRANSACTIONS.map((t) => {
+        {recent.map((t) => {
           const isIn = t.amount > 0;
           const pending = t.status === "pending";
           return (

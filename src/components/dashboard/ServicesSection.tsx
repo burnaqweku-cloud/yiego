@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
 import { SERVICES, CATEGORIES, type CategoryId } from "@/data/services";
 import { comingSoonToast } from "@/lib/toasts";
+import { useFlows } from "@/store/flows";
 import { cn } from "@/lib/utils";
 
 type FilterId = CategoryId | "all";
@@ -13,6 +14,7 @@ const TABS: { id: FilterId; label: string }[] = [
 ];
 
 export default function ServicesSection() {
+  const { openBuyData } = useFlows();
   const [filter, setFilter] = useState<FilterId>("all");
   const services = useMemo(
     () => (filter === "all" ? SERVICES : SERVICES.filter((s) => s.category === filter)),
@@ -63,7 +65,7 @@ export default function ServicesSection() {
             type="button"
             className="onyx-tile group"
             style={{ animationDelay: `${Math.min(i * 22, 260)}ms` }}
-            onClick={() => comingSoonToast(s.name)}
+            onClick={() => (s.id === "data" ? openBuyData() : comingSoonToast(s.name))}
           >
             <div className="flex items-start justify-between">
               <span className="onyx-tile-icon">
