@@ -2,6 +2,9 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { WalletProvider } from "@/store/wallet";
 import { LinksProvider } from "@/store/links";
+import { ProfileProvider } from "@/store/profile";
+import { MethodsProvider } from "@/store/methods";
+import { NoticesProvider } from "@/store/notices";
 import { FlowsProvider } from "@/store/flows";
 import AppShell from "@/components/layout/AppShell";
 import Dashboard from "./pages/Dashboard";
@@ -14,6 +17,9 @@ const App = () => (
   <BrowserRouter>
     <WalletProvider>
       <LinksProvider>
+      <ProfileProvider>
+      <MethodsProvider>
+      <NoticesProvider>
       <FlowsProvider>
         <Toaster position="top-center" theme="dark" richColors={false} />
         <Routes>
@@ -27,6 +33,9 @@ const App = () => (
           </Route>
         </Routes>
       </FlowsProvider>
+      </NoticesProvider>
+      </MethodsProvider>
+      </ProfileProvider>
       </LinksProvider>
     </WalletProvider>
   </BrowserRouter>
