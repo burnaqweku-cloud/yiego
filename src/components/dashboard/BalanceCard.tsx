@@ -2,7 +2,6 @@ import { useState } from "react";
 import { ArrowDownToLine, Plus, Sparkles } from "lucide-react";
 import GuillocheMesh from "@/components/fx/GuillocheMesh";
 import { formatGHS, formatAmountParts } from "@/lib/format";
-import { comingSoonToast } from "@/lib/toasts";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useWallet, CASHBACK } from "@/store/wallet";
 import { useFlows } from "@/store/flows";
@@ -10,7 +9,7 @@ import { useFlows } from "@/store/flows";
 /** The wallet — a machined-metal jewel and the one splash of light on the page. */
 export default function BalanceCard() {
   const { balance } = useWallet();
-  const { openAddMoney } = useFlows();
+  const { openAddMoney, openWithdraw } = useFlows();
   const [hidden, setHidden] = useState(false);
   const animatedBalance = useCountUp(balance);
   const { symbol, value } = formatAmountParts(animatedBalance);
@@ -61,11 +60,7 @@ export default function BalanceCard() {
           <Plus size={17} strokeWidth={2.4} />
           Add Money
         </button>
-        <button
-          type="button"
-          className="onyx-btn-ghost flex-1"
-          onClick={() => comingSoonToast("Withdraw")}
-        >
+        <button type="button" className="onyx-btn-ghost flex-1" onClick={openWithdraw}>
           <ArrowDownToLine size={17} strokeWidth={2.2} />
           Withdraw
         </button>

@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ArrowUpRight, Check, Code2, Copy } from "lucide-react";
-import { comingSoonToast } from "@/lib/toasts";
+import { useFlows } from "@/store/flows";
 
 const SNIPPET = `curl https://api.yiego.com/v1/links \\
   -H "Authorization: Bearer sk_live_••••" \\
@@ -11,6 +12,8 @@ const SNIPPET = `curl https://api.yiego.com/v1/links \\
 /** The Paystack-style payments + developer pillar — a real terminal, real trust. */
 export default function DeveloperCard() {
   const [copied, setCopied] = useState(false);
+  const { openCreateLink } = useFlows();
+  const navigate = useNavigate();
 
   const copy = () => {
     navigator.clipboard?.writeText(SNIPPET).catch(() => {});
@@ -63,11 +66,11 @@ export default function DeveloperCard() {
       </div>
 
       <div className="relative mt-5 flex flex-wrap gap-3">
-        <button type="button" className="onyx-btn-primary" onClick={() => comingSoonToast("Payment links")}>
+        <button type="button" className="onyx-btn-primary" onClick={openCreateLink}>
           Create payment link
           <ArrowUpRight size={16} strokeWidth={2.4} />
         </button>
-        <button type="button" className="onyx-btn-ghost" onClick={() => comingSoonToast("API docs")}>
+        <button type="button" className="onyx-btn-ghost" onClick={() => navigate("/payments")}>
           API docs
         </button>
       </div>

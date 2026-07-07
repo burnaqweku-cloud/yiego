@@ -1,24 +1,23 @@
 import { Smartphone, Tv, Wifi, Zap, type LucideIcon } from "lucide-react";
-import { comingSoonToast } from "@/lib/toasts";
 import { useFlows } from "@/store/flows";
 
-const ACTIONS: { label: string; icon: LucideIcon; tint: string; hint: string }[] = [
-  { label: "Buy Data", icon: Wifi, tint: "#22C387", hint: "MTN · Telecel · AT" },
-  { label: "Airtime", icon: Smartphone, tint: "#4FD6E8", hint: "All networks" },
-  { label: "Electricity", icon: Zap, tint: "#F5B544", hint: "ECG prepaid" },
-  { label: "TV Subs", icon: Tv, tint: "#45C7C2", hint: "DStv · GOtv" },
+const ACTIONS: { label: string; serviceId: string; icon: LucideIcon; tint: string; hint: string }[] = [
+  { label: "Buy Data", serviceId: "data", icon: Wifi, tint: "#22C387", hint: "MTN · Telecel · AT" },
+  { label: "Airtime", serviceId: "airtime", icon: Smartphone, tint: "#4FD6E8", hint: "All networks" },
+  { label: "Electricity", serviceId: "electricity", icon: Zap, tint: "#F5B544", hint: "ECG prepaid" },
+  { label: "TV Subs", serviceId: "tv", icon: Tv, tint: "#45C7C2", hint: "DStv · GOtv" },
 ];
 
 export default function QuickActions() {
-  const { openBuyData } = useFlows();
+  const { openService } = useFlows();
   return (
     <div className="grid grid-cols-4 gap-3 sm:gap-4">
-      {ACTIONS.map(({ label, icon: Icon, tint, hint }) => (
+      {ACTIONS.map(({ label, serviceId, icon: Icon, tint, hint }) => (
         <button
           key={label}
           type="button"
           className="onyx-quick group"
-          onClick={() => (label === "Buy Data" ? openBuyData() : comingSoonToast(label))}
+          onClick={() => openService(serviceId)}
         >
           <span className="onyx-quick-icon" style={{ ["--tint" as string]: tint }}>
             <Icon size={20} strokeWidth={2.1} />

@@ -3,7 +3,6 @@ import { ArrowUpRight, Search, SearchX, X } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import SectionHeader from "@/components/ui/section-header";
 import { SERVICES, CATEGORIES, type CategoryId } from "@/data/services";
-import { comingSoonToast } from "@/lib/toasts";
 import { useFlows } from "@/store/flows";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +43,7 @@ export default function Services() {
 
   const total = matches.length;
   const activeCategory = filter === "all" ? null : CATEGORIES.find((c) => c.id === filter);
-  const { openBuyData } = useFlows();
+  const { openService } = useFlows();
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -146,7 +145,7 @@ export default function Services() {
                     type="button"
                     className="onyx-tile group"
                     style={{ animationDelay: `${Math.min(i * 22, 260)}ms` }}
-                    onClick={() => (s.id === "data" ? openBuyData() : comingSoonToast(s.name))}
+                    onClick={() => openService(s.id)}
                   >
                     <div className="flex items-start justify-between">
                       <span className="onyx-tile-icon">

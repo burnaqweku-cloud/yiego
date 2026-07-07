@@ -6,10 +6,13 @@ import {
   Clock,
   CreditCard,
   Gift,
+  GraduationCap,
   Inbox,
   Link2,
   Plus,
+  ReceiptText,
   Smartphone,
+  Sparkles,
   Tv,
   Wifi,
   Zap,
@@ -37,6 +40,9 @@ const TX_ICON: Record<TxType, LucideIcon> = {
   withdrawal: ArrowUpRight,
   giftcard: Gift,
   crypto: Bitcoin,
+  bill: ReceiptText,
+  digital: Sparkles,
+  education: GraduationCap,
 };
 
 /* ── Saved funding methods (sample data — swap for backend later) ───── */

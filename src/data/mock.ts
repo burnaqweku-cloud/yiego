@@ -26,7 +26,10 @@ export type TxType =
   | "tv"
   | "withdrawal"
   | "giftcard"
-  | "crypto";
+  | "crypto"
+  | "bill"
+  | "digital"
+  | "education";
 
 export type TxGroup = "Today" | "Yesterday" | "This week" | "Earlier";
 

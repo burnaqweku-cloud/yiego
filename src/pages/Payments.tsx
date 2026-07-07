@@ -19,25 +19,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatGHS } from "@/lib/format";
 import { comingSoonToast } from "@/lib/toasts";
+import { useLinks, linkUrl, type LinkStatus } from "@/store/links";
+import { useFlows } from "@/store/flows";
 import { cn } from "@/lib/utils";
 
 /* ── Sample data (mock — swap for backend later) ───────────────── */
-
-type LinkStatus = "Active" | "Paid";
-
-const PAYMENT_LINKS: {
-  title: string;
-  slug: string;
-  paid: number;
-  amount: number;
-  status: LinkStatus;
-}[] = [
-  { title: "Design retainer", slug: "dz4k", paid: 3, amount: 2500, status: "Active" },
-  { title: "Event ticket — VIP", slug: "vip7", paid: 41, amount: 150, status: "Active" },
-  { title: "1:1 Consultation", slug: "cnsl", paid: 12, amount: 400, status: "Active" },
-  { title: "Monthly subscription", slug: "subm", paid: 28, amount: 60, status: "Active" },
-  { title: "Donation", slug: "give", paid: 64, amount: 500, status: "Paid" },
-];
 
 const WAYS: { title: string; icon: LucideIcon; desc: string }[] = [
   { title: "Payment Links", icon: Link2, desc: "Share a link, get paid — no code or store needed." },
@@ -72,17 +58,27 @@ function StatusBadge({ status }: { status: LinkStatus }) {
         active ? "bg-primary/12 text-primary-glow" : "bg-white/[0.06] text-muted-foreground",
       )}
     >
-      {status}
+      {status === "Off" ? "Paused" : status}
     </span>
   );
 }
 
 /** Whole-card button — one of the four "Ways to get paid". */
-function WayCard({ title, icon: Icon, desc }: { title: string; icon: LucideIcon; desc: string }) {
+function WayCard({
+  title,
+  icon: Icon,
+  desc,
+  onClick,
+}: {
+  title: string;
+  icon: LucideIcon;
+  desc: string;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
-      onClick={() => comingSoonToast(title)}
+      onClick={onClick}
       className="onyx-panel rounded-[20px] p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-glow/25"
     >
       <span className="grid h-11 w-11 place-items-center rounded-[13px] border border-primary-glow/20 bg-gradient-to-b from-primary/[0.16] to-primary/[0.04] text-primary-glow">
@@ -199,6 +195,10 @@ function DevelopersCard() {
 /* ── Page ──────────────────────────────────────────────────────── */
 
 export default function Payments() {
+  const { links } = useLinks();
+  const { openCreateLink } = useFlows();
+  const activeCount = links.filter((l) => l.status === "Active").length;
+
   return (
     <div className="space-y-6 lg:space-y-8">
       <PageHeader
@@ -206,7 +206,7 @@ export default function Payments() {
         title="Payments"
         subtitle="Accept money like a pro — payment links, checkout pages and a clean API, on the same rails as your wallet."
         action={
-          <Button onClick={() => comingSoonToast("Create payment link")}>
+          <Button onClick={openCreateLink}>
             <Plus size={16} strokeWidth={2.4} />
             Create payment link
           </Button>
@@ -219,7 +219,12 @@ export default function Payments() {
         style={{ animationDelay: "60ms" }}
       >
         <StatTile label="Collected · 30d" value={formatGHS(8420)} delta="+18.4%" />
-        <StatTile label="Payment links" value="12" delta="3 active" tone="muted" />
+        <StatTile
+          label="Payment links"
+          value={String(links.length)}
+          delta={`${activeCount} active`}
+          tone="muted"
+        />
         <StatTile label="Success rate" value="98.2%" />
         <StatTile label="Payouts · 30d" value={formatGHS(6900)} delta="settled" tone="muted" />
       </section>
@@ -229,11 +234,7 @@ export default function Payments() {
         <SectionHeader
           title="Your payment links"
           action={
-            <Button
-              variant="soft"
-              size="sm"
-              onClick={() => comingSoonToast("New payment link")}
-            >
+            <Button variant="soft" size="sm" onClick={openCreateLink}>
               <Plus size={15} strokeWidth={2.4} />
               New link
             </Button>
@@ -241,12 +242,12 @@ export default function Payments() {
         />
         <Card className="px-2 py-1.5 sm:px-3 sm:py-2">
           <div className="divide-y divide-white/5">
-            {PAYMENT_LINKS.map((link) => (
+            {links.map((link) => (
               <ListRow
-                key={link.slug}
+                key={link.id}
                 icon={<LinkChip />}
                 title={link.title}
-                subtitle={`link.yiego.com/${link.slug} · ${link.paid} paid`}
+                subtitle={`${linkUrl(link)} · ${link.paid} paid`}
                 onClick={() => comingSoonToast(link.title)}
                 right={
                   <div className="flex flex-col items-end gap-1">
@@ -267,7 +268,13 @@ export default function Payments() {
         <SectionHeader title="Ways to get paid" />
         <div className="grid gap-3 sm:grid-cols-2">
           {WAYS.map((w) => (
-            <WayCard key={w.title} title={w.title} icon={w.icon} desc={w.desc} />
+            <WayCard
+              key={w.title}
+              title={w.title}
+              icon={w.icon}
+              desc={w.desc}
+              onClick={w.title === "Payment Links" ? openCreateLink : () => comingSoonToast(w.title)}
+            />
           ))}
         </div>
       </section>

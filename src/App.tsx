@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { WalletProvider } from "@/store/wallet";
+import { LinksProvider } from "@/store/links";
 import { FlowsProvider } from "@/store/flows";
 import AppShell from "@/components/layout/AppShell";
 import Dashboard from "./pages/Dashboard";
@@ -12,6 +13,7 @@ import Account from "./pages/Account";
 const App = () => (
   <BrowserRouter>
     <WalletProvider>
+      <LinksProvider>
       <FlowsProvider>
         <Toaster position="top-center" theme="dark" richColors={false} />
         <Routes>
@@ -25,6 +27,7 @@ const App = () => (
           </Route>
         </Routes>
       </FlowsProvider>
+      </LinksProvider>
     </WalletProvider>
   </BrowserRouter>
 );
