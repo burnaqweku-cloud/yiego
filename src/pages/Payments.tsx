@@ -18,19 +18,25 @@ import ListRow from "@/components/ui/list-row";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatGHS } from "@/lib/format";
-import { comingSoonToast } from "@/lib/toasts";
 import { useLinks, linkUrl, type LinkStatus } from "@/store/links";
 import { useFlows } from "@/store/flows";
 import { cn } from "@/lib/utils";
+import LinkDetailSheet from "@/components/sheets/LinkDetailSheet";
+import ApiDocsSheet from "@/components/sheets/ApiDocsSheet";
+import GetPaidSheet, { type GetPaidKind } from "@/components/sheets/GetPaidSheet";
 
 /* ── Sample data (mock — swap for backend later) ───────────────── */
 
-const WAYS: { title: string; icon: LucideIcon; desc: string }[] = [
-  { title: "Payment Links", icon: Link2, desc: "Share a link, get paid — no code or store needed." },
-  { title: "Checkout Pages", icon: LayoutPanelTop, desc: "A hosted, branded page for products and events." },
-  { title: "Invoices", icon: FileText, desc: "Send professional invoices and track what's owed." },
-  { title: "Developer API", icon: Code2, desc: "Wire cedis into your app with a clean REST API." },
+type WayId = "links" | "checkout" | "invoices" | "api";
+
+const WAYS: { id: WayId; title: string; icon: LucideIcon; desc: string }[] = [
+  { id: "links", title: "Payment Links", icon: Link2, desc: "Share a link, get paid — no code or store needed." },
+  { id: "checkout", title: "Checkout Pages", icon: LayoutPanelTop, desc: "A hosted, branded page for products and events." },
+  { id: "invoices", title: "Invoices", icon: FileText, desc: "Send professional invoices and track what's owed." },
+  { id: "api", title: "Developer API", icon: Code2, desc: "Wire cedis into your app with a clean REST API." },
 ];
+
+const DEMO_SECRET_KEY = "sk_live_demo_9f2ab84f2a";
 
 const SNIPPET = `curl https://api.yiego.com/v1/links \\
   -H "Authorization: Bearer sk_live_••••" \\
@@ -97,13 +103,20 @@ function WayCard({
 }
 
 /** Developer trust card — terminal + live secret key + docs link. */
-function DevelopersCard() {
+function DevelopersCard({ onViewDocs }: { onViewDocs: () => void }) {
   const [copied, setCopied] = useState(false);
+  const [keyCopied, setKeyCopied] = useState(false);
 
   const copySnippet = () => {
     navigator.clipboard?.writeText(SNIPPET).catch(() => {});
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
+  };
+
+  const copyKey = () => {
+    navigator.clipboard?.writeText(DEMO_SECRET_KEY).catch(() => {});
+    setKeyCopied(true);
+    window.setTimeout(() => setKeyCopied(false), 1600);
   };
 
   return (
@@ -167,23 +180,19 @@ function DevelopersCard() {
           right={
             <button
               type="button"
-              onClick={() => comingSoonToast("Copy secret key")}
+              onClick={copyKey}
               className="onyx-copy"
               aria-label="Copy live secret key"
             >
-              <Copy size={13} />
-              Copy
+              {keyCopied ? <Check size={13} /> : <Copy size={13} />}
+              {keyCopied ? "Copied" : "Copy"}
             </button>
           }
         />
       </div>
 
       <div className="relative mt-4">
-        <button
-          type="button"
-          onClick={() => comingSoonToast("API docs")}
-          className="onyx-ghostlink"
-        >
+        <button type="button" onClick={onViewDocs} className="onyx-ghostlink">
           View API docs
           <ArrowUpRight size={15} strokeWidth={2.4} />
         </button>
@@ -198,6 +207,17 @@ export default function Payments() {
   const { links } = useLinks();
   const { openCreateLink } = useFlows();
   const activeCount = links.filter((l) => l.status === "Active").length;
+
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [apiDocsOpen, setApiDocsOpen] = useState(false);
+  const [getPaidKind, setGetPaidKind] = useState<GetPaidKind | null>(null);
+
+  const wayActions: Record<WayId, () => void> = {
+    links: openCreateLink,
+    checkout: () => setGetPaidKind("checkout"),
+    invoices: () => setGetPaidKind("invoices"),
+    api: () => setApiDocsOpen(true),
+  };
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -248,7 +268,7 @@ export default function Payments() {
                 icon={<LinkChip />}
                 title={link.title}
                 subtitle={`${linkUrl(link)} · ${link.paid} paid`}
-                onClick={() => comingSoonToast(link.title)}
+                onClick={() => setDetailId(link.id)}
                 right={
                   <div className="flex flex-col items-end gap-1">
                     <span className="font-display text-[13.5px] font-semibold tnum text-white">
@@ -269,11 +289,11 @@ export default function Payments() {
         <div className="grid gap-3 sm:grid-cols-2">
           {WAYS.map((w) => (
             <WayCard
-              key={w.title}
+              key={w.id}
               title={w.title}
               icon={w.icon}
               desc={w.desc}
-              onClick={w.title === "Payment Links" ? openCreateLink : () => comingSoonToast(w.title)}
+              onClick={wayActions[w.id]}
             />
           ))}
         </div>
@@ -282,8 +302,21 @@ export default function Payments() {
       {/* Developers */}
       <section className="onyx-rise space-y-3" style={{ animationDelay: "240ms" }}>
         <SectionHeader title="Developers" />
-        <DevelopersCard />
+        <DevelopersCard onViewDocs={() => setApiDocsOpen(true)} />
       </section>
+
+      {/* Sheets */}
+      <LinkDetailSheet
+        linkId={detailId}
+        open={detailId !== null}
+        onClose={() => setDetailId(null)}
+      />
+      <ApiDocsSheet open={apiDocsOpen} onClose={() => setApiDocsOpen(false)} />
+      <GetPaidSheet
+        kind={getPaidKind ?? "checkout"}
+        open={getPaidKind !== null}
+        onClose={() => setGetPaidKind(null)}
+      />
     </div>
   );
 }

@@ -23,10 +23,12 @@ import SectionHeader from "@/components/ui/section-header";
 import StatTile from "@/components/ui/stat-tile";
 import ListRow from "@/components/ui/list-row";
 import BalanceCard from "@/components/dashboard/BalanceCard";
+import AddMethodSheet from "@/components/sheets/AddMethodSheet";
+import MethodSheet from "@/components/sheets/MethodSheet";
 import { type MockTransaction, type TxType, type TxGroup } from "@/data/mock";
 import { useWallet } from "@/store/wallet";
+import { useMethods, type FundingMethod } from "@/store/methods";
 import { formatSigned } from "@/lib/format";
-import { comingSoonToast } from "@/lib/toasts";
 import { cn } from "@/lib/utils";
 
 /* ── Per-type transaction glyphs (covers every TxType) ─────────────── */
@@ -45,11 +47,11 @@ const TX_ICON: Record<TxType, LucideIcon> = {
   education: GraduationCap,
 };
 
-/* ── Saved funding methods (sample data — swap for backend later) ───── */
-const FUNDING_METHODS: { name: string; detail: string; icon: LucideIcon; isDefault?: boolean }[] = [
-  { name: "MTN Mobile Money", detail: "024 ••• 221", icon: Smartphone, isDefault: true },
-  { name: "Visa card", detail: "•••• 4429", icon: CreditCard },
-];
+/* ── Funding-method kind → glyph ────────────────────────────────────── */
+const KIND_ICON: Record<FundingMethod["kind"], LucideIcon> = {
+  momo: Smartphone,
+  card: CreditCard,
+};
 
 /* ── Transaction history filter + grouping ─────────────────────────── */
 type Filter = "all" | "in" | "out";
@@ -116,7 +118,10 @@ function TxRow({ t }: { t: MockTransaction }) {
 
 export default function Wallet() {
   const { transactions } = useWallet();
+  const { methods, defaultId } = useMethods();
   const [filter, setFilter] = useState<Filter>("all");
+  const [openMethod, setOpenMethod] = useState<FundingMethod | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
 
   const visible = transactions.filter((t) => matchesFilter(t, filter));
 
@@ -152,15 +157,15 @@ export default function Wallet() {
       <section className="onyx-rise space-y-3.5" style={{ animationDelay: "180ms" }}>
         <SectionHeader title="Funding methods" />
         <div className="onyx-panel rounded-[22px] p-2.5 sm:p-3">
-          {FUNDING_METHODS.map((m) => (
+          {methods.map((m) => (
             <ListRow
-              key={m.name}
-              icon={<MethodChip icon={m.icon} />}
+              key={m.id}
+              icon={<MethodChip icon={KIND_ICON[m.kind]} />}
               title={m.name}
               subtitle={m.detail}
-              onClick={() => comingSoonToast(m.name)}
+              onClick={() => setOpenMethod(m)}
               right={
-                m.isDefault ? (
+                m.id === defaultId ? (
                   <span className="rounded-full border border-primary-glow/25 bg-primary/10 px-2.5 py-0.5 text-[10.5px] font-semibold text-primary-glow">
                     Default
                   </span>
@@ -173,7 +178,7 @@ export default function Wallet() {
             title="Add funding method"
             subtitle="Mobile Money or debit card"
             chevron
-            onClick={() => comingSoonToast("Add funding method")}
+            onClick={() => setAddOpen(true)}
           />
         </div>
       </section>
@@ -229,6 +234,14 @@ export default function Wallet() {
           </div>
         )}
       </section>
+
+      {/* Method management sheets */}
+      <MethodSheet
+        method={openMethod}
+        open={openMethod !== null}
+        onClose={() => setOpenMethod(null)}
+      />
+      <AddMethodSheet open={addOpen} onClose={() => setAddOpen(false)} />
     </div>
   );
 }

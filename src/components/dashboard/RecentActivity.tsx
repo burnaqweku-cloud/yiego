@@ -1,6 +1,6 @@
+import { Link } from "react-router-dom";
 import { ArrowDownToLine, ArrowUpRight, ChevronRight, Clock } from "lucide-react";
 import { formatSigned } from "@/lib/format";
-import { comingSoonToast } from "@/lib/toasts";
 import { useWallet } from "@/store/wallet";
 import { cn } from "@/lib/utils";
 
@@ -13,13 +13,9 @@ export default function RecentActivity() {
         <h3 className="font-display text-[17px] font-semibold tracking-tight text-white">
           Recent activity
         </h3>
-        <button
-          type="button"
-          className="onyx-ghostlink"
-          onClick={() => comingSoonToast("Transaction history")}
-        >
+        <Link to="/wallet" className="onyx-ghostlink">
           All <ChevronRight size={14} />
-        </button>
+        </Link>
       </div>
 
       <ul className="mt-4 flex flex-col">

@@ -1,25 +1,30 @@
 import { useEffect, useState } from "react";
-import { Check, TriangleAlert } from "lucide-react";
+import { Check, CreditCard, Smartphone, TriangleAlert } from "lucide-react";
 import Modal from "@/components/ui/modal";
 import { FlowFooter, FlowHeader, ProcessingView, SelectRow, SuccessView } from "./flow-parts";
-import { PAYMENT_METHODS, type PaymentMethod } from "@/data/bundles";
 import { useWallet, nowLabel } from "@/store/wallet";
+import { useMethods, type FundingMethod } from "@/store/methods";
 import { formatGHS } from "@/lib/format";
 
 type Step = "amount" | "method" | "processing" | "success";
 
+const KIND_ICON = { momo: Smartphone, card: CreditCard } as const;
+
 /** Withdraw / payout — moves money OUT of the wallet to MoMo or bank card. */
 export default function WithdrawFlow({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { balance, debit } = useWallet();
+  const { methods, defaultId } = useMethods();
+  const defaultMethod = methods.find((m) => m.id === defaultId) ?? methods[0];
   const [step, setStep] = useState<Step>("amount");
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<PaymentMethod>(PAYMENT_METHODS[0]);
+  const [method, setMethod] = useState<FundingMethod>(defaultMethod);
 
   // Reset on open AND close — cancels a pending processing timer.
   useEffect(() => {
     setStep("amount");
     setAmount("");
-    setMethod(PAYMENT_METHODS[0]);
+    setMethod(defaultMethod);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const amt = Math.round((parseFloat(amount) || 0) * 100) / 100;
@@ -117,14 +122,16 @@ export default function WithdrawFlow({ open, onClose }: { open: boolean; onClose
             onClose={onClose}
           />
           <div className="space-y-2.5 px-5 pb-4 pt-4">
-            {PAYMENT_METHODS.map((m) => (
+            {methods.map((m) => {
+              const Icon = KIND_ICON[m.kind];
+              return (
               <SelectRow
                 key={m.id}
                 selected={method.id === m.id}
                 onClick={() => setMethod(m)}
                 leading={
                   <span className="onyx-tx-icon is-out shrink-0">
-                    <m.icon size={17} />
+                    <Icon size={17} />
                   </span>
                 }
                 title={m.name}
@@ -135,7 +142,8 @@ export default function WithdrawFlow({ open, onClose }: { open: boolean; onClose
                   ) : undefined
                 }
               />
-            ))}
+              );
+            })}
             <p className="px-1 pt-1 text-[12px] text-faint-foreground">
               Arrives instantly · no YieGo fee
             </p>

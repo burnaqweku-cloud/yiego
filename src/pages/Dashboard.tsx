@@ -4,7 +4,7 @@ import QuickActions from "@/components/dashboard/QuickActions";
 import ServicesSection from "@/components/dashboard/ServicesSection";
 import DeveloperCard from "@/components/dashboard/DeveloperCard";
 import RecentActivity from "@/components/dashboard/RecentActivity";
-import { MOCK_USER } from "@/data/mock";
+import { useProfile } from "@/store/profile";
 
 const dateFmt = new Intl.DateTimeFormat("en-GH", {
   weekday: "long",
@@ -20,6 +20,7 @@ function greeting(): string {
 }
 
 export default function Dashboard() {
+  const { profile } = useProfile();
   return (
     <div className="space-y-6 lg:space-y-8">
       {/* Personal greeting */}
@@ -28,7 +29,7 @@ export default function Dashboard() {
           {dateFmt.format(new Date())}
         </p>
         <h1 className="mt-1.5 font-display text-[22px] font-semibold tracking-tight text-white sm:text-[26px]">
-          {greeting()}, {MOCK_USER.firstName}
+          {greeting()}, {profile.firstName}
         </h1>
       </div>
 

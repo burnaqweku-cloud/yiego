@@ -1,8 +1,21 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import PageHeader from "@/components/layout/PageHeader";
 import ListRow from "@/components/ui/list-row";
 import { Button } from "@/components/ui/button";
-import { MOCK_USER } from "@/data/mock";
-import { comingSoonToast } from "@/lib/toasts";
+import { useProfile, maskedPhone } from "@/store/profile";
+import ProfileSheet from "@/components/sheets/ProfileSheet";
+import PinSheet from "@/components/sheets/PinSheet";
+import NotificationPrefsSheet from "@/components/sheets/NotificationPrefsSheet";
+import LimitsSheet from "@/components/sheets/LimitsSheet";
+import StatementsSheet from "@/components/sheets/StatementsSheet";
+import HelpSheet from "@/components/sheets/HelpSheet";
+import ContactSheet from "@/components/sheets/ContactSheet";
+import TermsSheet from "@/components/sheets/TermsSheet";
+import AppearanceSheet from "@/components/sheets/AppearanceSheet";
+import LanguageSheet from "@/components/sheets/LanguageSheet";
+import SignOutSheet from "@/components/sheets/SignOutSheet";
 import {
   User,
   Lock,
@@ -20,55 +33,33 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-/* ── Inline settings data (swap for backend later) ─────────────── */
-const CONTACT_LINE = "kwame@yiego.com · 024 ••• 221";
 const DAILY_LIMIT = "GH₵ 50,000";
+
+type SheetId =
+  | "profile"
+  | "pin"
+  | "notifs"
+  | "limits"
+  | "statements"
+  | "help"
+  | "contact"
+  | "terms"
+  | "appearance"
+  | "language"
+  | "signout";
 
 interface SettingItem {
   icon: LucideIcon;
   title: string;
   subtitle?: string;
   value?: string;
+  onClick: () => void;
 }
 
 interface SettingGroup {
   label: string;
   items: SettingItem[];
 }
-
-const GROUPS: SettingGroup[] = [
-  {
-    label: "Personal",
-    items: [
-      { icon: User, title: "Personal details" },
-      { icon: Lock, title: "Security & PIN" },
-      { icon: Bell, title: "Notifications" },
-    ],
-  },
-  {
-    label: "Money",
-    items: [
-      { icon: Banknote, title: "Payout methods" },
-      { icon: ShieldCheck, title: "Limits & verification", subtitle: "Tier 2" },
-      { icon: FileText, title: "Statements" },
-    ],
-  },
-  {
-    label: "Preferences",
-    items: [
-      { icon: Moon, title: "Appearance", value: "Dark" },
-      { icon: Globe, title: "Language", value: "English" },
-    ],
-  },
-  {
-    label: "Support",
-    items: [
-      { icon: LifeBuoy, title: "Help center" },
-      { icon: MessageSquare, title: "Contact support" },
-      { icon: FileText, title: "Terms & Privacy" },
-    ],
-  },
-];
 
 /* ── Neutral leading icon chip for each settings row ───────────── */
 function IconChip({ icon: Icon }: { icon: LucideIcon }) {
@@ -99,7 +90,7 @@ function SettingsGroup({ group, delay }: { group: SettingGroup; delay: string })
               ) : undefined
             }
             chevron
-            onClick={() => comingSoonToast(item.title)}
+            onClick={item.onClick}
           />
         ))}
       </div>
@@ -108,6 +99,64 @@ function SettingsGroup({ group, delay }: { group: SettingGroup; delay: string })
 }
 
 export default function Account() {
+  const { profile, initials } = useProfile();
+  const navigate = useNavigate();
+  const [sheet, setSheet] = useState<SheetId | null>(null);
+
+  const open = (id: SheetId) => () => setSheet(id);
+  const close = () => setSheet(null);
+
+  const goToPayoutMethods = () => {
+    toast("Manage payout methods on the Wallet page");
+    navigate("/wallet");
+  };
+
+  const notifsOn = Object.values(profile.notifs).filter(Boolean).length;
+
+  const groups: SettingGroup[] = [
+    {
+      label: "Personal",
+      items: [
+        { icon: User, title: "Personal details", onClick: open("profile") },
+        {
+          icon: Lock,
+          title: "Security & PIN",
+          subtitle: profile.pinSet ? "PIN set" : "Not set",
+          onClick: open("pin"),
+        },
+        { icon: Bell, title: "Notifications", value: `${notifsOn} on`, onClick: open("notifs") },
+      ],
+    },
+    {
+      label: "Money",
+      items: [
+        { icon: Banknote, title: "Payout methods", onClick: goToPayoutMethods },
+        {
+          icon: ShieldCheck,
+          title: "Limits & verification",
+          subtitle: "Tier 2",
+          onClick: open("limits"),
+        },
+        { icon: FileText, title: "Statements", onClick: open("statements") },
+      ],
+    },
+    {
+      label: "Preferences",
+      items: [
+        { icon: Moon, title: "Appearance", value: "Onyx Dark", onClick: open("appearance") },
+        { icon: Globe, title: "Language", value: profile.language, onClick: open("language") },
+      ],
+    },
+    {
+      label: "Support",
+      items: [
+        { icon: LifeBuoy, title: "Help center", onClick: open("help") },
+        { icon: MessageSquare, title: "Contact support", onClick: open("contact") },
+        { icon: FileText, title: "Terms & Privacy", onClick: open("terms") },
+      ],
+    },
+  ];
+
   return (
     <div className="space-y-6 lg:space-y-8">
       <PageHeader
@@ -126,20 +175,22 @@ export default function Account() {
             className="onyx-avatar h-16 w-16 shrink-0 text-[20px]"
             aria-hidden="true"
           >
-            {MOCK_USER.initials}
+            {initials}
           </span>
 
           <div className="min-w-0 flex-1">
             <h2 className="truncate font-display text-lg font-semibold tracking-tight text-white">
-              {MOCK_USER.firstName} {MOCK_USER.lastName}
+              {profile.firstName} {profile.lastName}
             </h2>
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">{CONTACT_LINE}</p>
+            <p className="mt-0.5 truncate text-sm text-muted-foreground">
+              {profile.email} · {maskedPhone(profile.phone)}
+            </p>
           </div>
 
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => comingSoonToast("Edit profile")}
+            onClick={open("profile")}
             className="h-11 shrink-0"
           >
             <Pencil size={15} />
@@ -149,12 +200,10 @@ export default function Account() {
 
         {/* Status chips */}
         <div className="mt-5 flex flex-wrap items-center gap-2.5">
-          {MOCK_USER.verified && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-glow/20 bg-primary/12 px-3 py-1 text-[12px] font-semibold text-primary-glow">
-              <ShieldCheck size={13} />
-              Verified · Tier 2
-            </span>
-          )}
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-glow/20 bg-primary/12 px-3 py-1 text-[12px] font-semibold text-primary-glow">
+            <ShieldCheck size={13} />
+            Verified · Tier 2
+          </span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[12px] font-medium text-muted-foreground">
             <Gauge size={13} className="text-faint-foreground" />
             Daily limit · <span className="tnum text-foreground">{DAILY_LIMIT}</span>
@@ -163,17 +212,17 @@ export default function Account() {
       </div>
 
       {/* Settings groups */}
-      <SettingsGroup group={GROUPS[0]} delay="120ms" />
-      <SettingsGroup group={GROUPS[1]} delay="180ms" />
-      <SettingsGroup group={GROUPS[2]} delay="240ms" />
-      <SettingsGroup group={GROUPS[3]} delay="300ms" />
+      <SettingsGroup group={groups[0]} delay="120ms" />
+      <SettingsGroup group={groups[1]} delay="180ms" />
+      <SettingsGroup group={groups[2]} delay="240ms" />
+      <SettingsGroup group={groups[3]} delay="300ms" />
 
       {/* Sign out */}
       <section className="onyx-rise" style={{ animationDelay: "360ms" }}>
         <div className="onyx-panel overflow-hidden rounded-[22px] px-2.5 py-1">
           <button
             type="button"
-            onClick={() => comingSoonToast("Sign out")}
+            onClick={open("signout")}
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl px-2 py-3.5 text-[14px] font-semibold text-danger transition-colors hover:bg-danger/[0.06]"
           >
             <LogOut size={18} />
@@ -181,6 +230,19 @@ export default function Account() {
           </button>
         </div>
       </section>
+
+      {/* Sheets */}
+      <ProfileSheet open={sheet === "profile"} onClose={close} />
+      <PinSheet open={sheet === "pin"} onClose={close} />
+      <NotificationPrefsSheet open={sheet === "notifs"} onClose={close} />
+      <LimitsSheet open={sheet === "limits"} onClose={close} />
+      <StatementsSheet open={sheet === "statements"} onClose={close} />
+      <HelpSheet open={sheet === "help"} onClose={close} />
+      <ContactSheet open={sheet === "contact"} onClose={close} />
+      <TermsSheet open={sheet === "terms"} onClose={close} />
+      <AppearanceSheet open={sheet === "appearance"} onClose={close} />
+      <LanguageSheet open={sheet === "language"} onClose={close} />
+      <SignOutSheet open={sheet === "signout"} onClose={close} />
     </div>
   );
 }
