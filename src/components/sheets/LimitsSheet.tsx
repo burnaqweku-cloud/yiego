@@ -19,7 +19,7 @@ export default function LimitsSheet({ open, onClose }: { open: boolean; onClose:
           <span className="grid h-16 w-16 place-items-center rounded-full border border-primary-glow/25 bg-primary/[0.1] text-primary-glow">
             <ShieldCheck size={28} />
           </span>
-          <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-primary-glow/20 bg-primary/12 px-3 py-1 text-[12px] font-semibold text-primary-glow">
+          <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-primary-glow/20 bg-primary/[0.12] px-3 py-1 text-[12px] font-semibold text-primary-glow">
             <ShieldCheck size={13} />
             Verified · Tier 2
           </span>

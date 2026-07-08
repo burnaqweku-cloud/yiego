@@ -27,7 +27,7 @@ export default function Modal({
     const focusables = () =>
       Array.from(
         panelRef.current?.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
         ) ?? [],
       );
 
@@ -41,6 +41,12 @@ export default function Modal({
       if (items.length === 0) {
         e.preventDefault();
         panelRef.current?.focus();
+        return;
+      }
+      // If the focused element unmounted (step change), pull focus back in.
+      if (!panelRef.current?.contains(document.activeElement)) {
+        e.preventDefault();
+        (items[0] ?? panelRef.current)?.focus();
         return;
       }
       const first = items[0];

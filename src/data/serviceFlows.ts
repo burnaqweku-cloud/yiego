@@ -1,5 +1,4 @@
 import type { TxType } from "@/data/mock";
-import { MY_NUMBER } from "@/data/bundles";
 
 /**
  * Config-driven service flows — one generic engine (PurchaseFlow) renders
@@ -34,8 +33,8 @@ export interface FlowField {
   maxLen?: number;
   minLen?: number;
   errorText?: string;
-  /** Quick-fill chip, e.g. "Use my number" */
-  prefill?: { label: string; value: string };
+  /** Quick-fill chip, e.g. "Use my number" — resolved from the live profile */
+  prefill?: { label: string; source: "phone" | "email" };
   /** How the value shows on review/success (e.g. masked phone) */
   mask?: (value: string) => string;
   monospace?: boolean;
@@ -94,7 +93,7 @@ const phoneField: FlowField = {
   maxLen: 10,
   minLen: 10,
   errorText: "Enter a valid 10-digit Ghana number.",
-  prefill: { label: "Use my number", value: MY_NUMBER },
+  prefill: { label: "Use my number", source: "phone" },
   mask: maskPhone,
 };
 
@@ -105,7 +104,7 @@ const emailField: FlowField = {
   inputMode: "email",
   minLen: 6,
   errorText: "Enter the email to deliver to.",
-  prefill: { label: "Use my email", value: "kwame@yiego.com" },
+  prefill: { label: "Use my email", source: "email" },
 };
 
 /** Deterministic pseudo-serial from a seed — for demo voucher PINs. */

@@ -200,7 +200,7 @@ export default function Account() {
 
         {/* Status chips */}
         <div className="mt-5 flex flex-wrap items-center gap-2.5">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-glow/20 bg-primary/12 px-3 py-1 text-[12px] font-semibold text-primary-glow">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-glow/20 bg-primary/[0.12] px-3 py-1 text-[12px] font-semibold text-primary-glow">
             <ShieldCheck size={13} />
             Verified · Tier 2
           </span>

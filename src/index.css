@@ -951,6 +951,18 @@
   .onyx-amount-input::placeholder {
     color: #3f5349;
   }
+  /* Embedded inputs: the container carries the focus affordance, not a
+     hard rectangle around the bare input. */
+  .onyx-search input:focus-visible,
+  .onyx-amount-input:focus-visible {
+    box-shadow: none;
+  }
+  .onyx-search:focus-within {
+    border-color: rgba(124, 240, 180, 0.35);
+  }
+  .onyx-amount-card:focus-within {
+    border-color: rgba(124, 240, 180, 0.3);
+  }
   .onyx-field {
     width: 100%;
     border-radius: 14px;

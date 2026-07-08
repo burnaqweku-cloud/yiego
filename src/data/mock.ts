@@ -43,6 +43,8 @@ export interface MockTransaction {
   status: "success" | "pending";
   /** Used by the Wallet page to group history by recency */
   group?: TxGroup;
+  /** Epoch ms — set on real (user-made) transactions; groups derive from it */
+  ts?: number;
 }
 
 export const MOCK_USER: MockUser = {

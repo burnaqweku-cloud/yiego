@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, Check, X } from "lucide-react";
 
 /** Header row for a flow step: optional back, title/subtitle, close. */
@@ -37,7 +37,7 @@ export function FlowHeader({
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="onyx-iconbtn h-10 w-10 rounded-xl"
+        className="onyx-iconbtn rounded-xl"
       >
         <X size={18} />
       </button>
@@ -52,6 +52,14 @@ export function FlowFooter({ children }: { children: ReactNode }) {
 
 /** Centered processing state. */
 export function ProcessingView({ label }: { label: string }) {
+  // The live region mounts empty, then receives the text — so screen
+  // readers actually announce it (content added to an existing region).
+  const [live, setLive] = useState("");
+  useEffect(() => {
+    const id = window.setTimeout(() => setLive(label), 200);
+    return () => window.clearTimeout(id);
+  }, [label]);
+
   return (
     <div className="flex min-h-[340px] flex-col items-center justify-center gap-5 px-6 py-10 text-center">
       <span className="onyx-spinner" aria-hidden="true" />
@@ -59,8 +67,8 @@ export function ProcessingView({ label }: { label: string }) {
         <p className="font-display text-[17px] font-semibold text-white">{label}</p>
         <p className="mt-1 text-[13px] text-muted-foreground">Hang tight, this only takes a moment…</p>
       </div>
-      <span className="sr-only" role="status">
-        {label}
+      <span className="sr-only" role="status" aria-live="polite">
+        {live}
       </span>
     </div>
   );
@@ -84,13 +92,24 @@ export function SuccessView({
   secondaryLabel?: string;
   onSecondary?: () => void;
 }) {
+  // Focus the heading on mount — announces the outcome and anchors keyboard
+  // users at the top of the success state.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
   return (
     <div className="px-5 pb-2 pt-9">
-      <div role="status" className="flex flex-col items-center text-center">
+      <div className="flex flex-col items-center text-center">
         <span className="onyx-success-badge" aria-hidden="true">
           <Check size={38} strokeWidth={3} />
         </span>
-        <h3 className="mt-5 font-display text-[21px] font-semibold tracking-tight text-white">
+        <h3
+          ref={headingRef}
+          tabIndex={-1}
+          className="mt-5 font-display text-[21px] font-semibold tracking-tight text-white focus:outline-none"
+        >
           {title}
         </h3>
         <p className="mt-1.5 max-w-[30ch] text-[13.5px] leading-relaxed text-muted-foreground">

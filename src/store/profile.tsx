@@ -15,7 +15,16 @@ export interface Profile {
   phone: string;
   language: string;
   pinSet: boolean;
+  /** Hash of the 4-digit PIN — checked before money leaves the wallet. */
+  pinHash?: string;
   notifs: NotifPrefs;
+}
+
+/** Tiny demo-grade hash — enough to avoid storing the PIN in plain text. */
+export function hashPin(pin: string): string {
+  let h = 7;
+  for (let i = 0; i < pin.length; i++) h = (h * 31 + pin.charCodeAt(i)) >>> 0;
+  return `h${h.toString(36)}`;
 }
 
 const STORAGE_KEY = "yiego_profile_v1";

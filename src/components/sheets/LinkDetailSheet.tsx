@@ -14,7 +14,7 @@ function StatusPill({ status }: { status: LinkStatus }) {
     <span
       className={cn(
         "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
-        active ? "bg-primary/12 text-primary-glow" : "bg-white/[0.06] text-muted-foreground",
+        active ? "bg-primary/[0.12] text-primary-glow" : "bg-white/[0.06] text-muted-foreground",
       )}
     >
       {status === "Off" ? "Paused" : status}

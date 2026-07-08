@@ -26,7 +26,7 @@ import BalanceCard from "@/components/dashboard/BalanceCard";
 import AddMethodSheet from "@/components/sheets/AddMethodSheet";
 import MethodSheet from "@/components/sheets/MethodSheet";
 import { type MockTransaction, type TxType, type TxGroup } from "@/data/mock";
-import { useWallet } from "@/store/wallet";
+import { useWallet, CASHBACK } from "@/store/wallet";
 import { useMethods, type FundingMethod } from "@/store/methods";
 import { formatSigned } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -83,7 +83,7 @@ function MethodChip({ icon: Icon }: { icon: LucideIcon }) {
 function TxRow({ t }: { t: MockTransaction }) {
   const isIn = t.amount > 0;
   const pending = t.status === "pending";
-  const Icon = TX_ICON[t.type];
+  const Icon = TX_ICON[t.type] ?? Sparkles;
   return (
     <li className="onyx-txrow">
       <span className={cn("onyx-tx-icon", isIn ? "is-in" : "is-out")}>
@@ -150,7 +150,13 @@ export default function Wallet() {
       >
         <StatTile size="sm" label="In" value={compact(inflow)} delta="money in" tone="up" />
         <StatTile size="sm" label="Out" value={compact(outflow)} delta="spent" tone="down" />
-        <StatTile size="sm" label="Cashback" value="GH₵12.50" delta="earned" tone="muted" />
+        <StatTile
+          size="sm"
+          label="Cashback"
+          value={`GH₵${CASHBACK.toFixed(2)}`}
+          delta="earned"
+          tone="muted"
+        />
       </section>
 
       {/* Funding methods */}

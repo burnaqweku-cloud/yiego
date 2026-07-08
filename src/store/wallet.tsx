@@ -37,19 +37,47 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+const TX_TYPES: TxType[] = [
+  "data", "airtime", "deposit", "electricity", "payment", "tv",
+  "withdrawal", "giftcard", "crypto", "bill", "digital", "education",
+];
+
+function isValidTx(t: unknown): t is MockTransaction {
+  const x = t as MockTransaction;
+  return (
+    !!x &&
+    typeof x.id === "string" &&
+    typeof x.title === "string" &&
+    typeof x.subtitle === "string" &&
+    Number.isFinite(x.amount) &&
+    (TX_TYPES as string[]).includes(x.type as string)
+  );
+}
+
 function load(): Persisted {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Persisted;
-      if (typeof parsed.balance === "number" && Array.isArray(parsed.transactions)) {
-        return parsed;
+      if (Number.isFinite(parsed?.balance) && Array.isArray(parsed?.transactions)) {
+        // Validate element-wise — one corrupt entry must never crash the app.
+        return { balance: parsed.balance, transactions: parsed.transactions.filter(isValidTx) };
       }
     }
   } catch {
     /* ignore corrupt state */
   }
   return { balance: INITIAL_BALANCE, transactions: MOCK_TRANSACTIONS_ALL };
+}
+
+/** Recency group derived from a real timestamp (seeded rows keep theirs). */
+function groupFromTs(ts: number): MockTransaction["group"] {
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOfDay(new Date()) - startOfDay(new Date(ts))) / 86400000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return "This week";
+  return "Earlier";
 }
 
 let txSeq = 0;
@@ -66,14 +94,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [state]);
 
   const addTransaction = (signedAmount: number, draft: TxDraft) => {
+    const now = Date.now();
     const tx: MockTransaction = {
-      id: `u${Date.now().toString(36)}${txSeq++}`,
+      id: `u${now.toString(36)}${txSeq++}`,
       type: draft.type,
       title: draft.title,
       subtitle: draft.subtitle,
       amount: signedAmount,
       status: "success",
       group: "Today",
+      ts: now,
     };
     setState((s) => ({
       balance: round2(s.balance + signedAmount),
@@ -83,7 +113,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const value: WalletValue = {
     balance: state.balance,
-    transactions: state.transactions,
+    // Real transactions re-group by their timestamp as days pass.
+    transactions: state.transactions.map((t) =>
+      t.ts ? { ...t, group: groupFromTs(t.ts) } : t,
+    ),
     credit: (amount, draft) => addTransaction(Math.abs(amount), draft),
     debit: (amount, draft) => addTransaction(-Math.abs(amount), draft),
   };
@@ -97,11 +130,11 @@ export function useWallet(): WalletValue {
   return ctx;
 }
 
-/** "Today, 2:32 PM" — for fresh transaction subtitles. */
+/** "2:32 PM" — the group header (Today/Yesterday/…) supplies the day, so
+ *  subtitles stay truthful as time passes. */
 export function nowLabel(): string {
-  const t = new Date().toLocaleTimeString("en-GH", {
+  return new Date().toLocaleTimeString("en-GH", {
     hour: "numeric",
     minute: "2-digit",
   });
-  return `Today, ${t}`;
 }

@@ -105,7 +105,7 @@ function MethodBadge({ method }: { method: Method }) {
       className={cn(
         "rounded-md px-1.5 py-0.5 font-mono text-[10.5px] font-bold tracking-[0.04em]",
         method === "POST"
-          ? "border border-primary-glow/25 bg-primary/12 text-primary-glow"
+          ? "border border-primary-glow/25 bg-primary/[0.12] text-primary-glow"
           : "border border-amber/25 bg-amber/10 text-amber",
       )}
     >

@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { ChevronRight, TriangleAlert, Wifi } from "lucide-react";
 import Modal from "@/components/ui/modal";
 import { FlowFooter, FlowHeader, ProcessingView, SelectRow, SuccessView } from "./flow-parts";
-import { BUNDLES, MY_NUMBER, NETWORKS, type Bundle, type Network } from "@/data/bundles";
+import PinGate from "./PinGate";
+import { BUNDLES, NETWORKS, type Bundle, type Network } from "@/data/bundles";
 import { useWallet, nowLabel } from "@/store/wallet";
+import { useProfile } from "@/store/profile";
 import { formatGHS } from "@/lib/format";
 
-type Step = "network" | "bundle" | "phone" | "review" | "processing" | "success";
+type Step = "network" | "bundle" | "phone" | "review" | "pin" | "processing" | "success";
 
 function netShort(n: Network): string {
   if (n.id === "at") return "AT";
@@ -49,10 +51,12 @@ export default function BuyDataFlow({
   onAddMoney: () => void;
 }) {
   const { balance, debit } = useWallet();
+  const { profile } = useProfile();
+  const needPin = profile.pinSet && !!profile.pinHash;
   const [step, setStep] = useState<Step>("network");
   const [network, setNetwork] = useState<Network | null>(null);
   const [bundle, setBundle] = useState<Bundle | null>(null);
-  const [phone, setPhone] = useState(MY_NUMBER);
+  const [phone, setPhone] = useState(profile.phone);
 
   // Reset on every open AND close. Resetting on close is what cancels a
   // pending "processing" timer (the step-effect cleanup fires), so closing
@@ -61,7 +65,8 @@ export default function BuyDataFlow({
     setStep("network");
     setNetwork(null);
     setBundle(null);
-    setPhone(MY_NUMBER);
+    setPhone(profile.phone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const digits = phone.replace(/\D/g, "");
@@ -177,7 +182,7 @@ export default function BuyDataFlow({
                   Enter a valid 10-digit Ghana number.
                 </p>
               )}
-              <button type="button" className="onyx-pill mt-3" onClick={() => setPhone(MY_NUMBER)}>
+              <button type="button" className="onyx-pill mt-3" onClick={() => setPhone(profile.phone)}>
                 Use my number
               </button>
             </div>
@@ -270,7 +275,7 @@ export default function BuyDataFlow({
               <button
                 type="button"
                 className="onyx-btn-primary w-full"
-                onClick={() => setStep("processing")}
+                onClick={() => setStep(needPin ? "pin" : "processing")}
               >
                 Pay {formatGHS(bundle.price)}
               </button>
@@ -281,6 +286,14 @@ export default function BuyDataFlow({
             )}
           </FlowFooter>
         </>
+      )}
+
+      {step === "pin" && (
+        <PinGate
+          onConfirm={() => setStep("processing")}
+          onBack={() => setStep("review")}
+          onClose={onClose}
+        />
       )}
 
       {step === "processing" && <ProcessingView label="Sending your data…" />}

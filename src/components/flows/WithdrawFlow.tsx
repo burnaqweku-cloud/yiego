@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { Check, CreditCard, Smartphone, TriangleAlert } from "lucide-react";
 import Modal from "@/components/ui/modal";
 import { FlowFooter, FlowHeader, ProcessingView, SelectRow, SuccessView } from "./flow-parts";
+import PinGate from "./PinGate";
 import { useWallet, nowLabel } from "@/store/wallet";
 import { useMethods, type FundingMethod } from "@/store/methods";
+import { useProfile } from "@/store/profile";
 import { formatGHS } from "@/lib/format";
 
-type Step = "amount" | "method" | "processing" | "success";
+type Step = "amount" | "method" | "pin" | "processing" | "success";
 
 const KIND_ICON = { momo: Smartphone, card: CreditCard } as const;
 
@@ -14,6 +16,8 @@ const KIND_ICON = { momo: Smartphone, card: CreditCard } as const;
 export default function WithdrawFlow({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { balance, debit } = useWallet();
   const { methods, defaultId } = useMethods();
+  const { profile } = useProfile();
+  const needPin = profile.pinSet && !!profile.pinHash;
   const defaultMethod = methods.find((m) => m.id === defaultId) ?? methods[0];
   const [step, setStep] = useState<Step>("amount");
   const [amount, setAmount] = useState("");
@@ -50,7 +54,7 @@ export default function WithdrawFlow({ open, onClose }: { open: boolean; onClose
         <>
           <FlowHeader title="Withdraw" subtitle="Move money out of your wallet" onClose={onClose} />
           <div className="space-y-5 px-5 pb-2 pt-5">
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-7 text-center">
+            <div className="onyx-amount-card rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-7 text-center">
               <div className="flex items-baseline justify-center gap-2">
                 <span className="font-display text-[22px] font-semibold text-primary-glow">GH₵</span>
                 <input
@@ -91,13 +95,15 @@ export default function WithdrawFlow({ open, onClose }: { open: boolean; onClose
                   GH₵{v}
                 </button>
               ))}
-              <button
-                type="button"
-                className={`onyx-pill ${amount === String(Math.floor(balance)) ? "onyx-pill-on" : ""}`}
-                onClick={() => setAmount(String(Math.floor(balance)))}
-              >
-                Max
-              </button>
+              {balance >= 1 && (
+                <button
+                  type="button"
+                  className={`onyx-pill ${amount === String(Math.round(balance * 100) / 100) ? "onyx-pill-on" : ""}`}
+                  onClick={() => setAmount(String(Math.round(balance * 100) / 100))}
+                >
+                  Max
+                </button>
+              )}
             </div>
           </div>
           <FlowFooter>
@@ -152,12 +158,20 @@ export default function WithdrawFlow({ open, onClose }: { open: boolean; onClose
             <button
               type="button"
               className="onyx-btn-primary w-full"
-              onClick={() => setStep("processing")}
+              onClick={() => setStep(needPin ? "pin" : "processing")}
             >
               Withdraw {formatGHS(amt)}
             </button>
           </FlowFooter>
         </>
+      )}
+
+      {step === "pin" && (
+        <PinGate
+          onConfirm={() => setStep("processing")}
+          onBack={() => setStep("method")}
+          onClose={onClose}
+        />
       )}
 
       {step === "processing" && <ProcessingView label="Sending your money…" />}

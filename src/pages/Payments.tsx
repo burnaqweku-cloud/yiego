@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatGHS } from "@/lib/format";
 import { useLinks, linkUrl, type LinkStatus } from "@/store/links";
+import { useWallet } from "@/store/wallet";
 import { useFlows } from "@/store/flows";
 import { cn } from "@/lib/utils";
 import LinkDetailSheet from "@/components/sheets/LinkDetailSheet";
@@ -49,7 +50,7 @@ const SNIPPET = `curl https://api.yiego.com/v1/links \\
 /** ~40px emerald chip echoing the .onyx-tx-icon.is-in style. */
 function LinkChip() {
   return (
-    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-primary-glow/20 bg-primary/12 text-primary-glow">
+    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-primary-glow/20 bg-primary/[0.12] text-primary-glow">
       <Link2 size={17} />
     </span>
   );
@@ -61,7 +62,7 @@ function StatusBadge({ status }: { status: LinkStatus }) {
     <span
       className={cn(
         "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
-        active ? "bg-primary/12 text-primary-glow" : "bg-white/[0.06] text-muted-foreground",
+        active ? "bg-primary/[0.12] text-primary-glow" : "bg-white/[0.06] text-muted-foreground",
       )}
     >
       {status === "Off" ? "Paused" : status}
@@ -171,7 +172,7 @@ function DevelopersCard({ onViewDocs }: { onViewDocs: () => void }) {
       <div className="relative mt-5 rounded-[18px] border border-white/[0.06] bg-white/[0.02] px-1.5 py-1">
         <ListRow
           icon={
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-primary-glow/20 bg-primary/12 text-primary-glow">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-primary-glow/20 bg-primary/[0.12] text-primary-glow">
               <KeyRound size={17} />
             </span>
           }
@@ -205,8 +206,13 @@ function DevelopersCard({ onViewDocs }: { onViewDocs: () => void }) {
 
 export default function Payments() {
   const { links } = useLinks();
+  const { transactions } = useWallet();
   const { openCreateLink } = useFlows();
   const activeCount = links.filter((l) => l.status === "Active").length;
+  const collected = links.reduce((a, l) => a + l.amount * l.paid, 0);
+  const payouts = transactions
+    .filter((t) => t.type === "withdrawal")
+    .reduce((a, t) => a + Math.abs(t.amount), 0);
 
   const [detailId, setDetailId] = useState<string | null>(null);
   const [apiDocsOpen, setApiDocsOpen] = useState(false);
@@ -238,7 +244,7 @@ export default function Payments() {
         className="onyx-rise grid grid-cols-2 gap-3 lg:grid-cols-4"
         style={{ animationDelay: "60ms" }}
       >
-        <StatTile label="Collected · 30d" value={formatGHS(8420)} delta="+18.4%" />
+        <StatTile label="Collected" value={formatGHS(collected)} delta="+18.4% · 30d" />
         <StatTile
           label="Payment links"
           value={String(links.length)}
@@ -246,7 +252,7 @@ export default function Payments() {
           tone="muted"
         />
         <StatTile label="Success rate" value="98.2%" />
-        <StatTile label="Payouts · 30d" value={formatGHS(6900)} delta="settled" tone="muted" />
+        <StatTile label="Payouts" value={formatGHS(payouts)} delta="settled" tone="muted" />
       </section>
 
       {/* Payment links */}

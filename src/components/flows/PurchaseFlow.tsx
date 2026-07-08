@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Sparkles, TriangleAlert } from "lucide-react";
 import Modal from "@/components/ui/modal";
 import { FlowFooter, FlowHeader, ProcessingView, SelectRow, SuccessView } from "./flow-parts";
+import PinGate from "./PinGate";
 import type { FlowField, FlowOption, FlowPlan, ServiceFlowConfig } from "@/data/serviceFlows";
 import { useWallet, nowLabel } from "@/store/wallet";
+import { useProfile } from "@/store/profile";
 import { formatGHS } from "@/lib/format";
 
 /**
@@ -13,7 +15,7 @@ import { formatGHS } from "@/lib/format";
  */
 
 type StepName = "provider" | "plan" | "amount" | "fields" | "review";
-type Phase = "steps" | "processing" | "success";
+type Phase = "steps" | "pin" | "processing" | "success";
 
 function OptionLogo({ option }: { option: FlowOption }) {
   const abbr = option.abbr ?? option.name.slice(0, 3).toUpperCase();
@@ -65,6 +67,7 @@ export default function PurchaseFlow({
   onAddMoney: () => void;
 }) {
   const { balance, debit, credit } = useWallet();
+  const { profile } = useProfile();
 
   const [phase, setPhase] = useState<Phase>("steps");
   const [idx, setIdx] = useState(0);
@@ -108,6 +111,9 @@ export default function PurchaseFlow({
 
   const amountValid = !config?.amount || amount >= config.amount.min;
   const fieldsValid = (config?.fields ?? []).every((f) => fieldValid(f, values[f.id] ?? ""));
+  const needPin = !isCredit && profile.pinSet && !!profile.pinHash;
+  const prefillValue = (f: FlowField) =>
+    f.prefill?.source === "phone" ? profile.phone : profile.email;
 
   // Simulated processing → commit to the wallet.
   useEffect(() => {
@@ -248,7 +254,7 @@ export default function PurchaseFlow({
         <>
           <FlowHeader title={headerTitle} subtitle={headerSubtitle} onBack={back} onClose={onClose} />
           <div className="space-y-5 px-5 pb-2 pt-5">
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-7 text-center">
+            <div className="onyx-amount-card rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-7 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">
                 {config.amount.label ?? "Amount"}
               </p>
@@ -346,7 +352,7 @@ export default function PurchaseFlow({
                     <button
                       type="button"
                       className="onyx-pill mt-3"
-                      onClick={() => setValues((s) => ({ ...s, [f.id]: f.prefill!.value }))}
+                      onClick={() => setValues((s) => ({ ...s, [f.id]: prefillValue(f) }))}
                     >
                       {f.prefill.label}
                     </button>
@@ -451,7 +457,7 @@ export default function PurchaseFlow({
               <button
                 type="button"
                 className="onyx-btn-primary w-full"
-                onClick={() => setPhase("processing")}
+                onClick={() => setPhase(needPin ? "pin" : "processing")}
               >
                 {isCredit ? "Confirm & receive" : `Pay ${paidLabel}`}
               </button>
@@ -462,6 +468,14 @@ export default function PurchaseFlow({
             )}
           </FlowFooter>
         </>
+      )}
+
+      {phase === "pin" && (
+        <PinGate
+          onConfirm={() => setPhase("processing")}
+          onBack={() => setPhase("steps")}
+          onClose={onClose}
+        />
       )}
 
       {phase === "processing" && (

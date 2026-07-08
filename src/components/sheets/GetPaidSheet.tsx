@@ -111,7 +111,7 @@ export default function GetPaidSheet({
                 i > 0 ? "border-t border-white/[0.05]" : ""
               }`}
             >
-              <span className="mt-0.5 grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border border-primary-glow/25 bg-primary/12 text-primary-glow">
+              <span className="mt-0.5 grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border border-primary-glow/25 bg-primary/[0.12] text-primary-glow">
                 <Check size={14} strokeWidth={2.8} />
               </span>
               <div className="min-w-0">

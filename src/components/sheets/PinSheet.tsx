@@ -3,7 +3,7 @@ import { ShieldCheck, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import Modal from "@/components/ui/modal";
 import { FlowFooter, FlowHeader } from "@/components/flows/flow-parts";
-import { useProfile } from "@/store/profile";
+import { useProfile, hashPin } from "@/store/profile";
 
 /** Set or change the 4-digit transaction PIN. */
 export default function PinSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -22,7 +22,7 @@ export default function PinSheet({ open, onClose }: { open: boolean; onClose: ()
   const valid = pin.length === 4 && pin === confirm;
 
   const save = () => {
-    update({ pinSet: true });
+    update({ pinSet: true, pinHash: hashPin(pin) });
     toast(changing ? "PIN updated" : "PIN set", {
       description: "You'll confirm payments with this 4-digit PIN.",
     });

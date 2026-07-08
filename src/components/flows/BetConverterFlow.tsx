@@ -101,7 +101,15 @@ export default function BetConverterFlow({ open, onClose }: { open: boolean; onC
                 From
               </p>
               <div className="mt-2">
-                <BookiePills idPrefix="From" value={from} onPick={(b) => setFrom(b)} />
+                <BookiePills
+                  idPrefix="From"
+                  value={from}
+                  onPick={(b) => {
+                    setFrom(b);
+                    // Never allow From === To — hop To to the next bookie.
+                    if (b === to) setTo(BOOKIES.find((x) => x !== b) ?? to);
+                  }}
+                />
               </div>
             </div>
 

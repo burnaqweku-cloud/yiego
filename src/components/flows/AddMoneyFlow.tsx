@@ -51,7 +51,7 @@ export default function AddMoneyFlow({ open, onClose }: { open: boolean; onClose
         <>
           <FlowHeader title="Add money" subtitle="Top up your wallet" onClose={onClose} />
           <div className="space-y-5 px-5 pb-2 pt-5">
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-7 text-center">
+            <div className="onyx-amount-card rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-7 text-center">
               <div className="flex items-baseline justify-center gap-2">
                 <span className="font-display text-[22px] font-semibold text-primary-glow">GH₵</span>
                 <input
