@@ -865,6 +865,21 @@
     backdrop-filter: blur(8px);
     animation: onyxFade 0.2s ease-out both;
   }
+  .onyx-modal-backdrop.is-closing {
+    animation: onyxFadeOut 0.22s ease-in both;
+  }
+  .onyx-sheet-handle {
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    width: 38px;
+    height: 4px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.16);
+    pointer-events: none;
+  }
   .onyx-modal-dock {
     position: fixed;
     inset: 0;
@@ -885,6 +900,9 @@
     box-shadow: 0 -24px 70px -24px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     animation: onyxSheetUp 0.34s cubic-bezier(0.2, 0.7, 0.2, 1) both;
   }
+  .onyx-modal-panel.is-closing {
+    animation: onyxSheetDown 0.22s cubic-bezier(0.6, 0, 0.8, 0.4) both;
+  }
   @media (min-width: 640px) {
     .onyx-modal-dock {
       align-items: center;
@@ -895,6 +913,9 @@
       max-height: 88dvh;
       border-radius: 26px;
       animation: onyxScaleIn 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+    .onyx-modal-panel.is-closing {
+      animation: onyxScaleOut 0.2s ease-in both;
     }
   }
 
@@ -1005,13 +1026,25 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+@keyframes onyxFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
 @keyframes onyxSheetUp {
   from { transform: translateY(100%); }
   to { transform: none; }
 }
+@keyframes onyxSheetDown {
+  from { transform: none; }
+  to { transform: translateY(100%); }
+}
 @keyframes onyxScaleIn {
   from { opacity: 0; transform: translateY(8px) scale(0.97); }
   to { opacity: 1; transform: none; }
+}
+@keyframes onyxScaleOut {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(8px) scale(0.97); }
 }
 @keyframes onyxSpin {
   to { transform: rotate(360deg); }

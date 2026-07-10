@@ -21,7 +21,18 @@ const App = () => (
       <MethodsProvider>
       <NoticesProvider>
       <FlowsProvider>
-        <Toaster position="top-center" theme="dark" richColors={false} />
+        <Toaster
+          position="top-center"
+          theme="dark"
+          toastOptions={{
+            classNames: {
+              toast:
+                "!rounded-2xl !border !border-white/10 !bg-[#101c16] !text-[#eaf2ed] !shadow-[0_20px_50px_-18px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)]",
+              title: "!text-[13.5px] !font-semibold !tracking-tight",
+              description: "!text-[12.5px] !text-[#8a988f]",
+            },
+          }}
+        />
         <Routes>
           <Route element={<AppShell />}>
             <Route path="/" element={<Dashboard />} />

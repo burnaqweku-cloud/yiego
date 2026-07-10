@@ -11,7 +11,9 @@ export default function BottomNav() {
               <n.icon
                 size={21}
                 strokeWidth={isActive ? 2.4 : 2}
-                className={isActive ? "text-primary-glow" : "text-faint-foreground"}
+                className={`transition-transform duration-300 ${
+                  isActive ? "-translate-y-px scale-110 text-primary-glow" : "text-faint-foreground"
+                }`}
               />
               <span className={isActive ? "text-foreground" : "text-faint-foreground"}>
                 {n.label}

@@ -1,10 +1,14 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+
+const CLOSE_MS = 220;
 
 /**
  * Onyx modal — a bottom-sheet on mobile, a centered dialog on desktop.
  * Handles backdrop click, Escape, body scroll-lock, initial focus, a focus
- * trap (Tab can't reach the blurred background), and focus return on close.
+ * trap, focus return on close — and an animated exit (the panel stays
+ * mounted ~220ms with a frozen frame so closing feels physical and the
+ * flow's reset never flashes on screen).
  */
 export default function Modal({
   open,
@@ -18,6 +22,34 @@ export default function Modal({
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(open);
+  const [closing, setClosing] = useState(false);
+
+  // Freeze the last open frame — while closing, the flow behind us resets
+  // its state; rendering the frozen children keeps the exit seamless.
+  const lastChildren = useRef(children);
+  if (open) lastChildren.current = children;
+
+  useEffect(() => {
+    if (open) {
+      setVisible(true);
+      setClosing(false);
+      return;
+    }
+    if (!visible) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      setVisible(false);
+      return;
+    }
+    setClosing(true);
+    const id = window.setTimeout(() => {
+      setVisible(false);
+      setClosing(false);
+    }, CLOSE_MS);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -74,14 +106,23 @@ export default function Modal({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!visible) return null;
 
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={label}>
-      <div className="onyx-modal-backdrop" onClick={onClose} aria-hidden="true" />
+      <div
+        className={`onyx-modal-backdrop ${closing ? "is-closing" : ""}`}
+        onClick={closing ? undefined : onClose}
+        aria-hidden="true"
+      />
       <div className="onyx-modal-dock">
-        <div ref={panelRef} tabIndex={-1} className="onyx-modal-panel no-scrollbar focus:outline-none">
-          {children}
+        <div
+          ref={panelRef}
+          tabIndex={-1}
+          className={`onyx-modal-panel no-scrollbar focus:outline-none ${closing ? "is-closing" : ""}`}
+        >
+          <span className="onyx-sheet-handle sm:hidden" aria-hidden="true" />
+          {open ? children : lastChildren.current}
         </div>
       </div>
     </div>,
