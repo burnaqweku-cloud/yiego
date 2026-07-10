@@ -1,8 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { BadgePercent, Link2, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowDownToLine, ArrowUpRight, BadgePercent, ShieldCheck, Sparkles } from "lucide-react";
+import { useWallet } from "@/store/wallet";
+import { formatSigned } from "@/lib/format";
 
-/** In-app notifications — the bell. Read-state persists. */
+/** In-app notifications — the bell. Real wallet activity generates live
+ *  notices on top of a few product notes; read-state persists. */
 
 export interface Notice {
   id: string;
@@ -12,19 +15,12 @@ export interface Notice {
   time: string;
 }
 
-export const NOTICES: Notice[] = [
-  {
-    id: "n1",
-    icon: Link2,
-    title: "You got paid",
-    body: "GH₵150.00 came in through your payment link “1:1 Consultation”.",
-    time: "2h ago",
-  },
+const STATIC_NOTICES: Notice[] = [
   {
     id: "n2",
     icon: BadgePercent,
-    title: "5% cashback weekend",
-    body: "Every data bundle this weekend earns 5% back in your wallet.",
+    title: "1% cashback on every purchase",
+    body: "Every bill, bundle and top-up earns cashback — redeem it from your Wallet.",
     time: "Yesterday",
   },
   {
@@ -44,6 +40,15 @@ export const NOTICES: Notice[] = [
 ];
 
 const STORAGE_KEY = "yiego_notices_v1";
+
+function agoLabel(ts: number): string {
+  const mins = Math.max(0, Math.round((Date.now() - ts) / 60000));
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
 
 interface NoticesValue {
   notices: Notice[];
@@ -68,6 +73,7 @@ function load(): string[] {
 }
 
 export function NoticesProvider({ children }: { children: ReactNode }) {
+  const { transactions } = useWallet();
   const [readIds, setReadIds] = useState<string[]>(load);
 
   useEffect(() => {
@@ -78,15 +84,28 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
     }
   }, [readIds]);
 
-  const unreadCount = NOTICES.filter((n) => !readIds.includes(n.id)).length;
+  // Live notices from real wallet movement in the last 48 hours.
+  const liveNotices: Notice[] = transactions
+    .filter((t) => t.ts && Date.now() - t.ts < 48 * 3600_000)
+    .slice(0, 5)
+    .map((t) => ({
+      id: `tx-${t.id}`,
+      icon: t.amount > 0 ? ArrowDownToLine : ArrowUpRight,
+      title: t.amount > 0 ? "Money in" : "Payment sent",
+      body: `${t.title} — ${formatSigned(t.amount)}`,
+      time: agoLabel(t.ts!),
+    }));
+
+  const notices = [...liveNotices, ...STATIC_NOTICES];
+  const unreadCount = notices.filter((n) => !readIds.includes(n.id)).length;
 
   return (
     <NoticesContext.Provider
       value={{
-        notices: NOTICES,
+        notices,
         readIds,
         unreadCount,
-        markAllRead: () => setReadIds(NOTICES.map((n) => n.id)),
+        markAllRead: () => setReadIds(notices.map((n) => n.id)),
       }}
     >
       {children}

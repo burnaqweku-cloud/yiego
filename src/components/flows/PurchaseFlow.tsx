@@ -75,6 +75,7 @@ export default function PurchaseFlow({
   const [plan, setPlan] = useState<FlowPlan | null>(null);
   const [amountStr, setAmountStr] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
+  const [receiptRef, setReceiptRef] = useState<string | null>(null);
 
   // Reset on open AND close — closing mid-processing cancels the pending
   // timer via the phase-effect cleanup, so it can never silently charge.
@@ -85,6 +86,7 @@ export default function PurchaseFlow({
     setPlan(null);
     setAmountStr("");
     setValues(config ? Object.fromEntries((config.fields ?? []).map((f) => [f.id, ""])) : {});
+    setReceiptRef(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, config?.serviceId]);
 
@@ -120,11 +122,10 @@ export default function PurchaseFlow({
     if (phase !== "processing" || !config) return;
     const id = window.setTimeout(() => {
       const subtitle = `${config.txSubtitle(state)} · ${nowLabel()}`;
-      if (isCredit) {
-        credit(creditedGHS, { type: config.txType, title: config.txTitle(state), subtitle });
-      } else {
-        debit(charged, { type: config.txType, title: config.txTitle(state), subtitle });
-      }
+      const tx = isCredit
+        ? credit(creditedGHS, { type: config.txType, title: config.txTitle(state), subtitle })
+        : debit(charged, { type: config.txType, title: config.txTitle(state), subtitle });
+      setReceiptRef(tx.ref ?? null);
       setPhase("success");
     }, 1700);
     return () => window.clearTimeout(id);
@@ -170,6 +171,7 @@ export default function PurchaseFlow({
     reviewRows.push({ label: f.label, value: fieldDisplay(f, values[f.id] ?? "") });
   }
   if (config.rate) reviewRows.push({ label: "Rate", value: config.rate.detail });
+  reviewRows.push({ label: "Fee", value: "Free" });
 
   const paidLabel = formatGHS(charged);
   const unitLabel = (n: number) =>
@@ -186,6 +188,7 @@ export default function PurchaseFlow({
       ? { label: "Received", value: formatGHS(creditedGHS) }
       : { label: "Paid", value: paidLabel },
     ...(config.successExtras ? config.successExtras(state) : []),
+    ...(receiptRef ? [{ label: "Reference", value: receiptRef }] : []),
   ];
 
   return (

@@ -3,12 +3,12 @@ import { ArrowDownToLine, Plus, Sparkles } from "lucide-react";
 import GuillocheMesh from "@/components/fx/GuillocheMesh";
 import { formatGHS, formatAmountParts } from "@/lib/format";
 import { useCountUp } from "@/hooks/useCountUp";
-import { useWallet, CASHBACK } from "@/store/wallet";
+import { useWallet } from "@/store/wallet";
 import { useFlows } from "@/store/flows";
 
 /** The wallet — a machined-metal jewel and the one splash of light on the page. */
 export default function BalanceCard() {
-  const { balance } = useWallet();
+  const { balance, cashback } = useWallet();
   const { openAddMoney, openWithdraw } = useFlows();
   const [hidden, setHidden] = useState(false);
   const animatedBalance = useCountUp(balance);
@@ -42,7 +42,7 @@ export default function BalanceCard() {
 
           <div className="onyx-cashback mt-3.5">
             <Sparkles size={13} className="text-amber" />
-            <strong className="tnum">{formatGHS(CASHBACK)}</strong> cashback earned
+            <strong className="tnum">{formatGHS(cashback)}</strong> cashback earned
           </div>
         </div>
 

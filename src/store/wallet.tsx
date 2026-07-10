@@ -3,13 +3,18 @@ import { MOCK_TRANSACTIONS_ALL, type MockTransaction, type TxType } from "@/data
 
 /**
  * The live wallet — real client-side state so flows actually move money.
- * Balance + transactions persist to localStorage, so purchases survive a
- * reload (until a real backend replaces this). Seeded from the mock history.
+ * Balance, cashback and transactions persist to localStorage, so purchases
+ * survive a reload (until a real backend replaces this).
+ *
+ * Cashback is real here: every debit accrues 1% into a cashback pot, which
+ * can be redeemed back into the balance from the Wallet page.
  */
 
 const STORAGE_KEY = "yiego_wallet_v1";
 const INITIAL_BALANCE = 2458.5;
-export const CASHBACK = 12.5;
+const INITIAL_CASHBACK = 12.5;
+export const CASHBACK_RATE = 0.01;
+export const CASHBACK_MIN_REDEEM = 1;
 
 interface TxDraft {
   type: TxType;
@@ -19,15 +24,20 @@ interface TxDraft {
 
 interface WalletValue {
   balance: number;
+  /** Cashback pot — grows 1% per purchase, redeemable into the balance. */
+  cashback: number;
   transactions: MockTransaction[];
-  /** Add money in (amount is made positive). */
-  credit: (amount: number, draft: TxDraft) => void;
-  /** Take money out (amount is made negative). */
-  debit: (amount: number, draft: TxDraft) => void;
+  /** Add money in (amount is made positive). Returns the created receipt. */
+  credit: (amount: number, draft: TxDraft) => MockTransaction;
+  /** Take money out (amount is made negative). Returns the created receipt. */
+  debit: (amount: number, draft: TxDraft) => MockTransaction;
+  /** Move the cashback pot into the balance. Returns the amount redeemed. */
+  redeemCashback: () => number;
 }
 
 interface Persisted {
   balance: number;
+  cashback: number;
   transactions: MockTransaction[];
 }
 
@@ -60,14 +70,23 @@ function load(): Persisted {
     if (raw) {
       const parsed = JSON.parse(raw) as Persisted;
       if (Number.isFinite(parsed?.balance) && Array.isArray(parsed?.transactions)) {
-        // Validate element-wise — one corrupt entry must never crash the app.
-        return { balance: parsed.balance, transactions: parsed.transactions.filter(isValidTx) };
+        return {
+          balance: parsed.balance,
+          // Older saves predate the cashback pot — seed it.
+          cashback: Number.isFinite(parsed.cashback) ? parsed.cashback : INITIAL_CASHBACK,
+          // Validate element-wise — one corrupt entry must never crash the app.
+          transactions: parsed.transactions.filter(isValidTx),
+        };
       }
     }
   } catch {
     /* ignore corrupt state */
   }
-  return { balance: INITIAL_BALANCE, transactions: MOCK_TRANSACTIONS_ALL };
+  return {
+    balance: INITIAL_BALANCE,
+    cashback: INITIAL_CASHBACK,
+    transactions: MOCK_TRANSACTIONS_ALL,
+  };
 }
 
 /** Recency group derived from a real timestamp (seeded rows keep theirs). */
@@ -78,6 +97,20 @@ function groupFromTs(ts: number): MockTransaction["group"] {
   if (days === 1) return "Yesterday";
   if (days < 7) return "This week";
   return "Earlier";
+}
+
+/** "YG-8F2K4Q" — receipt reference shown on success screens and receipts. */
+function makeRef(): string {
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let i = 0; i < 6; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return `YG-${s}`;
+}
+
+/** Reference for any transaction — falls back to a stable derivation for
+ *  seeded rows that predate real refs. */
+export function txRef(t: MockTransaction): string {
+  return t.ref ?? `YG-${t.id.slice(-6).toUpperCase().replace(/[^A-Z0-9]/g, "7")}`;
 }
 
 let txSeq = 0;
@@ -93,7 +126,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
-  const addTransaction = (signedAmount: number, draft: TxDraft) => {
+  const addTransaction = (signedAmount: number, draft: TxDraft): MockTransaction => {
     const now = Date.now();
     const tx: MockTransaction = {
       id: `u${now.toString(36)}${txSeq++}`,
@@ -104,21 +137,54 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       status: "success",
       group: "Today",
       ts: now,
+      ref: makeRef(),
     };
     setState((s) => ({
       balance: round2(s.balance + signedAmount),
+      // Purchases earn 1% back (top-ups/withdrawals don't earn on themselves
+      // being credits; only money OUT accrues).
+      cashback:
+        signedAmount < 0 && draft.type !== "withdrawal"
+          ? round2(s.cashback + Math.abs(signedAmount) * CASHBACK_RATE)
+          : s.cashback,
       transactions: [tx, ...s.transactions],
     }));
+    return tx;
+  };
+
+  const redeemCashback = (): number => {
+    const amt = round2(state.cashback);
+    if (amt < CASHBACK_MIN_REDEEM) return 0;
+    const now = Date.now();
+    const tx: MockTransaction = {
+      id: `u${now.toString(36)}${txSeq++}`,
+      type: "deposit",
+      title: "Cashback Redeemed",
+      subtitle: `1% back on purchases · ${nowLabel()}`,
+      amount: amt,
+      status: "success",
+      group: "Today",
+      ts: now,
+      ref: makeRef(),
+    };
+    setState((s) => ({
+      balance: round2(s.balance + amt),
+      cashback: 0,
+      transactions: [tx, ...s.transactions],
+    }));
+    return amt;
   };
 
   const value: WalletValue = {
     balance: state.balance,
+    cashback: round2(state.cashback),
     // Real transactions re-group by their timestamp as days pass.
     transactions: state.transactions.map((t) =>
       t.ts ? { ...t, group: groupFromTs(t.ts) } : t,
     ),
     credit: (amount, draft) => addTransaction(Math.abs(amount), draft),
     debit: (amount, draft) => addTransaction(-Math.abs(amount), draft),
+    redeemCashback,
   };
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;

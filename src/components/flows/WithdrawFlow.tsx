@@ -22,6 +22,7 @@ export default function WithdrawFlow({ open, onClose }: { open: boolean; onClose
   const [step, setStep] = useState<Step>("amount");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<FundingMethod>(defaultMethod);
+  const [receiptRef, setReceiptRef] = useState<string | null>(null);
 
   // Reset on open AND close — cancels a pending processing timer.
   useEffect(() => {
@@ -37,11 +38,12 @@ export default function WithdrawFlow({ open, onClose }: { open: boolean; onClose
   useEffect(() => {
     if (step !== "processing" || amt <= 0) return;
     const id = window.setTimeout(() => {
-      debit(amt, {
+      const tx = debit(amt, {
         type: "withdrawal",
         title: "Withdrawal",
         subtitle: `To ${method.detail} · ${nowLabel()}`,
       });
+      setReceiptRef(tx.ref ?? null);
       setStep("success");
     }, 1600);
     return () => window.clearTimeout(id);
@@ -184,6 +186,7 @@ export default function WithdrawFlow({ open, onClose }: { open: boolean; onClose
             { label: "Sent", value: formatGHS(amt) },
             { label: "To", value: `${method.name} · ${method.detail}` },
             { label: "New balance", value: formatGHS(balance) },
+            ...(receiptRef ? [{ label: "Reference", value: receiptRef }] : []),
           ]}
           primaryLabel="Done"
           onPrimary={onClose}

@@ -26,7 +26,7 @@ import BalanceCard from "@/components/dashboard/BalanceCard";
 import AddMethodSheet from "@/components/sheets/AddMethodSheet";
 import MethodSheet from "@/components/sheets/MethodSheet";
 import { type MockTransaction, type TxType, type TxGroup } from "@/data/mock";
-import { useWallet, CASHBACK } from "@/store/wallet";
+import { useWallet } from "@/store/wallet";
 import { useMethods, type FundingMethod } from "@/store/methods";
 import { formatSigned } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -117,7 +117,7 @@ function TxRow({ t }: { t: MockTransaction }) {
 }
 
 export default function Wallet() {
-  const { transactions } = useWallet();
+  const { transactions, cashback } = useWallet();
   const { methods, defaultId } = useMethods();
   const [filter, setFilter] = useState<Filter>("all");
   const [openMethod, setOpenMethod] = useState<FundingMethod | null>(null);
@@ -153,7 +153,7 @@ export default function Wallet() {
         <StatTile
           size="sm"
           label="Cashback"
-          value={`GH₵${CASHBACK.toFixed(2)}`}
+          value={`GH₵${cashback.toFixed(2)}`}
           delta="earned"
           tone="muted"
         />

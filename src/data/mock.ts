@@ -45,6 +45,8 @@ export interface MockTransaction {
   group?: TxGroup;
   /** Epoch ms — set on real (user-made) transactions; groups derive from it */
   ts?: number;
+  /** Receipt reference, e.g. "YG-8F2K4Q" — set on real transactions */
+  ref?: string;
 }
 
 export const MOCK_USER: MockUser = {

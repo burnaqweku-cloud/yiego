@@ -57,6 +57,7 @@ export default function BuyDataFlow({
   const [network, setNetwork] = useState<Network | null>(null);
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [phone, setPhone] = useState(profile.phone);
+  const [receiptRef, setReceiptRef] = useState<string | null>(null);
 
   // Reset on every open AND close. Resetting on close is what cancels a
   // pending "processing" timer (the step-effect cleanup fires), so closing
@@ -79,11 +80,12 @@ export default function BuyDataFlow({
   useEffect(() => {
     if (step !== "processing" || !network || !bundle) return;
     const id = window.setTimeout(() => {
-      debit(bundle.price, {
+      const tx = debit(bundle.price, {
         type: "data",
         title: `${network.name} Data — ${bundle.size}`,
         subtitle: `${masked} · ${nowLabel()}`,
       });
+      setReceiptRef(tx.ref ?? null);
       setStep("success");
     }, 1700);
     return () => window.clearTimeout(id);
@@ -221,6 +223,7 @@ export default function BuyDataFlow({
                 { label: "Network", value: network.name },
                 { label: "Bundle", value: `${bundle.size} · valid ${bundle.validity}` },
                 { label: "Recipient", value: masked },
+                { label: "Fee", value: "Free" },
               ].map((r, i) => (
                 <div
                   key={r.label}
@@ -306,6 +309,7 @@ export default function BuyDataFlow({
             { label: "Bundle", value: `${network.name} ${bundle.size}` },
             { label: "Recipient", value: masked },
             { label: "Paid", value: formatGHS(bundle.price) },
+            ...(receiptRef ? [{ label: "Reference", value: receiptRef }] : []),
           ]}
           primaryLabel="Done"
           onPrimary={onClose}

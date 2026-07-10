@@ -18,6 +18,7 @@ export default function AddMoneyFlow({ open, onClose }: { open: boolean; onClose
   const [step, setStep] = useState<Step>("amount");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<FundingMethod>(defaultMethod);
+  const [receiptRef, setReceiptRef] = useState<string | null>(null);
 
   // Reset on open AND close — resetting on close cancels any pending
   // "processing" timer so closing mid-processing can't silently credit.
@@ -34,11 +35,12 @@ export default function AddMoneyFlow({ open, onClose }: { open: boolean; onClose
   useEffect(() => {
     if (step !== "processing" || !method || amt <= 0) return;
     const id = window.setTimeout(() => {
-      credit(amt, {
+      const tx = credit(amt, {
         type: "deposit",
         title: "Wallet Top-up",
         subtitle: `${method.name} · ${nowLabel()}`,
       });
+      setReceiptRef(tx.ref ?? null);
       setStep("success");
     }, 1600);
     return () => window.clearTimeout(id);
@@ -154,6 +156,7 @@ export default function AddMoneyFlow({ open, onClose }: { open: boolean; onClose
             { label: "Added", value: formatGHS(amt) },
             { label: "Method", value: method.name },
             { label: "New balance", value: formatGHS(balance) },
+            ...(receiptRef ? [{ label: "Reference", value: receiptRef }] : []),
           ]}
           primaryLabel="Done"
           onPrimary={onClose}
