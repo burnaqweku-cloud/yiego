@@ -1,6 +1,7 @@
 import BalanceCard from "@/components/dashboard/BalanceCard";
 import FlowPanel from "@/components/dashboard/FlowPanel";
 import QuickActions from "@/components/dashboard/QuickActions";
+import RecentServices from "@/components/dashboard/RecentServices";
 import ServicesSection from "@/components/dashboard/ServicesSection";
 import DeveloperCard from "@/components/dashboard/DeveloperCard";
 import RecentActivity from "@/components/dashboard/RecentActivity";
@@ -46,7 +47,10 @@ export default function Dashboard() {
         <QuickActions />
       </section>
 
-      <section className="onyx-rise" style={{ animationDelay: "180ms" }}>
+      {/* Buy again — brings its own onyx-rise section (180ms), renders only with history */}
+      <RecentServices />
+
+      <section className="onyx-rise" style={{ animationDelay: "240ms" }}>
         <ServicesSection />
       </section>
 

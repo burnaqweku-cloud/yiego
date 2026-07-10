@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
-import { ArrowUpRight, Search, SearchX, X } from "lucide-react";
+import { ArrowUpRight, History, Search, SearchX, X } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import SectionHeader from "@/components/ui/section-header";
 import { SERVICES, CATEGORIES, type CategoryId } from "@/data/services";
 import { useFlows } from "@/store/flows";
+import { useWallet } from "@/store/wallet";
+import { recentServices } from "@/lib/recent-services";
 import { cn } from "@/lib/utils";
 
 type FilterId = CategoryId | "all";
@@ -44,6 +46,11 @@ export default function Services() {
   const total = matches.length;
   const activeCategory = filter === "all" ? null : CATEGORIES.find((c) => c.id === filter);
   const { openService } = useFlows();
+  const { transactions } = useWallet();
+
+  // "Buy again" strip — only on the unfiltered view, so search results stay focused.
+  const recents = useMemo(() => recentServices(transactions, 4), [transactions]);
+  const showRecents = recents.length > 0 && !q && filter === "all";
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -121,6 +128,40 @@ export default function Services() {
           </p>
         )}
       </section>
+
+      {/* Recently used — one-tap buy-again, derived from real transactions */}
+      {showRecents && (
+        <section
+          className="onyx-rise"
+          style={{ animationDelay: "90ms" }}
+          aria-label="Recently used services"
+        >
+          <p className="mb-2.5 flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">
+            <History size={12} aria-hidden="true" />
+            Recently used
+          </p>
+          <div className="no-scrollbar -mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1">
+            {recents.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => openService(s.id)}
+                className="group flex min-h-[52px] shrink-0 items-center gap-2.5 rounded-2xl border border-white/[0.07] bg-gradient-to-b from-[#101a15]/85 to-[#090e0c]/85 py-2 pl-2.5 pr-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-glow/30"
+              >
+                <span
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] border border-primary-glow/[0.16] bg-gradient-to-b from-primary/[0.16] to-primary/[0.04] text-primary-glow transition-transform group-hover:scale-105"
+                  aria-hidden="true"
+                >
+                  <s.icon size={16} strokeWidth={2} />
+                </span>
+                <span className="whitespace-nowrap text-[13px] font-semibold tracking-tight text-foreground">
+                  {s.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Results — one section per category with matches */}
       {groups.length > 0 ? (

@@ -23,8 +23,11 @@ import SectionHeader from "@/components/ui/section-header";
 import StatTile from "@/components/ui/stat-tile";
 import ListRow from "@/components/ui/list-row";
 import BalanceCard from "@/components/dashboard/BalanceCard";
+import SpendingBreakdown from "@/components/wallet/SpendingBreakdown";
 import AddMethodSheet from "@/components/sheets/AddMethodSheet";
 import MethodSheet from "@/components/sheets/MethodSheet";
+import RedeemCashbackSheet from "@/components/sheets/RedeemCashbackSheet";
+import TransactionDetailSheet from "@/components/sheets/TransactionDetailSheet";
 import { type MockTransaction, type TxType, type TxGroup } from "@/data/mock";
 import { useWallet } from "@/store/wallet";
 import { useMethods, type FundingMethod } from "@/store/methods";
@@ -79,39 +82,46 @@ function MethodChip({ icon: Icon }: { icon: LucideIcon }) {
   );
 }
 
-/* ── One history row — matches RecentActivity exactly ──────────────── */
-function TxRow({ t }: { t: MockTransaction }) {
+/* ── One history row — matches RecentActivity, tap opens the receipt ─ */
+function TxRow({ t, onOpen }: { t: MockTransaction; onOpen: () => void }) {
   const isIn = t.amount > 0;
   const pending = t.status === "pending";
   const Icon = TX_ICON[t.type] ?? Sparkles;
   return (
-    <li className="onyx-txrow">
-      <span className={cn("onyx-tx-icon", isIn ? "is-in" : "is-out")}>
-        <Icon size={16} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[13.5px] font-semibold tracking-tight text-foreground">
-          {t.title}
-        </p>
-        <p className="truncate text-[11.5px] text-faint-foreground">{t.subtitle}</p>
-      </div>
-      <div className="text-right">
-        <p
-          className={cn(
-            "font-display text-[14px] font-semibold tnum",
-            isIn ? "text-success" : "text-[#d6e2db]",
+    <li className="border-b border-white/[0.05] last:border-0">
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`${t.title}, ${formatSigned(t.amount)} — view receipt`}
+        className="-mx-2.5 flex w-[calc(100%+20px)] items-center gap-[13px] rounded-[14px] px-2.5 py-[13px] text-left transition-colors duration-150 hover:bg-white/[0.03] active:bg-white/[0.05]"
+      >
+        <span className={cn("onyx-tx-icon", isIn ? "is-in" : "is-out")}>
+          <Icon size={16} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13.5px] font-semibold tracking-tight text-foreground">
+            {t.title}
+          </p>
+          <p className="truncate text-[11.5px] text-faint-foreground">{t.subtitle}</p>
+        </div>
+        <div className="text-right">
+          <p
+            className={cn(
+              "font-display text-[14px] font-semibold tnum",
+              isIn ? "text-success" : "text-[#d6e2db]",
+            )}
+          >
+            {formatSigned(t.amount)}
+          </p>
+          {pending ? (
+            <span className="onyx-status-pending">
+              <Clock size={10} /> Pending
+            </span>
+          ) : (
+            <span className="onyx-status-ok">Done</span>
           )}
-        >
-          {formatSigned(t.amount)}
-        </p>
-        {pending ? (
-          <span className="onyx-status-pending">
-            <Clock size={10} /> Pending
-          </span>
-        ) : (
-          <span className="onyx-status-ok">Done</span>
-        )}
-      </div>
+        </div>
+      </button>
     </li>
   );
 }
@@ -122,6 +132,8 @@ export default function Wallet() {
   const [filter, setFilter] = useState<Filter>("all");
   const [openMethod, setOpenMethod] = useState<FundingMethod | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [openTx, setOpenTx] = useState<MockTransaction | null>(null);
+  const [redeemOpen, setRedeemOpen] = useState(false);
 
   const visible = transactions.filter((t) => matchesFilter(t, filter));
 
@@ -150,17 +162,30 @@ export default function Wallet() {
       >
         <StatTile size="sm" label="In" value={compact(inflow)} delta="money in" tone="up" />
         <StatTile size="sm" label="Out" value={compact(outflow)} delta="spent" tone="down" />
-        <StatTile
-          size="sm"
-          label="Cashback"
-          value={`GH₵${cashback.toFixed(2)}`}
-          delta="earned"
-          tone="muted"
-        />
+        <button
+          type="button"
+          onClick={() => setRedeemOpen(true)}
+          aria-label="Redeem cashback"
+          className="group rounded-[20px] text-left transition-transform duration-200 hover:-translate-y-0.5"
+        >
+          <StatTile
+            size="sm"
+            label="Cashback"
+            value={`GH₵${cashback.toFixed(2)}`}
+            delta="tap to redeem"
+            tone="muted"
+            className="h-full transition-colors group-hover:border-primary-glow/25"
+          />
+        </button>
+      </section>
+
+      {/* Where the money goes */}
+      <section className="onyx-rise" style={{ animationDelay: "180ms" }}>
+        <SpendingBreakdown />
       </section>
 
       {/* Funding methods */}
-      <section className="onyx-rise space-y-3.5" style={{ animationDelay: "180ms" }}>
+      <section className="onyx-rise space-y-3.5" style={{ animationDelay: "240ms" }}>
         <SectionHeader title="Funding methods" />
         <div className="onyx-panel rounded-[22px] p-2.5 sm:p-3">
           {methods.map((m) => (
@@ -190,7 +215,7 @@ export default function Wallet() {
       </section>
 
       {/* Transactions */}
-      <section className="onyx-rise space-y-4" style={{ animationDelay: "240ms" }}>
+      <section className="onyx-rise space-y-4" style={{ animationDelay: "300ms" }}>
         <SectionHeader title="Transactions" />
 
         <div className="flex flex-wrap gap-2">
@@ -230,7 +255,7 @@ export default function Wallet() {
                   <div className="onyx-panel rounded-[22px] px-5 py-1.5 sm:px-6">
                     <ul className="flex flex-col">
                       {rows.map((t) => (
-                        <TxRow key={t.id} t={t} />
+                        <TxRow key={t.id} t={t} onOpen={() => setOpenTx(t)} />
                       ))}
                     </ul>
                   </div>
@@ -248,6 +273,10 @@ export default function Wallet() {
         onClose={() => setOpenMethod(null)}
       />
       <AddMethodSheet open={addOpen} onClose={() => setAddOpen(false)} />
+
+      {/* Receipt + cashback sheets */}
+      <TransactionDetailSheet tx={openTx} onClose={() => setOpenTx(null)} />
+      <RedeemCashbackSheet open={redeemOpen} onClose={() => setRedeemOpen(false)} />
     </div>
   );
 }

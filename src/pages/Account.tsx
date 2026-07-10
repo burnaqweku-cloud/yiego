@@ -16,6 +16,7 @@ import TermsSheet from "@/components/sheets/TermsSheet";
 import AppearanceSheet from "@/components/sheets/AppearanceSheet";
 import LanguageSheet from "@/components/sheets/LanguageSheet";
 import SignOutSheet from "@/components/sheets/SignOutSheet";
+import ReferralSheet, { referralCode } from "@/components/sheets/ReferralSheet";
 import {
   User,
   Lock,
@@ -30,6 +31,8 @@ import {
   LogOut,
   Pencil,
   Gauge,
+  Gift,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +49,7 @@ type SheetId =
   | "terms"
   | "appearance"
   | "language"
+  | "referral"
   | "signout";
 
 interface SettingItem {
@@ -211,6 +215,41 @@ export default function Account() {
         </div>
       </div>
 
+      {/* Invite friends — the referral standout */}
+      <section className="onyx-rise" style={{ animationDelay: "90ms" }}>
+        <button
+          type="button"
+          onClick={open("referral")}
+          className="onyx-dev group relative w-full overflow-hidden rounded-[22px] p-5 text-left transition-transform duration-200 hover:-translate-y-0.5 sm:p-6"
+        >
+          <span className="onyx-dev-glow" aria-hidden="true" />
+          <div className="relative flex items-center gap-4">
+            <span
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-[15px] border border-primary-glow/25 bg-gradient-to-b from-primary/[0.22] to-primary/[0.04] text-primary-glow shadow-[0_0_24px_-6px_rgba(34,195,135,0.55)]"
+              aria-hidden="true"
+            >
+              <Gift size={21} strokeWidth={1.9} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-[15.5px] font-semibold tracking-tight text-white">
+                Give GH₵5, get GH₵5
+              </p>
+              <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">
+                Invite friends — you both get GH₵5 on their first purchase.
+              </p>
+              <span className="mt-2.5 inline-flex items-center rounded-lg border border-dashed border-primary-glow/30 bg-primary/[0.07] px-2.5 py-1 font-mono text-[12px] font-semibold tracking-[0.1em] text-primary-glow">
+                {referralCode(profile.firstName)}
+              </span>
+            </div>
+            <ChevronRight
+              size={18}
+              className="shrink-0 text-faint-foreground transition-all group-hover:translate-x-0.5 group-hover:text-primary-glow"
+              aria-hidden="true"
+            />
+          </div>
+        </button>
+      </section>
+
       {/* Settings groups */}
       <SettingsGroup group={groups[0]} delay="120ms" />
       <SettingsGroup group={groups[1]} delay="180ms" />
@@ -242,6 +281,7 @@ export default function Account() {
       <TermsSheet open={sheet === "terms"} onClose={close} />
       <AppearanceSheet open={sheet === "appearance"} onClose={close} />
       <LanguageSheet open={sheet === "language"} onClose={close} />
+      <ReferralSheet open={sheet === "referral"} onClose={close} />
       <SignOutSheet open={sheet === "signout"} onClose={close} />
     </div>
   );

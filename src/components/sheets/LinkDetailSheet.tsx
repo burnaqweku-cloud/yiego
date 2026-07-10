@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Check, Copy, Link2, Pause, Play } from "lucide-react";
+import { Check, Copy, Link2, Pause, Play, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import Modal from "@/components/ui/modal";
 import { FlowHeader } from "@/components/flows/flow-parts";
@@ -38,9 +38,11 @@ export default function LinkDetailSheet({
 }) {
   const { links, toggleLink } = useLinks();
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
 
   useEffect(() => {
     setCopied(false);
+    setShared(false);
   }, [open, linkId]);
 
   const link = links.find((l) => l.id === linkId);
@@ -50,6 +52,19 @@ export default function LinkDetailSheet({
     navigator.clipboard?.writeText(`https://${linkUrl(link)}`).catch(() => {});
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
+  };
+
+  const share = () => {
+    const url = `https://${linkUrl(link)}`;
+    if (typeof navigator.share === "function") {
+      // Native share sheet — a dismissal rejects, which is fine.
+      navigator.share({ title: link.title, url }).catch(() => {});
+    } else {
+      // No Web Share support — fall back to copying with its own feedback.
+      navigator.clipboard?.writeText(url).catch(() => {});
+      setShared(true);
+      window.setTimeout(() => setShared(false), 1600);
+    }
   };
 
   const pausing = link.status !== "Off";
@@ -117,6 +132,10 @@ export default function LinkDetailSheet({
           <button type="button" className="onyx-btn-ghost w-full" onClick={copy}>
             {copied ? <Check size={16} /> : <Copy size={16} />}
             {copied ? "Link copied" : "Copy link"}
+          </button>
+          <button type="button" className="onyx-btn-ghost w-full" onClick={share}>
+            {shared ? <Check size={16} /> : <Share2 size={16} />}
+            {shared ? "Copied" : "Share link"}
           </button>
           {link.status !== "Paid" && (
             <button type="button" className="onyx-btn-ghost w-full" onClick={onToggle}>

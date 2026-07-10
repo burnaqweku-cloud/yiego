@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowDownToLine, ArrowUpRight, ChevronRight, Clock } from "lucide-react";
+import TransactionDetailSheet from "@/components/sheets/TransactionDetailSheet";
 import { formatSigned } from "@/lib/format";
 import { useWallet } from "@/store/wallet";
+import type { MockTransaction } from "@/data/mock";
 import { cn } from "@/lib/utils";
 
 export default function RecentActivity() {
   const { transactions } = useWallet();
+  const [selected, setSelected] = useState<MockTransaction | null>(null);
   const recent = transactions.slice(0, 5);
   return (
     <div className="onyx-panel rounded-[26px] p-6">
@@ -18,12 +22,18 @@ export default function RecentActivity() {
         </Link>
       </div>
 
-      <ul className="mt-4 flex flex-col">
+      <div className="mt-4 flex flex-col">
         {recent.map((t) => {
           const isIn = t.amount > 0;
           const pending = t.status === "pending";
           return (
-            <li key={t.id} className="onyx-txrow">
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setSelected(t)}
+              aria-label={`${t.title}, ${formatSigned(t.amount)} — view receipt`}
+              className="onyx-txrow -mx-2 rounded-xl px-2 text-left transition-colors hover:bg-white/[0.02]"
+            >
               <span className={cn("onyx-tx-icon", isIn ? "is-in" : "is-out")}>
                 {isIn ? <ArrowDownToLine size={16} /> : <ArrowUpRight size={16} />}
               </span>
@@ -50,10 +60,12 @@ export default function RecentActivity() {
                   <span className="onyx-status-ok">Done</span>
                 )}
               </div>
-            </li>
+            </button>
           );
         })}
-      </ul>
+      </div>
+
+      <TransactionDetailSheet tx={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }
