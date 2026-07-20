@@ -160,7 +160,7 @@ export default function Wallet() {
         className="onyx-rise grid grid-cols-3 gap-2.5 sm:gap-3"
         style={{ animationDelay: "120ms" }}
       >
-        <StatTile size="sm" label="In" value={compact(inflow)} delta="money in" tone="up" />
+        <StatTile size="sm" label="In" value={compact(inflow)} delta="received" tone="up" />
         <StatTile size="sm" label="Out" value={compact(outflow)} delta="spent" tone="down" />
         <button
           type="button"
@@ -194,6 +194,7 @@ export default function Wallet() {
               icon={<MethodChip icon={KIND_ICON[m.kind]} />}
               title={m.name}
               subtitle={m.detail}
+              chevron
               onClick={() => setOpenMethod(m)}
               right={
                 m.id === defaultId ? (
@@ -215,7 +216,7 @@ export default function Wallet() {
       </section>
 
       {/* Transactions */}
-      <section className="onyx-rise space-y-4" style={{ animationDelay: "300ms" }}>
+      <section className="onyx-rise space-y-3.5" style={{ animationDelay: "300ms" }}>
         <SectionHeader title="Transactions" />
 
         <div className="flex flex-wrap gap-2">
@@ -249,7 +250,7 @@ export default function Wallet() {
               if (rows.length === 0) return null;
               return (
                 <div key={group} className="space-y-2.5">
-                  <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">
+                  <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
                     {group}
                   </p>
                   <div className="onyx-panel rounded-[22px] px-5 py-1.5 sm:px-6">

@@ -108,7 +108,7 @@ export function SuccessView({
         <h3
           ref={headingRef}
           tabIndex={-1}
-          className="mt-5 font-display text-[21px] font-semibold tracking-tight text-white focus:outline-none"
+          className="mt-5 font-display text-[21px] font-semibold tracking-tight text-white focus:outline-none focus:[box-shadow:none]"
         >
           {title}
         </h3>

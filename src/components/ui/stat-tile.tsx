@@ -19,7 +19,7 @@ export default function StatTile({
 }) {
   return (
     <div className={cn("onyx-panel rounded-[20px] p-3.5 sm:p-5", className)}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
         {label}
       </p>
       <p

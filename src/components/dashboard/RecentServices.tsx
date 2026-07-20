@@ -15,7 +15,7 @@ export default function RecentServices() {
 
   return (
     <section className="onyx-rise" style={{ animationDelay: "180ms" }} aria-label="Buy again">
-      <h2 className="font-display text-[15px] font-semibold tracking-tight text-white">
+      <h2 className="font-display text-[17px] font-semibold tracking-tight text-white">
         Buy again
       </h2>
       <div className="no-scrollbar mt-3 flex gap-2.5 overflow-x-auto pb-1">
@@ -25,12 +25,12 @@ export default function RecentServices() {
             type="button"
             onClick={() => openService(s.id)}
             aria-label={`Buy ${s.name} again`}
-            className="group flex min-h-[52px] shrink-0 items-center gap-2.5 rounded-2xl border border-white/[0.06] bg-gradient-to-b from-[#101a15]/85 to-[#090e0c]/85 py-2 pl-2 pr-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-[#7cf0b4]/30 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_30px_-16px_rgba(34,195,135,0.5)]"
+            className="group flex min-h-[52px] shrink-0 items-center gap-2.5 rounded-2xl border border-white/[0.06] bg-gradient-to-b from-[#101a15]/85 to-[#090e0c]/85 py-2 pl-2 pr-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-primary-glow/30 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_30px_-16px_rgba(34,195,135,0.5)]"
           >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[12px] border border-[#7cf0b4]/[0.16] bg-gradient-to-b from-primary/[0.16] to-primary/[0.04] text-primary-glow transition-transform duration-200 group-hover:scale-105">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[12px] border border-primary-glow/[0.16] bg-gradient-to-b from-primary/[0.16] to-primary/[0.04] text-primary-glow transition-transform duration-200 group-hover:scale-105">
               <s.icon size={16} strokeWidth={2.1} />
             </span>
-            <span className="whitespace-nowrap text-[13px] font-semibold tracking-tight text-[#d6e2db]">
+            <span className="whitespace-nowrap text-[13px] font-semibold tracking-tight text-foreground">
               {s.name}
             </span>
           </button>

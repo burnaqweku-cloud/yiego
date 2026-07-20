@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { LucideIcon } from "lucide-react";
 import { ArrowDownToLine, ArrowUpRight, BadgePercent, ShieldCheck, Sparkles } from "lucide-react";
 import { useWallet } from "@/store/wallet";
-import { formatSigned } from "@/lib/format";
+import { formatGHS } from "@/lib/format";
 
 /** In-app notifications — the bell. Real wallet activity generates live
  *  notices on top of a few product notes; read-state persists. */
@@ -92,7 +92,7 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
       id: `tx-${t.id}`,
       icon: t.amount > 0 ? ArrowDownToLine : ArrowUpRight,
       title: t.amount > 0 ? "Money in" : "Payment sent",
-      body: `${t.title} — ${formatSigned(t.amount)}`,
+      body: `${t.title} · ${formatGHS(Math.abs(t.amount))}`,
       time: agoLabel(t.ts!),
     }));
 

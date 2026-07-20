@@ -62,9 +62,16 @@ export default function TransactionDetailSheet({
     window.setTimeout(() => setCopied(false), 1600);
   };
 
+  // The Date & time row already carries the timestamp — show only the
+  // meaningful part of the subtitle (recipient/meter/method) as Detail.
+  const detail =
+    tx.subtitle.includes("·") && tx.ts
+      ? tx.subtitle.split("·").slice(0, -1).join("·").trim()
+      : tx.subtitle;
+
   const rows: { label: string; value: string; mono?: boolean }[] = [
     { label: "Date & time", value: whenLabel(tx) },
-    { label: "Detail", value: tx.subtitle },
+    ...(detail ? [{ label: "Detail", value: detail }] : []),
     { label: "Type", value: TYPE_LABEL[tx.type] ?? "Transaction" },
     { label: "Fee", value: "Free" },
     { label: "Reference", value: reference, mono: true },

@@ -120,8 +120,7 @@ export default function Services() {
               </>
             ) : (
               <>
-                Every service —{" "}
-                <span className="tnum font-semibold text-foreground">{total}</span> across{" "}
+                <span className="tnum font-semibold text-foreground">{total}</span> services across{" "}
                 {CATEGORIES.length} categories
               </>
             )}
@@ -136,7 +135,7 @@ export default function Services() {
           style={{ animationDelay: "90ms" }}
           aria-label="Recently used services"
         >
-          <p className="mb-2.5 flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">
+          <p className="mb-2.5 flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
             <History size={12} aria-hidden="true" />
             Recently used
           </p>
@@ -146,13 +145,13 @@ export default function Services() {
                 key={s.id}
                 type="button"
                 onClick={() => openService(s.id)}
-                className="group flex min-h-[52px] shrink-0 items-center gap-2.5 rounded-2xl border border-white/[0.07] bg-gradient-to-b from-[#101a15]/85 to-[#090e0c]/85 py-2 pl-2.5 pr-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-glow/30"
+                className="group flex min-h-[52px] shrink-0 items-center gap-2.5 rounded-2xl border border-white/[0.06] bg-gradient-to-b from-[#101a15]/85 to-[#090e0c]/85 py-2 pl-2 pr-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-primary-glow/30 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_30px_-16px_rgba(34,195,135,0.5)]"
               >
                 <span
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] border border-primary-glow/[0.16] bg-gradient-to-b from-primary/[0.16] to-primary/[0.04] text-primary-glow transition-transform group-hover:scale-105"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-[12px] border border-primary-glow/[0.16] bg-gradient-to-b from-primary/[0.16] to-primary/[0.04] text-primary-glow transition-transform duration-200 group-hover:scale-105"
                   aria-hidden="true"
                 >
-                  <s.icon size={16} strokeWidth={2} />
+                  <s.icon size={16} strokeWidth={2.1} />
                 </span>
                 <span className="whitespace-nowrap text-[13px] font-semibold tracking-tight text-foreground">
                   {s.name}
@@ -170,15 +169,15 @@ export default function Services() {
             <section key={g.category.id}>
               <SectionHeader
                 title={g.category.label}
-                action={
-                  <span className="tnum inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full border border-white/[0.07] bg-white/[0.02] px-2 text-[11px] font-semibold text-muted-foreground">
+                badge={
+                  <span className="tnum inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full border border-white/[0.07] bg-white/[0.02] px-2 text-[11px] font-semibold text-muted-foreground">
                     {g.items.length}
                   </span>
                 }
               />
               <div
                 key={filter}
-                className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+                className="mt-3.5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
               >
                 {g.items.map((s, i) => (
                   <button

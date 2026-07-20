@@ -122,7 +122,7 @@ export default function SpendingBreakdown() {
             </ul>
 
             <div className="mt-5 flex items-center justify-between gap-4 border-t border-white/[0.06] pt-4">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
                 Total spent
               </span>
               <span className="font-display text-[15px] font-semibold tnum text-white">

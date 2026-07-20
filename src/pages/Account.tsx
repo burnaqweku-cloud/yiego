@@ -78,7 +78,7 @@ function IconChip({ icon: Icon }: { icon: LucideIcon }) {
 function SettingsGroup({ group, delay }: { group: SettingGroup; delay: string }) {
   return (
     <section className="onyx-rise" style={{ animationDelay: delay }}>
-      <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">
+      <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
         {group.label}
       </p>
       <div className="onyx-panel divide-y divide-white/5 overflow-hidden rounded-[22px] px-2.5 py-1">
@@ -176,7 +176,7 @@ export default function Account() {
       >
         <div className="flex items-start gap-4">
           <span
-            className="onyx-avatar h-16 w-16 shrink-0 text-[20px]"
+            className="onyx-avatar h-14 w-14 shrink-0 text-[18px] sm:h-16 sm:w-16 sm:text-[20px]"
             aria-hidden="true"
           >
             {initials}
@@ -195,10 +195,11 @@ export default function Account() {
             variant="ghost"
             size="sm"
             onClick={open("profile")}
+            aria-label="Edit profile"
             className="h-11 shrink-0"
           >
             <Pencil size={15} />
-            Edit
+            <span className="hidden sm:inline">Edit</span>
           </Button>
         </div>
 
@@ -234,7 +235,7 @@ export default function Account() {
               <p className="font-display text-[15.5px] font-semibold tracking-tight text-white">
                 Give GH₵5, get GH₵5
               </p>
-              <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">
+              <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground">
                 Invite friends — you both get GH₵5 on their first purchase.
               </p>
               <span className="mt-2.5 inline-flex items-center rounded-lg border border-dashed border-primary-glow/30 bg-primary/[0.07] px-2.5 py-1 font-mono text-[12px] font-semibold tracking-[0.1em] text-primary-glow">

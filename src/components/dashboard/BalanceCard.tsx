@@ -51,7 +51,7 @@ export default function BalanceCard() {
         </span>
       </div>
 
-      <div className="relative mt-7 flex items-center gap-3">
+      <div className="relative mt-7 flex items-center gap-3 sm:max-w-[520px]">
         <button
           type="button"
           className="onyx-btn-primary flex-1"

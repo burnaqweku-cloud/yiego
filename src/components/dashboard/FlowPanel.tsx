@@ -97,13 +97,13 @@ export default function FlowPanel() {
 
       <div className="mt-5 grid grid-cols-2 gap-3">
         <div className="onyx-flowstat">
-          <span className="text-[11px] uppercase tracking-[0.14em] text-[#6e8b7d]">In</span>
+          <span className="text-[11px] uppercase tracking-[0.18em] text-[#6e8b7d]">In</span>
           <span className="mt-1 block font-display text-[17px] font-semibold tnum text-success">
             {formatGHS(inflow)}
           </span>
         </div>
         <div className="onyx-flowstat">
-          <span className="text-[11px] uppercase tracking-[0.14em] text-[#6e8b7d]">Out</span>
+          <span className="text-[11px] uppercase tracking-[0.18em] text-[#6e8b7d]">Out</span>
           <span className="mt-1 block font-display text-[17px] font-semibold tnum text-[#e7c4a0]">
             {formatGHS(outflow)}
           </span>

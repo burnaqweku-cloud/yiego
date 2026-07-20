@@ -251,12 +251,12 @@ export default function Payments() {
           delta={`${activeCount} active`}
           tone="muted"
         />
-        <StatTile label="Success rate" value="98.2%" />
-        <StatTile label="Payouts" value={formatGHS(payouts)} delta="settled" tone="muted" />
+        <StatTile label="Success rate" value="98.2%" delta="last 30 days" tone="muted" />
+        <StatTile label="Payouts" value={formatGHS(payouts)} delta="all settled" tone="muted" />
       </section>
 
       {/* Payment links */}
-      <section className="onyx-rise space-y-3" style={{ animationDelay: "120ms" }}>
+      <section className="onyx-rise space-y-3.5" style={{ animationDelay: "120ms" }}>
         <SectionHeader
           title="Your payment links"
           action={
@@ -290,9 +290,9 @@ export default function Payments() {
       </section>
 
       {/* Ways to get paid */}
-      <section className="onyx-rise space-y-3" style={{ animationDelay: "180ms" }}>
+      <section className="onyx-rise space-y-3.5" style={{ animationDelay: "180ms" }}>
         <SectionHeader title="Ways to get paid" />
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {WAYS.map((w) => (
             <WayCard
               key={w.id}
@@ -306,7 +306,7 @@ export default function Payments() {
       </section>
 
       {/* Developers */}
-      <section className="onyx-rise space-y-3" style={{ animationDelay: "240ms" }}>
+      <section className="onyx-rise space-y-3.5" style={{ animationDelay: "240ms" }}>
         <SectionHeader title="Developers" />
         <DevelopersCard onViewDocs={() => setApiDocsOpen(true)} />
       </section>

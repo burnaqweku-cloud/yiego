@@ -29,7 +29,7 @@ export default function Dashboard() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
           {dateFmt.format(new Date())}
         </p>
-        <h1 className="mt-1.5 font-display text-[22px] font-semibold tracking-tight text-white sm:text-[26px]">
+        <h1 className="mt-1.5 font-display text-[24px] font-semibold tracking-tight text-white sm:text-[28px]">
           {greeting()}, {profile.firstName}
         </h1>
       </div>

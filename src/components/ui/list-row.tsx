@@ -49,7 +49,11 @@ export default function ListRow({
       <button
         type="button"
         onClick={onClick}
-        className={cn(base, "transition-colors hover:bg-white/[0.03]", className)}
+        className={cn(
+          base,
+          "transition-colors duration-150 hover:bg-white/[0.03] active:bg-white/[0.05]",
+          className,
+        )}
       >
         {content}
       </button>
