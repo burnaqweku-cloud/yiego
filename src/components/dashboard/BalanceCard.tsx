@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDownToLine, Plus, Sparkles } from "lucide-react";
+import { ArrowDownToLine, BadgePercent, Plus } from "lucide-react";
 import GuillocheMesh from "@/components/fx/GuillocheMesh";
 import { formatGHS, formatAmountParts } from "@/lib/format";
 import { useCountUp } from "@/hooks/useCountUp";
@@ -41,7 +41,7 @@ export default function BalanceCard() {
           </div>
 
           <div className="onyx-cashback mt-3.5">
-            <Sparkles size={13} className="text-amber" />
+            <BadgePercent size={13} className="text-amber" />
             <strong className="tnum">{formatGHS(cashback)}</strong> cashback earned
           </div>
         </div>

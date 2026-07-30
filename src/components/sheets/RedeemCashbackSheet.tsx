@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { BadgePercent } from "lucide-react";
 import { toast } from "sonner";
 import Modal from "@/components/ui/modal";
 import { FlowHeader, SuccessView } from "@/components/flows/flow-parts";
@@ -68,7 +68,7 @@ export default function RedeemCashbackSheet({
               className="grid h-14 w-14 place-items-center rounded-2xl border border-amber/25 bg-amber/[0.10] text-amber"
               aria-hidden="true"
             >
-              <Sparkles size={22} />
+              <BadgePercent size={22} />
             </span>
             <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-faint-foreground">
               Cashback balance

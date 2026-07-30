@@ -1,8 +1,10 @@
 import { useState } from "react";
 import {
+  AppWindow,
   ArrowDownToLine,
   ArrowUpRight,
   Bitcoin,
+  CircleDollarSign,
   Clock,
   CreditCard,
   Gift,
@@ -12,7 +14,6 @@ import {
   Plus,
   ReceiptText,
   Smartphone,
-  Sparkles,
   Tv,
   Wifi,
   Zap,
@@ -46,7 +47,7 @@ const TX_ICON: Record<TxType, LucideIcon> = {
   giftcard: Gift,
   crypto: Bitcoin,
   bill: ReceiptText,
-  digital: Sparkles,
+  digital: AppWindow,
   education: GraduationCap,
 };
 
@@ -86,7 +87,7 @@ function MethodChip({ icon: Icon }: { icon: LucideIcon }) {
 function TxRow({ t, onOpen }: { t: MockTransaction; onOpen: () => void }) {
   const isIn = t.amount > 0;
   const pending = t.status === "pending";
-  const Icon = TX_ICON[t.type] ?? Sparkles;
+  const Icon = TX_ICON[t.type] ?? CircleDollarSign;
   return (
     <li className="border-b border-white/[0.05] last:border-0">
       <button

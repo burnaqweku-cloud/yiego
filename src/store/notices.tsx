@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { ArrowDownToLine, ArrowUpRight, BadgePercent, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowDownToLine, ArrowUpRight, BadgePercent, Megaphone, ShieldCheck } from "lucide-react";
 import { useWallet } from "@/store/wallet";
 import { formatGHS } from "@/lib/format";
 
@@ -32,7 +32,7 @@ const STATIC_NOTICES: Notice[] = [
   },
   {
     id: "n4",
-    icon: Sparkles,
+    icon: Megaphone,
     title: "New: eSIM data packs",
     body: "Travelling? Instant eSIMs for West Africa, Europe and beyond are live.",
     time: "3d ago",

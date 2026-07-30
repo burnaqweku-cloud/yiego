@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, Sparkles, TriangleAlert } from "lucide-react";
+import { ChevronRight, Package, TriangleAlert } from "lucide-react";
 import Modal from "@/components/ui/modal";
 import { FlowFooter, FlowHeader, ProcessingView, SelectRow, SuccessView } from "./flow-parts";
 import PinGate from "./PinGate";
@@ -234,7 +234,7 @@ export default function PurchaseFlow({
                     <OptionLogo option={provider} />
                   ) : (
                     <span className="onyx-tile-icon shrink-0">
-                      <Sparkles size={18} />
+                      <Package size={18} />
                     </span>
                   )
                 }
