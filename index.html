@@ -6,6 +6,22 @@
     <title>YieGo — Your Everyday Digital Plug</title>
     <meta name="description" content="YieGo — data, airtime, bills, payments and 20+ digital services from one wallet." />
     <meta name="theme-color" content="#080b0a" />
+    <script>
+      // Apply the saved theme before first paint (no flash of wrong theme).
+      (function () {
+        try {
+          var t = localStorage.getItem("yiego_theme_v1");
+          var light =
+            t === "light" ||
+            (t === "system" && matchMedia("(prefers-color-scheme: light)").matches);
+          if (light) {
+            document.documentElement.classList.add("light");
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.setAttribute("content", "#f2f7f4");
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />

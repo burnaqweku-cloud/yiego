@@ -14,7 +14,7 @@ export function FlowHeader({
   onClose: () => void;
 }) {
   return (
-    <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-white/[0.06] bg-[#101c16]/85 px-4 py-3.5 backdrop-blur">
+    <div className="onyx-flowhead sticky top-0 z-10 flex items-center gap-3 border-b border-white/[0.06] px-4 py-3.5 backdrop-blur">
       {onBack ? (
         <button
           type="button"

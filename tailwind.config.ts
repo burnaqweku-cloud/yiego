@@ -16,6 +16,18 @@ export default {
         mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
       },
       colors: {
+        // `white` is the theme ink channel: true white in dark, deep
+        // green-black in light — so every white/[alpha] hairline, veil
+        // and text-white heading flips theme from one variable.
+        white: "rgb(var(--w) / <alpha-value>)",
+        ink: {
+          hero: "var(--ink-hero)",
+          body: "var(--ink-body)",
+          mid: "var(--ink-mid)",
+          dim: "var(--ink-dim)",
+          faint: "var(--ink-faint)",
+          ghost: "var(--ink-ghost)",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

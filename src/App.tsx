@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
+import { ThemeProvider, useTheme } from "@/store/theme";
 import { WalletProvider } from "@/store/wallet";
 import { LinksProvider } from "@/store/links";
 import { ProfileProvider } from "@/store/profile";
@@ -13,26 +14,35 @@ import Payments from "./pages/Payments";
 import Wallet from "./pages/Wallet";
 import Account from "./pages/Account";
 
+/** Sonner toaster that follows the active theme. */
+function ThemedToaster() {
+  const { resolved } = useTheme();
+  return (
+    <Toaster
+      position="top-center"
+      theme={resolved}
+      toastOptions={{
+        classNames: {
+          toast:
+            "!rounded-2xl !border !border-white/10 !bg-[var(--toast-bg)] !text-[var(--toast-ink)] !shadow-[var(--toast-shadow)]",
+          title: "!text-[13.5px] !font-semibold !tracking-tight",
+          description: "!text-[12.5px] !text-ink-dim",
+        },
+      }}
+    />
+  );
+}
+
 const App = () => (
   <BrowserRouter>
+    <ThemeProvider>
     <WalletProvider>
       <LinksProvider>
       <ProfileProvider>
       <MethodsProvider>
       <NoticesProvider>
       <FlowsProvider>
-        <Toaster
-          position="top-center"
-          theme="dark"
-          toastOptions={{
-            classNames: {
-              toast:
-                "!rounded-2xl !border !border-white/10 !bg-[#101c16] !text-[#eaf2ed] !shadow-[0_20px_50px_-18px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)]",
-              title: "!text-[13.5px] !font-semibold !tracking-tight",
-              description: "!text-[12.5px] !text-[#8a988f]",
-            },
-          }}
-        />
+        <ThemedToaster />
         <Routes>
           <Route element={<AppShell />}>
             <Route path="/" element={<Dashboard />} />
@@ -49,6 +59,7 @@ const App = () => (
       </ProfileProvider>
       </LinksProvider>
     </WalletProvider>
+    </ThemeProvider>
   </BrowserRouter>
 );
 

@@ -43,7 +43,7 @@ export default function SearchSheet({ open, onClose }: { open: boolean; onClose:
   return (
     <Modal open={open} onClose={onClose} label="Search services">
       {/* Sticky search field header */}
-      <div className="sticky top-0 z-10 border-b border-white/[0.06] bg-[#101c16]/85 px-4 py-3.5 backdrop-blur">
+      <div className="onyx-flowhead sticky top-0 z-10 border-b border-white/[0.06] px-4 py-3.5 backdrop-blur">
         <div className="flex items-center gap-3">
           <label htmlFor="yiego-search-input" className="sr-only">
             Search services

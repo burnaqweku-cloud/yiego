@@ -11,6 +11,11 @@
   :root {
     color-scheme: dark;
 
+    /* Ink channel — what Tailwind's `white` resolves to. Dark theme:
+       true white. Light theme flips it to deep green-black ink so every
+       white/[alpha] hairline & veil inverts from one knob. */
+    --w: 255 255 255;
+
     /* Surfaces (near-black with a deep-green undertone) */
     --background: 156 16% 4%;
     --surface: 152 16% 6.5%;
@@ -25,6 +30,14 @@
     --muted-foreground: 150 8% 62%;
     --faint-foreground: 150 9% 54%;
 
+    /* Ink ramp — exact values the components were tuned with. */
+    --ink-hero: #f2fbf6;
+    --ink-body: #d6e2db;
+    --ink-mid: #b7c6be;
+    --ink-dim: #8a988f;
+    --ink-faint: #6e8b7d;
+    --ink-ghost: #5c6b63;
+
     /* Brand — emerald with a luminous lime glow */
     --primary: 157 71% 45%;
     --primary-strong: 154 80% 36%;
@@ -37,12 +50,63 @@
     --amber-soft: 38 42% 13%;
     --success: 152 71% 55%;
     --success-soft: 152 40% 12%;
-    --danger: 4 78% 62%;
+    --danger: 4 88% 66%;
     --danger-soft: 4 40% 14%;
     --info: 191 72% 60%;
 
     --ring: 151 78% 71%;
     --radius: 1.15rem;
+
+    /* Toasts */
+    --toast-bg: #101c16;
+    --toast-ink: #eaf2ed;
+    --toast-shadow: 0 20px 50px -18px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  /* ── DAYLIGHT — porcelain-mint canvas, deep emerald accents. ────── */
+  html.light {
+    color-scheme: light;
+
+    --w: 8 26 18;
+
+    --background: 150 25% 96%;
+    --surface: 150 25% 98%;
+    --card: 0 0% 100%;
+    --muted: 150 14% 91%;
+    --muted-strong: 150 12% 84%;
+    --border: 150 12% 87%;
+    --input: 150 10% 82%;
+
+    --foreground: 161 40% 8%;
+    --muted-foreground: 156 10% 36%;
+    --faint-foreground: 153 8% 46%;
+
+    --ink-hero: #0a1912;
+    --ink-body: #22322a;
+    --ink-mid: #48584f;
+    --ink-dim: #616f67;
+    --ink-faint: #718077;
+    --ink-ghost: #8d9990;
+
+    --primary: 157 80% 30%;
+    --primary-strong: 155 85% 24%;
+    --primary-glow: 158 70% 26%;
+    --primary-soft: 152 50% 93%;
+    --primary-foreground: 156 62% 5%;
+
+    --amber: 33 95% 35%;
+    --amber-soft: 40 90% 92%;
+    --success: 153 85% 26%;
+    --success-soft: 150 60% 92%;
+    --danger: 4 74% 44%;
+    --danger-soft: 5 80% 95%;
+    --info: 197 85% 30%;
+
+    --ring: 157 80% 30%;
+
+    --toast-bg: #ffffff;
+    --toast-ink: #12211a;
+    --toast-shadow: 0 20px 50px -18px rgba(10, 40, 28, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
   * {
@@ -53,6 +117,9 @@
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
     background: #080b0a;
+  }
+  html.light {
+    background: #f2f7f4;
   }
 
   body {
@@ -87,6 +154,13 @@
     }
     ::-webkit-scrollbar-thumb:hover {
       background: hsl(150 8% 26%);
+    }
+    html.light ::-webkit-scrollbar-thumb {
+      background: hsl(150 10% 76%);
+      border-color: #f2f7f4;
+    }
+    html.light ::-webkit-scrollbar-thumb:hover {
+      background: hsl(150 10% 64%);
     }
   }
 }
@@ -1052,4 +1126,393 @@
 @keyframes onyxPop {
   from { opacity: 0; transform: scale(0.5); }
   to { opacity: 1; transform: scale(1); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DAYLIGHT — the light theme, activated by `html.light`.
+   Every override lives here, in one place. The wallet, developer
+   card and terminal remain dark islands: they re-pin the dark
+   variable values so everything inside them keeps the Onyx look.
+   ══════════════════════════════════════════════════════════════ */
+@layer components {
+  /* Sticky flow header + toast surfaces (shared by both themes) */
+  .onyx-flowhead {
+    background: rgba(16, 28, 22, 0.85);
+  }
+  .light .onyx-flowhead {
+    background: rgba(255, 255, 255, 0.85);
+  }
+
+  /* Compact "buy again" chip card */
+  .onyx-chip {
+    border: 1px solid rgb(var(--w) / 0.06);
+    background: linear-gradient(180deg, rgba(16, 26, 21, 0.85), rgba(9, 14, 12, 0.85));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+  .onyx-chip:hover {
+    transform: translateY(-2px);
+    border-color: rgba(124, 240, 180, 0.3);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 16px 30px -16px rgba(34, 195, 135, 0.5);
+  }
+  .light .onyx-chip {
+    background: linear-gradient(180deg, #ffffff, #f9fcfa);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 6px -2px rgba(10, 40, 28, 0.06);
+  }
+  .light .onyx-chip:hover {
+    border-color: rgba(15, 138, 91, 0.3);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 16px 30px -16px rgba(34, 195, 135, 0.28);
+  }
+
+  /* Canvas + ambience */
+  .light .onyx-canvas {
+    background:
+      radial-gradient(120% 90% at 78% -8%, #ddefe6 0%, rgba(221, 239, 230, 0) 46%),
+      radial-gradient(90% 70% at 8% 4%, #e9f3ee 0%, rgba(233, 243, 238, 0) 40%),
+      #f2f7f4;
+  }
+  .light .onyx-aurora-a {
+    background: radial-gradient(circle, rgba(34, 195, 135, 0.14) 0%, rgba(34, 195, 135, 0) 68%);
+  }
+  .light .onyx-aurora-b {
+    background: radial-gradient(circle, rgba(79, 214, 232, 0.1) 0%, rgba(79, 214, 232, 0) 66%);
+  }
+  .light .onyx-grain {
+    opacity: 0.14;
+    mix-blend-mode: multiply;
+    background-image: radial-gradient(rgba(8, 26, 18, 0.4) 0.5px, transparent 0.5px);
+  }
+
+  /* Panels & cards */
+  .light .onyx-panel {
+    border-color: rgba(8, 26, 18, 0.08);
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+    box-shadow: 0 24px 48px -30px rgba(10, 40, 28, 0.18), 0 2px 6px -2px rgba(10, 40, 28, 0.05);
+  }
+  .light .onyx-railcard {
+    border-color: rgba(8, 26, 18, 0.08);
+    background: linear-gradient(180deg, #ffffff, #f9fcfa);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  /* Rail + nav */
+  .light .onyx-rail {
+    border-right-color: rgba(8, 26, 18, 0.07);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.3) 100%);
+  }
+  .light .onyx-navitem-on {
+    color: #0b3f2a;
+    background: linear-gradient(180deg, rgba(34, 195, 135, 0.16) 0%, rgba(34, 195, 135, 0.06) 100%);
+    border-color: rgba(15, 138, 91, 0.25);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 8px 26px -14px rgba(34, 195, 135, 0.35);
+  }
+  .light .onyx-navdot {
+    background: #0f8a5b;
+    box-shadow: 0 0 10px rgba(15, 138, 91, 0.5);
+  }
+
+  /* Top bar controls */
+  .light .onyx-search {
+    border-color: rgba(8, 26, 18, 0.1);
+    background: rgba(255, 255, 255, 0.75);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+  .light .onyx-kbd {
+    color: #718077;
+    border-color: rgba(8, 26, 18, 0.14);
+  }
+  .light .onyx-iconbtn {
+    color: #5b6a61;
+    border-color: rgba(8, 26, 18, 0.1);
+    background: rgba(255, 255, 255, 0.75);
+  }
+  .light .onyx-iconbtn:hover {
+    color: #0b1a13;
+    border-color: rgba(15, 138, 91, 0.35);
+  }
+  .light .onyx-bell-dot {
+    background: #d98c0c;
+    box-shadow: 0 0 8px rgba(217, 140, 12, 0.6);
+  }
+  .light .onyx-userchip {
+    border-color: rgba(8, 26, 18, 0.1);
+    background: rgba(255, 255, 255, 0.75);
+  }
+  .light .onyx-userchip:hover {
+    border-color: rgba(15, 138, 91, 0.35);
+  }
+
+  /* Buttons */
+  .light .onyx-btn-primary {
+    box-shadow: 0 12px 30px -10px rgba(34, 195, 135, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  .light .onyx-btn-primary:hover {
+    box-shadow: 0 18px 40px -12px rgba(34, 195, 135, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  .light .onyx-btn-ghost {
+    color: #22322a;
+    border-color: rgba(8, 26, 18, 0.12);
+    background: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 6px -2px rgba(10, 40, 28, 0.08);
+  }
+  .light .onyx-btn-ghost:hover {
+    border-color: rgba(15, 138, 91, 0.4);
+    background: rgba(34, 195, 135, 0.07);
+  }
+
+  /* Flow panel (themed — charts sit on white) */
+  .light .onyx-trend {
+    color: #0a7a4e;
+    background: rgba(10, 122, 78, 0.1);
+    border-color: rgba(10, 122, 78, 0.22);
+  }
+  .light .onyx-flowstat {
+    border-color: rgba(8, 26, 18, 0.08);
+    background: rgba(8, 26, 18, 0.02);
+  }
+
+  /* Quick actions */
+  .light .onyx-quick {
+    border-color: rgba(8, 26, 18, 0.08);
+    background: linear-gradient(180deg, #ffffff, #f8fbf9);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 6px -2px rgba(10, 40, 28, 0.06);
+  }
+  .light .onyx-quick:hover {
+    border-color: rgba(15, 138, 91, 0.35);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 18px 34px -18px rgba(34, 195, 135, 0.3);
+  }
+  .light .onyx-quick-icon {
+    color: color-mix(in srgb, var(--tint) 55%, #0b291c);
+    background: color-mix(in srgb, var(--tint) 16%, #ffffff);
+    border-color: color-mix(in srgb, var(--tint) 45%, #ffffff);
+    box-shadow: none;
+  }
+
+  /* Pills */
+  .light .onyx-pill {
+    color: #5f6e65;
+    border-color: rgba(8, 26, 18, 0.1);
+    background: #ffffff;
+  }
+  .light .onyx-pill:hover {
+    color: #0b1a13;
+    border-color: rgba(15, 138, 91, 0.3);
+  }
+  .light .onyx-pill-on {
+    color: #04120c;
+    border-color: transparent;
+    background: linear-gradient(180deg, #7cf0b4, #22c387);
+    box-shadow: 0 8px 20px -8px rgba(34, 195, 135, 0.45);
+  }
+
+  /* Service tiles */
+  .light .onyx-tile {
+    border-color: rgba(8, 26, 18, 0.08);
+    background: linear-gradient(180deg, #ffffff, #f9fcfa);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 6px -2px rgba(10, 40, 28, 0.06);
+  }
+  .light .onyx-tile:hover {
+    border-color: rgba(15, 138, 91, 0.3);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 20px 40px -20px rgba(34, 195, 135, 0.28);
+  }
+  .light .onyx-tile::after {
+    background: radial-gradient(circle, rgba(34, 195, 135, 0.13), transparent 68%);
+  }
+  .light .onyx-tile-icon {
+    color: #0f8a5b;
+    background: linear-gradient(180deg, rgba(34, 195, 135, 0.14), rgba(34, 195, 135, 0.05));
+    border-color: rgba(15, 138, 91, 0.22);
+  }
+  .light .onyx-tile-go {
+    color: #97a49b;
+  }
+  .light .onyx-tile:hover .onyx-tile-go {
+    color: #0f8a5b;
+  }
+  .light .onyx-badge.is-pop {
+    color: #a4650a;
+    background: rgba(217, 140, 12, 0.12);
+    border-color: rgba(217, 140, 12, 0.35);
+  }
+
+  /* Copy chip + ghost link (also re-asserted inside dark islands below) */
+  .light .onyx-copy {
+    color: #5b6a61;
+    border-color: rgba(8, 26, 18, 0.12);
+    background: rgba(8, 26, 18, 0.03);
+  }
+  .light .onyx-copy:hover {
+    color: #0f8a5b;
+    border-color: rgba(15, 138, 91, 0.35);
+  }
+  .light .onyx-ghostlink {
+    color: #0f8a5b;
+  }
+
+  /* Activity rows */
+  .light .onyx-txrow {
+    border-bottom-color: rgba(8, 26, 18, 0.07);
+  }
+  .light .onyx-tx-icon {
+    border-color: rgba(8, 26, 18, 0.08);
+  }
+  .light .onyx-tx-icon.is-in {
+    color: #0a7a4e;
+    background: rgba(10, 122, 78, 0.1);
+    border-color: rgba(10, 122, 78, 0.22);
+  }
+  .light .onyx-tx-icon.is-out {
+    color: #48584f;
+    background: rgba(8, 26, 18, 0.04);
+  }
+  .light .onyx-status-ok {
+    color: #64736a;
+  }
+  .light .onyx-status-pending {
+    color: #a4650a;
+    background: rgba(217, 140, 12, 0.1);
+    border-color: rgba(217, 140, 12, 0.28);
+  }
+
+  /* Bottom nav */
+  .light .onyx-bottomnav {
+    border-color: rgba(8, 26, 18, 0.08);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(250, 253, 251, 0.96));
+    box-shadow: 0 20px 50px -18px rgba(10, 40, 28, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+  .light .onyx-bn-glow {
+    background: #0f8a5b;
+    box-shadow: 0 0 12px rgba(15, 138, 91, 0.6);
+  }
+
+  /* Modal / sheets */
+  .light .onyx-modal-backdrop {
+    background: rgba(10, 25, 18, 0.35);
+  }
+  .light .onyx-sheet-handle {
+    background: rgba(8, 26, 18, 0.18);
+  }
+  .light .onyx-modal-panel {
+    border-color: rgba(8, 26, 18, 0.08);
+    background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+    box-shadow: 0 -24px 70px -24px rgba(10, 40, 28, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+  .light .onyx-flow-footer {
+    background: linear-gradient(180deg, rgba(250, 252, 251, 0) 0%, rgba(250, 252, 251, 0.96) 34%);
+  }
+
+  /* Selectable options + fields */
+  .light .onyx-select {
+    border-color: rgba(8, 26, 18, 0.1);
+    background: rgba(8, 26, 18, 0.02);
+  }
+  .light .onyx-select:hover {
+    border-color: rgba(15, 138, 91, 0.3);
+    background: rgba(34, 195, 135, 0.06);
+  }
+  .light .onyx-select.is-on {
+    border-color: rgba(15, 138, 91, 0.5);
+    background: linear-gradient(180deg, rgba(34, 195, 135, 0.12), rgba(34, 195, 135, 0.04));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 10px 28px -16px rgba(34, 195, 135, 0.3);
+  }
+  .light .onyx-amount-input {
+    color: #0a1912;
+  }
+  .light .onyx-amount-input::placeholder {
+    color: #a9b5ad;
+  }
+  .light .onyx-search:focus-within {
+    border-color: rgba(15, 138, 91, 0.4);
+  }
+  .light .onyx-amount-card:focus-within {
+    border-color: rgba(15, 138, 91, 0.35);
+  }
+  .light .onyx-field {
+    border-color: rgba(8, 26, 18, 0.14);
+    background: #ffffff;
+    color: #12211a;
+  }
+  .light .onyx-field::placeholder {
+    color: #8d9990;
+  }
+  .light .onyx-field:focus {
+    border-color: rgba(15, 138, 91, 0.45);
+  }
+  .light .onyx-spinner {
+    border-color: rgba(15, 138, 91, 0.18);
+    border-top-color: #0f8a5b;
+  }
+
+  /* ── Dark islands: wallet, developer card, terminal. ──────────────
+     Re-pin every variable to the dark value so all token-driven
+     utilities inside keep the Onyx look on the light canvas. */
+  .light .onyx-wallet,
+  .light .onyx-dev,
+  .light .onyx-terminal {
+    color-scheme: dark;
+    --w: 255 255 255;
+    --foreground: 146 26% 93%;
+    --muted-foreground: 150 8% 62%;
+    --faint-foreground: 150 9% 54%;
+    --ink-hero: #f2fbf6;
+    --ink-body: #d6e2db;
+    --ink-mid: #b7c6be;
+    --ink-dim: #8a988f;
+    --ink-faint: #6e8b7d;
+    --ink-ghost: #5c6b63;
+    --primary: 157 71% 45%;
+    --primary-strong: 154 80% 36%;
+    --primary-glow: 151 78% 71%;
+    --primary-soft: 156 42% 11%;
+    --amber: 38 90% 61%;
+    --amber-soft: 38 42% 13%;
+    --success: 152 71% 55%;
+    --success-soft: 152 40% 12%;
+    --danger: 4 88% 66%;
+    --danger-soft: 4 40% 14%;
+    --info: 191 72% 60%;
+  }
+  /* Islands float on porcelain — trade the pitch-black halo for a
+     softer, greener drop shadow. */
+  .light .onyx-wallet {
+    box-shadow:
+      0 34px 70px -30px rgba(8, 26, 18, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      inset 0 0 60px -20px rgba(34, 195, 135, 0.28);
+  }
+  .light .onyx-dev {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 30px 60px -34px rgba(8, 26, 18, 0.4);
+  }
+  /* Chrome that sits inside islands must stay dark-styled. */
+  .light .onyx-terminal .onyx-copy,
+  .light .onyx-dev .onyx-copy {
+    color: #9baaa1;
+    border-color: rgba(255, 255, 255, 0.09);
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .light .onyx-terminal .onyx-copy:hover,
+  .light .onyx-dev .onyx-copy:hover {
+    color: #7cf0b4;
+    border-color: rgba(124, 240, 180, 0.3);
+  }
+  .light .onyx-dev .onyx-ghostlink {
+    color: #7cf0b4;
+  }
+  .light .onyx-wallet .onyx-btn-ghost,
+  .light .onyx-dev .onyx-btn-ghost {
+    color: #d6e2db;
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .light .onyx-wallet .onyx-btn-ghost:hover,
+  .light .onyx-dev .onyx-btn-ghost:hover {
+    border-color: rgba(124, 240, 180, 0.35);
+    background: rgba(124, 240, 180, 0.07);
+  }
+  .light .onyx-wallet .onyx-btn-primary,
+  .light .onyx-dev .onyx-btn-primary {
+    box-shadow: 0 12px 30px -10px rgba(34, 195, 135, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
 }
