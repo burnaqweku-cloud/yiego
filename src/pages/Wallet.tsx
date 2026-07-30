@@ -76,7 +76,7 @@ function matchesFilter(t: MockTransaction, filter: Filter): boolean {
 /* ── Neutral rounded chip for a funding-method leading icon ────────── */
 function MethodChip({ icon: Icon }: { icon: LucideIcon }) {
   return (
-    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[13px] border border-white/[0.07] bg-white/[0.03] text-[#b7c6be]">
+    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[13px] border border-white/[0.07] bg-white/[0.03] text-ink-mid">
       <Icon size={17} />
     </span>
   );
@@ -108,7 +108,7 @@ function TxRow({ t, onOpen }: { t: MockTransaction; onOpen: () => void }) {
           <p
             className={cn(
               "font-display text-[14px] font-semibold tnum",
-              isIn ? "text-success" : "text-[#d6e2db]",
+              isIn ? "text-success" : "text-ink-body",
             )}
           >
             {formatSigned(t.amount)}

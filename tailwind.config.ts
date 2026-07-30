@@ -27,6 +27,8 @@ export default {
           dim: "var(--ink-dim)",
           faint: "var(--ink-faint)",
           ghost: "var(--ink-ghost)",
+          out: "var(--ink-out)",
+          rose: "var(--ink-rose)",
         },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

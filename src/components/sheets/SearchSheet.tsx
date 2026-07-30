@@ -56,7 +56,7 @@ export default function SearchSheet({ open, onClose }: { open: boolean; onClose:
               type="text"
               autoComplete="off"
               spellCheck={false}
-              className="min-w-0 flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-[#5c6b63]"
+              className="min-w-0 flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-ink-ghost"
               placeholder="Search services, pay a bill…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}

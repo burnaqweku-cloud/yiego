@@ -22,7 +22,7 @@ export default function QuickActions() {
           <span className="onyx-quick-icon" style={{ ["--tint" as string]: tint }}>
             <Icon size={20} strokeWidth={2.1} />
           </span>
-          <span className="mt-2.5 text-[12.5px] font-semibold tracking-tight text-[#d6e2db] sm:text-[13.5px]">
+          <span className="mt-2.5 text-[12.5px] font-semibold tracking-tight text-ink-body sm:text-[13.5px]">
             {label}
           </span>
           <span className="mt-0.5 hidden text-[11px] text-faint-foreground sm:block">{hint}</span>

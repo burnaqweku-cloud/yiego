@@ -22,7 +22,10 @@ function OptionLogo({ option }: { option: FlowOption }) {
   return (
     <span
       className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border bg-white/[0.03] text-[12px] font-bold tracking-tight"
-      style={{ color: option.color ?? "#7cf0b4", borderColor: `${option.color ?? "#7cf0b4"}55` }}
+      style={{
+        color: option.color ?? "hsl(var(--primary-glow))",
+        borderColor: option.color ? `${option.color}55` : "hsl(var(--primary-glow) / 0.33)",
+      }}
     >
       {abbr}
     </span>
@@ -449,7 +452,7 @@ export default function PurchaseFlow({
             {!canPay && (
               <div className="flex items-start gap-2.5 rounded-2xl border border-danger/25 bg-danger/[0.08] px-4 py-3">
                 <TriangleAlert size={16} className="mt-0.5 shrink-0 text-danger" />
-                <p className="text-[12.5px] leading-relaxed text-[#f0c9c4]">
+                <p className="text-[12.5px] leading-relaxed text-ink-rose">
                   Not enough in your wallet. Add money to complete this purchase.
                 </p>
               </div>

@@ -141,7 +141,7 @@ export default function ReferralSheet({ open, onClose }: { open: boolean; onClos
             {STEPS.map((step, i) => (
               <li key={step.title} className="flex items-start gap-3.5">
                 <span
-                  className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#7cf0b4] to-[#22c387] font-display text-[12px] font-bold text-[#04120c] shadow-[0_6px_16px_-6px_rgba(34,195,135,0.7)]"
+                  className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gradient-to-b from-primary-glow to-primary font-display text-[12px] font-bold text-[#04120c] shadow-[0_6px_16px_-6px_rgba(34,195,135,0.7)]"
                   aria-hidden="true"
                 >
                   {i + 1}

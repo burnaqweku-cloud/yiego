@@ -267,7 +267,7 @@ export default function BuyDataFlow({
             {!canPay && (
               <div className="flex items-start gap-2.5 rounded-2xl border border-danger/25 bg-danger/[0.08] px-4 py-3">
                 <TriangleAlert size={16} className="mt-0.5 shrink-0 text-danger" />
-                <p className="text-[12.5px] leading-relaxed text-[#f0c9c4]">
+                <p className="text-[12.5px] leading-relaxed text-ink-rose">
                   Not enough in your wallet. Add money to complete this purchase.
                 </p>
               </div>

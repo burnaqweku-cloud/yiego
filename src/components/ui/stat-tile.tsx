@@ -35,7 +35,7 @@ export default function StatTile({
           className={cn(
             "mt-1 text-[12px] font-semibold",
             tone === "down"
-              ? "text-[#e7c4a0]"
+              ? "text-ink-out"
               : tone === "muted"
                 ? "text-muted-foreground"
                 : "text-success",

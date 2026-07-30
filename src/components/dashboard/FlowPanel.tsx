@@ -74,7 +74,7 @@ export default function FlowPanel() {
         <span
           className={cn(
             "onyx-trend",
-            !up && "border-[#f5b544]/[0.2] bg-[#f5b544]/[0.08] text-[#e7c4a0]",
+            !up && "border-amber/[0.2] bg-amber/[0.08] text-ink-out",
           )}
           aria-label={`Volume ${up ? "up" : "down"} ${Math.min(Math.abs(trend), 999).toFixed(1)} percent vs last week`}
         >
@@ -97,14 +97,14 @@ export default function FlowPanel() {
 
       <div className="mt-5 grid grid-cols-2 gap-3">
         <div className="onyx-flowstat">
-          <span className="text-[11px] uppercase tracking-[0.18em] text-[#6e8b7d]">In</span>
+          <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">In</span>
           <span className="mt-1 block font-display text-[17px] font-semibold tnum text-success">
             {formatGHS(inflow)}
           </span>
         </div>
         <div className="onyx-flowstat">
-          <span className="text-[11px] uppercase tracking-[0.18em] text-[#6e8b7d]">Out</span>
-          <span className="mt-1 block font-display text-[17px] font-semibold tnum text-[#e7c4a0]">
+          <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">Out</span>
+          <span className="mt-1 block font-display text-[17px] font-semibold tnum text-ink-out">
             {formatGHS(outflow)}
           </span>
         </div>

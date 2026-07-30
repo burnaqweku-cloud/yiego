@@ -70,7 +70,7 @@ export default function Services() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search services, pay a bill…"
             aria-label="Search services"
-            className="w-full min-w-0 bg-transparent text-[14px] text-foreground placeholder:text-[#5c6b63] focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
+            className="w-full min-w-0 bg-transparent text-[14px] text-foreground placeholder:text-ink-ghost focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
           />
           {query && (
             <button

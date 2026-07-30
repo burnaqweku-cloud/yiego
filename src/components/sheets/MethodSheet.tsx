@@ -66,7 +66,7 @@ export default function MethodSheet({
       <div className="space-y-5 px-5 pb-7 pt-5">
         {/* Summary */}
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-7 text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-[16px] border border-white/[0.07] bg-white/[0.03] text-[#b7c6be]">
+          <span className="grid h-14 w-14 place-items-center rounded-[16px] border border-white/[0.07] bg-white/[0.03] text-ink-mid">
             <Icon size={22} />
           </span>
           <div>

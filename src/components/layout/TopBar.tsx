@@ -56,7 +56,7 @@ export default function TopBar() {
         className="onyx-search ml-auto hidden max-w-[400px] flex-1 items-center gap-2.5 lg:flex"
       >
         <Search size={17} className="text-faint-foreground" />
-        <span className="flex-1 text-left text-[14px] text-[#5c6b63]">
+        <span className="flex-1 text-left text-[14px] text-ink-ghost">
           Search services, pay a bill…
         </span>
         <kbd className="onyx-kbd">/</kbd>

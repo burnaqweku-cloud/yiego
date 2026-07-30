@@ -37,6 +37,8 @@
     --ink-dim: #8a988f;
     --ink-faint: #6e8b7d;
     --ink-ghost: #5c6b63;
+    --ink-out: #e7c4a0;
+    --ink-rose: #f0c9c4;
 
     /* Brand — emerald with a luminous lime glow */
     --primary: 157 71% 45%;
@@ -87,6 +89,8 @@
     --ink-dim: #616f67;
     --ink-faint: #718077;
     --ink-ghost: #8d9990;
+    --ink-out: #96660f;
+    --ink-rose: #a03d33;
 
     --primary: 157 80% 30%;
     --primary-strong: 155 85% 24%;
@@ -1460,6 +1464,8 @@
     --ink-dim: #8a988f;
     --ink-faint: #6e8b7d;
     --ink-ghost: #5c6b63;
+    --ink-out: #e7c4a0;
+    --ink-rose: #f0c9c4;
     --primary: 157 71% 45%;
     --primary-strong: 154 80% 36%;
     --primary-glow: 151 78% 71%;

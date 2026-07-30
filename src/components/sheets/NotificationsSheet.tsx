@@ -11,7 +11,7 @@ function NoticeRow({ notice, unread }: { notice: Notice; unread: boolean }) {
   const Icon = notice.icon;
   return (
     <li className="flex items-start gap-3.5 px-1 py-4">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[13px] border border-white/[0.07] bg-white/[0.03] text-[#b7c6be]">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[13px] border border-white/[0.07] bg-white/[0.03] text-ink-mid">
         <Icon size={17} />
       </span>
       <div className="min-w-0 flex-1">

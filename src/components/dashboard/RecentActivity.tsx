@@ -47,7 +47,7 @@ export default function RecentActivity() {
                 <p
                   className={cn(
                     "font-display text-[14px] font-semibold tnum",
-                    isIn ? "text-success" : "text-[#d6e2db]",
+                    isIn ? "text-success" : "text-ink-body",
                   )}
                 >
                   {formatSigned(t.amount)}
