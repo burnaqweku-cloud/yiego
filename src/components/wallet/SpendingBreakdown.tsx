@@ -14,47 +14,15 @@ interface Bucket {
   label: string;
   /** TxTypes that land in this bucket; the last bucket catches the rest. */
   types: TxType[];
-  /** On-palette gradient fill + matching glow (emerald/cyan/teal/amber). */
-  bar: string;
-  glow: string;
 }
 
+/* Bar fills live in index.css as .onyx-seg.seg-<id> — theme-tuned there. */
 const BUCKETS: Bucket[] = [
-  {
-    id: "topups",
-    label: "Top-ups & bills",
-    types: ["data", "airtime", "electricity", "tv", "bill"],
-    bar: "linear-gradient(90deg, #7cf0b4 0%, rgba(34, 195, 135, 0.55) 100%)",
-    glow: "rgba(34, 195, 135, 0.45)",
-  },
-  {
-    id: "digital",
-    label: "Digital",
-    types: ["digital", "giftcard"],
-    bar: "linear-gradient(90deg, #7fe3f0 0%, rgba(79, 214, 232, 0.5) 100%)",
-    glow: "rgba(79, 214, 232, 0.4)",
-  },
-  {
-    id: "education",
-    label: "Education",
-    types: ["education"],
-    bar: "linear-gradient(90deg, #5ee4c4 0%, rgba(53, 200, 168, 0.5) 100%)",
-    glow: "rgba(53, 200, 168, 0.4)",
-  },
-  {
-    id: "crypto",
-    label: "Crypto",
-    types: ["crypto"],
-    bar: "linear-gradient(90deg, #f8ca7a 0%, rgba(245, 181, 68, 0.5) 100%)",
-    glow: "rgba(245, 181, 68, 0.38)",
-  },
-  {
-    id: "other",
-    label: "Other",
-    types: [],
-    bar: "linear-gradient(90deg, rgba(214, 226, 219, 0.55) 0%, rgba(214, 226, 219, 0.2) 100%)",
-    glow: "rgba(214, 226, 219, 0.18)",
-  },
+  { id: "topups", label: "Top-ups & bills", types: ["data", "airtime", "electricity", "tv", "bill"] },
+  { id: "digital", label: "Digital", types: ["digital", "giftcard"] },
+  { id: "education", label: "Education", types: ["education"] },
+  { id: "crypto", label: "Crypto", types: ["crypto"] },
+  { id: "other", label: "Other", types: [] },
 ];
 
 export default function SpendingBreakdown() {
@@ -100,17 +68,13 @@ export default function SpendingBreakdown() {
                       <span className="sr-only">, {Math.round(pct)}% of spending</span>
                     </span>
                     <span
-                      className="h-[7px] overflow-hidden rounded-full bg-white/[0.05]"
+                      className="onyx-seg-track h-[7px] overflow-hidden rounded-full"
                       aria-hidden="true"
                     >
                       <span
-                        className="block h-full rounded-full"
-                        style={{
-                          // Keep slivers visible so every bucket reads.
-                          width: `${Math.max(pct, 3)}%`,
-                          background: b.bar,
-                          boxShadow: `0 0 12px -2px ${b.glow}`,
-                        }}
+                        className={`onyx-seg seg-${b.id} block h-full rounded-full`}
+                        // Keep slivers visible so every bucket reads.
+                        style={{ width: `${Math.max(pct, 3)}%` }}
                       />
                     </span>
                     <span className="text-right font-display text-[13px] font-semibold tnum text-foreground">

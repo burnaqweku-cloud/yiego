@@ -81,14 +81,14 @@
 
     --foreground: 161 40% 8%;
     --muted-foreground: 156 10% 36%;
-    --faint-foreground: 153 8% 46%;
+    --faint-foreground: 153 9% 40%;
 
     --ink-hero: #0a1912;
     --ink-body: #22322a;
     --ink-mid: #48584f;
-    --ink-dim: #616f67;
-    --ink-faint: #718077;
-    --ink-ghost: #8d9990;
+    --ink-dim: #5c6a62;
+    --ink-faint: #627168;
+    --ink-ghost: #7f8b83;
     --ink-out: #96660f;
     --ink-rose: #a03d33;
 
@@ -96,7 +96,7 @@
     --primary-strong: 155 85% 24%;
     --primary-glow: 158 70% 26%;
     --primary-soft: 152 50% 93%;
-    --primary-foreground: 156 62% 5%;
+    --primary-foreground: 150 40% 98%;
 
     --amber: 33 95% 35%;
     --amber-soft: 40 90% 92%;
@@ -1147,6 +1147,55 @@
     background: rgba(255, 255, 255, 0.85);
   }
 
+  /* Spending-breakdown bars — per-bucket fills, theme-tuned. Dark keeps
+     the original luminous pastels; light uses deep fills that clear 3:1. */
+  .onyx-seg-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .light .onyx-seg-track {
+    background: #e3eae6;
+  }
+  .onyx-seg.seg-topups {
+    background: linear-gradient(90deg, #7cf0b4 0%, rgba(34, 195, 135, 0.55) 100%);
+    box-shadow: 0 0 12px -2px rgba(34, 195, 135, 0.45);
+  }
+  .onyx-seg.seg-digital {
+    background: linear-gradient(90deg, #7fe3f0 0%, rgba(79, 214, 232, 0.5) 100%);
+    box-shadow: 0 0 12px -2px rgba(79, 214, 232, 0.4);
+  }
+  .onyx-seg.seg-education {
+    background: linear-gradient(90deg, #5ee4c4 0%, rgba(53, 200, 168, 0.5) 100%);
+    box-shadow: 0 0 12px -2px rgba(53, 200, 168, 0.4);
+  }
+  .onyx-seg.seg-crypto {
+    background: linear-gradient(90deg, #f8ca7a 0%, rgba(245, 181, 68, 0.5) 100%);
+    box-shadow: 0 0 12px -2px rgba(245, 181, 68, 0.38);
+  }
+  .onyx-seg.seg-other {
+    background: linear-gradient(90deg, rgba(214, 226, 219, 0.55) 0%, rgba(214, 226, 219, 0.2) 100%);
+    box-shadow: 0 0 12px -2px rgba(214, 226, 219, 0.18);
+  }
+  .light .onyx-seg.seg-topups {
+    background: linear-gradient(90deg, #0f9d63, #0a7a4c);
+    box-shadow: none;
+  }
+  .light .onyx-seg.seg-digital {
+    background: linear-gradient(90deg, #0e7c9c, #0a6482);
+    box-shadow: none;
+  }
+  .light .onyx-seg.seg-education {
+    background: linear-gradient(90deg, #0d9488, #0b7a70);
+    box-shadow: none;
+  }
+  .light .onyx-seg.seg-crypto {
+    background: linear-gradient(90deg, #c07207, #9a5c06);
+    box-shadow: none;
+  }
+  .light .onyx-seg.seg-other {
+    background: linear-gradient(90deg, #8a978f, #77857c);
+    box-shadow: none;
+  }
+
   /* Compact "buy again" chip card */
   .onyx-chip {
     border: 1px solid rgb(var(--w) / 0.06);
@@ -1217,17 +1266,17 @@
 
   /* Top bar controls */
   .light .onyx-search {
-    border-color: rgba(8, 26, 18, 0.1);
+    border-color: rgba(8, 26, 18, 0.14);
     background: rgba(255, 255, 255, 0.75);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
   .light .onyx-kbd {
-    color: #718077;
+    color: #627168;
     border-color: rgba(8, 26, 18, 0.14);
   }
   .light .onyx-iconbtn {
     color: #5b6a61;
-    border-color: rgba(8, 26, 18, 0.1);
+    border-color: rgba(8, 26, 18, 0.14);
     background: rgba(255, 255, 255, 0.75);
   }
   .light .onyx-iconbtn:hover {
@@ -1239,7 +1288,7 @@
     box-shadow: 0 0 8px rgba(217, 140, 12, 0.6);
   }
   .light .onyx-userchip {
-    border-color: rgba(8, 26, 18, 0.1);
+    border-color: rgba(8, 26, 18, 0.14);
     background: rgba(255, 255, 255, 0.75);
   }
   .light .onyx-userchip:hover {
@@ -1271,8 +1320,21 @@
     border-color: rgba(10, 122, 78, 0.22);
   }
   .light .onyx-flowstat {
-    border-color: rgba(8, 26, 18, 0.08);
-    background: rgba(8, 26, 18, 0.02);
+    border-color: rgba(8, 26, 18, 0.12);
+    background: rgba(8, 26, 18, 0.035);
+  }
+  /* Chart bars: dark's luminous fade dissolves on white — use solid
+     deep-emerald fills that clear 3:1, plus a baseline hairline. */
+  .light .onyx-bar {
+    background: linear-gradient(180deg, #2fbd85 0%, #0f9d63 55%, #0a7a4c 100%);
+  }
+  .light .onyx-bar:last-child {
+    background: linear-gradient(180deg, #34d399 0%, #0f9d63 60%, #0a7a4c 100%);
+    box-shadow: none;
+  }
+  .light .onyx-bars {
+    border-bottom: 1px solid rgba(8, 26, 18, 0.1);
+    padding-bottom: 1px;
   }
 
   /* Quick actions */
@@ -1286,9 +1348,9 @@
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 18px 34px -18px rgba(34, 195, 135, 0.3);
   }
   .light .onyx-quick-icon {
-    color: color-mix(in srgb, var(--tint) 55%, #0b291c);
-    background: color-mix(in srgb, var(--tint) 16%, #ffffff);
-    border-color: color-mix(in srgb, var(--tint) 45%, #ffffff);
+    color: color-mix(in srgb, var(--tint) 42%, #0b291c);
+    background: color-mix(in srgb, var(--tint) 14%, #ffffff);
+    border-color: color-mix(in srgb, var(--tint) 55%, #ffffff);
     box-shadow: none;
   }
 
@@ -1334,9 +1396,14 @@
     color: #0f8a5b;
   }
   .light .onyx-badge.is-pop {
-    color: #a4650a;
+    color: #8f5606;
     background: rgba(217, 140, 12, 0.12);
     border-color: rgba(217, 140, 12, 0.35);
+  }
+  /* Provider/network logo chips: brand colors tuned for dark get too
+     pale on white — darken them optically, keeping the brand hue. */
+  .light .onyx-netlogo {
+    filter: brightness(0.72) saturate(1.25);
   }
 
   /* Copy chip + ghost link (also re-asserted inside dark islands below) */

@@ -17,6 +17,7 @@ import AppearanceSheet from "@/components/sheets/AppearanceSheet";
 import LanguageSheet from "@/components/sheets/LanguageSheet";
 import SignOutSheet from "@/components/sheets/SignOutSheet";
 import ReferralSheet, { referralCode } from "@/components/sheets/ReferralSheet";
+import { useTheme } from "@/store/theme";
 import {
   User,
   Lock,
@@ -25,6 +26,8 @@ import {
   ShieldCheck,
   FileText,
   Moon,
+  Sun,
+  MonitorSmartphone,
   Globe,
   LifeBuoy,
   MessageSquare,
@@ -104,6 +107,9 @@ function SettingsGroup({ group, delay }: { group: SettingGroup; delay: string })
 
 export default function Account() {
   const { profile, initials } = useProfile();
+  const { mode } = useTheme();
+  const themeLabel = mode === "dark" ? "Onyx Dark" : mode === "light" ? "Daylight" : "Match device";
+  const ThemeIcon = mode === "dark" ? Moon : mode === "light" ? Sun : MonitorSmartphone;
   const navigate = useNavigate();
   const [sheet, setSheet] = useState<SheetId | null>(null);
 
@@ -147,7 +153,7 @@ export default function Account() {
     {
       label: "Preferences",
       items: [
-        { icon: Moon, title: "Appearance", value: "Onyx Dark", onClick: open("appearance") },
+        { icon: ThemeIcon, title: "Appearance", value: themeLabel, onClick: open("appearance") },
         { icon: Globe, title: "Language", value: profile.language, onClick: open("language") },
       ],
     },

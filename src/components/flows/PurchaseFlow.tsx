@@ -21,7 +21,7 @@ function OptionLogo({ option }: { option: FlowOption }) {
   const abbr = option.abbr ?? option.name.slice(0, 3).toUpperCase();
   return (
     <span
-      className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border bg-white/[0.03] text-[12px] font-bold tracking-tight"
+      className="onyx-netlogo grid h-11 w-11 shrink-0 place-items-center rounded-xl border bg-white/[0.03] text-[12px] font-bold tracking-tight"
       style={{
         color: option.color ?? "hsl(var(--primary-glow))",
         borderColor: option.color ? `${option.color}55` : "hsl(var(--primary-glow) / 0.33)",

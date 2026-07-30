@@ -18,7 +18,7 @@ function netShort(n: Network): string {
 function NetLogo({ network }: { network: Network }) {
   return (
     <span
-      className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border bg-white/[0.03] text-[12px] font-bold tracking-tight"
+      className="onyx-netlogo grid h-11 w-11 shrink-0 place-items-center rounded-xl border bg-white/[0.03] text-[12px] font-bold tracking-tight"
       style={{ color: network.color, borderColor: `${network.color}55` }}
     >
       {netShort(network)}

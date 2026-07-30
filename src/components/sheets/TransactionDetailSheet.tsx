@@ -64,10 +64,9 @@ export default function TransactionDetailSheet({
 
   // The Date & time row already carries the timestamp — show only the
   // meaningful part of the subtitle (recipient/meter/method) as Detail.
-  const detail =
-    tx.subtitle.includes("·") && tx.ts
-      ? tx.subtitle.split("·").slice(0, -1).join("·").trim()
-      : tx.subtitle;
+  const detail = tx.subtitle.includes("·")
+    ? tx.subtitle.split("·").slice(0, -1).join("·").trim()
+    : tx.subtitle;
 
   const rows: { label: string; value: string; mono?: boolean }[] = [
     { label: "Date & time", value: whenLabel(tx) },

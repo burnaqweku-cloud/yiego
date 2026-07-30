@@ -83,7 +83,7 @@ export default function FlowPanel() {
         </span>
       </div>
 
-      <div className="mt-6 flex min-h-[112px] flex-1 items-end gap-1.5" aria-hidden="true">
+      <div className="onyx-bars mt-6 flex min-h-[112px] flex-1 items-end gap-1.5" aria-hidden="true">
         {bars.map((b, i) => (
           <span key={i} className="onyx-bar" style={{ height: `${b}%`, animationDelay: `${i * 45}ms` }} />
         ))}
