@@ -68,3 +68,13 @@ The visual language is a set of reusable `.onyx-*` classes in `src/index.css`, *
 - Every tappable: real `<button>`/`<a>`, `aria-label` on icon-only, ≥44px touch target (use a `::before` hit-area on small pills), visible `:focus-visible` ring.
 - Not-yet-built actions → `comingSoonToast(name)` from `@/lib/toasts`.
 - Verify with the screenshot rig: `node scripts/screenshot.mjs <url> <out.png> <w> <h> [fullPage]` at 390 (mobile-first) and 1440. Keep tsc + `vite build` clean.
+
+## 7. Theming — Onyx Dark (default) + Daylight (light)
+
+- `html.light` activates Daylight; a pre-paint script in index.html reads `yiego_theme_v1` ("dark" | "light" | "system"). `src/store/theme.tsx` is the provider; the AppearanceSheet is the picker.
+- Tailwind `white` = `rgb(var(--w) / alpha)`: true white in dark, deep green-black ink in light. So `text-white`, `border-white/[0.06]`, `bg-white/[0.03]` are all theme-aware — NEVER "fix" them to literals.
+- Text hexes belong to the ink ramp tokens (`text-ink-hero/body/mid/dim/faint/ghost/out/rose`) or semantic tokens — never raw hex on themed surfaces.
+- ALL light styling lives in the DAYLIGHT section at the bottom of src/index.css (`.light .onyx-*` overrides). Add light rules there, one place only.
+- Dark islands: `.onyx-wallet`, `.onyx-dev`, `.onyx-terminal` stay dark in light mode (vars re-pinned inside them). Chrome inside islands (copy chips, ghost links, ghost buttons) has explicit re-assertions — follow that pattern for anything new inside an island.
+- Terminal syntax colors, network/provider brand hexes and `#04120c` on emerald fills are constants by design. Brand chips get `.onyx-netlogo` (light darkens them optically).
+- QA rigs: `node scripts/shootall.mjs <outdir> [dark|light]` (all pages × 2 widths), `node scripts/shootmodals.mjs <outdir> [theme]` (key sheets). Screenshot both themes for any visual change.
