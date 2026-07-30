@@ -26,7 +26,7 @@ function loadMode(): ThemeMode {
   } catch {
     /* default */
   }
-  return "dark";
+  return "light";
 }
 
 function systemPrefersLight(): boolean {

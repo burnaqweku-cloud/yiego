@@ -6,8 +6,8 @@ import { useTheme, type ThemeMode } from "@/store/theme";
 /** Appearance — pick Onyx Dark, Daylight, or follow the device. */
 
 const OPTIONS: { mode: ThemeMode; icon: LucideIcon; title: string; subtitle: string }[] = [
-  { mode: "dark", icon: Moon, title: "Onyx Dark", subtitle: "Near-black canvas, emerald light" },
   { mode: "light", icon: Sun, title: "Daylight", subtitle: "Porcelain canvas, deep emerald" },
+  { mode: "dark", icon: Moon, title: "Onyx Dark", subtitle: "Near-black canvas, emerald light" },
   { mode: "system", icon: MonitorSmartphone, title: "Match device", subtitle: "Follows your system setting" },
 ];
 
@@ -44,8 +44,8 @@ export default function AppearanceSheet({ open, onClose }: { open: boolean; onCl
         })}
 
         <p className="px-1 pt-2 text-[12.5px] leading-relaxed text-faint-foreground">
-          Onyx Dark is YieGo's signature look. Daylight keeps the same emerald soul on a porcelain
-          canvas — and your wallet stays the dark jewel in both.
+          Daylight is YieGo's everyday look; Onyx Dark is the signature night mode. Your wallet
+          stays the dark jewel in both.
         </p>
       </div>
     </Modal>
