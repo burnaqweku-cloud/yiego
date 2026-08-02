@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
     const orderReference = body.orderReference ? String(body.orderReference) : "";
     const networkCode = body.networkCode ? String(body.networkCode) : "";
     const reason = body.reason ? String(body.reason) : null;
+    const displayStatus = body.displayStatus ? String(body.displayStatus) : "";
 
     if (!action) {
       return jsonResponse({ error: "action is required" }, { status: 400 });
@@ -85,6 +86,38 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Order not found" }, { status: 404 });
     }
 
+    if (action === "set_display_status" || action === "clear_display_status") {
+      const supportedDisplayStatuses = new Set([
+        "processing",
+        "pending_supplier",
+        "delivered",
+        "failed",
+        "cancelled",
+        "refunded",
+      ]);
+
+      if (action === "set_display_status" && !supportedDisplayStatuses.has(displayStatus)) {
+        return jsonResponse({ error: "Unsupported customer-visible status" }, { status: 400 });
+      }
+
+      if (!reason?.trim()) {
+        return jsonResponse({ error: "A reason is required" }, { status: 400 });
+      }
+
+      const { data, error } = await supabase.rpc("admin_set_order_display_status", {
+        p_order_reference: order.order_reference,
+        p_display_status: action === "clear_display_status" ? "" : displayStatus,
+        p_reason: reason.trim(),
+        p_actor_user_id: authData.user.id,
+      });
+
+      if (error) {
+        return jsonResponse({ error: error.message }, { status: 500 });
+      }
+
+      return jsonResponse({ status: "success", action, data });
+    }
+
     if (action === "recheck") {
       if (!order.supplier_order_reference) {
         return jsonResponse({ error: "No supplier reference available yet" }, { status: 409 });
@@ -103,6 +136,14 @@ Deno.serve(async (req) => {
     }
 
     if (action === "retry") {
+      const retryableStatuses = new Set(["failed", "failed_needs_review", "cancelled"]);
+      if (!retryableStatuses.has(order.status)) {
+        return jsonResponse({ error: "Only failed or cancelled orders can be retried" }, { status: 409 });
+      }
+      if (order.payment_status !== "succeeded") {
+        return jsonResponse({ error: "Only successfully paid orders can be retried" }, { status: 409 });
+      }
+
       const result = await fulfillOrderWithDataMartGH(supabase, order.id);
       return jsonResponse({ status: "success", action, result });
     }

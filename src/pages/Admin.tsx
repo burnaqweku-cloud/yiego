@@ -23,10 +23,10 @@ export default function Admin() {
   useEffect(() => {
     let mounted = true;
     Promise.all([
-      adminDatabase().from<AdminOrderRow[]>("orders").select("order_reference, recipient_phone, amount, status, payment_status, supplier_status, created_at").order("created_at", { ascending: false }),
-      adminDatabase().from<AdminLedgerRow[]>("wallet_ledger_entries").select("reference, amount, direction, type, created_at").order("created_at", { ascending: false }).limit(5),
-      adminDatabase().from<SupplierLogRow[]>("supplier_api_logs").select("action, endpoint, http_status, call_status, created_at").order("created_at", { ascending: false }).limit(5),
-      adminDatabase().from<{ balance: number | string }[]>("suppliers").select("balance").limit(1),
+      adminDatabase().from<AdminOrderRow>("orders").select("order_reference, recipient_phone, amount, status, payment_status, supplier_status, created_at").order("created_at", { ascending: false }),
+      adminDatabase().from<AdminLedgerRow>("wallet_ledger_entries").select("reference, amount, direction, type, created_at").order("created_at", { ascending: false }).limit(5),
+      adminDatabase().from<SupplierLogRow>("supplier_api_logs").select("action, endpoint, http_status, call_status, created_at").order("created_at", { ascending: false }).limit(5),
+      adminDatabase().from<{ balance: number | string }>("suppliers").select("balance").limit(1),
     ]).then(([orderResult, ledgerResult, logResult, supplierResult]) => {
       if (!mounted) return;
       setOrders(orderResult.data ?? []);

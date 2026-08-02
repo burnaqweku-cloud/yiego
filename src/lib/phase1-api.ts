@@ -54,6 +54,18 @@ export interface Phase1Product {
   network_id?: string;
 }
 
+
+interface Phase1ProductQuery {
+  select: (columns: string) => Phase1ProductQuery;
+  eq: (column: string, value: unknown) => Phase1ProductQuery;
+  order: (column: string, options?: { ascending?: boolean }) => Phase1ProductQuery;
+  then: PromiseLike<{ data: Phase1Product[] | null; error: { message: string } | null }>['then'];
+}
+
+interface Phase1SchemaClient {
+  from: (table: "data_products") => Phase1ProductQuery;
+}
+
 export interface PaystackCheckoutResponse {
   status: "success";
   data: {
@@ -101,8 +113,8 @@ export function createWalletDataOrder(input: WalletDataOrderInput) {
 }
 
 export async function loadPhase1Products() {
-  const { data, error } = await (supabase as any)
-    .schema("phase1")
+  const phase1Client = (supabase as unknown as { schema: (name: string) => Phase1SchemaClient }).schema("phase1");
+  const { data, error } = await phase1Client
     .from("data_products")
     .select("id, app_product_code, name, validity, customer_price, network_id")
     .eq("is_active", true)

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { DatabaseZap, RefreshCw, Store } from "lucide-react";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
+import AdminRecordModal, { AdminDetailsButton } from "@/components/admin/AdminRecordModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,7 @@ export default function AdminSuppliers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkedAt, setCheckedAt] = useState<Date | null>(null);
+  const [selectedLog, setSelectedLog] = useState<SupplierLogRow | null>(null);
 
   const refreshPrices = useCallback(async () => {
     setLoading(true);
@@ -42,8 +44,8 @@ export default function AdminSuppliers() {
   useEffect(() => {
     let mounted = true;
     Promise.all([
-      adminDatabase().from<SupplierLogRow[]>("supplier_api_logs").select("action, endpoint, http_status, call_status, created_at").order("created_at", { ascending: false }).limit(10),
-      adminDatabase().from<{ balance: number | string }[]>("suppliers").select("balance").limit(1),
+      adminDatabase().from<SupplierLogRow>("supplier_api_logs").select("action, endpoint, http_status, call_status, supplier_reference, error_message, duration_ms, created_at").order("created_at", { ascending: false }).limit(10),
+      adminDatabase().from<{ balance: number | string }>("suppliers").select("balance").limit(1),
     ]).then(([logResult, supplierResult]) => {
       if (!mounted) return;
       setLogs(logResult.data ?? []);
@@ -85,8 +87,17 @@ export default function AdminSuppliers() {
 
       <Card>
         <CardHeader><div><CardTitle>API activity</CardTitle><p className="mt-1 text-xs text-faint-foreground">Recent DataMartGH requests</p></div><Badge variant="neutral">Live log</Badge></CardHeader>
-        <CardContent>{logs.length === 0 ? <p className="py-6 text-sm text-muted-foreground">No supplier requests yet.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead><tr className="border-b border-white/[0.08] text-[10px] uppercase tracking-[0.15em] text-faint-foreground"><th className="pb-3">Action</th><th className="pb-3">Endpoint</th><th className="pb-3">Result</th><th className="pb-3 text-right">Time</th></tr></thead><tbody>{logs.map((log) => <tr key={`${log.endpoint}-${log.created_at}`} className="border-b border-white/[0.05] last:border-0"><td className="py-4 font-semibold text-white">{readableStatus(log.action)}</td><td className="py-4 text-muted-foreground">{log.endpoint}</td><td className="py-4"><Badge variant={log.call_status === "success" ? "success" : "amber"}>{readableStatus(log.call_status)} · {log.http_status ?? "n/a"}</Badge></td><td className="py-4 text-right text-xs text-muted-foreground">{formatAdminDate(log.created_at)}</td></tr>)}</tbody></table></div>}</CardContent>
+        <CardContent>{logs.length === 0 ? <p className="py-6 text-sm text-muted-foreground">No supplier requests yet.</p> : <><div className="space-y-3 md:hidden">{logs.map((log) => <article key={`${log.endpoint}-${log.created_at}`} className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4"><div className="min-w-0 flex-1"><p className="truncate font-semibold text-white">{readableStatus(log.action)}</p><p className="mt-1 truncate text-xs text-muted-foreground">{log.endpoint}</p><Badge className="mt-2" variant={log.call_status === "success" ? "success" : "amber"}>{readableStatus(log.call_status)} · {log.http_status ?? "n/a"}</Badge></div><AdminDetailsButton label={`View ${readableStatus(log.action)} request`} onClick={() => setSelectedLog(log)} /></article>)}</div><div className="hidden overflow-x-auto md:block"><table className="w-full min-w-[720px] text-left text-sm"><thead><tr className="border-b border-white/[0.08] text-[10px] uppercase tracking-[0.15em] text-faint-foreground"><th className="pb-3">Action</th><th className="pb-3">Endpoint</th><th className="pb-3">Result</th><th className="pb-3">Time</th><th className="pb-3 text-right">Details</th></tr></thead><tbody>{logs.map((log) => <tr key={`${log.endpoint}-${log.created_at}`} className="border-b border-white/[0.05] last:border-0"><td className="py-4 font-semibold text-white">{readableStatus(log.action)}</td><td className="py-4 text-muted-foreground">{log.endpoint}</td><td className="py-4"><Badge variant={log.call_status === "success" ? "success" : "amber"}>{readableStatus(log.call_status)} · {log.http_status ?? "n/a"}</Badge></td><td className="py-4 text-xs text-muted-foreground">{formatAdminDate(log.created_at)}</td><td className="py-4 text-right"><AdminDetailsButton label={`View ${readableStatus(log.action)} request`} onClick={() => setSelectedLog(log)} /></td></tr>)}</tbody></table></div></>}</CardContent>
       </Card>
+
+      <AdminRecordModal open={Boolean(selectedLog)} onClose={() => setSelectedLog(null)} title={selectedLog ? readableStatus(selectedLog.action) : "Supplier request"} subtitle={selectedLog?.endpoint} fields={selectedLog ? [
+        { label: "Result", value: readableStatus(selectedLog.call_status) },
+        { label: "HTTP status", value: selectedLog.http_status ?? "Not recorded" },
+        { label: "Supplier reference", value: selectedLog.supplier_reference ?? "None" },
+        { label: "Duration", value: selectedLog.duration_ms === null || selectedLog.duration_ms === undefined ? "Not recorded" : `${selectedLog.duration_ms} ms` },
+        { label: "Error", value: selectedLog.error_message ?? "None" },
+        { label: "Time", value: formatAdminDate(selectedLog.created_at) },
+      ] : []} />
     </div>
   );
 }

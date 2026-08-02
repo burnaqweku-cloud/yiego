@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("user_id, order_reference, recipient_phone, amount, currency, status, payment_status, supplier_status, created_at, updated_at, data_products(name, capacity_gb), networks(name)")
+      .select("user_id, order_reference, recipient_phone, amount, currency, status, payment_status, supplier_status, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, created_at, updated_at, data_products(name, capacity_gb), networks(name)")
       .eq("order_reference", reference)
       .limit(1)
       .maybeSingle();
@@ -66,7 +66,10 @@ Deno.serve(async (req) => {
         product: order.data_products?.name,
         amount: order.amount,
         currency: order.currency,
-        orderStatus: order.status,
+        orderStatus: order.admin_resolution_status ?? order.status,
+        systemOrderStatus: order.status,
+        statusMessage: order.admin_resolution_status ? order.admin_resolution_reason : null,
+        statusUpdatedAt: order.admin_resolution_status ? order.admin_resolution_updated_at : null,
         paymentStatus: order.payment_status,
         supplierStatus: order.supplier_status,
         createdAt: order.created_at,
