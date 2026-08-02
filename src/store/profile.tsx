@@ -66,13 +66,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     return () => { mounted = false; };
   }, [authLoading, isAuthenticated, user]);
 
-  const update = (patch: Partial<Profile>) => {
-    if (!user) return Promise.reject(new Error("Authentication required"));
+  const update = async (patch: Partial<Profile>) => {
+    if (!user) throw new Error("Authentication required");
     const next = { ...profile, ...patch, email: profile.email };
-    return phase1().from("profiles").update({ full_name: `${next.firstName} ${next.lastName}`.trim(), phone: next.phone }).eq("id", user.id).then(({ error }) => {
-      if (error) throw new Error(error.message);
-      setProfile(next);
-    });
+    const { error } = await phase1()
+      .from("profiles")
+      .update({ full_name: `${next.firstName} ${next.lastName}`.trim(), phone: next.phone })
+      .eq("id", user.id);
+    if (error) throw new Error(error.message);
+    setProfile(next);
   };
 
   const initials = isAuthenticated ? (`${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase() || "YG") : "";
