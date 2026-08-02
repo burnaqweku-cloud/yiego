@@ -101,7 +101,7 @@ export function createWalletDataOrder(input: WalletDataOrderInput) {
 }
 
 export async function loadPhase1Products() {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .schema("phase1")
     .from("data_products")
     .select("id, app_product_code, name, validity, customer_price, network_id")

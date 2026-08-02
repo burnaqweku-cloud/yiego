@@ -120,7 +120,7 @@ export default function BuyDataFlow({
   const masked = phoneValid ? `${digits.slice(0, 3)} ••• ${digits.slice(7)}` : phone;
   const price = bundle?.price ?? 0;
   const canPay = balance >= price;
-  function bundlesFor(networkId: Network["id"]) {
+  function bundlesFor(networkId: Network["id"]): Bundle[] {
     const prefix = networkId === "mtn" ? "mtn" : networkId === "telecel" ? "tel" : "at";
     return products
       .filter((product) => product.app_product_code?.startsWith(prefix))
