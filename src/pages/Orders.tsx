@@ -15,6 +15,7 @@ interface OrderRow {
   amount: number | string;
   currency: string;
   status: string;
+  admin_resolution_status: string | null;
   payment_status: string;
   supplier_status: string | null;
   created_at: string;
@@ -54,7 +55,7 @@ export default function Orders() {
     let mounted = true;
     phase1()
       .from<OrderRow[]>("orders")
-      .select("id, order_reference, recipient_phone, amount, currency, status, payment_status, supplier_status, created_at, data_products(name), networks(name)")
+      .select("id, order_reference, recipient_phone, amount, currency, status, admin_resolution_status, payment_status, supplier_status, created_at, data_products(name), networks(name)")
       .order("created_at", { ascending: false })
       .then(({ data, error: queryError }) => {
         if (!mounted) return;
@@ -83,7 +84,7 @@ export default function Orders() {
         <section className="onyx-panel rounded-[24px] p-7 text-center">
           <PackageCheck className="mx-auto text-primary-glow" size={28} />
           <h2 className="mt-4 font-display text-xl font-semibold text-white">No orders yet</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Your first data purchase will appear here.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Your first data purchase wil appear here.</p>
           <Button className="mt-5" onClick={() => navigate("/")}>Buy data</Button>
         </section>
       ) : (
@@ -95,16 +96,16 @@ export default function Orders() {
                   <p className="font-display text-[16px] font-semibold text-white">{order.data_products?.name ?? "Data bundle"}</p>
                   <p className="mt-1 text-xs text-faint-foreground">{order.order_reference} · {order.recipient_phone}</p>
                 </div>
-                <Badge variant={order.status === "delivered" ? "success" : "amber"}>{readableStatus(order.status)}</Badge>
-              </div>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="text-muted-foreground">{order.networks?.name ?? "Network"} · {new Date(order.created_at).toLocaleString("en-GH")}</span>
-                <span className="font-display font-semibold text-white">{formatGHS(Number(order.amount))}</span>
-              </div>
-            </Link>
-          ))}
-        </section>
-      )}
-    </div>
+                <Badge variant={(order.admin_resolution_status ?? order.status) === "delivered" ? "success" : "amber"}>{readableStatus(order.admin_resolution_status ?? order.status)}</Badge>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span className="text-muted-foreground">{order.networks?.name ?? "Network"} · {new Date(order.created_at).toLocaleString("en-GH")}</span>
+              <span className="font-display font-semibold text-white">{formatGHS(Number(order.amount))}</span>
+            </div>
+          </Link>
+        ))}
+      </section>
+    )}
+  </div>
   );
 }

@@ -2,15 +2,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
+  BadgeDollarSign,
+  BriefcaseBusiness,
+  ChevronDown,
   ChevronRight,
   ClipboardList,
   Gauge,
   LogOut,
   Menu,
-  ShieldAlert,
   Store,
+  Tags,
   WalletCards,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import AuroraBackground from "@/components/fx/AuroraBackground";
@@ -19,20 +23,58 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/store/auth-context";
 import { useProfile } from "@/store/profile";
 
-const groups = [
+interface AdminNavChild {
+  label: string;
+  to: string;
+}
+
+interface AdminNavItem {
+  label: string;
+  to: string;
+  icon: LucideIcon;
+  end?: boolean;
+  children?: AdminNavChild[];
+}
+
+interface AdminNavSection {
+  label: string;
+  icon: LucideIcon;
+  items: AdminNavItem[];
+}
+
+const sections: AdminNavSection[] = [
   {
     label: "Workspace",
+    icon: Gauge,
     items: [{ label: "Overview", to: "/admin", icon: Gauge, end: true }],
   },
   {
     label: "Operations",
+    icon: ClipboardList,
     items: [
-      { label: "Orders", to: "/admin/orders", icon: ClipboardList },
-      { label: "Review queue", to: "/admin/reviews", icon: ShieldAlert },
+      {
+        label: "Orders",
+        to: "/admin/orders",
+        icon: ClipboardList,
+        children: [
+          { label: "All orders", to: "/admin/orders" },
+          { label: "In progress", to: "/admin/orders?status=pending" },
+          { label: "Delivered", to: "/admin/orders?status=delivered" },
+          { label: "Failed & review", to: "/admin/orders?status=failed" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Sales management",
+    icon: BadgeDollarSign,
+    items: [
+      { label: "Data pricing", to: "/admin/sales/pricing", icon: Tags },
     ],
   },
   {
     label: "Business",
+    icon: BriefcaseBusiness,
     items: [
       { label: "Suppliers", to: "/admin/suppliers", icon: Store },
       { label: "Wallet activity", to: "/admin/wallet", icon: WalletCards },
@@ -44,36 +86,108 @@ const routeTitles: Record<string, string> = {
   "/admin": "Overview",
   "/admin/orders": "Orders",
   "/admin/reviews": "Review queue",
+  "/admin/sales/pricing": "Data pricing",
   "/admin/suppliers": "Suppliers",
   "/admin/wallet": "Wallet activity",
 };
 
 function AdminNavigation({ onNavigate }: { onNavigate?: () => void }) {
+  const location = useLocation();
+  const activeSection = location.pathname === "/admin"
+    ? "Workspace"
+    : location.pathname.startsWith("/admin/orders") || location.pathname.startsWith("/admin/reviews")
+      ? "Operations"
+      : location.pathname.startsWith("/admin/sales")
+        ? "Sales management"
+        : "Business";
+  const [openSection, setOpenSection] = useState(activeSection);
+  const [ordersOpen, setOrdersOpen] = useState(location.pathname.startsWith("/admin/orders"));
+
+  useEffect(() => {
+    setOpenSection(activeSection);
+    if (location.pathname.startsWith("/admin/orders")) setOrdersOpen(true);
+  }, [activeSection, location.pathname]);
+
+  const isChildActive = (to: string) => {
+    const [pathname, search = ""] = to.split("?");
+    if (location.pathname !== pathname) return false;
+    if (!search) return !location.search || location.search === "?status=all";
+    return location.search === `?${search}`;
+  };
+
   return (
-    <nav className="mt-8 space-y-7" aria-label="Admin navigation">
-      {groups.map((group) => (
-        <div key={group.label}>
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-faint-foreground">{group.label}</p>
-          <div className="mt-2 space-y-1">
-            {group.items.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                onClick={onNavigate}
-                className={({ isActive }) => cn(
-                  "group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors",
-                  isActive
-                    ? "border border-primary-glow/15 bg-primary/[0.11] text-primary-glow"
-                    : "border border-transparent text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
-                )}
-              >
-                <item.icon size={18} />
-                <span>{item.label}</span>
-                <ChevronRight className="ml-auto opacity-0 transition-opacity group-hover:opacity-60" size={15} />
-              </NavLink>
-            ))}
-          </div>
+    <nav className="mt-8 space-y-2" aria-label="Admin navigation">
+      {sections.map((section, index) => (
+        <div key={section.label} className="rounded-2xl border border-white/[0.055] bg-white/[0.018] p-1.5">
+          <button
+            type="button"
+            onClick={() => setOpenSection((current) => current === section.label ? "" : section.label)}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition-colors",
+              openSection === section.label ? "bg-white/[0.045] text-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+            aria-expanded={openSection === section.label}
+          >
+            <span className="grid h-7 w-7 place-items-center rounded-lg border border-white/[0.08] bg-black/10 text-[10px] text-faint-foreground">{index + 1}</span>
+            <section.icon size={17} className={openSection === section.label ? "text-primary-glow" : ""} />
+            <span className="min-w-0 flex-1 truncate">{section.label}</span>
+            <ChevronDown size={15} className={cn("transition-transform", openSection === section.label && "rotate-180")} />
+          </button>
+
+          {openSection === section.label && (
+            <div className="mt-1 space-y-1 px-1 pb-1">
+              {section.items.map((item) => item.children ? (
+                <div key={item.to}>
+                  <button
+                    type="button"
+                    onClick={() => setOrdersOpen((current) => !current)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
+                      location.pathname.startsWith(item.to) ? "text-primary-glow" : "text-muted-foreground hover:bg-white/[0.035] hover:text-foreground",
+                    )}
+                    aria-expanded={ordersOpen}
+                  >
+                    <item.icon size={17} />
+                    <span>{item.label}</span>
+                    <ChevronDown size={14} className={cn("ml-auto transition-transform", ordersOpen && "rotate-180")} />
+                  </button>
+                  {ordersOpen && (
+                    <div className="ml-5 mt-1 space-y-1 border-l border-white/[0.09] pl-3">
+                      {item.children.map((child) => (
+                        <NavLink
+                          key={child.to}
+                          to={child.to}
+                          onClick={onNavigate}
+                          className={cn(
+                            "flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+                            isChildActive(child.to) ? "bg-primary/[0.1] text-primary-glow" : "text-faint-foreground hover:bg-white/[0.035] hover:text-foreground",
+                          )}
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+                          {child.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  onClick={onNavigate}
+                  className={({ isActive }) => cn(
+                    "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
+                    isActive ? "bg-primary/[0.1] text-primary-glow" : "text-muted-foreground hover:bg-white/[0.035] hover:text-foreground",
+                  )}
+                >
+                  <item.icon size={17} />
+                  <span>{item.label}</span>
+                  <ChevronRight className="ml-auto opacity-0 transition-opacity group-hover:opacity-60" size={14} />
+                </NavLink>
+              ))}
+            </div>
+          )}
         </div>
       ))}
     </nav>
@@ -163,7 +277,7 @@ export default function AdminShell() {
             </div>
           </header>
 
-          <main className="px-5 pb-16 pt-7 sm:px-8 lg:px-10 lg:pt-9">
+          <main className="px-5 pb-16 pt-7 sm:px-8 lg:pt-9">
             <Outlet />
           </main>
         </div>

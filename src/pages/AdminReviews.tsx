@@ -10,7 +10,7 @@ export default function AdminReviews() {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let mounted = true;
-    adminDatabase().from<AdminOrderRow[]>("orders").select("order_reference, recipient_phone, amount, status, payment_status, supplier_status, created_at").order("created_at", { ascending: false }).then(({ data }) => {
+    adminDatabase().from<AdminOrderRow>("orders").select("order_reference, recipient_phone, amount, status, payment_status, supplier_status, created_at").order("created_at", { ascending: false }).then(({ data }) => {
       if (!mounted) return;
       setOrders((data ?? []).filter((order) => ["failed", "failed_needs_review"].includes(order.status)));
       setLoading(false);

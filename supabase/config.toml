@@ -56,3 +56,6 @@ verify_jwt = true
 
 [functions.admin-order-action]
 verify_jwt = true
+
+[functions.admin-catalog-action]
+verify_jwt = true

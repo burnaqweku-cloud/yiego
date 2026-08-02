@@ -10,7 +10,7 @@ export default function AdminWallet() {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let mounted = true;
-    adminDatabase().from<AdminLedgerRow[]>("wallet_ledger_entries").select("reference, amount, direction, type, created_at").order("created_at", { ascending: false }).limit(50).then(({ data }) => {
+    adminDatabase().from<AdminLedgerRow>("wallet_ledger_entries").select("reference, amount, direction, type, created_at").order("created_at", { ascending: false }).limit(50).then(({ data }) => {
       if (!mounted) return;
       setEntries(data ?? []);
       setLoading(false);

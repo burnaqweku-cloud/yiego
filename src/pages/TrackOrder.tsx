@@ -17,6 +17,9 @@ interface PublicOrderStatus {
   amount: number;
   currency: string;
   orderStatus: string;
+  systemOrderStatus?: string;
+  statusMessage?: string;
+  statusUpdatedAt?: string;
   paymentStatus: string;
   supplierStatus?: string;
   createdAt: string;
@@ -180,6 +183,13 @@ export default function TrackOrder() {
                     </div>
                   ))}
                 </div>
+
+                {order.statusMessage && (
+                  <div className="mt-4 rounded-2xl border border-primary-glow/15 bg-primary/[0.06] p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-glow">Latest update</p>
+                    <p className="mt-1 text-sm leading-6 text-foreground">{order.statusMessage}</p>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
