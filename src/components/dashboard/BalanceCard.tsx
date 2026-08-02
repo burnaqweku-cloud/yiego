@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { ArrowDownToLine, BadgePercent, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import GuillocheMesh from "@/components/fx/GuillocheMesh";
-import { formatGHS, formatAmountParts } from "@/lib/format";
+import { formatAmountParts } from "@/lib/format";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useWallet } from "@/store/wallet";
 import { useFlows } from "@/store/flows";
 
 /** The wallet — a machined-metal jewel and the one splash of light on the page. */
 export default function BalanceCard() {
-  const { balance, cashback } = useWallet();
-  const { openAddMoney, openWithdraw } = useFlows();
+  const { balance, isRealWallet, hasWallet, loading } = useWallet();
+  const { openAddMoney } = useFlows();
   const [hidden, setHidden] = useState(false);
   const animatedBalance = useCountUp(balance);
   const { symbol, value } = formatAmountParts(animatedBalance);
@@ -40,10 +40,6 @@ export default function BalanceCard() {
             </button>
           </div>
 
-          <div className="onyx-cashback mt-3.5">
-            <BadgePercent size={13} className="text-amber" />
-            <strong className="tnum">{formatGHS(cashback)}</strong> cashback earned
-          </div>
         </div>
 
         <span className="onyx-wallet-mono" aria-hidden="true">
@@ -56,20 +52,19 @@ export default function BalanceCard() {
           type="button"
           className="onyx-btn-primary flex-1"
           onClick={openAddMoney}
+          disabled={loading || !hasWallet}
         >
           <Plus size={17} strokeWidth={2.4} />
           Add Money
         </button>
-        <button type="button" className="onyx-btn-ghost flex-1" onClick={openWithdraw}>
-          <ArrowDownToLine size={17} strokeWidth={2.2} />
-          Withdraw
-        </button>
       </div>
 
       <div className="relative mt-auto flex items-center justify-between pt-6 text-[11.5px] tracking-tight text-[#6e8b7d]">
-        <span className="font-mono tracking-[0.18em]">•••• 4429 · GHS WALLET</span>
+        <span className="font-mono tracking-[0.18em]">
+          GHS WALLET
+        </span>
         <span className="flex items-center gap-1.5 text-primary-glow">
-          <span className="onyx-live-dot" /> Live
+          <span className="onyx-live-dot" /> {loading ? "Syncing" : isRealWallet ? "Live" : "Unavailable"}
         </span>
       </div>
     </div>

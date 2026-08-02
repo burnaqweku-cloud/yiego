@@ -10,32 +10,32 @@ export default function ProfileSheet({ open, onClose }: { open: boolean; onClose
   const { profile, update } = useProfile();
   const [first, setFirst] = useState(profile.firstName);
   const [last, setLast] = useState(profile.lastName);
-  const [email, setEmail] = useState(profile.email);
   const [phone, setPhone] = useState(profile.phone);
+  const [saving, setSaving] = useState(false);
 
   // Re-seed the form from the store each time the sheet opens.
   useEffect(() => {
     if (!open) return;
     setFirst(profile.firstName);
     setLast(profile.lastName);
-    setEmail(profile.email);
     setPhone(profile.phone);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const emailOk = /^\S+@\S+\.\S+$/.test(email.trim());
   const phoneOk = phone.length === 10;
-  const valid = first.trim().length >= 2 && last.trim().length >= 2 && emailOk && phoneOk;
+  const valid = first.trim().length >= 2 && phoneOk;
 
-  const save = () => {
-    update({
-      firstName: first.trim(),
-      lastName: last.trim(),
-      email: email.trim(),
-      phone,
-    });
-    toast("Profile updated", { description: "Your details are saved on this device." });
-    onClose();
+  const save = async () => {
+    setSaving(true);
+    try {
+      await update({ firstName: first.trim(), lastName: last.trim(), phone });
+      toast.success("Profile updated");
+      onClose();
+    } catch {
+      toast.error("We couldn't save your changes. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const labelCls = "text-[12px] font-semibold uppercase tracking-[0.14em] text-faint-foreground";
@@ -55,7 +55,7 @@ export default function ProfileSheet({ open, onClose }: { open: boolean; onClose
               value={first}
               autoComplete="given-name"
               onChange={(e) => setFirst(e.target.value.slice(0, 30))}
-              placeholder="Kwame"
+              placeholder="First name"
             />
           </div>
           <div>
@@ -68,7 +68,7 @@ export default function ProfileSheet({ open, onClose }: { open: boolean; onClose
               value={last}
               autoComplete="family-name"
               onChange={(e) => setLast(e.target.value.slice(0, 30))}
-              placeholder="Mensah"
+              placeholder="Last name"
             />
           </div>
         </div>
@@ -77,19 +77,8 @@ export default function ProfileSheet({ open, onClose }: { open: boolean; onClose
           <label htmlFor="pf-email" className={labelCls}>
             Email
           </label>
-          <input
-            id="pf-email"
-            className="onyx-field mt-2 text-[16px]"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value.slice(0, 60))}
-            placeholder="you@example.com"
-          />
-          {email.length > 0 && !emailOk && (
-            <p className="mt-1.5 text-[12px] text-danger">That doesn't look like an email address.</p>
-          )}
+          <div id="pf-email" className="onyx-field mt-2 flex items-center text-[16px] text-muted-foreground">{profile.email}</div>
+          <p className="mt-1.5 text-[12px] text-faint-foreground">Email changes require account verification and are not available here yet.</p>
         </div>
 
         <div>
@@ -112,18 +101,17 @@ export default function ProfileSheet({ open, onClose }: { open: boolean; onClose
         </div>
 
         <p className="text-[12.5px] leading-relaxed text-faint-foreground">
-          Your name appears on receipts and payment links. We'll use this email and number for
-          statements and alerts.
+          Your name and phone number are saved to your YieGo account.
         </p>
       </div>
       <FlowFooter>
         <button
           type="button"
           className="onyx-btn-primary w-full disabled:pointer-events-none disabled:opacity-40"
-          disabled={!valid}
+          disabled={!valid || saving}
           onClick={save}
         >
-          Save changes
+          {saving ? "Saving…" : "Save changes"}
         </button>
       </FlowFooter>
     </Modal>

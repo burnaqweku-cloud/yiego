@@ -10,25 +10,16 @@ import Modal from "@/components/ui/modal";
 import { FlowHeader } from "@/components/flows/flow-parts";
 import { txRef } from "@/store/wallet";
 import { formatSigned } from "@/lib/format";
-import type { MockTransaction } from "@/data/mock";
+import type { WalletTransaction } from "@/types/wallet";
 import { cn } from "@/lib/utils";
 
 const TYPE_LABEL: Record<string, string> = {
   data: "Data bundle",
-  airtime: "Airtime top-up",
   deposit: "Wallet top-up",
-  electricity: "Electricity",
-  payment: "Payment received",
-  tv: "TV subscription",
-  withdrawal: "Withdrawal",
-  giftcard: "Gift card",
-  crypto: "Crypto exchange",
-  bill: "Bill payment",
-  digital: "Digital service",
-  education: "Education",
+  payment: "Wallet adjustment",
 };
 
-function whenLabel(t: MockTransaction): string {
+function whenLabel(t: WalletTransaction): string {
   if (t.ts) {
     return new Date(t.ts).toLocaleString("en-GH", {
       weekday: "short",
@@ -46,7 +37,7 @@ export default function TransactionDetailSheet({
   tx,
   onClose,
 }: {
-  tx: MockTransaction | null;
+  tx: WalletTransaction | null;
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState(false);

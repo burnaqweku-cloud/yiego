@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 /**
  * Consistent header at the top of every page: small eyebrow, display title,
- * optional subtitle, and an optional right-aligned action. Animates in.
+ * optional subtitle, and an optional right-aligned action.
  */
 export default function PageHeader({
   eyebrow,
@@ -16,7 +16,7 @@ export default function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="onyx-rise flex flex-wrap items-end justify-between gap-4">
+    <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
         {eyebrow && (
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">

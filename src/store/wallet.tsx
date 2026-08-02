@@ -1,206 +1,159 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { MOCK_TRANSACTIONS_ALL, type MockTransaction, type TxType } from "@/data/mock";
-
-/**
- * The live wallet — real client-side state so flows actually move money.
- * Balance, cashback and transactions persist to localStorage, so purchases
- * survive a reload (until a real backend replaces this).
- *
- * Cashback is real here: every debit accrues 1% into a cashback pot, which
- * can be redeemed back into the balance from the Wallet page.
- */
-
-const STORAGE_KEY = "yiego_wallet_v1";
-const INITIAL_BALANCE = 2458.5;
-const INITIAL_CASHBACK = 12.5;
-export const CASHBACK_RATE = 0.01;
-export const CASHBACK_MIN_REDEEM = 1;
-
-interface TxDraft {
-  type: TxType;
-  title: string;
-  subtitle: string;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/store/auth-context";
+import type { WalletTransaction, WalletTransactionType } from "@/types/wallet";
 
 interface WalletValue {
   balance: number;
-  /** Cashback pot — grows 1% per purchase, redeemable into the balance. */
-  cashback: number;
-  transactions: MockTransaction[];
-  /** Add money in (amount is made positive). Returns the created receipt. */
-  credit: (amount: number, draft: TxDraft) => MockTransaction;
-  /** Take money out (amount is made negative). Returns the created receipt. */
-  debit: (amount: number, draft: TxDraft) => MockTransaction;
-  /** Move the cashback pot into the balance. Returns the amount redeemed. */
-  redeemCashback: () => number;
+  transactions: WalletTransaction[];
+  loading: boolean;
+  isRealWallet: boolean;
+  hasWallet: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
 }
 
-interface Persisted {
-  balance: number;
-  cashback: number;
-  transactions: MockTransaction[];
+interface DbError { message: string }
+interface QueryChain<T> extends PromiseLike<{ data: T; error: DbError | null }> {
+  select: (columns?: string) => QueryChain<T>;
+  eq: (column: string, value: unknown) => QueryChain<T>;
+  order: (column: string, options?: { ascending?: boolean }) => QueryChain<T>;
+  limit: (count: number) => QueryChain<T>;
+  maybeSingle: () => Promise<{ data: T | null; error: DbError | null }>;
+}
+interface Phase1Client { from: <T>(table: string) => QueryChain<T> }
+interface WalletRow { id: string; balance: number | string }
+interface LedgerRow {
+  id: string;
+  direction: "credit" | "debit";
+  type: "deposit" | "purchase" | "refund" | "adjustment";
+  amount: number | string;
+  reference: string;
+  status: "pending" | "posted" | "failed" | "reversed";
+  note: string | null;
+  created_at: string;
 }
 
+const EMPTY = { balance: 0, transactions: [] as WalletTransaction[] };
 const WalletContext = createContext<WalletValue | null>(null);
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
+function phase1() {
+  return (supabase as unknown as { schema: (schema: string) => Phase1Client }).schema("phase1");
 }
 
-const TX_TYPES: TxType[] = [
-  "data", "airtime", "deposit", "electricity", "payment", "tv",
-  "withdrawal", "giftcard", "crypto", "bill", "digital", "education",
-];
-
-function isValidTx(t: unknown): t is MockTransaction {
-  const x = t as MockTransaction;
-  return (
-    !!x &&
-    typeof x.id === "string" &&
-    typeof x.title === "string" &&
-    typeof x.subtitle === "string" &&
-    Number.isFinite(x.amount) &&
-    (TX_TYPES as string[]).includes(x.type as string)
-  );
-}
-
-function load(): Persisted {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Persisted;
-      if (Number.isFinite(parsed?.balance) && Array.isArray(parsed?.transactions)) {
-        return {
-          balance: parsed.balance,
-          // Older saves predate the cashback pot — seed it.
-          cashback: Number.isFinite(parsed.cashback) ? parsed.cashback : INITIAL_CASHBACK,
-          // Validate element-wise — one corrupt entry must never crash the app.
-          transactions: parsed.transactions.filter(isValidTx),
-        };
-      }
-    }
-  } catch {
-    /* ignore corrupt state */
-  }
-  return {
-    balance: INITIAL_BALANCE,
-    cashback: INITIAL_CASHBACK,
-    transactions: MOCK_TRANSACTIONS_ALL,
-  };
-}
-
-/** Recency group derived from a real timestamp (seeded rows keep theirs). */
-function groupFromTs(ts: number): MockTransaction["group"] {
-  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const days = Math.round((startOfDay(new Date()) - startOfDay(new Date(ts))) / 86400000);
-  if (days <= 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return "This week";
+function groupFromTs(ts: number): WalletTransaction["group"] {
+  const day = (value: number) => new Date(new Date(value).getFullYear(), new Date(value).getMonth(), new Date(value).getDate()).getTime();
+  const age = Math.round((day(Date.now()) - day(ts)) / 86_400_000);
+  if (age <= 0) return "Today";
+  if (age === 1) return "Yesterday";
+  if (age < 7) return "This week";
   return "Earlier";
 }
 
-/** "YG-8F2K4Q" — receipt reference shown on success screens and receipts. */
-function makeRef(): string {
-  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let i = 0; i < 6; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
-  return `YG-${s}`;
+function transactionType(type: LedgerRow["type"]): WalletTransactionType {
+  return type === "purchase" ? "data" : type === "deposit" || type === "refund" ? "deposit" : "payment";
 }
 
-/** Reference for any transaction — falls back to a stable derivation for
- *  seeded rows that predate real refs. */
-export function txRef(t: MockTransaction): string {
-  return t.ref ?? `YG-${t.id.slice(-6).toUpperCase().replace(/[^A-Z0-9]/g, "7")}`;
+function transactionTitle(type: LedgerRow["type"]) {
+  if (type === "deposit") return "Wallet top-up";
+  if (type === "purchase") return "Data purchase";
+  if (type === "refund") return "Refund";
+  return "Wallet adjustment";
 }
 
-let txSeq = 0;
+function toTransaction(row: LedgerRow): WalletTransaction {
+  const amount = Math.abs(Number(row.amount));
+  const ts = new Date(row.created_at).getTime();
+  return {
+    id: row.id,
+    type: transactionType(row.type),
+    title: transactionTitle(row.type),
+    subtitle: row.note ?? new Date(row.created_at).toLocaleString("en-GH"),
+    amount: row.direction === "credit" ? amount : -amount,
+    status: row.status === "posted" ? "success" : "pending",
+    group: Number.isFinite(ts) ? groupFromTs(ts) : "Earlier",
+    ts,
+    ref: row.reference,
+  };
+}
+
+export function txRef(transaction: WalletTransaction): string {
+  return transaction.ref ?? transaction.id;
+}
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<Persisted>(load);
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const [state, setState] = useState(EMPTY);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasWallet, setHasWallet] = useState(false);
+
+  const refresh = async () => {
+    if (!user) {
+      setState(EMPTY);
+      setHasWallet(false);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    const { data: wallet, error: walletError } = await phase1()
+      .from<WalletRow>("wallets")
+      .select("id, balance")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (walletError || !wallet) {
+      setState(EMPTY);
+      setHasWallet(false);
+      setError(walletError ? "We couldn't load your wallet. Please try again." : "Your wallet is not ready yet.");
+      setLoading(false);
+      return;
+    }
+
+    setHasWallet(true);
+
+    const { data: ledger, error: ledgerError } = await phase1()
+      .from<LedgerRow[]>("wallet_ledger_entries")
+      .select("id, direction, type, amount, reference, status, note, created_at")
+      .eq("wallet_id", wallet.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    setState({ balance: Number(wallet.balance), transactions: ledgerError ? [] : (ledger ?? []).map(toTransaction) });
+    if (ledgerError) setError("Your balance loaded, but recent activity is temporarily unavailable.");
+    setLoading(false);
+  };
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      /* storage may be unavailable — non-fatal */
+    if (authLoading) return;
+    if (isAuthenticated) void refresh();
+    else {
+      setState(EMPTY);
+      setHasWallet(false);
+      setError(null);
     }
-  }, [state]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, isAuthenticated, user?.id]);
 
-  const addTransaction = (signedAmount: number, draft: TxDraft): MockTransaction => {
-    const now = Date.now();
-    const tx: MockTransaction = {
-      id: `u${now.toString(36)}${txSeq++}`,
-      type: draft.type,
-      title: draft.title,
-      subtitle: draft.subtitle,
-      amount: signedAmount,
-      status: "success",
-      group: "Today",
-      ts: now,
-      ref: makeRef(),
-    };
-    setState((s) => ({
-      balance: round2(s.balance + signedAmount),
-      // Purchases earn 1% back (top-ups/withdrawals don't earn on themselves
-      // being credits; only money OUT accrues).
-      cashback:
-        signedAmount < 0 && draft.type !== "withdrawal"
-          ? round2(s.cashback + Math.abs(signedAmount) * CASHBACK_RATE)
-          : s.cashback,
-      transactions: [tx, ...s.transactions],
-    }));
-    return tx;
-  };
-
-  const redeemCashback = (): number => {
-    const amt = round2(state.cashback);
-    if (amt < CASHBACK_MIN_REDEEM) return 0;
-    const now = Date.now();
-    const tx: MockTransaction = {
-      id: `u${now.toString(36)}${txSeq++}`,
-      type: "deposit",
-      title: "Cashback Redeemed",
-      subtitle: `1% back on purchases · ${nowLabel()}`,
-      amount: amt,
-      status: "success",
-      group: "Today",
-      ts: now,
-      ref: makeRef(),
-    };
-    setState((s) => ({
-      balance: round2(s.balance + amt),
-      cashback: 0,
-      transactions: [tx, ...s.transactions],
-    }));
-    return amt;
-  };
-
-  const value: WalletValue = {
-    balance: state.balance,
-    cashback: round2(state.cashback),
-    // Real transactions re-group by their timestamp as days pass.
-    transactions: state.transactions.map((t) =>
-      t.ts ? { ...t, group: groupFromTs(t.ts) } : t,
-    ),
-    credit: (amount, draft) => addTransaction(Math.abs(amount), draft),
-    debit: (amount, draft) => addTransaction(-Math.abs(amount), draft),
-    redeemCashback,
-  };
-
-  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+  return (
+    <WalletContext.Provider value={{
+      balance: state.balance,
+      transactions: state.transactions,
+      loading,
+      isRealWallet: hasWallet,
+      hasWallet,
+      error,
+      refresh,
+    }}>
+      {children}
+    </WalletContext.Provider>
+  );
 }
 
-export function useWallet(): WalletValue {
-  const ctx = useContext(WalletContext);
-  if (!ctx) throw new Error("useWallet must be used within a WalletProvider");
-  return ctx;
-}
-
-/** "2:32 PM" — the group header (Today/Yesterday/…) supplies the day, so
- *  subtitles stay truthful as time passes. */
-export function nowLabel(): string {
-  return new Date().toLocaleTimeString("en-GH", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+export function useWallet() {
+  const value = useContext(WalletContext);
+  if (!value) throw new Error("useWallet must be used within a WalletProvider");
+  return value;
 }

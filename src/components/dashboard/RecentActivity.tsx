@@ -4,12 +4,12 @@ import { ArrowDownToLine, ArrowUpRight, ChevronRight, Clock } from "lucide-react
 import TransactionDetailSheet from "@/components/sheets/TransactionDetailSheet";
 import { formatSigned } from "@/lib/format";
 import { useWallet } from "@/store/wallet";
-import type { MockTransaction } from "@/data/mock";
+import type { WalletTransaction } from "@/types/wallet";
 import { cn } from "@/lib/utils";
 
 export default function RecentActivity() {
   const { transactions } = useWallet();
-  const [selected, setSelected] = useState<MockTransaction | null>(null);
+  const [selected, setSelected] = useState<WalletTransaction | null>(null);
   const recent = transactions.slice(0, 5);
   return (
     <div className="onyx-panel rounded-[26px] p-6">

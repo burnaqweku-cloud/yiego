@@ -1,18 +1,28 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
+import { Loader2 } from "lucide-react";
 import { ThemeProvider, useTheme } from "@/store/theme";
+import { AuthProvider } from "@/store/auth";
 import { WalletProvider } from "@/store/wallet";
-import { LinksProvider } from "@/store/links";
 import { ProfileProvider } from "@/store/profile";
-import { MethodsProvider } from "@/store/methods";
-import { NoticesProvider } from "@/store/notices";
 import { FlowsProvider } from "@/store/flows";
 import AppShell from "@/components/layout/AppShell";
 import Dashboard from "./pages/Dashboard";
-import Services from "./pages/Services";
-import Payments from "./pages/Payments";
 import Wallet from "./pages/Wallet";
+import Orders from "./pages/Orders";
 import Account from "./pages/Account";
+import Admin from "./pages/Admin";
+import AdminOrders from "./pages/AdminOrders";
+import AdminReviews from "./pages/AdminReviews";
+import AdminSuppliers from "./pages/AdminSuppliers";
+import AdminWallet from "./pages/AdminWallet";
+import AdminShell from "@/components/admin/AdminShell";
+import Auth from "./pages/Auth";
+import TrackOrder from "./pages/TrackOrder";
+import RequireAdmin from "@/components/auth/RequireAdmin";
+import RequireAuth from "@/components/auth/RequireAuth";
+import ResetPassword from "./pages/ResetPassword";
+import { useAuth } from "@/store/auth-context";
 
 /** Sonner toaster that follows the active theme. */
 function ThemedToaster() {
@@ -33,32 +43,45 @@ function ThemedToaster() {
   );
 }
 
+function AuthReady({ children }: { children: React.ReactNode }) {
+  const { loading } = useAuth();
+  if (!loading) return <>{children}</>;
+  return <div className="onyx-canvas grid min-h-dvh place-items-center"><Loader2 className="animate-spin text-primary-glow" size={24} /></div>;
+}
+
 const App = () => (
   <BrowserRouter>
     <ThemeProvider>
+    <AuthProvider>
     <WalletProvider>
-      <LinksProvider>
       <ProfileProvider>
-      <MethodsProvider>
-      <NoticesProvider>
       <FlowsProvider>
         <ThemedToaster />
+        <AuthReady>
         <Routes>
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/track-order" element={<TrackOrder />} />
+          <Route path="/admin" element={<RequireAdmin><AdminShell /></RequireAdmin>}>
+            <Route index element={<Admin />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="reviews" element={<AdminReviews />} />
+            <Route path="suppliers" element={<AdminSuppliers />} />
+            <Route path="wallet" element={<AdminWallet />} />
+          </Route>
           <Route element={<AppShell />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/payments" element={<Payments />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/account" element={<Account />} />
+            <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
+            <Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />
+            <Route path="/account" element={<RequireAuth><Account /></RequireAuth>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
+        </AuthReady>
       </FlowsProvider>
-      </NoticesProvider>
-      </MethodsProvider>
       </ProfileProvider>
-      </LinksProvider>
     </WalletProvider>
+    </AuthProvider>
     </ThemeProvider>
   </BrowserRouter>
 );

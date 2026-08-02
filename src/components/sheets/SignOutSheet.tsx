@@ -1,24 +1,24 @@
 import { LogOut } from "lucide-react";
+import { toast } from "sonner";
 import Modal from "@/components/ui/modal";
 import { FlowFooter, FlowHeader } from "@/components/flows/flow-parts";
+import { useAuth } from "@/store/auth-context";
 
-const DEMO_KEYS = [
-  "yiego_wallet_v1",
-  "yiego_links_v1",
-  "yiego_profile_v1",
-  "yiego_methods_v1",
-  "yiego_notices_v1",
-];
-
-/** Sign out — confirms, wipes the demo state and reloads fresh. */
+/** Sign out of the real Supabase session. */
 export default function SignOutSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const signOut = () => {
+  const { signOut: signOutOfSupabase, isAuthenticated } = useAuth();
+
+  const signOut = async () => {
     try {
-      DEMO_KEYS.forEach((k) => localStorage.removeItem(k));
+      if (isAuthenticated) {
+        await signOutOfSupabase();
+      }
+      toast.success("Signed out");
+      window.location.assign("/");
     } catch {
-      /* storage may be unavailable — reload anyway */
+      toast.error("Could not sign out. Please try again.");
+      return;
     }
-    window.location.assign("/");
   };
 
   return (
@@ -32,8 +32,7 @@ export default function SignOutSheet({ open, onClose }: { open: boolean; onClose
           Sign out of YieGo?
         </h3>
         <p className="mt-1.5 max-w-[32ch] text-[13.5px] leading-relaxed text-muted-foreground">
-          You're in the YieGo preview — signing out resets your demo data. Your wallet, links and
-          profile go back to their starting point.
+          You can sign back in at any time to access your wallet and orders.
         </p>
       </div>
       <FlowFooter>
@@ -44,7 +43,7 @@ export default function SignOutSheet({ open, onClose }: { open: boolean; onClose
             className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[14px] bg-danger px-5 text-[14.5px] font-semibold tracking-[-0.01em] text-white shadow-[0_12px_30px_-10px_hsl(4_78%_62%/0.55)] transition hover:brightness-110"
           >
             <LogOut size={17} />
-            Sign out & reset
+            Sign out
           </button>
           <button type="button" className="onyx-btn-ghost w-full" onClick={onClose}>
             Cancel

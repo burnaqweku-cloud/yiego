@@ -1,7 +1,8 @@
 import {
   Home,
-  LayoutGrid,
-  ArrowLeftRight,
+  ReceiptText,
+  Search,
+  ShieldCheck,
   Wallet,
   User,
   type LucideIcon,
@@ -14,11 +15,21 @@ export interface NavItem {
   end?: boolean;
 }
 
-/** Primary navigation — shared by the desktop rail and mobile bottom nav. */
-export const NAV_ITEMS: NavItem[] = [
-  { label: "Home", to: "/", icon: Home, end: true },
-  { label: "Services", to: "/services", icon: LayoutGrid },
-  { label: "Payments", to: "/payments", icon: ArrowLeftRight },
+export const GUEST_NAV_ITEMS: NavItem[] = [
+  { label: "Buy Data", to: "/", icon: Home, end: true },
+  { label: "Track Order", to: "/track-order", icon: Search },
+];
+
+export const MEMBER_NAV_ITEMS: NavItem[] = [
+  { label: "Buy Data", to: "/", icon: Home, end: true },
+  { label: "Orders", to: "/orders", icon: ReceiptText },
   { label: "Wallet", to: "/wallet", icon: Wallet },
+  { label: "Track Order", to: "/track-order", icon: Search },
   { label: "Account", to: "/account", icon: User },
 ];
+
+export const ADMIN_NAV_ITEM: NavItem = {
+  label: "Admin Panel",
+  to: "/admin",
+  icon: ShieldCheck,
+};

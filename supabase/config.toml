@@ -1,7 +1,58 @@
-project_id = "qmhhqzlkyxhvrsycture"
+project_id = "nhxgebulvqhtiiotetoo"
 
-[functions.telegram-auth]
+[api]
+schemas = ["public", "graphql_public", "phase1"]
+extra_search_path = ["public", "extensions", "phase1"]
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = []
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+secure_password_change = false
+max_frequency = "1m0s"
+otp_length = 8
+otp_expiry = 3600
+
+[functions.datamartgh-get-packages]
+verify_jwt = true
+
+[functions.datamartgh-verify-number]
 verify_jwt = false
 
-[functions.afrohubgh-webhook]
+[functions.datamartgh-check-order-status]
 verify_jwt = false
+
+[functions.datamartgh-get-balance]
+verify_jwt = false
+
+[functions.datamartgh-place-order]
+verify_jwt = false
+
+[functions.datamartgh-webhook]
+verify_jwt = false
+
+[functions.paystack-webhook]
+verify_jwt = false
+
+[functions.create-guest-data-payment]
+verify_jwt = false
+
+[functions.create-wallet-deposit]
+verify_jwt = true
+
+[functions.track-order]
+verify_jwt = false
+
+[functions.create-wallet-data-order]
+verify_jwt = true
+
+[functions.admin-order-action]
+verify_jwt = true
