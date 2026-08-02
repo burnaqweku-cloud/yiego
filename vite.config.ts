@@ -28,10 +28,25 @@ function writeVersionFile() {
   };
 }
 
+// Public client credentials (safe to ship in the browser bundle; RLS protects data).
+// These act as fallbacks so production builds work even when no .env is present.
+const PUBLIC_SUPABASE_URL =
+  process.env.VITE_SUPABASE_URL || "https://nhxgebulvqhtiiotetoo.supabase.co";
+const PUBLIC_SUPABASE_PUBLISHABLE_KEY =
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  "sb_publishable_tAbh99C5tny6sMAiu6ZYrg_BWjkRIAX";
+const PUBLIC_SUPABASE_PROJECT_ID =
+  process.env.VITE_SUPABASE_PROJECT_ID || "nhxgebulvqhtiiotetoo";
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
     __BUILD_VERSION__: JSON.stringify(BUILD_VERSION),
+    "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(PUBLIC_SUPABASE_URL),
+    "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
+      PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    ),
+    "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(PUBLIC_SUPABASE_PROJECT_ID),
   },
   server: {
     host: "::",
