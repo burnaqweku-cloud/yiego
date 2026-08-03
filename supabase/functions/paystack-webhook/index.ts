@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
 
       const { data: paymentIntent, error: paymentIntentError } = await supabase
         .from("payment_intents")
-        .select("id, amount, purpose, status, order_id")
+        .select("id, amount, purpose, status, order_id, user_id")
         .eq("provider", "paystack")
         .eq("provider_reference", providerReference)
         .maybeSingle();
@@ -113,6 +113,8 @@ Deno.serve(async (req) => {
             .update({
               payment_status: "succeeded",
               status: order.status === "awaiting_payment" ? "paid" : order.status,
+              paid_by_user_id: paymentIntent.user_id ?? null,
+              paid_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             })
             .eq("id", order.id);
@@ -122,11 +124,12 @@ Deno.serve(async (req) => {
             event_type: "payment.succeeded",
             from_status: order.status,
             to_status: "paid",
-            message: "Paystack confirmed guest purchase payment",
+            message: "Paystack confirmed data purchase payment",
             metadata: {
               provider: "paystack",
               reference: providerReference,
               amount: paidAmount,
+              paidByUserId: paymentIntent.user_id ?? null,
             },
           });
         }
