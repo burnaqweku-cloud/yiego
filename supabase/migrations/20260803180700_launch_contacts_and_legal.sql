@@ -1,0 +1,5 @@
+-- Live migration applied through Supabase: launch_contacts_and_legal
+-- Creates phase1.public_contact_settings and phase1.legal_documents,
+-- seeds Privacy Policy, Terms of Service and Refund Policy,
+-- enables RLS, permits public read of published content only,
+-- and restricts all writes to active administrators.
