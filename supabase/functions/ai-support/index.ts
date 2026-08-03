@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
       });
       return jsonResponse({
         status: result.text.includes("YIEGO_AI_READY") ? "ready" : "unexpected_response",
-        provider: "anthropic",
+        provider: "lovable-ai",
         model: result.model,
       });
     }
@@ -113,7 +113,7 @@ Return only the finished customer message, with no heading, analysis or quotatio
     return jsonResponse({
       status: "success",
       message: result.text,
-      provider: "anthropic",
+      provider: "lovable-ai",
       model: result.model,
       usage: result.usage,
     });
