@@ -1,8 +1,8 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
-const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-const DEFAULT_MODEL = "claude-sonnet-4-20250514";
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const DEFAULT_MODEL = "google/gemini-3.5-flash";
 
 type RequestBody = {
   action?: "health" | "rewrite_support";
@@ -31,41 +31,37 @@ async function requireActiveAdmin(req: Request) {
 }
 
 async function callClaude(input: { system: string; prompt: string; maxTokens?: number }) {
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured");
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
 
-  const model = Deno.env.get("ANTHROPIC_MODEL") || DEFAULT_MODEL;
-  const response = await fetch(ANTHROPIC_API_URL, {
+  const model = DEFAULT_MODEL;
+  const response = await fetch(AI_GATEWAY_URL, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
+      authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model,
       max_tokens: input.maxTokens ?? 350,
       temperature: 0.2,
-      system: input.system,
-      messages: [{ role: "user", content: input.prompt }],
+      messages: [
+        { role: "system", content: input.system },
+        { role: "user", content: input.prompt },
+      ],
     }),
   });
 
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
-    const message = payload?.error?.message || `Claude request failed with status ${response.status}`;
+    if (response.status === 429) throw new Error("AI rate limit reached. Please try again shortly.");
+    if (response.status === 402) throw new Error("AI credits exhausted. Add credits in Settings.");
+    const message = payload?.error?.message || `AI request failed with status ${response.status}`;
     throw new Error(message);
   }
 
-  const text = Array.isArray(payload?.content)
-    ? payload.content
-        .filter((item: { type?: string; text?: string }) => item?.type === "text")
-        .map((item: { text?: string }) => item.text ?? "")
-        .join("\n")
-        .trim()
-    : "";
-
-  if (!text) throw new Error("Claude returned an empty response");
+  const text = String(payload?.choices?.[0]?.message?.content ?? "").trim();
+  if (!text) throw new Error("The AI returned an empty response");
   return { text, model, usage: payload?.usage ?? null };
 }
 
@@ -89,7 +85,7 @@ Deno.serve(async (req) => {
       });
       return jsonResponse({
         status: result.text.includes("YIEGO_AI_READY") ? "ready" : "unexpected_response",
-        provider: "anthropic",
+        provider: "lovable-ai",
         model: result.model,
       });
     }
@@ -117,7 +113,7 @@ Return only the finished customer message, with no heading, analysis or quotatio
     return jsonResponse({
       status: "success",
       message: result.text,
-      provider: "anthropic",
+      provider: "lovable-ai",
       model: result.model,
       usage: result.usage,
     });
