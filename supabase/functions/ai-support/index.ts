@@ -73,11 +73,27 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, { status: 405 });
 
   try {
-    const auth = await requireActiveAdmin(req);
-    if (auth.error) return auth.error;
-
     const body = (await req.json()) as RequestBody;
     const action = body.action ?? "health";
+
+    if (action === "public_support") {
+      const message = String(body.message ?? "").trim();
+      if (!message) return jsonResponse({ error: "A message is required" }, { status: 400 });
+      const history = Array.isArray(body.history) ? body.history.slice(-8) : [];
+      const transcript = history.map((m) => `${m.role === "user" ? "Customer" : "Assistant"}: ${m.content}`).join("\n");
+      const result = await callClaude({
+        system: `You are YieGo's 24/7 customer support assistant. YieGo is a Ghanaian data-bundle platform.
+Explain buying data, payments, wallets, pending orders, shared payments, tracking and disputes.
+Never confirm a specific payment, delivery or refund — send customers to Track Order (YG- reference) or human support for that.
+Never ask for passwords, OTPs, card details or Mobile Money PINs. Keep replies short, calm and friendly.`,
+        prompt: `${transcript ? `CONVERSATION SO FAR:\n${transcript}\n\n` : ""}Customer: ${message}`,
+        maxTokens: 400,
+      });
+      return jsonResponse({ status: "success", message: result.text, provider: "lovable-ai", model: result.model });
+    }
+
+    const auth = await requireActiveAdmin(req);
+    if (auth.error) return auth.error;
 
     if (action === "health") {
       const result = await callClaude({
@@ -93,6 +109,7 @@ Deno.serve(async (req) => {
     }
 
     if (action !== "rewrite_support") return jsonResponse({ error: "Unsupported action" }, { status: 400 });
+
 
     const draft = String(body.draft ?? "").trim();
     if (!draft) return jsonResponse({ error: "A support draft is required" }, { status: 400 });
