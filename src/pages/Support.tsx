@@ -9,7 +9,7 @@ interface ContactRow { business_name: string; whatsapp_number: string | null; wh
 
 export default function Support() {
   const [contact, setContact] = useState<ContactRow | null>(null);
-  useEffect(() => { void (async () => { const { data } = await supabase.schema("phase1").from("public_contact_settings").select("business_name, whatsapp_number, whatsapp_message, support_email, business_hours, is_whatsapp_enabled").limit(1).maybeSingle(); setContact(data as ContactRow | null); })(); }, []);
+  useEffect(() => { void (async () => { const { data } = await (supabase as unknown as { schema: (name: string) => any }).schema("phase1").from("public_contact_settings").select("business_name, whatsapp_number, whatsapp_message, support_email, business_hours, is_whatsapp_enabled").limit(1).maybeSingle(); setContact(data as ContactRow | null); })(); }, []);
   const whatsappUrl = useMemo(() => {
     if (!contact?.whatsapp_number) return "";
     const number = contact.whatsapp_number.replace(/\D/g, "");

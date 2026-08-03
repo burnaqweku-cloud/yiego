@@ -43,7 +43,7 @@ export default function AdminLegal() {
 
   return <div className="space-y-7">
     <AdminPageHeader eyebrow="Legal" title="Legal documents" description="Maintain the customer-facing policies required for YieGo's public launch." />
-    <div className="flex flex-wrap gap-2">{(Object.keys(labels) as LegalSlug[]).map((slug) => <Button key={slug} variant={active === slug ? "default" : "ghost"} onClick={() => setActive(slug)}>{labels[slug]}</Button>)}</div>
+    <div className="flex flex-wrap gap-2">{(Object.keys(labels) as LegalSlug[]).map((slug) => <Button key={slug} variant={active === slug ? "primary" : "ghost"} onClick={() => setActive(slug)}>{labels[slug]}</Button>)}</div>
     {current && <Card><CardContent>
       <div className="flex items-start justify-between gap-4"><div className="flex items-start gap-4"><span className="grid h-11 w-11 place-items-center rounded-xl bg-primary/[0.1] text-primary-glow"><FileText size={20} /></span><div><h2 className="font-display text-lg font-semibold text-white">{labels[active]}</h2><p className="mt-1 text-xs text-muted-foreground">Version {current.version}. Published content is immediately visible on the public page.</p></div></div></div>
       <div className="mt-6 space-y-4">
