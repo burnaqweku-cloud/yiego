@@ -94,10 +94,6 @@ export default function AdminPricing() {
       toast.error("Enter a valid selling price.");
       return;
     }
-    if (!reason.trim()) {
-      toast.error("Add a reason for this change.");
-      return;
-    }
     if (nextPrice < supplierCost(selected) && !window.confirm("This selling price is below the supplier cost. Save it anyway?")) return;
 
     setSaving(true);
@@ -200,7 +196,7 @@ export default function AdminPricing() {
           <div className="mt-4 grid gap-4">
             <label><span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Selling price (GHS)</span><input className="onyx-field" value={price} onChange={(event) => setPrice(event.target.value)} inputMode="decimal" /></label>
             <label className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-4"><input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} /><span><span className="block text-sm font-semibold text-white">Available for sale</span><span className="text-xs text-muted-foreground">Turn off to hide this bundle from customers.</span></span></label>
-            <label><span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Reason for change</span><textarea className="onyx-field min-h-24 resize-y" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Example: Add Phase 1 margin" /></label>
+            <label><span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Reason for change <span className="font-normal text-faint-foreground">(optional)</span></span><textarea className="onyx-field min-h-24 resize-y" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Example: Supplier cost increased" /></label>
             <Button onClick={() => void save()} disabled={saving}>{saving ? <Loader2 className="animate-spin" /> : <Save />}Save pricing</Button>
           </div>
         </div>
