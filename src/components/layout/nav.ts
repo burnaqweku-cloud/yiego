@@ -1,4 +1,5 @@
 import {
+  Bot,
   Home,
   ReceiptText,
   Search,
@@ -18,6 +19,7 @@ export interface NavItem {
 export const GUEST_NAV_ITEMS: NavItem[] = [
   { label: "Buy Data", to: "/", icon: Home, end: true },
   { label: "Track Order", to: "/track-order", icon: Search },
+  { label: "AI Support", to: "/support/ai", icon: Bot },
 ];
 
 export const MEMBER_NAV_ITEMS: NavItem[] = [
@@ -25,6 +27,7 @@ export const MEMBER_NAV_ITEMS: NavItem[] = [
   { label: "Orders", to: "/orders", icon: ReceiptText },
   { label: "Wallet", to: "/wallet", icon: Wallet },
   { label: "Track Order", to: "/track-order", icon: Search },
+  { label: "AI Support", to: "/support/ai", icon: Bot },
   { label: "Account", to: "/account", icon: User },
 ];
 
