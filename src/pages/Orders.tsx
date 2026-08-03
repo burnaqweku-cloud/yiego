@@ -27,6 +27,7 @@ interface OrderRow {
 interface DbError { message: string }
 interface QueryChain<T> extends PromiseLike<{ data: T; error: DbError | null }> {
   select: (columns: string) => QueryChain<T>;
+  eq: (column: string, value: unknown) => QueryChain<T>;
   order: (column: string, options?: { ascending?: boolean }) => QueryChain<T>;
 }
 interface Phase1Client { from: <T>(table: string) => QueryChain<T> }
@@ -67,7 +68,7 @@ function maskPhone(phone: string) {
 
 export default function Orders() {
   const navigate = useNavigate();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,12 +77,13 @@ export default function Orders() {
   const [page, setPage] = useState(1);
 
   const load = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
     setLoading(true);
     setError(null);
     const { data, error: queryError } = await phase1()
       .from<OrderRow[]>("orders")
       .select("id, order_reference, recipient_phone, amount, currency, status, admin_resolution_status, payment_status, supplier_status, created_at, data_products(name), networks(name)")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     setOrders(data ?? []);
     setError(queryError?.message ?? null);
