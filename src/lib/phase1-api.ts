@@ -45,6 +45,38 @@ export interface WalletDataOrderResponse {
   error?: string;
 }
 
+export interface PreparedOrderSummary {
+  id: string;
+  order_reference: string;
+  recipient_phone: string;
+  amount: number | string;
+  currency: string;
+  status: string;
+  payment_status: string;
+  payment_arrangement: "unselected" | "self" | "shared";
+  selected_payment_method: "wallet" | "paystack" | null;
+  payment_expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+  data_products: { name: string; capacity_gb?: number | string } | null;
+  networks: { name: string; code: string } | null;
+}
+
+export interface PreparedOrderResult {
+  existing: boolean;
+  orderId: string;
+  orderReference: string;
+  amount?: number;
+  recipientPhone?: string;
+  expiresAt?: string;
+}
+
+export interface OrderPaymentActionResponse<T = unknown> {
+  status: "success" | "needs_review";
+  data?: T;
+  error?: string;
+}
+
 export interface Phase1Product {
   id: string;
   app_product_code: string | null;
@@ -54,12 +86,11 @@ export interface Phase1Product {
   network_id?: string;
 }
 
-
 interface Phase1ProductQuery {
   select: (columns: string) => Phase1ProductQuery;
   eq: (column: string, value: unknown) => Phase1ProductQuery;
   order: (column: string, options?: { ascending?: boolean }) => Phase1ProductQuery;
-  then: PromiseLike<{ data: Phase1Product[] | null; error: { message: string } | null }>['then'];
+  then: PromiseLike<{ data: Phase1Product[] | null; error: { message: string } | null }>["then"];
 }
 
 interface Phase1SchemaClient {
@@ -133,4 +164,26 @@ export async function loadPhase1Products() {
  */
 export function mapNetworkToDataMartGH(network: Phase1NetworkCode) {
   return DATAMARTGH_NETWORK_CODES[network];
+}
+
+export function prepareDataOrder(input: WalletDataOrderInput) {
+  return invokePhase1Function<OrderPaymentActionResponse<PreparedOrderResult>>("order-payment-action", {
+    body: { action: "prepare", ...input },
+  });
+}
+
+export function listPendingOrders() {
+  return invokePhase1Function<OrderPaymentActionResponse<PreparedOrderSummary[]>>("order-payment-action", {
+    body: { action: "list_pending" },
+  });
+}
+
+export function orderPaymentAction<T = unknown>(
+  action: string,
+  orderReference: string,
+  extra: Record<string, unknown> = {},
+) {
+  return invokePhase1Function<OrderPaymentActionResponse<T>>("order-payment-action", {
+    body: { action, orderReference, ...extra },
+  });
 }
