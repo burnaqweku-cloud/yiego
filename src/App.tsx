@@ -23,6 +23,7 @@ import AdminContact from "./pages/AdminContact";
 import AdminLegal from "./pages/AdminLegal";
 import LegalDocument from "./pages/LegalDocument";
 import Support from "./pages/Support";
+import AISupport from "./pages/AISupport";
 import AdminShell from "@/components/admin/AdminShell";
 import Auth from "./pages/Auth";
 import TrackOrder from "./pages/TrackOrder";
@@ -38,7 +39,7 @@ const App = () => (
   <BrowserRouter><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><AuthReady><Routes>
     <Route path="/auth" element={<Auth />} /><Route path="/reset-password" element={<ResetPassword />} /><Route path="/track-order" element={<TrackOrder />} />
     <Route path="/admin" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<Admin />} /><Route path="orders" element={<AdminOrders />} /><Route path="disputes" element={<AdminDisputes />} /><Route path="reviews" element={<AdminReviews />} /><Route path="sales/pricing" element={<AdminPricing />} /><Route path="suppliers" element={<AdminSuppliers />} /><Route path="wallet" element={<AdminWallet />} /><Route path="contacts/information" element={<AdminContact />} /><Route path="legal" element={<AdminLegal />} /><Route path="ai-support" element={<AdminAISupport />} /></Route>
-    <Route element={<AppShell />}><Route path="/" element={<Dashboard />} /><Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} /><Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} /><Route path="/account" element={<RequireAuth><Account /></RequireAuth>} /><Route path="/support" element={<Support />} /><Route path="/legal/:slug" element={<LegalDocument />} /><Route path="*" element={<Navigate to="/" replace />} /></Route>
+    <Route element={<AppShell />}><Route path="/" element={<Dashboard />} /><Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} /><Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} /><Route path="/account" element={<RequireAuth><Account /></RequireAuth>} /><Route path="/support" element={<Support />} /><Route path="/support/ai" element={<AISupport />} /><Route path="/legal/:slug" element={<LegalDocument />} /><Route path="*" element={<Navigate to="/" replace />} /></Route>
   </Routes></AuthReady></FlowsProvider></ProfileProvider></WalletProvider></AuthProvider></ThemeProvider></BrowserRouter>
 );
 export default App;
