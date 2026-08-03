@@ -18,26 +18,31 @@ interface PublicOrderStatus {
   amount: number;
   currency: string;
   orderStatus: string;
-  systemOrderStatus?: string;
   statusMessage?: string;
-  statusUpdatedAt?: string;
   paymentStatus: string;
-  supplierStatus?: string;
+  deliveryStatus: string;
   createdAt: string;
   updatedAt: string;
 }
 
 function statusLabel(status?: string) {
   switch (status) {
-    case "delivered": return "Delivered";
+    case "completed":
+    case "delivered": return "Completed";
+    case "succeeded": return "Successful";
     case "paid":
     case "processing":
-    case "pending_supplier": return "Processing";
+    case "pending_supplier":
+    case "in_progress": return "In progress";
+    case "waiting_for_payment":
+    case "awaiting_payment":
+    case "pending": return "Waiting for payment";
+    case "needs_support":
     case "failed":
     case "failed_needs_review": return "Needs support";
     case "refunded": return "Refunded";
-    case "awaiting_payment": return "Awaiting payment";
-    default: return status ?? "Unknown";
+    case "cancelled": return "Cancelled";
+    default: return status ? status.replaceAll("_", " ") : "Unknown";
   }
 }
 
@@ -90,8 +95,8 @@ export default function TrackOrder() {
             {!isAuthenticated && phone.length > 0 && !phoneValid && <p className="mt-2 text-xs text-danger">Enter the 10-digit recipient number beginning with 0.</p>}
             {error && <div className="mt-5 rounded-2xl border border-danger/25 bg-danger/[0.08] p-4 text-sm text-ink-rose">{error}</div>}
             {order && <div className="mt-6 rounded-[22px] border border-white/10 bg-white/[0.03] p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[12px] text-faint-foreground">Order reference</p><p className="font-display text-xl font-semibold text-white">{order.reference}</p></div><Badge variant={order.orderStatus === "delivered" ? "success" : "amber"}><ShieldCheck size={12} />{statusLabel(order.orderStatus)}</Badge></div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">{[["Network", order.network ?? "—"],["Bundle", order.product ?? "—"],["Recipient", order.recipient],["Payment", statusLabel(order.paymentStatus)],["Amount", formatGHS(Number(order.amount))],["Delivery", statusLabel(order.supplierStatus ?? "processing")]].map(([label, value]) => <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">{label}</p><p className="mt-1 text-sm font-semibold text-foreground">{value}</p></div>)}</div>
+              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[12px] text-faint-foreground">Order reference</p><p className="font-display text-xl font-semibold text-white">{order.reference}</p></div><Badge variant={order.orderStatus === "completed" ? "success" : "amber"}><ShieldCheck size={12} />{statusLabel(order.orderStatus)}</Badge></div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">{[["Network", order.network ?? "—"],["Bundle", order.product ?? "—"],["Recipient", order.recipient],["Payment", statusLabel(order.paymentStatus)],["Amount", formatGHS(Number(order.amount))],["Delivery", statusLabel(order.deliveryStatus)]].map(([label, value]) => <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">{label}</p><p className="mt-1 text-sm font-semibold capitalize text-foreground">{value}</p></div>)}</div>
               {order.statusMessage && <div className="mt-4 rounded-2xl border border-primary-glow/15 bg-primary/[0.06] p-4"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-glow">Latest update</p><p className="mt-1 text-sm leading-6 text-foreground">{order.statusMessage}</p></div>}
             </div>}
           </CardContent>
