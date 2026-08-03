@@ -5,10 +5,12 @@ const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const DEFAULT_MODEL = "google/gemini-3.5-flash";
 
 type RequestBody = {
-  action?: "health" | "rewrite_support";
+  action?: "health" | "rewrite_support" | "public_support";
   draft?: string;
   verifiedFacts?: Record<string, unknown>;
   instruction?: string;
+  message?: string;
+  history?: { role: "user" | "assistant"; content: string }[];
 };
 
 async function requireActiveAdmin(req: Request) {
