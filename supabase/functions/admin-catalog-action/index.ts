@@ -44,9 +44,6 @@ Deno.serve(async (req) => {
     if (!Number.isFinite(customerPrice) || customerPrice < 0) {
       return jsonResponse({ error: "A valid selling price is required" }, { status: 400 });
     }
-    if (!reason) {
-      return jsonResponse({ error: "A reason is required" }, { status: 400 });
-    }
 
     const { data, error } = await supabase.rpc("admin_set_product_price", {
       p_product_id: productId,
