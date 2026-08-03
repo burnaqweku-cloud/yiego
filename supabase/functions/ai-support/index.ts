@@ -41,7 +41,8 @@ async function callClaude(input: { system: string; prompt: string; maxTokens?: n
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
+      "Lovable-API-Key": apiKey,
+      "X-Lovable-AIG-SDK": "fetch",
     },
     body: JSON.stringify({
       model,
