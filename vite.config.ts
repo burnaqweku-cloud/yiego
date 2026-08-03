@@ -29,14 +29,10 @@ function writeVersionFile() {
 }
 
 // Public client credentials (safe to ship in the browser bundle; RLS protects data).
-// These act as fallbacks so production builds work even when no .env is present.
-const PUBLIC_SUPABASE_URL =
-  process.env.VITE_SUPABASE_URL || "https://nhxgebulvqhtiiotetoo.supabase.co";
-const PUBLIC_SUPABASE_PUBLISHABLE_KEY =
-  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  "sb_publishable_tAbh99C5tny6sMAiu6ZYrg_BWjkRIAX";
-const PUBLIC_SUPABASE_PROJECT_ID =
-  process.env.VITE_SUPABASE_PROJECT_ID || "nhxgebulvqhtiiotetoo";
+// Pinned to the active project so no stale env value can point the app at an old backend.
+const PUBLIC_SUPABASE_URL = "https://nhxgebulvqhtiiotetoo.supabase.co";
+const PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_tAbh99C5tny6sMAiu6ZYrg_BWjkRIAX";
+const PUBLIC_SUPABASE_PROJECT_ID = "nhxgebulvqhtiiotetoo";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
