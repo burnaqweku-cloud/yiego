@@ -76,12 +76,13 @@ export default function Orders() {
   const [page, setPage] = useState(1);
 
   const load = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
     setLoading(true);
     setError(null);
     const { data, error: queryError } = await phase1()
       .from<OrderRow[]>("orders")
       .select("id, order_reference, recipient_phone, amount, currency, status, admin_resolution_status, payment_status, supplier_status, created_at, data_products(name), networks(name)")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     setOrders(data ?? []);
     setError(queryError?.message ?? null);
