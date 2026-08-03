@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Loader2, Search, ShieldCheck } from "lucide-react";
+import { CreditCard, Loader2, Search, ShieldCheck } from "lucide-react";
 import Monogram from "@/components/brand/Monogram";
 import SmartBackButton from "@/components/layout/SmartBackButton";
 import { Button } from "@/components/ui/button";
