@@ -13,7 +13,7 @@ export default function LegalDocument() {
 
   useEffect(() => {
     void (async () => {
-      const { data } = await supabase.schema("phase1").from("legal_documents").select("title, summary, content, version, published_at").eq("slug", slug).eq("is_published", true).maybeSingle();
+      const { data } = await (supabase as unknown as { schema: (name: string) => any }).schema("phase1").from("legal_documents").select("title, summary, content, version, published_at").eq("slug", slug).eq("is_published", true).maybeSingle();
       setDocument(data as LegalRow | null);
       setLoading(false);
     })();
