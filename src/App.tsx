@@ -14,6 +14,7 @@ import Account from "./pages/Account";
 import Admin from "./pages/Admin";
 import AdminOrders from "./pages/AdminOrders";
 import AdminReviews from "./pages/AdminReviews";
+import AdminDisputes from "./pages/AdminDisputes";
 import AdminSuppliers from "./pages/AdminSuppliers";
 import AdminWallet from "./pages/AdminWallet";
 import AdminPricing from "./pages/AdminPricing";
@@ -45,6 +46,7 @@ const App = () => (
     <Route path="/admin" element={<RequireAdmin><AdminShell /></RequireAdmin>}>
       <Route index element={<Admin />} />
       <Route path="orders" element={<AdminOrders />} />
+      <Route path="disputes" element={<AdminDisputes />} />
       <Route path="reviews" element={<AdminReviews />} />
       <Route path="sales/pricing" element={<AdminPricing />} />
       <Route path="suppliers" element={<AdminSuppliers />} />
