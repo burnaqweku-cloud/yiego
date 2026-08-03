@@ -57,19 +57,66 @@ export default function TrackOrder() {
   const phoneDigits = phone.replace(/\D/g, "");
   const phoneValid = /^0\d{9}$/.test(phoneDigits);
 
-  const lookup = async (nextReference = reference) => {
-    if (!nextReference.trim()) return;
+  const [needsPhone, setNeedsPhone] = useState(false);
+  const [paying, setPaying] = useState(false);
+
+  const lookup = async (nextReference = reference, phoneOverride?: string) => {
+    const ref = nextReference.trim().toUpperCase();
+    if (!ref) return;
     setLoading(true);
     setError(null);
-    const query = new URLSearchParams({ reference: nextReference.trim() });
-    if (phone.trim()) query.set("phone", phoneDigits);
-    const { data, error: functionError } = await supabase.functions.invoke<{ status: string; data: PublicOrderStatus; error?: string }>(`track-order?${query.toString()}`, { method: "GET" });
-    if (functionError || data?.error) {
-      const message = data?.error ?? functionError?.message ?? "";
-      setError(message.toLowerCase().includes("phone") ? "Enter the recipient phone number to track this order." : "We couldn't find an order matching those details.");
+    const query = new URLSearchParams({ reference: ref });
+    const digits = (phoneOverride ?? phone).replace(/\D/g, "");
+    if (digits) query.set("phone", digits);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+    const headers: Record<string, string> = { apikey: anonKey };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-order?${query.toString()}`,
+        { method: "GET", headers },
+      );
+      const payload = await response.json().catch(() => null);
+
+      if (response.ok && payload?.data) {
+        setOrder(payload.data as PublicOrderStatus);
+        setNeedsPhone(false);
+        setError(null);
+      } else if (response.status === 400) {
+        // Reference accepted, but we still need the recipient number to release details.
+        setOrder(null);
+        setNeedsPhone(true);
+        setError("Enter the recipient phone number used at checkout to view this order.");
+      } else if (response.status === 404) {
+        setOrder(null);
+        setNeedsPhone(false);
+        setError("No order found with that reference. Double-check the YG- reference.");
+      } else {
+        setOrder(null);
+        setError(payload?.error ?? "We couldn't load this order right now. Please try again.");
+      }
+    } catch {
       setOrder(null);
-    } else setOrder(data?.data ?? null);
+      setError("Network error while looking up this order. Please try again.");
+    }
     setLoading(false);
+  };
+
+  const continuePayment = async () => {
+    if (!order) return;
+    setPaying(true);
+    const { data, error: actionError } = await orderPaymentAction<{ authorizationUrl?: string }>(
+      "pay_paystack",
+      order.reference,
+    );
+    setPaying(false);
+    const url = data?.data?.authorizationUrl;
+    if (url) window.location.href = url;
+    else setError(actionError ?? data?.error ?? "Sign in with the account used at checkout to continue this payment.");
   };
 
   useEffect(() => {
@@ -77,6 +124,7 @@ export default function TrackOrder() {
     if (initialReference) lookup(initialReference);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   return (
     <div className="onyx-canvas min-h-dvh px-5 py-6 sm:py-8">
