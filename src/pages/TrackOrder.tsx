@@ -139,15 +139,22 @@ export default function TrackOrder() {
             <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_0.8fr_auto]">
               <input className="onyx-field" value={reference} onChange={(event) => setReference(event.target.value)} placeholder="YG-ORDERREF" />
               <input className="onyx-field" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder={isAuthenticated ? "Phone for guest orders" : "Recipient phone"} inputMode="numeric" />
-              <Button onClick={() => lookup()} disabled={loading || !reference.trim() || (!isAuthenticated && !phoneValid)}>{loading ? <Loader2 className="animate-spin" /> : <Search />}Track</Button>
+              <Button onClick={() => lookup()} disabled={loading || !reference.trim() || (needsPhone && !phoneValid)}>{loading ? <Loader2 className="animate-spin" /> : <Search />}Track</Button>
             </div>
-            {!isAuthenticated && phone.length > 0 && !phoneValid && <p className="mt-2 text-xs text-danger">Enter the 10-digit recipient number beginning with 0.</p>}
+            {phone.length > 0 && !phoneValid && <p className="mt-2 text-xs text-danger">Enter the 10-digit recipient number beginning with 0.</p>}
             {error && <div className="mt-5 rounded-2xl border border-danger/25 bg-danger/[0.08] p-4 text-sm text-ink-rose">{error}</div>}
             {order && <div className="mt-6 rounded-[22px] border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[12px] text-faint-foreground">Order reference</p><p className="font-display text-xl font-semibold text-white">{order.reference}</p></div><Badge variant={order.orderStatus === "completed" ? "success" : "amber"}><ShieldCheck size={12} />{statusLabel(order.orderStatus)}</Badge></div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">{[["Network", order.network ?? "—"],["Bundle", order.product ?? "—"],["Recipient", order.recipient],["Payment", statusLabel(order.paymentStatus)],["Amount", formatGHS(Number(order.amount))],["Delivery", statusLabel(order.deliveryStatus)]].map(([label, value]) => <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">{label}</p><p className="mt-1 text-sm font-semibold capitalize text-foreground">{value}</p></div>)}</div>
               {order.statusMessage && <div className="mt-4 rounded-2xl border border-primary-glow/15 bg-primary/[0.06] p-4"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-glow">Latest update</p><p className="mt-1 text-sm leading-6 text-foreground">{order.statusMessage}</p></div>}
+              {order.paymentStatus !== "succeeded" && !["cancelled", "refunded"].includes(order.orderStatus) && (
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <Button onClick={continuePayment} disabled={paying}>{paying ? <Loader2 className="animate-spin" /> : <CreditCard />}Continue payment</Button>
+                  {!isAuthenticated && <p className="text-xs text-muted-foreground">Sign in with the account used at checkout to complete this payment.</p>}
+                </div>
+              )}
             </div>}
+
           </CardContent>
         </Card>
       </main>
