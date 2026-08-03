@@ -24,9 +24,9 @@ export const GUEST_NAV_ITEMS: NavItem[] = [
 
 export const MEMBER_NAV_ITEMS: NavItem[] = [
   { label: "Buy Data", to: "/", icon: Home, end: true },
-  { label: "Orders", to: "/orders", icon: ReceiptText },
   { label: "Wallet", to: "/wallet", icon: Wallet },
   { label: "Track Order", to: "/track-order", icon: Search },
+  { label: "Orders", to: "/orders", icon: ReceiptText },
   { label: "AI Support", to: "/support/ai", icon: Bot },
   { label: "Account", to: "/account", icon: User },
 ];
