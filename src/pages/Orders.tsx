@@ -27,6 +27,7 @@ interface OrderRow {
 interface DbError { message: string }
 interface QueryChain<T> extends PromiseLike<{ data: T; error: DbError | null }> {
   select: (columns: string) => QueryChain<T>;
+  eq: (column: string, value: unknown) => QueryChain<T>;
   order: (column: string, options?: { ascending?: boolean }) => QueryChain<T>;
 }
 interface Phase1Client { from: <T>(table: string) => QueryChain<T> }
