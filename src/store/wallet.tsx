@@ -32,6 +32,8 @@ interface LedgerRow {
   status: "pending" | "posted" | "failed" | "reversed";
   note: string | null;
   created_at: string;
+  order_id: string | null;
+  orders: { order_reference: string } | null;
 }
 
 const EMPTY = { balance: 0, transactions: [] as WalletTransaction[] };
@@ -74,6 +76,8 @@ function toTransaction(row: LedgerRow): WalletTransaction {
     group: Number.isFinite(ts) ? groupFromTs(ts) : "Earlier",
     ts,
     ref: row.reference,
+    orderId: row.order_id ?? undefined,
+    orderReference: row.orders?.order_reference ?? undefined,
   };
 }
 
@@ -116,7 +120,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     const { data: ledger, error: ledgerError } = await phase1()
       .from<LedgerRow[]>("wallet_ledger_entries")
-      .select("id, direction, type, amount, reference, status, note, created_at")
+      .select("id, direction, type, amount, reference, status, note, created_at, order_id, orders(order_reference)")
       .eq("wallet_id", wallet.id)
       .order("created_at", { ascending: false })
       .limit(100);
