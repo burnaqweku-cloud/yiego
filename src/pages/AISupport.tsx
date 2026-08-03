@@ -3,6 +3,7 @@ import { Bot, Loader2, Send, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import SmartBackButton from "@/components/layout/SmartBackButton";
 import { supabase } from "@/integrations/supabase/client";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -36,6 +37,7 @@ export default function AISupport() {
   };
 
   return <div className="mx-auto max-w-3xl space-y-5">
+    <SmartBackButton fallback="/support" />
     <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-glow">24/7 help</p><h1 className="mt-2 font-display text-3xl font-semibold text-white">AI support</h1><p className="mt-3 text-sm leading-6 text-muted-foreground">Get immediate guidance at any time. The assistant explains YieGo processes but cannot independently confirm a payment, delivery or refund.</p></div>
 
     <Card><CardContent className="p-0">
