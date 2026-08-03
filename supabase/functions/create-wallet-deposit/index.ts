@@ -53,8 +53,8 @@ Deno.serve(async (req) => {
     }
 
     const reference = makePaystackReference("YGDEP");
-    const appUrl = Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL");
-    const callbackUrl = appUrl ? `${appUrl.replace(/\/$/, "")}/wallet?payment=paystack` : undefined;
+    const appUrl = (Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL") ?? "https://yiego.shop").replace(/\/$/, "");
+    const callbackUrl = `${appUrl}/wallet?payment=paystack&reference=${encodeURIComponent(reference)}`;
 
     const paystack = await initializePaystackTransaction({
       email,
@@ -91,6 +91,7 @@ Deno.serve(async (req) => {
       authorization_url: paystack.payload.data.authorization_url,
       metadata: {
         accessCode: paystack.payload.data.access_code,
+        callbackUrl,
       },
     });
 
@@ -104,6 +105,7 @@ Deno.serve(async (req) => {
         authorizationUrl: paystack.payload.data.authorization_url,
         accessCode: paystack.payload.data.access_code,
         reference,
+        callbackUrl,
       },
     });
   } catch (error) {
