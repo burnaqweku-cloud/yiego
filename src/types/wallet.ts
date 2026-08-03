@@ -11,4 +11,6 @@ export interface WalletTransaction {
   group?: WalletTransactionGroup;
   ts?: number;
   ref?: string;
+  orderId?: string;
+  orderReference?: string;
 }
