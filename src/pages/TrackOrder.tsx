@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
+import { orderPaymentAction } from "@/lib/phase1-api";
 import { useAuth } from "@/store/auth-context";
 
 interface PublicOrderStatus {
