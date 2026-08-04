@@ -47,19 +47,45 @@ export default function PublicNav() {
     setClosing(false);
   }, [pathname]);
 
-  // Lock scroll + Escape + focus while the sheet is open.
+  // Lock scroll, trap focus and handle Escape while the sheet is open.
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
+    const returnTo = document.activeElement as HTMLElement | null;
     document.body.style.overflow = "hidden";
     panelRef.current?.focus();
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") {
+        close();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      // The sheet claims aria-modal, so focus must not escape to the
+      // content it covers.
+      const panel = panelRef.current;
+      if (!panel) return;
+      const items = [...panel.querySelectorAll<HTMLElement>("a[href], button:not([disabled])")].filter(
+        (el) => el.offsetParent !== null,
+      );
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === panel)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
+
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
+      returnTo?.focus?.();
     };
   }, [open]);
 

@@ -1,16 +1,24 @@
-import { TESTIMONIALS } from "@/data/marketing";
+import { TESTIMONIALS, TESTIMONIALS_ARE_PLACEHOLDER } from "@/data/marketing";
 import { useReveal } from "@/hooks/useReveal";
 
 /**
  * Customer quotes.
  *
- * ⚠️  The quotes in `@/data/marketing` are PLACEHOLDER copy — they are rendered
- * exactly as written and nothing else is claimed here. No ratings, no review
- * counts, no "verified" badges, no logos: none of that is real yet, so none of
- * it is on the page. Swap the data for real, opted-in quotes before launch.
+ * The section is fully built, but it renders NOTHING while the quotes in
+ * `@/data/marketing` are still placeholders — publishing invented reviews
+ * (or visible "Placeholder name" rows) on a live storefront is worse than
+ * having no testimonials at all.
+ *
+ * TO TURN IT ON: replace TESTIMONIALS with real, opted-in customer quotes
+ * and set TESTIMONIALS_ARE_PLACEHOLDER to false in src/data/marketing.ts.
+ *
+ * Nothing else is claimed here on purpose — no ratings, no review counts,
+ * no "verified" badges, no logos.
  */
 export default function Testimonials() {
   const ref = useReveal<HTMLElement>();
+
+  if (TESTIMONIALS_ARE_PLACEHOLDER || TESTIMONIALS.length === 0) return null;
 
   return (
     <section ref={ref} aria-labelledby="testimonials-title" className="mk-section">
@@ -20,7 +28,7 @@ export default function Testimonials() {
           <div data-reveal className="max-w-xl">
             <p className="mk-eyebrow">Customers</p>
             <h2 id="testimonials-title" className="mk-h2 mt-5">
-              Bought for a shop, a student, <span className="mk-accent">a mother</span>.
+              Bought for a shop, a student, a mother.
             </h2>
           </div>
           <p

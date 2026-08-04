@@ -20,7 +20,7 @@ export default function HowItWorks() {
         <div className="max-w-[620px]" data-reveal>
           <span className="mk-eyebrow">How it works</span>
           <h2 id="how-h" className="mk-h2 mt-4">
-            Four steps. <span className="mk-accent">About a minute.</span>
+            Four steps. About a minute.
           </h2>
           <p className="mk-lead mt-4 max-w-[48ch]">
             You do not need an account to buy — one is only worth it when you want a wallet and a record

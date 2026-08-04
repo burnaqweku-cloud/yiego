@@ -86,7 +86,7 @@ export default function Contact() {
             data-reveal
             style={d(70)}
           >
-            Talk to someone who can <span className="mk-accent">open the order</span>.
+            Talk to someone who can open the order.
           </h1>
           <p className="mk-lead mt-7 max-w-[62ch]" data-reveal style={d(140)}>
             Start with the assistant for anything quick — it is awake at any hour. For a stuck

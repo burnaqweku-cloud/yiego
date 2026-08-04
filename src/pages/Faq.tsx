@@ -65,7 +65,7 @@ export default function Faq() {
             data-reveal
             style={d(70)}
           >
-            Everything people <span className="mk-accent">actually ask</span> us.
+            Everything people actually ask us.
           </h1>
           <p className="mk-lead mt-7 max-w-[62ch]" data-reveal style={d(140)}>
             Delivery times, payments, wallets, references, what to do when an order stalls. If your

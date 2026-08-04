@@ -2234,3 +2234,68 @@
     box-shadow: none;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   MARKETING — QA fixes.
+   ══════════════════════════════════════════════════════════════ */
+@layer components {
+  /* Focus is a box-shadow globally, but every marketing surface declares
+     its own box-shadow and wins, leaving CTAs with no visible focus ring.
+     Restore it with an outline, which nothing here overrides. */
+  .mk-btn:focus-visible,
+  .mk-navlink:focus-visible,
+  .mk-footlink:focus-visible,
+  .mk-social:focus-visible,
+  .mk-acc-trigger:focus-visible,
+  .mk-cat:focus-visible,
+  .mk-bundle:focus-visible,
+  .mk-menu-item:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 3px;
+    border-radius: 14px;
+  }
+  /* On the emerald fill, a ring in the same emerald is invisible — use ink. */
+  .mk-btn-primary:focus-visible {
+    outline-color: hsl(var(--foreground));
+    outline-offset: 3px;
+  }
+  .mk-cta .mk-btn-primary:focus-visible {
+    outline-color: #ffffff;
+  }
+
+  /* `.mk-h3` was the only heading with no line-height, so card titles
+     inherited body leading and sat at a different rhythm to everything else. */
+  .mk-h3 {
+    line-height: 1.22;
+  }
+
+  /* Section dividers were set so faint they never actually read on screen. */
+  .mk-rule {
+    background: linear-gradient(90deg, transparent, rgb(var(--w) / 0.16) 22%, rgb(var(--w) / 0.16) 78%, transparent);
+  }
+
+  /* Ghost buttons sitting on a white card in Daylight were white-on-white. */
+  .light .mk-card .mk-btn-ghost,
+  .light .mk-quote .mk-btn-ghost {
+    background: rgba(8, 26, 18, 0.03);
+    border-color: rgba(8, 26, 18, 0.14);
+    box-shadow: none;
+  }
+  .light .mk-card .mk-btn-ghost:hover,
+  .light .mk-quote .mk-btn-ghost:hover {
+    background: rgba(34, 195, 135, 0.08);
+    border-color: rgba(15, 138, 91, 0.4);
+  }
+
+  /* Onyx never got the brand-colour adaptation Daylight has: Telecel red and
+     AirtelTigo blue sit at ~3.3:1 on their own tiles. Lift them toward the
+     canvas light so all three monograms read at the same strength. */
+  .mk-cat-mark,
+  .onyx-netlogo {
+    color: color-mix(in srgb, var(--brand) 78%, #f2fbf6);
+  }
+  .light .mk-cat-mark,
+  .light .onyx-netlogo {
+    color: color-mix(in srgb, var(--brand) 62%, #0b291c);
+  }
+}

@@ -33,7 +33,7 @@ export default function Categories() {
           <div className="max-w-[34rem]" data-reveal>
             <span className="mk-eyebrow">Networks</span>
             <h2 id="categories-h" className="mk-h2 mt-4">
-              All three networks, <span className="mk-accent">one checkout</span>
+              All three networks, one checkout
             </h2>
             <p className="mk-lead mt-4">
               Pick the network, pick the size, type the number receiving it. The data lands in

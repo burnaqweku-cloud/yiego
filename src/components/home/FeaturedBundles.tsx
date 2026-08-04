@@ -111,18 +111,19 @@ function Unavailable() {
 
 function BundleRail({ cards }: { cards: BundleCard[] }) {
   // Mounted only once the catalogue lands, so its own observer picks up the
-  // cards that did not exist when the section first rendered.
+  // rail that did not exist when the section first rendered.
   const ref = useReveal<HTMLDivElement>();
 
   return (
-    <div ref={ref} className={RAIL}>
-      {cards.map((card, i) => (
+    // The reveal lives on the rail, not on each card: below `sm` the rail
+    // clips horizontally, so off-screen cards would never intersect the
+    // viewport and would sit at opacity 0 until the user happened to swipe.
+    <div ref={ref} data-reveal className={RAIL}>
+      {cards.map((card) => (
         <Link
           key={card.key}
           to="/shop"
           className={`mk-bundle group ${CARD}`}
-          data-reveal
-          style={{ "--d": `${Math.min(i, 5) * 70}ms` } as CSSProperties}
           aria-label={`Buy the ${card.network.name} ${card.size} bundle for ${formatGHS(card.price)}`}
         >
           <span

@@ -60,7 +60,7 @@ export default function Support() {
             data-reveal
             style={delay(70)}
           >
-            Help, <span className="mk-accent">at any hour</span>.
+            Help, at any hour.
           </h1>
           <p className="mk-lead mt-6 max-w-[60ch]" data-reveal style={delay(140)}>
             The assistant settles most things on the spot — a pending order, a wallet top-up that has
@@ -89,9 +89,9 @@ export default function Support() {
                   </span>
                 </div>
                 <p className="mk-body mt-3 max-w-[54ch]">
-                  It knows how buying, paying, tracking and refunds work on YieGo, and it can read
-                  the status of an order from its reference. Ask in plain English — no ticket, no
-                  queue, no waiting for morning.
+                  It knows how buying, paying, tracking and refunds work on YieGo. Ask in plain
+                  English — no ticket, no queue, no waiting for morning. To confirm a specific
+                  payment or delivery, check Track Order or message the team.
                 </p>
                 <Link to="/support/ai" className="mk-btn mk-btn-primary group mt-8">
                   Chat with YieGo AI
