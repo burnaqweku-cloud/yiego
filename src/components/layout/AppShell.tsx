@@ -4,7 +4,7 @@ import AuroraBackground from "@/components/fx/AuroraBackground";
 import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
 import MobileSidebar from "@/components/layout/MobileSidebar";
-import PublicFooter from "@/components/layout/PublicFooter";
+import AppFooter from "@/components/layout/AppFooter";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -23,7 +23,7 @@ export default function AppShell() {
         <main className="relative min-w-0 flex-1 px-5 pb-14 pt-6 sm:px-8 lg:px-10 lg:pt-9">
           <TopBar onOpenMenu={() => setMobileMenuOpen(true)} />
           <div className="mt-7"><Outlet /></div>
-          <PublicFooter />
+          <AppFooter />
         </main>
       </div>
       <MobileSidebar open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />

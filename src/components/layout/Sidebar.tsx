@@ -15,7 +15,7 @@ export default function Sidebar() {
   return (
     <aside className="onyx-rail sticky top-0 z-20 hidden h-dvh w-[264px] shrink-0 flex-col justify-between px-5 py-7 lg:flex">
       <div>
-        <NavLink to="/" className="flex items-center gap-3 px-1" aria-label="YieGo — Home">
+        <NavLink to="/shop" className="flex items-center gap-3 px-1" aria-label="YieGo — Home">
           <Monogram size={40} />
           <div className="leading-tight">
             <p className="font-display text-[17px] font-semibold tracking-tight text-white">YieGo</p>

@@ -126,4 +126,21 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split rarely-changing vendor code into its own long-lived chunks, so
+        // shipping app changes doesn't force visitors to re-download React or
+        // the Supabase client.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom)[\\/]/.test(id)) {
+            return "vendor-react";
+          }
+          if (id.includes("@supabase")) return "vendor-supabase";
+          if (id.includes("lucide-react")) return "vendor-icons";
+        },
+      },
+    },
+  },
 }));

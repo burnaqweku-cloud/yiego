@@ -68,7 +68,7 @@ export default function MobileSidebar({ open, onClose }: { open: boolean; onClos
       <button type="button" className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={onClose} aria-label="Close navigation menu" />
       <aside ref={panelRef} className="onyx-panel absolute inset-y-0 left-0 flex w-[min(86vw,330px)] flex-col rounded-none border-y-0 border-l-0 p-5 shadow-2xl">
         <div className="flex items-center justify-between gap-3">
-          <NavLink to="/" className="flex items-center gap-3" aria-label="YieGo home">
+          <NavLink to="/shop" className="flex items-center gap-3" aria-label="YieGo home">
             <Monogram size={42} />
             <div>
               <p className="font-display text-lg font-semibold text-white">YieGo</p>

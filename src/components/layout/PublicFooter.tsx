@@ -1,15 +1,156 @@
 import { Link } from "react-router-dom";
+import { Facebook, Instagram, Mail, MessageCircle, Twitter } from "lucide-react";
+import Monogram from "@/components/brand/Monogram";
+import { CATEGORIES } from "@/data/marketing";
+import { useContactSettings } from "@/hooks/useContactSettings";
+
+/** Public footer — the site map, kept scannable. */
+
+interface FooterLink {
+  label: string;
+  to?: string;
+  href?: string;
+}
+
+const COLUMNS: { title: string; links: FooterLink[] }[] = [
+  {
+    title: "Company",
+    links: [
+      { label: "About us", to: "/about" },
+      { label: "Shop", to: "/shop" },
+      { label: "Track an order", to: "/track-order" },
+    ],
+  },
+  {
+    title: "Shop",
+    links: [
+      { label: "All bundles", to: "/shop" },
+      ...CATEGORIES.map((c) => ({ label: `${c.name} data`, to: "/shop" })),
+    ],
+  },
+  {
+    title: "Support",
+    links: [
+      { label: "Help centre", to: "/support" },
+      { label: "AI assistant", to: "/support/ai" },
+      { label: "FAQ", to: "/faq" },
+      { label: "Contact us", to: "/contact" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Terms of service", to: "/legal/terms" },
+      { label: "Privacy policy", to: "/legal/privacy" },
+      { label: "Refund policy", to: "/legal/refunds" },
+    ],
+  },
+];
+
+const SOCIALS: { label: string; href: string; icon: typeof Facebook }[] = [
+  { label: "YieGo on X", href: "https://x.com", icon: Twitter },
+  { label: "YieGo on Instagram", href: "https://instagram.com", icon: Instagram },
+  { label: "YieGo on Facebook", href: "https://facebook.com", icon: Facebook },
+];
 
 export default function PublicFooter() {
-  return <footer className="mt-12 border-t border-white/[0.07] py-7 text-xs text-muted-foreground">
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <p>© {new Date().getFullYear()} YieGo. All rights reserved.</p>
-      <nav className="flex flex-wrap gap-x-4 gap-y-2" aria-label="Legal and support">
-        <Link className="hover:text-foreground" to="/support">Support</Link>
-        <Link className="hover:text-foreground" to="/legal/privacy">Privacy</Link>
-        <Link className="hover:text-foreground" to="/legal/terms">Terms</Link>
-        <Link className="hover:text-foreground" to="/legal/refunds">Refunds</Link>
-      </nav>
-    </div>
-  </footer>;
+  const { contact, whatsappUrl } = useContactSettings();
+
+  return (
+    <footer className="mk-footer mt-auto">
+      <div className="mk-wrap py-14 sm:py-16">
+        <div className="grid gap-11 lg:grid-cols-[1.25fr_2.4fr]">
+          {/* Brand */}
+          <div className="max-w-[330px]">
+            <Link to="/" className="flex items-center gap-2.5" aria-label="YieGo — home">
+              <Monogram size={40} />
+              <span className="font-display text-[18px] font-semibold tracking-tight text-foreground">
+                YieGo
+              </span>
+            </Link>
+            <p className="mk-body mt-4 text-[13.5px]">
+              Data bundles for MTN, Telecel and AirtelTigo — bought in seconds, delivered in
+              minutes, tracked to the last cedi.
+            </p>
+            <div className="mt-6 flex items-center gap-2.5">
+              {SOCIALS.map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  aria-label={s.label}
+                  className="mk-social"
+                >
+                  <s.icon size={17} />
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Site map */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:grid-cols-4">
+            {COLUMNS.map((col) => (
+              <nav key={col.title} aria-label={col.title}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
+                  {col.title}
+                </p>
+                <ul className="mt-3.5 flex flex-col">
+                  {col.links.map((l, i) => (
+                    <li key={`${l.label}-${i}`}>
+                      {l.to ? (
+                        <Link to={l.to} className="mk-footlink">
+                          {l.label}
+                        </Link>
+                      ) : (
+                        <a href={l.href} className="mk-footlink">
+                          {l.label}
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
+          </div>
+        </div>
+
+        {/* Direct contact — only what is actually configured */}
+        {(contact?.support_email || whatsappUrl) && (
+          <div className="mt-12 flex flex-wrap items-center gap-x-7 gap-y-3 border-t border-white/[0.07] pt-7">
+            {contact?.support_email && (
+              <a
+                href={`mailto:${contact.support_email}`}
+                className="flex items-center gap-2 text-[13.5px] text-muted-foreground transition-colors hover:text-primary-glow"
+              >
+                <Mail size={15} />
+                {contact.support_email}
+              </a>
+            )}
+            {whatsappUrl && (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="flex items-center gap-2 text-[13.5px] text-muted-foreground transition-colors hover:text-primary-glow"
+              >
+                <MessageCircle size={15} />
+                WhatsApp support
+              </a>
+            )}
+            {contact?.business_hours && (
+              <span className="text-[13px] text-faint-foreground">{contact.business_hours}</span>
+            )}
+          </div>
+        )}
+
+        <div className="mt-9 flex flex-col gap-3 border-t border-white/[0.07] pt-7 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[13px] text-faint-foreground">
+            © {new Date().getFullYear()} {contact?.business_name || "YieGo"}. All rights reserved.
+          </p>
+          <p className="text-[13px] text-faint-foreground">Built for Ghana 🇬🇭</p>
+        </div>
+      </div>
+    </footer>
+  );
 }

@@ -10,7 +10,8 @@ import { useAuth } from "@/store/auth-context";
 type Mode = "login" | "signup" | "forgot" | "check-email";
 
 function safeNext(value: string | null) {
-  return value?.startsWith("/") && !value.startsWith("//") && !value.startsWith("/auth") ? value : "/";
+  // After authenticating, land in the app (the shop) — not the marketing home.
+  return value?.startsWith("/") && !value.startsWith("//") && !value.startsWith("/auth") ? value : "/shop";
 }
 
 function friendlyAuthError(error: unknown) {

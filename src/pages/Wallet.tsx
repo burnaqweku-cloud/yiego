@@ -53,7 +53,7 @@ export default function Wallet() {
 
   return (
     <div className="space-y-6 lg:space-y-8">
-      <SmartBackButton fallback="/" />
+      <SmartBackButton fallback="/shop" />
       <PageHeader
         eyebrow="Wallet"
         title="Your wallet"
@@ -68,7 +68,7 @@ export default function Wallet() {
             {confirming ? "Confirming your payment" : confirmation === "success" ? "Wallet credited" : confirmation === "failed" ? "Payment unsuccessful" : "Confirmation pending"}
           </p>
           <p className="mt-1 text-muted-foreground">{confirming ? "YieGo is securely verifying the transaction with Paystack." : confirmationMessage}</p>
-          <Button className="mt-4" variant="ghost" onClick={() => navigate("/")}>Back to YieGo</Button>
+          <Button className="mt-4" variant="ghost" onClick={() => navigate("/shop")}>Back to YieGo</Button>
         </div>
       )}
 

@@ -17,7 +17,7 @@ export interface NavItem {
 }
 
 export const GUEST_NAV_ITEMS: NavItem[] = [
-  { label: "Buy Data", to: "/", icon: Home, end: true },
+  { label: "Buy Data", to: "/shop", icon: Home, end: true },
   { label: "Track Order", to: "/track-order", icon: Search },
   { label: "AI Support", to: "/support/ai", icon: Bot },
 ];

@@ -12,7 +12,7 @@ export default function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
   return (
     <header className="flex items-center gap-3 sm:gap-4">
       {/* Mobile brand */}
-      <NavLink to="/" className="flex items-center gap-2.5 lg:hidden" aria-label="YieGo — Home">
+      <NavLink to="/shop" className="flex items-center gap-2.5 lg:hidden" aria-label="YieGo — Home">
         <Monogram size={38} />
         <div className="leading-tight">
           <p className="font-display text-[16px] font-semibold tracking-tight text-white">YieGo</p>
