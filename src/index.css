@@ -2299,3 +2299,102 @@
     color: color-mix(in srgb, var(--brand) 62%, #0b291c);
   }
 }
+
+/* ── Brand logo: one file per theme, swapped by the theme class ───
+   Not by JS — the correct artwork must be right on first paint, and
+   `display:none` keeps the other copy out of the accessibility tree. */
+@layer components {
+  .brand-dark { display: block; }
+  .brand-light { display: none; }
+  .light .brand-dark { display: none; }
+  .light .brand-light { display: block; }
+}
+
+/* ── Hero: layered light ─────────────────────────────────────────
+   Three soft lights drift behind the type at different speeds. They
+   sit under the grid, are blurred to nothing at the edges, and stop
+   entirely for anyone who asked for less motion. */
+@layer components {
+  .mk-hero-lights {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: clip;
+    pointer-events: none;
+  }
+  .mk-hero-lights span {
+    position: absolute;
+    display: block;
+    border-radius: 9999px;
+    filter: blur(88px);
+    will-change: transform;
+  }
+  .mk-hero-lights .l1 {
+    width: min(54rem, 130vw);
+    height: 28rem;
+    top: -13rem;
+    left: 50%;
+    margin-left: min(-27rem, -65vw);
+    background: radial-gradient(closest-side, hsl(var(--primary) / 0.3), transparent 72%);
+    animation: mkDriftA 20s ease-in-out infinite alternate;
+  }
+  .mk-hero-lights .l2 {
+    width: min(34rem, 92vw);
+    height: 22rem;
+    top: 3rem;
+    right: 3%;
+    background: radial-gradient(closest-side, hsl(var(--primary-glow) / 0.17), transparent 70%);
+    animation: mkDriftB 26s ease-in-out infinite alternate;
+  }
+  .mk-hero-lights .l3 {
+    width: min(30rem, 84vw);
+    height: 20rem;
+    bottom: -5rem;
+    left: 1%;
+    background: radial-gradient(closest-side, hsl(var(--primary) / 0.15), transparent 70%);
+    animation: mkDriftA 24s ease-in-out infinite alternate-reverse;
+  }
+  /* Daylight needs a fraction of the light — the canvas is already bright. */
+  .light .mk-hero-lights .l1 {
+    background: radial-gradient(closest-side, hsl(157 71% 45% / 0.17), transparent 72%);
+  }
+  .light .mk-hero-lights .l2 {
+    background: radial-gradient(closest-side, hsl(158 70% 42% / 0.12), transparent 70%);
+  }
+  .light .mk-hero-lights .l3 {
+    background: radial-gradient(closest-side, hsl(157 71% 45% / 0.1), transparent 70%);
+  }
+
+  /* The grid and the light both need to end softly, not on an edge. */
+  .mk-hero-fade {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 190px;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, hsl(var(--background)));
+  }
+
+  /* One step above .mk-display — this is the only line of type on screen. */
+  .mk-hero-title {
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.042em;
+    line-height: 0.98;
+    font-size: clamp(42px, 7.6vw, 86px);
+    color: hsl(var(--foreground));
+  }
+}
+
+@keyframes mkDriftA {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-2.5rem, 1.5rem, 0) scale(1.08); }
+}
+@keyframes mkDriftB {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(2rem, -1.25rem, 0) scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mk-hero-lights span { animation: none !important; }
+}

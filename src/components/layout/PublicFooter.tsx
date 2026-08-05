@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Mail, MessageCircle, Twitter } from "lucide-react";
-import Monogram from "@/components/brand/Monogram";
+import Wordmark from "@/components/brand/Wordmark";
 import { CATEGORIES } from "@/data/marketing";
 import { useContactSettings } from "@/hooks/useContactSettings";
 
@@ -62,11 +62,8 @@ export default function PublicFooter() {
         <div className="grid gap-11 lg:grid-cols-[1.25fr_2.4fr]">
           {/* Brand */}
           <div className="max-w-[330px]">
-            <Link to="/" className="flex items-center gap-2.5" aria-label="YieGo — home">
-              <Monogram size={40} />
-              <span className="font-display text-[18px] font-semibold tracking-tight text-foreground">
-                YieGo
-              </span>
+            <Link to="/" className="flex items-center" aria-label="YieGo — home">
+              <Wordmark className="h-[28px]" />
             </Link>
             <p className="mk-body mt-4 text-[13.5px]">
               Data bundles for MTN, Telecel and AirtelTigo — bought in seconds, delivered in

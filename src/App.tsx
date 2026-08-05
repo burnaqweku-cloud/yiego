@@ -7,7 +7,7 @@ import { AuthProvider } from "@/store/auth";
 import { WalletProvider } from "@/store/wallet";
 import { ProfileProvider } from "@/store/profile";
 import { FlowsProvider } from "@/store/flows";
-import AppShell from "@/components/layout/AppShell";
+import AppPage from "@/components/layout/AppPage";
 import PublicShell from "@/components/layout/PublicShell";
 import Home from "./pages/Home";
 // Tiny route guards — kept eager so gated pages don't wait on an extra chunk.
@@ -50,19 +50,30 @@ function RouteFallback() { return <div className="onyx-canvas grid min-h-dvh pla
 
 const App = () => (
   <BrowserRouter><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><AuthReady><Suspense fallback={<RouteFallback />}><Routes>
-    <Route path="/auth" element={<Auth />} /><Route path="/reset-password" element={<ResetPassword />} /><Route path="/track-order" element={<TrackOrder />} />
+    {/* Focused, chrome-free task pages. */}
+    <Route path="/auth" element={<Auth />} /><Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/admin" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<Admin />} /><Route path="orders" element={<AdminOrders />} /><Route path="disputes" element={<AdminDisputes />} /><Route path="reviews" element={<AdminReviews />} /><Route path="sales/pricing" element={<AdminPricing />} /><Route path="suppliers" element={<AdminSuppliers />} /><Route path="wallet" element={<AdminWallet />} /><Route path="contacts/information" element={<AdminContact />} /><Route path="legal" element={<AdminLegal />} /><Route path="ai-support" element={<AdminAISupport />} /></Route>
-    {/* Public site — marketing nav + full footer */}
+    {/* One shell for the whole site: the same header and footer wrap the
+        marketing pages, the shop and the account area. */}
     <Route element={<PublicShell />}>
+      {/* Marketing pages lay out their own full-bleed sections. */}
       <Route path="/" element={<Home />} />
       <Route path="/about" element={<About />} />
       <Route path="/faq" element={<Faq />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/support" element={<Support />} />
       <Route path="/legal/:slug" element={<LegalDocument />} />
+      {/* App pages render inside the standard content column. */}
+      <Route element={<AppPage />}>
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/track-order" element={<TrackOrder />} />
+        <Route path="/support/ai" element={<AISupport />} />
+        <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
+        <Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />
+        <Route path="/account" element={<RequireAuth><Account /></RequireAuth>} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
-    {/* The app — unchanged behaviour, now rooted at /shop */}
-    <Route element={<AppShell />}><Route path="/shop" element={<Shop />} /><Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} /><Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} /><Route path="/account" element={<RequireAuth><Account /></RequireAuth>} /><Route path="/support/ai" element={<AISupport />} /><Route path="*" element={<Navigate to="/" replace />} /></Route>
   </Routes></Suspense></AuthReady></FlowsProvider></ProfileProvider></WalletProvider></AuthProvider></ThemeProvider></BrowserRouter>
 );
 export default App;

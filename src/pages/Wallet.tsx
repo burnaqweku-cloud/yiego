@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowDownToLine, ArrowUpRight, CheckCircle2, Clock, Loader2, RefreshCcw } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
-import SmartBackButton from "@/components/layout/SmartBackButton";
 import BalanceCard from "@/components/dashboard/BalanceCard";
 import TransactionDetailSheet from "@/components/sheets/TransactionDetailSheet";
 import { Button } from "@/components/ui/button";
@@ -53,7 +52,6 @@ export default function Wallet() {
 
   return (
     <div className="space-y-6 lg:space-y-8">
-      <SmartBackButton fallback="/shop" />
       <PageHeader
         eyebrow="Wallet"
         title="Your wallet"

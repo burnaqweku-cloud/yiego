@@ -3,6 +3,7 @@ import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from "react";
 import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { LEGAL_FALLBACKS } from "@/data/legal";
 import { useReveal } from "@/hooks/useReveal";
 
 interface LegalRow { title: string; summary: string; content: string; version: number; published_at: string | null; }
@@ -128,11 +129,17 @@ export default function LegalDocument() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+    setLoading(true);
     void (async () => {
       const { data } = await (supabase as unknown as { schema: (name: string) => any }).schema("phase1").from("legal_documents").select("title, summary, content, version, published_at").eq("slug", slug).eq("is_published", true).maybeSingle();
-      setDocument(data as LegalRow | null);
+      if (!mounted) return;
+      // A published document always wins. The bundled baseline only stands in
+      // when nothing has been published, so these pages are never blank.
+      setDocument((data as LegalRow | null) ?? LEGAL_FALLBACKS[slug] ?? null);
       setLoading(false);
     })();
+    return () => { mounted = false; };
   }, [slug]);
 
   const blocks = useMemo(() => toBlocks(document?.content ?? ""), [document?.content]);

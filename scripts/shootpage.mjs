@@ -11,7 +11,8 @@ import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const [path = "/", out, w = "390", h = "900", theme = "light"] = process.argv.slice(2);
+const [path = "/", out, w = "390", h = "900", theme = "light", mode = "full"] = process.argv.slice(2);
+const viewportOnly = mode === "viewport";
 if (!out) {
   console.error("usage: node scripts/shootpage.mjs <path> <outfile> <width> <height> [theme]");
   process.exit(1);
@@ -53,6 +54,12 @@ try {
 
   // Walk the page so reveals trigger and lazy sections mount.
   await page.evaluate(async () => {
+    // The site sets `scroll-behavior: smooth`, so every step here would
+    // ANIMATE — the loop then outruns the real scroll position and the last
+    // sections never enter the viewport. Walk instantly, restore afterwards.
+    const root = document.documentElement;
+    const previousBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = "auto";
     const step = Math.round(window.innerHeight * 0.6);
     let y = 0;
     // Re-read scrollHeight every step: lazy sections mount as we descend
@@ -67,22 +74,29 @@ try {
     await new Promise((r) => setTimeout(r, 700));
     window.scrollTo(0, 0);
     await new Promise((r) => setTimeout(r, 400));
+    root.style.scrollBehavior = previousBehavior;
   });
   await sleep(900);
 
   // Report anything still invisible — that would be a real bug, not a capture artifact.
-  const hidden = await page.evaluate(() =>
+  const hiddenList = await page.evaluate(() =>
     [...document.querySelectorAll("[data-reveal]")]
-      .filter((el) => Number(getComputedStyle(el).opacity) < 0.9).length,
+      // `display:none` elements (responsive duplicates) never intersect and
+      // never reveal — that is correct, not a bug. Only judge rendered ones.
+      .filter((el) => el.getClientRects().length > 0)
+      .filter((el) => Number(getComputedStyle(el).opacity) < 0.9)
+      .map((el) => `${el.tagName.toLowerCase()}.${el.className.toString().split(" ").slice(0, 2).join(".")} — ${(el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 48)}`),
   );
+  const hidden = hiddenList.length;
   const overflow = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,
   }));
 
-  await page.screenshot({ path: out, fullPage: true });
+  await page.screenshot({ path: out, fullPage: !viewportOnly });
   console.log(`saved: ${out}`);
   console.log(`still-hidden reveal elements: ${hidden}`);
+  hiddenList.slice(0, 12).forEach((d) => console.log(`   · ${d}`));
   console.log(`overflow: scrollWidth=${overflow.scrollWidth} clientWidth=${overflow.clientWidth}${overflow.scrollWidth > overflow.clientWidth ? "  <-- HORIZONTAL OVERFLOW" : "  (ok)"}`);
   browser.disconnect();
 } finally {

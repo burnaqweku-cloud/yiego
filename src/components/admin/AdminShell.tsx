@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, BadgeDollarSign, Bot, BriefcaseBusiness, ChevronDown, ChevronRight, ClipboardList, Contact, FileText, Gauge, LogOut, Menu, MessageSquareWarning, Store, Tags, WalletCards, X, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import AuroraBackground from "@/components/fx/AuroraBackground";
-import Monogram from "@/components/brand/Monogram";
+import Wordmark from "@/components/brand/Wordmark";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/store/auth-context";
 import { useProfile } from "@/store/profile";
@@ -28,7 +28,7 @@ function AdminNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation(); const activeSection = sectionFor(location.pathname); const [openSection, setOpenSection] = useState(activeSection); useEffect(() => setOpenSection(activeSection), [activeSection]);
   return <nav className="mt-8 space-y-2" aria-label="Admin navigation">{sections.map((section) => <div key={section.label} className="rounded-2xl border border-white/[0.055] bg-white/[0.018] p-1.5"><button type="button" onClick={() => setOpenSection((current) => current === section.label ? "" : section.label)} className={cn("flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition-colors", openSection === section.label ? "bg-white/[0.045] text-foreground" : "text-muted-foreground hover:text-foreground")}><section.icon size={18} className={openSection === section.label ? "text-primary-glow" : ""} /><span className="min-w-0 flex-1 truncate">{section.label}</span><ChevronDown size={15} className={cn("transition-transform", openSection === section.label && "rotate-180")} /></button>{openSection === section.label && <div className="mt-1 space-y-1 px-1 pb-1">{section.items.map((item) => <NavLink key={item.to} to={item.to} end={item.end} onClick={onNavigate} className={({ isActive }) => cn("group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors", isActive ? "bg-primary/[0.1] text-primary-glow" : "text-muted-foreground hover:bg-white/[0.035] hover:text-foreground")}><item.icon size={17} /><span>{item.label}</span><ChevronRight className="ml-auto opacity-0 group-hover:opacity-60" size={14} /></NavLink>)}</div>}</div>)}</nav>;
 }
-function AdminBrand() { return <NavLink to="/admin" className="flex items-center gap-3"><Monogram size={42} /><div className="leading-tight"><p className="font-display text-[17px] font-semibold text-white">YieGo Admin</p><p className="mt-0.5 text-[11px] text-faint-foreground">Production operations</p></div></NavLink>; }
+function AdminBrand() { return <NavLink to="/admin" className="flex flex-col items-start gap-2" aria-label="YieGo Admin"><Wordmark className="h-[24px]" /><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">Admin · Production operations</p></NavLink>; }
 
 export default function AdminShell() {
   const [menuOpen, setMenuOpen] = useState(false); const panelRef = useRef<HTMLElement>(null); const location = useLocation(); const navigate = useNavigate(); const { signOut } = useAuth(); const { profile, initials } = useProfile(); const pageTitle = useMemo(() => routeTitles[location.pathname] ?? "Admin", [location.pathname]);

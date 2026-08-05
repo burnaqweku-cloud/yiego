@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, KeyRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import Monogram from "@/components/brand/Monogram";
+import Wordmark from "@/components/brand/Wordmark";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/store/auth-context";
@@ -39,7 +39,7 @@ export default function ResetPassword() {
     <div className="onyx-canvas min-h-dvh px-5 py-8">
       <main className="relative z-10 mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[520px] items-center">
         <Card className="w-full"><CardContent className="p-6 sm:p-7">
-          <Link to="/" className="mb-8 inline-flex items-center gap-3"><Monogram size={42} /><div><p className="font-display text-lg font-semibold text-white">YieGo</p><p className="text-xs text-faint-foreground">Account recovery</p></div></Link>
+          <Link to="/" className="mb-8 inline-flex items-center" aria-label="YieGo — home"><Wordmark className="h-[26px]" /></Link>
           {!isAuthenticated ? (
             <div className="text-center">
               <KeyRound className="mx-auto text-primary-glow" size={28} />

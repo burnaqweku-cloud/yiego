@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { CreditCard, Loader2, Search, ShieldCheck } from "lucide-react";
-import Monogram from "@/components/brand/Monogram";
-import SmartBackButton from "@/components/layout/SmartBackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -127,14 +125,12 @@ export default function TrackOrder() {
   }, []);
 
 
+  // The site header and footer wrap this page now — it carries only its own
+  // content, centred in the standard column.
   return (
-    <div className="onyx-canvas min-h-dvh px-5 py-6 sm:py-8">
-      <div className="onyx-aurora" aria-hidden="true"><span className="onyx-aurora-a" /><span className="onyx-aurora-b" /><span className="onyx-grain" /></div>
-      <div className="relative z-10 mx-auto w-full max-w-[760px]"><SmartBackButton fallback="/" /></div>
-      <main className="relative z-10 mx-auto flex min-h-[calc(100dvh-7rem)] w-full max-w-[760px] items-center py-5">
-        <Card className="w-full">
-          <CardContent className="p-6 sm:p-7">
-            <Link to="/" className="mb-8 inline-flex items-center gap-3"><Monogram size={42} /><div><p className="font-display text-lg font-semibold text-white">YieGo</p><p className="text-xs text-faint-foreground">Order tracking</p></div></Link>
+    <div className="mx-auto w-full max-w-[760px]">
+      <Card className="w-full">
+        <CardContent className="p-6 sm:p-7">
             <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">{isAuthenticated ? "Enter your YieGo order reference to see its payment and delivery status. Your own orders can be opened without re-entering the recipient number." : "Enter your YieGo order reference and the recipient phone number used at checkout."}</p></div>
             <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_0.8fr_auto]">
               <input className="onyx-field" value={reference} onChange={(event) => setReference(event.target.value)} placeholder="YG-ORDERREF" />
@@ -157,7 +153,6 @@ export default function TrackOrder() {
 
           </CardContent>
         </Card>
-      </main>
     </div>
   );
 }

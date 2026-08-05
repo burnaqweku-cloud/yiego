@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle2, Eye, EyeOff, Loader2, Lock, Mail, Phone, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import Monogram from "@/components/brand/Monogram";
+import Wordmark from "@/components/brand/Wordmark";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/store/auth-context";
@@ -92,13 +92,13 @@ export default function Auth() {
       <main className="relative z-10 mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[1100px] items-center">
         <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[1fr_430px] lg:items-center">
           <section className="hidden lg:block">
-            <Link to="/" className="inline-flex items-center gap-3"><Monogram size={46} /><div><p className="font-display text-xl font-semibold text-white">YieGo</p><p className="text-sm text-faint-foreground">Ghana data, paid and delivered cleanly.</p></div></Link>
+            <Link to="/" className="inline-flex items-center" aria-label="YieGo — home"><Wordmark variant="full" className="h-[62px]" /></Link>
             <h1 className="mt-10 max-w-xl font-display text-5xl font-semibold tracking-tight text-white">One account for your wallet, orders and receipts.</h1>
             <p className="mt-4 max-w-lg leading-7 text-muted-foreground">Sign in to fund your wallet, buy data, track orders and keep receipts. Guests can still buy data with Paystack.</p>
           </section>
 
           <Card><CardContent className="p-6 sm:p-7">
-            <Link to="/" className="mb-7 flex items-center gap-3 lg:hidden"><Monogram size={42} /><div><p className="font-display text-lg font-semibold text-white">YieGo</p><p className="text-xs text-faint-foreground">Your everyday digital plug</p></div></Link>
+            <Link to="/" className="mb-7 flex items-center lg:hidden" aria-label="YieGo — home"><Wordmark className="h-[26px]" /></Link>
 
             {mode === "check-email" ? (
               <div className="py-3 text-center">

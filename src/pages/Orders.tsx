@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Loader2, PackageCheck, RefreshCcw, Search } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
-import SmartBackButton from "@/components/layout/SmartBackButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -117,7 +116,6 @@ export default function Orders() {
 
   return (
     <div className="space-y-6 lg:space-y-8">
-      <SmartBackButton fallback="/shop" />
       <PageHeader eyebrow="Data orders" title="Your orders" subtitle="Search your purchase history and follow every delivery." action={<Button variant="soft" onClick={() => void load()} disabled={loading}><RefreshCcw className={loading ? "animate-spin" : ""} size={16} /> Refresh</Button>} />
 
       <section className="onyx-panel rounded-[24px] p-4 sm:p-5">

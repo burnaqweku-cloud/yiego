@@ -8,11 +8,15 @@ import { useReveal } from "@/hooks/useReveal";
 import { cn } from "@/lib/utils";
 
 /**
- * The shop floor: every live bundle, filterable, on the page itself.
+ * The shop floor: every live bundle, on the page itself.
+ *
+ * With no filter on, bundles are grouped by network in catalogue order — MTN
+ * first — rather than interleaved by price, so a shopper who came for one
+ * network never has to hunt. Each group shows its cheapest few; "see all"
+ * simply switches the filter to that network.
  *
  * Tapping a card opens the existing BuyDataFlow already standing on the
- * recipient step — the flow, the pricing and the payment path are untouched,
- * it just no longer asks for a choice the shopper has already made.
+ * recipient step. The flow, its pricing and payment paths are untouched.
  */
 
 type Filter = "all" | NetworkId;
@@ -30,8 +34,8 @@ interface Row {
   haystack: string;
 }
 
-/** Fewer cards on first paint; the rest are one tap away. */
-const INITIAL_VISIBLE = 12;
+/** How many of a network's bundles to show before "see all" takes over. */
+const PER_GROUP = 6;
 
 /** Same mapping the buy flow uses — the network lives in the product code. */
 const CODE_PREFIX: Record<NetworkId, string> = { mtn: "mtn", telecel: "tel", at: "at" };
@@ -59,7 +63,7 @@ function toRow(product: Phase1Product): Row | null {
 
 /** The catalogue stores "Supplier terms" when the network decides the window
  *  itself. That is true of every row today, so it is said once under the grid
- *  rather than forty-two times on the cards. */
+ *  rather than on every card. */
 function statedValidity(validity: string | null): string | null {
   if (!validity || validity.toLowerCase() === "supplier terms") return null;
   return `Valid ${validity}`;
@@ -155,7 +159,6 @@ export default function BundleCatalogue() {
   const [state, setState] = useState<LoadState>("loading");
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
-  const [expanded, setExpanded] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -172,28 +175,31 @@ export default function BundleCatalogue() {
   }, [attempt]);
 
   const rows = useMemo(
-    () =>
-      products
-        .map(toRow)
-        .filter((row): row is Row => row !== null)
-        .sort((a, b) => a.price - b.price),
+    () => products.map(toRow).filter((row): row is Row => row !== null),
     [products],
   );
 
   const term = query.trim().toLowerCase().replace(/\s+/g, "");
-  const filtered = useMemo(
-    () =>
-      rows.filter(
-        (row) =>
-          (filter === "all" || row.network.id === filter) && (term === "" || row.haystack.includes(term)),
-      ),
-    [rows, filter, term],
+  const matching = useMemo(
+    () => rows.filter((row) => term === "" || row.haystack.includes(term)),
+    [rows, term],
   );
 
-  const visible = expanded ? filtered : filtered.slice(0, INITIAL_VISIBLE);
-  const hiddenCount = filtered.length - visible.length;
+  /** One bucket per network, each cheapest-first, in catalogue order. */
+  const groups = useMemo(
+    () =>
+      NETWORKS.map((network) => ({
+        network,
+        rows: matching
+          .filter((row) => row.network.id === network.id)
+          .sort((a, b) => a.price - b.price),
+      })).filter((group) => group.rows.length > 0),
+    [matching],
+  );
 
-  /** Per-network counts for the filter pills — a shop should say how much is on the shelf. */
+  const visibleGroups = filter === "all" ? groups : groups.filter((g) => g.network.id === filter);
+  const total = visibleGroups.reduce((sum, g) => sum + g.rows.length, 0);
+
   const counts = useMemo(() => {
     const map = new Map<Filter, number>([["all", rows.length]]);
     for (const network of NETWORKS) {
@@ -207,6 +213,9 @@ export default function BundleCatalogue() {
     ...NETWORKS.map((n) => ({ id: n.id as Filter, label: n.name })),
   ];
 
+  const buy = (row: Row) =>
+    openBuyData({ kind: "bundle", networkId: row.network.id, productCode: row.code });
+
   return (
     <section aria-labelledby="catalogue-title" className="scroll-mt-24" id="bundles">
       {/* Header */}
@@ -219,9 +228,7 @@ export default function BundleCatalogue() {
             Choose a bundle
           </h2>
           <p className="mt-1.5 text-[13.5px] leading-6 text-muted-foreground">
-            {state === "ready"
-              ? "Live prices straight from the catalogue. What you see is what you pay."
-              : "Live prices straight from the catalogue."}
+            Live prices straight from the catalogue. What you see is what you pay.
           </p>
         </div>
 
@@ -273,7 +280,7 @@ export default function BundleCatalogue() {
       )}
 
       {/* Body */}
-      <div className="mt-5 sm:mt-6">
+      <div className="mt-6">
         {state === "loading" && (
           <>
             <p className="sr-only" role="status">
@@ -304,7 +311,7 @@ export default function BundleCatalogue() {
           </div>
         )}
 
-        {state === "ready" && filtered.length === 0 && (
+        {state === "ready" && total === 0 && (
           <div className="rounded-[22px] border border-white/[0.07] bg-white/[0.02] px-6 py-12 text-center">
             <p className="font-display text-[16px] font-semibold tracking-tight text-foreground">
               No bundle matches “{query.trim()}”
@@ -325,27 +332,58 @@ export default function BundleCatalogue() {
           </div>
         )}
 
-        {state === "ready" && filtered.length > 0 && (
+        {state === "ready" && total > 0 && (
           <>
             <p className="sr-only" role="status">
-              {filtered.length} bundle{filtered.length === 1 ? "" : "s"} available.
+              {total} bundle{total === 1 ? "" : "s"} available.
             </p>
-            <BundleGrid
-              rows={visible}
-              onBuy={(row) => openBuyData({ kind: "bundle", networkId: row.network.id, productCode: row.code })}
-            />
+
+            <div className="space-y-10 sm:space-y-12">
+              {visibleGroups.map((group) => {
+                // Whole network on screen when it is the one being filtered.
+                const shown = filter === "all" ? group.rows.slice(0, PER_GROUP) : group.rows;
+                const rest = group.rows.length - shown.length;
+
+                return (
+                  <div key={group.network.id}>
+                    <div className="mb-4 flex items-center justify-between gap-4">
+                      <h3 className="flex items-center gap-2.5">
+                        <span
+                          className="mk-cat-mark h-6 w-auto shrink-0 rounded-full px-2.5 text-[10px] tracking-[0.09em]"
+                          style={{ "--brand": group.network.color } as CSSProperties}
+                        >
+                          {group.network.name.toUpperCase()}
+                        </span>
+                        <span className="font-display text-[15px] font-semibold tracking-tight text-foreground">
+                          {group.network.name} bundles
+                        </span>
+                        <span className="tnum text-[12.5px] text-faint-foreground">
+                          {group.rows.length}
+                        </span>
+                      </h3>
+
+                      {rest > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setFilter(group.network.id)}
+                          className="group inline-flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-primary-glow"
+                        >
+                          See all {group.rows.length}
+                          <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+
+                    <BundleGrid rows={shown} onBuy={buy} />
+                  </div>
+                );
+              })}
+            </div>
           </>
         )}
 
-        {hiddenCount > 0 && (
-          <button type="button" onClick={() => setExpanded(true)} className="onyx-btn-ghost mt-5 w-full sm:mt-6">
-            Show {hiddenCount} more bundle{hiddenCount === 1 ? "" : "s"}
-            <ArrowRight size={16} className="mk-arrow" aria-hidden="true" />
-          </button>
-        )}
-
-        {state === "ready" && visible.some((row) => statedValidity(row.validity) === null) && (
-          <p className="mt-5 flex items-start gap-2.5 text-[12.5px] leading-5 text-faint-foreground">
+        {state === "ready" && total > 0 && (
+          <p className="mt-8 flex items-start gap-2.5 text-[12.5px] leading-5 text-faint-foreground">
             <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-primary-glow" aria-hidden="true" />
             Where no validity is shown, the network sets it when the bundle lands. Prices can change
             when the networks change theirs.
