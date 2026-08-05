@@ -5,9 +5,9 @@ import { useReveal } from "@/hooks/useReveal";
 
 /**
  * The first screen. No product shot and no mock-up — one confident line of
- * type, held in the middle of its own screen, over a grid and three slow
- * lights. Everything here is drawn from tokens, so it costs no images and
- * changes with the theme.
+ * type, held in the middle of its own screen, over nothing but light.
+ * Everything here is drawn from tokens, so it costs no images and changes
+ * with the theme.
  *
  * `data-reveal` never sits on a class that declares a `transition` shorthand
  * (`.mk-btn`, `.mk-card`) — that shorthand is declared later in the same
@@ -46,7 +46,6 @@ export default function Hero() {
         <span className="glow-b" />
         <span className="horizon" />
       </div>
-      <div className="mk-hero-grid" aria-hidden="true" />
       <div className="mk-hero-fade" aria-hidden="true" />
 
       <div className="relative z-10 mk-wrap">

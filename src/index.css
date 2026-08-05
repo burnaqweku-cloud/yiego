@@ -1751,24 +1751,6 @@
     overflow: clip;
     padding-block: clamp(52px, 8vw, 104px) clamp(56px, 8vw, 108px);
   }
-  /* Fine grid, fading out — gives the hero structure without noise. */
-  .mk-hero-grid {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background-image:
-      linear-gradient(to right, rgb(var(--w) / 0.045) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(var(--w) / 0.045) 1px, transparent 1px);
-    background-size: 64px 64px;
-    -webkit-mask-image: radial-gradient(115% 78% at 50% 0%, #000 22%, transparent 72%);
-    mask-image: radial-gradient(115% 78% at 50% 0%, #000 22%, transparent 72%);
-  }
-  .light .mk-hero-grid {
-    background-image:
-      linear-gradient(to right, rgba(8, 26, 18, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(8, 26, 18, 0.05) 1px, transparent 1px);
-  }
   /* Live status pill above the headline */
   .mk-pill {
     display: inline-flex;
@@ -2315,7 +2297,6 @@
 
      beam      a cone of light falling from the top, widening
      glow-a/b  two mesh lights drifting at different speeds
-     (grid)    .mk-hero-grid, masked to a radial fade
      horizon   a wide hairline arc with its own light beneath it
      (fade)    .mk-hero-fade, melting the whole thing into the page
 
