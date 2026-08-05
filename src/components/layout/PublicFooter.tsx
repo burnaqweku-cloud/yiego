@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Mail, MessageCircle, Twitter } from "lucide-react";
+import { Mail, MessageCircle, Megaphone } from "lucide-react";
 import Wordmark from "@/components/brand/Wordmark";
 import { CATEGORIES } from "@/data/marketing";
 import { useContactSettings } from "@/hooks/useContactSettings";
@@ -47,11 +47,9 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
   },
 ];
 
-const SOCIALS: { label: string; href: string; icon: typeof Facebook }[] = [
-  { label: "YieGo on X", href: "https://x.com", icon: Twitter },
-  { label: "YieGo on Instagram", href: "https://instagram.com", icon: Instagram },
-  { label: "YieGo on Facebook", href: "https://facebook.com", icon: Facebook },
-];
+/** The only channel YieGo actually runs. No other social accounts exist, so
+ *  none are linked — a dead icon costs more trust than an absent one. */
+const WHATSAPP_CHANNEL = "https://whatsapp.com/channel/0029Vb7zmhX2f3EClS0Qao2S";
 
 export default function PublicFooter() {
   const { contact, whatsappUrl } = useContactSettings();
@@ -69,20 +67,15 @@ export default function PublicFooter() {
               Data bundles for MTN, Telecel and AirtelTigo — bought in seconds, delivered in
               minutes, tracked to the last cedi.
             </p>
-            <div className="mt-6 flex items-center gap-2.5">
-              {SOCIALS.map((s) => (
-                <a
-                  key={s.label}
-                  href={s.href}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  aria-label={s.label}
-                  className="mk-social"
-                >
-                  <s.icon size={17} />
-                </a>
-              ))}
-            </div>
+            <a
+              href={WHATSAPP_CHANNEL}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="mk-social mt-6 inline-flex w-auto items-center gap-2.5 px-4 text-[13.5px] font-semibold"
+            >
+              <Megaphone size={16} aria-hidden="true" />
+              WhatsApp channel
+            </a>
           </div>
 
           {/* Site map */}
