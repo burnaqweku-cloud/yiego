@@ -2310,59 +2310,98 @@
   .light .brand-light { display: block; }
 }
 
-/* ── Hero: layered light ─────────────────────────────────────────
-   Three soft lights drift behind the type at different speeds. They
-   sit under the grid, are blurred to nothing at the edges, and stop
-   entirely for anyone who asked for less motion. */
+/* ── Hero background ─────────────────────────────────────────────
+   Five layers, drawn in this order and all from tokens — no images:
+
+     beam      a cone of light falling from the top, widening
+     glow-a/b  two mesh lights drifting at different speeds
+     (grid)    .mk-hero-grid, masked to a radial fade
+     horizon   a wide hairline arc with its own light beneath it
+     (fade)    .mk-hero-fade, melting the whole thing into the page
+
+   Daylight gets the same composition at a fraction of the strength —
+   the canvas is already bright, so the light has to whisper. */
 @layer components {
-  .mk-hero-lights {
+  .mk-hero-bg {
     position: absolute;
     inset: 0;
     z-index: 0;
     overflow: clip;
     pointer-events: none;
   }
-  .mk-hero-lights span {
+  .mk-hero-bg > span {
     position: absolute;
     display: block;
+  }
+
+  /* Two stacked radials from the top edge, not a clipped wedge — a cone cut
+     with clip-path keeps a hard border no amount of blur can hide. */
+  .mk-hero-bg .beam {
+    top: -18%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(1400px, 152vw);
+    height: 112%;
+    background:
+      radial-gradient(46% 60% at 50% 0%, hsl(var(--primary) / 0.26), transparent 68%),
+      radial-gradient(24% 42% at 50% 0%, hsl(var(--primary-glow) / 0.16), transparent 70%);
+    filter: blur(22px);
+  }
+
+  .mk-hero-bg .glow-a,
+  .mk-hero-bg .glow-b {
     border-radius: 9999px;
-    filter: blur(88px);
+    filter: blur(86px);
     will-change: transform;
   }
-  .mk-hero-lights .l1 {
-    width: min(54rem, 130vw);
-    height: 28rem;
-    top: -13rem;
+  .mk-hero-bg .glow-a {
+    width: min(40rem, 108vw);
+    height: 24rem;
+    top: -8rem;
+    left: 4%;
+    background: radial-gradient(closest-side, hsl(var(--primary) / 0.26), transparent 72%);
+    animation: mkDriftA 22s ease-in-out infinite alternate;
+  }
+  .mk-hero-bg .glow-b {
+    width: min(32rem, 92vw);
+    height: 21rem;
+    top: 4rem;
+    right: 2%;
+    background: radial-gradient(closest-side, hsl(var(--primary-glow) / 0.2), transparent 70%);
+    animation: mkDriftB 28s ease-in-out infinite alternate;
+  }
+
+  /* The horizon: one very wide ellipse, lit from above its own edge.
+     Centred with a transform — a margin-left of min(-half, -vw) stops
+     agreeing with the width as soon as the two clamps pick different arms. */
+  .mk-hero-bg .horizon {
     left: 50%;
-    margin-left: min(-27rem, -65vw);
-    background: radial-gradient(closest-side, hsl(var(--primary) / 0.3), transparent 72%);
-    animation: mkDriftA 20s ease-in-out infinite alternate;
+    transform: translateX(-50%);
+    bottom: -48%;
+    width: min(1700px, 190vw);
+    height: min(680px, 74vw);
+    border-radius: 50%;
+    border-top: 1px solid hsl(var(--primary-glow) / 0.17);
+    background: radial-gradient(72% 100% at 50% 0%, hsl(var(--primary) / 0.12), transparent 62%);
   }
-  .mk-hero-lights .l2 {
-    width: min(34rem, 92vw);
-    height: 22rem;
-    top: 3rem;
-    right: 3%;
-    background: radial-gradient(closest-side, hsl(var(--primary-glow) / 0.17), transparent 70%);
-    animation: mkDriftB 26s ease-in-out infinite alternate;
+
+  .light .mk-hero-bg .beam {
+    background: linear-gradient(
+      180deg,
+      hsl(157 71% 45% / 0.17) 0%,
+      hsl(157 71% 45% / 0.07) 44%,
+      transparent 78%
+    );
   }
-  .mk-hero-lights .l3 {
-    width: min(30rem, 84vw);
-    height: 20rem;
-    bottom: -5rem;
-    left: 1%;
-    background: radial-gradient(closest-side, hsl(var(--primary) / 0.15), transparent 70%);
-    animation: mkDriftA 24s ease-in-out infinite alternate-reverse;
+  .light .mk-hero-bg .glow-a {
+    background: radial-gradient(closest-side, hsl(157 71% 45% / 0.15), transparent 72%);
   }
-  /* Daylight needs a fraction of the light — the canvas is already bright. */
-  .light .mk-hero-lights .l1 {
-    background: radial-gradient(closest-side, hsl(157 71% 45% / 0.17), transparent 72%);
+  .light .mk-hero-bg .glow-b {
+    background: radial-gradient(closest-side, hsl(158 70% 44% / 0.12), transparent 70%);
   }
-  .light .mk-hero-lights .l2 {
-    background: radial-gradient(closest-side, hsl(158 70% 42% / 0.12), transparent 70%);
-  }
-  .light .mk-hero-lights .l3 {
-    background: radial-gradient(closest-side, hsl(157 71% 45% / 0.1), transparent 70%);
+  .light .mk-hero-bg .horizon {
+    border-top-color: hsl(157 60% 38% / 0.18);
+    background: radial-gradient(70% 100% at 50% 0%, hsl(157 71% 45% / 0.1), transparent 66%);
   }
 
   /* The grid and the light both need to end softly, not on an edge. */
@@ -2396,5 +2435,6 @@
   to { transform: translate3d(2rem, -1.25rem, 0) scale(1.06); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mk-hero-lights span { animation: none !important; }
+  .mk-hero-bg .glow-a,
+  .mk-hero-bg .glow-b { animation: none !important; }
 }

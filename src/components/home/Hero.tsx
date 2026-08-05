@@ -39,10 +39,12 @@ export default function Hero() {
 
   return (
     <section ref={ref} className="mk-hero !pt-0" aria-labelledby="hero-h">
-      <div className="mk-hero-lights" aria-hidden="true">
-        <span className="l1" />
-        <span className="l2" />
-        <span className="l3" />
+      {/* Background, back to front — see .mk-hero-bg in index.css. */}
+      <div className="mk-hero-bg" aria-hidden="true">
+        <span className="beam" />
+        <span className="glow-a" />
+        <span className="glow-b" />
+        <span className="horizon" />
       </div>
       <div className="mk-hero-grid" aria-hidden="true" />
       <div className="mk-hero-fade" aria-hidden="true" />
