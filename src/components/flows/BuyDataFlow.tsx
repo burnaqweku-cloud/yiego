@@ -3,7 +3,7 @@ import { ChevronRight, Clock3, Copy, CreditCard, ListChecks, Share2, WalletCards
 import { toast } from "sonner";
 import Modal from "@/components/ui/modal";
 import { FlowFooter, FlowHeader, ProcessingView, SelectRow, SuccessView } from "./flow-parts";
-import { NETWORKS, type Bundle, type Network } from "@/data/bundles";
+import { NETWORKS, type Bundle, type Network, type NetworkId } from "@/data/bundles";
 import { useWallet } from "@/store/wallet";
 import { useProfile } from "@/store/profile";
 import { useAuth } from "@/store/auth-context";
@@ -20,6 +20,15 @@ import {
 
 type Step = "network" | "bundle" | "phone" | "review" | "pending" | "payOrder" | "shared" | "processing" | "success";
 type PaymentMethod = "wallet" | "paystack" | "shared";
+
+/** Where the flow should open when the shop already knows what the shopper
+ *  wants. `bundle` identifies a row only — price, validity and product id are
+ *  still resolved from the flow's own catalogue load, so there is one source
+ *  of truth for what actually gets ordered. Omit it and the flow opens exactly
+ *  where it always has. */
+export type BuyPreselect =
+  | { kind: "bundle"; networkId: NetworkId; productCode: string }
+  | { kind: "payOrder" };
 
 interface ActiveOrder {
   id?: string;
@@ -47,6 +56,12 @@ function BundleTag({ tag }: { tag: NonNullable<Bundle["tag"]> }) {
   return <span className="rounded-full border border-primary-glow/20 bg-primary/[0.12] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.05em] text-primary-glow">{tag}</span>;
 }
 
+/** The catalogue stores "Supplier terms" when the network sets the window
+ *  itself — say that in words a customer understands. Display only. */
+function validityLabel(validity: string): string {
+  return /supplier terms/i.test(validity) ? "Validity set by the network" : `Valid ${validity}`;
+}
+
 function expiryLabel(value: string | null) {
   if (!value) return "No expiry recorded";
   const ms = new Date(value).getTime() - Date.now();
@@ -71,7 +86,7 @@ function pendingToActive(order: PreparedOrderSummary): ActiveOrder {
   };
 }
 
-export default function BuyDataFlow({ open, onClose, onAddMoney }: { open: boolean; onClose: () => void; onAddMoney: () => void }) {
+export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { open: boolean; preselect?: BuyPreselect | null; onClose: () => void; onAddMoney: () => void }) {
   const { balance } = useWallet();
   const { profile } = useProfile();
   const { isAuthenticated, user } = useAuth();
@@ -110,6 +125,25 @@ export default function BuyDataFlow({ open, onClose, onAddMoney }: { open: boole
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isAuthenticated]);
+
+  // Opened straight on the Order ID lookup from the shop.
+  useEffect(() => {
+    if (open && preselect?.kind === "payOrder") setStep("payOrder");
+  }, [open, preselect]);
+
+  // Opened on a specific bundle from the shop grid: skip the network and
+  // bundle steps. If the row has since left the catalogue we simply stay on
+  // step one rather than ordering something the shopper did not pick.
+  useEffect(() => {
+    if (!open || preselect?.kind !== "bundle" || products.length === 0) return;
+    const chosenNetwork = NETWORKS.find((n) => n.id === preselect.networkId);
+    const chosenBundle = bundlesFor(preselect.networkId).find((b) => b.id === preselect.productCode);
+    if (!chosenNetwork || !chosenBundle) return;
+    setNetwork(chosenNetwork);
+    setBundle(chosenBundle);
+    setStep("phone");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, preselect, products]);
 
   const digits = phone.replace(/\D/g, "");
   const phoneValid = digits.length === 10 && digits.startsWith("0");
@@ -195,7 +229,7 @@ export default function BuyDataFlow({ open, onClose, onAddMoney }: { open: boole
     ];
     return [
       { label: "Network", value: network?.name ?? "" },
-      { label: "Bundle", value: bundle ? `${bundle.size} · valid ${bundle.validity}` : "" },
+      { label: "Bundle", value: bundle ? `${bundle.size} · ${validityLabel(bundle.validity).toLowerCase()}` : "" },
       { label: "Recipient", value: digits },
       ...(!isAuthenticated ? [{ label: "Receipt email", value: guestEmail.trim() }] : []),
       { label: "Fee", value: "Free" },
@@ -211,9 +245,9 @@ export default function BuyDataFlow({ open, onClose, onAddMoney }: { open: boole
       {pendingOrders.length > 0 && <SelectRow onClick={() => setStep("pending")} leading={<span className="onyx-tile-icon"><ListChecks size={18} /></span>} title="Pending orders" subtitle={`${pendingOrders.length} active order${pendingOrders.length === 1 ? "" : "s"} to continue or track`} trailing={<ChevronRight size={18} className="text-faint-foreground" />} />}</>}
     </div></>}
 
-    {step === "bundle" && network && <><FlowHeader title={`${network.name} bundles`} subtitle="Choose a data bundle" onBack={() => setStep("network")} onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">{bundlesFor(network.id).map((b) => <SelectRow key={b.id} onClick={() => { setBundle(b); setStep("phone"); }} leading={<span className="onyx-tile-icon"><Wifi size={18} /></span>} title={<span className="flex items-center gap-2">{b.size}{b.tag && <BundleTag tag={b.tag} />}</span>} subtitle={`Valid ${b.validity}`} trailing={<span className="font-display text-[15px] font-semibold text-white">{formatGHS(b.price)}</span>} />)}</div></>}
+    {step === "bundle" && network && <><FlowHeader title={`${network.name} bundles`} subtitle="Choose a data bundle" onBack={() => setStep("network")} onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">{bundlesFor(network.id).map((b) => <SelectRow key={b.id} onClick={() => { setBundle(b); setStep("phone"); }} leading={<span className="onyx-tile-icon"><Wifi size={18} /></span>} title={<span className="flex items-center gap-2">{b.size}{b.tag && <BundleTag tag={b.tag} />}</span>} subtitle={validityLabel(b.validity)} trailing={<span className="font-display text-[15px] font-semibold text-white">{formatGHS(b.price)}</span>} />)}</div></>}
 
-    {step === "phone" && network && bundle && <><FlowHeader title="Recipient" subtitle={`${network.name} · ${bundle.size}`} onBack={() => setStep("bundle")} onClose={onClose} /><div className="space-y-4 px-5 pb-2 pt-5"><div><label htmlFor="buydata-phone" className="text-[12px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">Phone number</label><input id="buydata-phone" className="onyx-field mt-2 text-[16px] tracking-wide" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="024 000 0000" />{phone.length > 0 && !phoneValid && <p className="mt-1.5 text-[12px] text-danger">Enter a valid 10-digit Ghana number.</p>}</div>{!isAuthenticated && <div><label htmlFor="buydata-email" className="text-[12px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">Email for receipt</label><input id="buydata-email" className="onyx-field mt-2" inputMode="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} /></div>}<div className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5"><div><p className="text-[13.5px] font-semibold">{network.name} · {bundle.size}</p><p className="text-[12px] text-faint-foreground">Valid {bundle.validity}</p></div><span className="font-display text-[16px] font-semibold">{formatGHS(bundle.price)}</span></div></div><FlowFooter><button type="button" className="onyx-btn-primary w-full disabled:opacity-40" disabled={!phoneValid || (!isAuthenticated && !emailValid)} onClick={() => void continueFromPhone()}>Continue</button></FlowFooter></>}
+    {step === "phone" && network && bundle && <><FlowHeader title="Recipient" subtitle={`${network.name} · ${bundle.size}`} onBack={() => setStep("bundle")} onClose={onClose} /><div className="space-y-4 px-5 pb-2 pt-5"><div><label htmlFor="buydata-phone" className="text-[12px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">Phone number</label><input id="buydata-phone" className="onyx-field mt-2 text-[16px] tracking-wide" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="024 000 0000" />{phone.length > 0 && !phoneValid && <p className="mt-1.5 text-[12px] text-danger">Enter a valid 10-digit Ghana number.</p>}</div>{!isAuthenticated && <div><label htmlFor="buydata-email" className="text-[12px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">Email for receipt</label><input id="buydata-email" className="onyx-field mt-2" inputMode="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} /></div>}<div className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5"><div><p className="text-[13.5px] font-semibold">{network.name} · {bundle.size}</p><p className="text-[12px] text-faint-foreground">{validityLabel(bundle.validity)}</p></div><span className="font-display text-[16px] font-semibold">{formatGHS(bundle.price)}</span></div></div><FlowFooter><button type="button" className="onyx-btn-primary w-full disabled:opacity-40" disabled={!phoneValid || (!isAuthenticated && !emailValid)} onClick={() => void continueFromPhone()}>Continue</button></FlowFooter></>}
 
     {step === "review" && (activeOrder || (network && bundle)) && <><FlowHeader title="Review & pay" onBack={() => setStep(activeOrder ? "pending" : "phone")} onClose={onClose} /><div className="space-y-4 px-5 pb-2 pt-5"><div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-1.5">{reviewRows.map((r, i) => <div key={r.label} className={`flex items-center justify-between gap-4 px-3.5 py-3 ${i ? "border-t border-white/[0.05]" : ""}`}><span className="text-[12.5px] text-faint-foreground">{r.label}</span><span className="text-right text-[13.5px] font-semibold">{r.value}</span></div>)}{activeOrder && <div className="flex items-center justify-between gap-4 border-t border-white/[0.05] px-3.5 py-3"><span className="text-[12.5px] text-faint-foreground">Order ID</span><button type="button" onClick={() => { void navigator.clipboard.writeText(activeOrder.orderReference); toast.success("Order ID copied"); }} className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-primary-glow">{activeOrder.orderReference}<Copy size={14} /></button></div>}<div className="flex items-center justify-between border-t border-white/[0.08] px-3.5 py-3.5"><span className="text-[13px] font-semibold">Amount</span><span className="font-display text-[18px] font-semibold">{formatGHS(price)}</span></div></div>
       {activeOrder && <div className="flex items-center gap-2 rounded-xl border border-primary-glow/15 bg-primary/[0.06] px-3 py-2.5 text-xs text-muted-foreground"><Clock3 size={15} className="text-primary-glow" />{expiryLabel(activeOrder.expiresAt)}</div>}

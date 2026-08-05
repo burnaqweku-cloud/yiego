@@ -23,7 +23,7 @@ const Faq = lazy(() => import("./pages/Faq"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Support = lazy(() => import("./pages/Support"));
 const LegalDocument = lazy(() => import("./pages/LegalDocument"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Shop = lazy(() => import("./pages/Shop"));
 const Wallet = lazy(() => import("./pages/Wallet"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
@@ -62,7 +62,7 @@ const App = () => (
       <Route path="/legal/:slug" element={<LegalDocument />} />
     </Route>
     {/* The app — unchanged behaviour, now rooted at /shop */}
-    <Route element={<AppShell />}><Route path="/shop" element={<Dashboard />} /><Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} /><Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} /><Route path="/account" element={<RequireAuth><Account /></RequireAuth>} /><Route path="/support/ai" element={<AISupport />} /><Route path="*" element={<Navigate to="/" replace />} /></Route>
+    <Route element={<AppShell />}><Route path="/shop" element={<Shop />} /><Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} /><Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} /><Route path="/account" element={<RequireAuth><Account /></RequireAuth>} /><Route path="/support/ai" element={<AISupport />} /><Route path="*" element={<Navigate to="/" replace />} /></Route>
   </Routes></Suspense></AuthReady></FlowsProvider></ProfileProvider></WalletProvider></AuthProvider></ThemeProvider></BrowserRouter>
 );
 export default App;
