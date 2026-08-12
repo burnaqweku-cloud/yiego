@@ -120,7 +120,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     const { data: ledger, error: ledgerError } = await phase1()
       .from<LedgerRow[]>("wallet_ledger_entries")
-      .select("id, direction, type, amount, reference, status, note, created_at, order_id, orders(order_reference)")
+      // orders is reachable through two FKs since the shared-payments migration
+      // (ledger.order_id -> orders.id AND orders.wallet_ledger_entry_id ->
+      // ledger.id); name the one we mean or PostgREST refuses with HTTP 300.
+      .select("id, direction, type, amount, reference, status, note, created_at, order_id, orders!wallet_ledger_entries_order_id_fkey(order_reference)")
       .eq("wallet_id", wallet.id)
       .order("created_at", { ascending: false })
       .limit(100);
