@@ -1,6 +1,7 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { fulfillOrderWithDataMartGH } from "../_shared/fulfillment.ts";
+import { applySupplierStatusToOrder, fulfillOrderWithDataMartGH } from "../_shared/fulfillment.ts";
+import { callDataMartGH } from "../_shared/datamartgh.ts";
 
 Deno.serve(async (req) => {
   const options = handleOptions(req);
@@ -74,7 +75,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("id, order_reference, status, payment_status, supplier_order_reference, supplier_status")
+      .select("id, order_reference, status, payment_status, supplier_id, supplier_order_reference, supplier_status")
       .eq("order_reference", orderReference)
       .maybeSingle();
 
@@ -123,16 +124,38 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "No supplier reference available yet" }, { status: 409 });
       }
 
-      const { data, error } = await supabase.functions.invoke("datamartgh-check-order-status", {
-        body: { reference: order.supplier_order_reference },
-        headers: { "X-YieGo-Internal-Secret": Deno.env.get("YIEGO_INTERNAL_FUNCTION_SECRET") ?? "" },
+      const result = await callDataMartGH(
+        `/order-status/${encodeURIComponent(order.supplier_order_reference)}`,
+      );
+      const payload = result.payload as {
+        message?: string;
+        data?: { orderStatus?: string; status?: string };
+      } | null;
+
+      await supabase.from("supplier_api_logs").insert({
+        supplier_id: order.supplier_id,
+        order_id: order.id,
+        action: "check_order_status",
+        endpoint: `/order-status/${order.supplier_order_reference}`,
+        response_payload: payload,
+        http_status: result.status,
+        call_status: result.ok ? "success" : "error",
+        supplier_reference: order.supplier_order_reference,
+        error_message: result.ok ? null : payload?.message ?? "DataMartGH status check failed",
+        duration_ms: result.durationMs,
       });
 
-      if (error) {
-        return jsonResponse({ error: error.message }, { status: 500 });
+      if (!result.ok) {
+        return jsonResponse(
+          { error: payload?.message ?? "DataMartGH status check failed", provider: payload },
+          { status: 502 },
+        );
       }
 
-      return jsonResponse({ status: "success", action, data });
+      const supplierStatus = payload?.data?.orderStatus ?? payload?.data?.status;
+      const applied = await applySupplierStatusToOrder(supabase, order, supplierStatus, "admin_recheck");
+
+      return jsonResponse({ status: "success", action, data: payload, applied });
     }
 
     if (action === "retry") {

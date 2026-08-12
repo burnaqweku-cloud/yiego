@@ -59,3 +59,23 @@ verify_jwt = true
 
 [functions.admin-catalog-action]
 verify_jwt = true
+
+[functions.admin-dispute-action]
+verify_jwt = true
+
+[functions.admin-site-content-action]
+verify_jwt = true
+
+[functions.order-payment-action]
+verify_jwt = true
+
+[functions.verify-wallet-deposit]
+verify_jwt = true
+
+# Public support chat is called with the anon key and no user JWT, so this must
+# stay false; the admin-only actions inside do their own admin_users check.
+[functions.ai-support]
+verify_jwt = false
+
+[functions.reconcile-pending-wallet-deposits]
+verify_jwt = false

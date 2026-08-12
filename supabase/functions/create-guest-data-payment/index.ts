@@ -46,6 +46,10 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "An email is required for receipt and Paystack payment" }, { status: 400 });
     }
 
+    // Expired-but-open orders would otherwise hold the one-open-order-per-recipient
+    // slot forever; the prepared-order RPCs run this same sweep before inserting.
+    await supabase.rpc("close_expired_unpaid_orders");
+
     const productIdLooksLikeUuid =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
         productId,
@@ -92,32 +96,120 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "No active supplier mapping for this product" }, { status: 409 });
     }
 
-    const orderReference = makeOrderReference();
-    const paystackReference = makePaystackReference("YGDATA");
-
-    const { data: order, error: orderError } = await supabase
+    // A partial unique index allows one open order per recipient phone. Resume a
+    // matching open order rather than surfacing the index as a raw 500.
+    const { data: existingOpen } = await supabase
       .from("orders")
-      .insert({
-        order_reference: orderReference,
-        user_id: authenticatedUser?.id ?? null,
-        guest_email: authenticatedUser ? null : paymentEmail,
-        guest_phone: authenticatedUser ? null : guestPhone,
-        recipient_phone: recipientPhone,
-        network_id: product.network_id,
-        product_id: product.id,
-        supplier_id: mapping.supplier_id,
-        amount: product.customer_price,
-        cost_amount: product.cost_price,
-        currency: "GHS",
-        status: "awaiting_payment",
-        payment_status: "pending",
-        paystack_reference: paystackReference,
-      })
-      .select("id, order_reference")
-      .single();
+      .select("id, order_reference, product_id, payment_status")
+      .eq("recipient_phone_normalized", recipientPhone)
+      .eq("is_open", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (orderError) {
-      return jsonResponse({ error: orderError.message }, { status: 500 });
+    if (existingOpen && existingOpen.product_id !== product.id) {
+      return jsonResponse(
+        {
+          error: `This number already has an open order (${existingOpen.order_reference}) for a different bundle. Pay or track that order, or try again after it expires.`,
+          code: "phone_has_open_order",
+          data: { orderReference: existingOpen.order_reference },
+        },
+        { status: 409 },
+      );
+    }
+
+    if (existingOpen) {
+      // Same bundle, still payable. Hand back the payment link we already issued
+      // when one exists, so only a single live Paystack charge can target the order.
+      const { data: pendingIntent } = await supabase
+        .from("payment_intents")
+        .select("authorization_url, provider_reference, metadata")
+        .eq("order_id", existingOpen.id)
+        .eq("status", "pending")
+        .not("authorization_url", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (pendingIntent?.authorization_url) {
+        return jsonResponse({
+          status: "success",
+          data: {
+            orderId: existingOpen.id,
+            orderReference: existingOpen.order_reference,
+            authorizationUrl: pendingIntent.authorization_url,
+            accessCode: pendingIntent.metadata?.accessCode ?? null,
+            paymentReference: pendingIntent.provider_reference,
+            resumed: true,
+          },
+        });
+      }
+    }
+
+    const orderReference = existingOpen ? existingOpen.order_reference : makeOrderReference();
+    const paystackReference = makePaystackReference("YGDATA");
+    let order: { id: string; order_reference: string };
+
+    if (existingOpen) {
+      // Open order without a live payment link (e.g. a prepared order that never
+      // reached Paystack): point it at a fresh transaction instead of inserting.
+      const { error: reuseError } = await supabase
+        .from("orders")
+        .update({ paystack_reference: paystackReference, updated_at: new Date().toISOString() })
+        .eq("id", existingOpen.id);
+
+      if (reuseError) {
+        return jsonResponse({ error: reuseError.message }, { status: 500 });
+      }
+
+      order = { id: existingOpen.id, order_reference: existingOpen.order_reference };
+    } else {
+      const { data: inserted, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          order_reference: orderReference,
+          user_id: authenticatedUser?.id ?? null,
+          guest_email: authenticatedUser ? null : paymentEmail,
+          guest_phone: authenticatedUser ? null : guestPhone,
+          recipient_phone: recipientPhone,
+          network_id: product.network_id,
+          product_id: product.id,
+          supplier_id: mapping.supplier_id,
+          amount: product.customer_price,
+          cost_amount: product.cost_price,
+          currency: "GHS",
+          status: "awaiting_payment",
+          payment_status: "pending",
+          paystack_reference: paystackReference,
+        })
+        .select("id, order_reference")
+        .single();
+
+      if (orderError) {
+        // A concurrent checkout for the same phone won the unique index race.
+        if (orderError.code === "23505") {
+          const { data: raced } = await supabase
+            .from("orders")
+            .select("order_reference")
+            .eq("recipient_phone_normalized", recipientPhone)
+            .eq("is_open", true)
+            .limit(1)
+            .maybeSingle();
+
+          return jsonResponse(
+            {
+              error: `This number already has an open order${raced ? ` (${raced.order_reference})` : ""} awaiting payment. Track it, or try again shortly.`,
+              code: "phone_has_open_order",
+              data: { orderReference: raced?.order_reference ?? null },
+            },
+            { status: 409 },
+          );
+        }
+
+        return jsonResponse({ error: orderError.message }, { status: 500 });
+      }
+
+      order = inserted;
     }
 
     const appUrl = Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL");
@@ -192,6 +284,7 @@ Deno.serve(async (req) => {
       metadata: {
         provider: "paystack",
         reference: paystackReference,
+        resumedExistingOrder: Boolean(existingOpen),
       },
     });
 

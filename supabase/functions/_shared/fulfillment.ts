@@ -19,6 +19,63 @@ interface SupplierPurchasePayload {
   };
 }
 
+const TERMINAL_ORDER_STATUSES = new Set(["delivered", "refunded", "cancelled"]);
+
+interface OrderStatusSnapshot {
+  id: string;
+  status: string;
+  payment_status: string;
+  supplier_status?: string | null;
+}
+
+/**
+ * Applies a supplier-reported status onto an order, with guards so a late or
+ * replayed report can never resurrect a terminal order or touch an unpaid one.
+ * Shared by the DataMartGH webhook and the admin "recheck" action.
+ */
+export async function applySupplierStatusToOrder(
+  supabase: SupabaseAdminClient,
+  order: OrderStatusSnapshot,
+  supplierStatus: string | undefined,
+  source: string,
+) {
+  const mapped = mapDataMartGHStatusToYieGo(supplierStatus);
+
+  if (TERMINAL_ORDER_STATUSES.has(order.status)) {
+    return { changed: false, reason: "order_already_terminal", mapped };
+  }
+  if (order.payment_status !== "succeeded") {
+    return { changed: false, reason: "order_not_paid", mapped };
+  }
+  if (order.status === mapped && (order.supplier_status ?? null) === (supplierStatus ?? null)) {
+    return { changed: false, reason: "no_change", mapped };
+  }
+
+  await supabase
+    .from("orders")
+    .update({
+      status: mapped,
+      supplier_status: supplierStatus ?? order.supplier_status ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", order.id);
+
+  await supabase.from("order_events").insert({
+    order_id: order.id,
+    event_type: "supplier.status_update",
+    from_status: order.status,
+    to_status: mapped,
+    message: `DataMartGH reported ${supplierStatus ?? "an unknown status"} (${source})`,
+    metadata: {
+      supplier: "datamartgh",
+      supplierStatus: supplierStatus ?? null,
+      source,
+    },
+  });
+
+  return { changed: true, mapped };
+}
+
 export async function fulfillOrderWithDataMartGH(supabase: SupabaseAdminClient, orderId: string) {
   const { data: order, error: orderError } = await supabase
     .from("orders")
