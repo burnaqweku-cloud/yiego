@@ -119,10 +119,25 @@ async function invokePhase1Function<T>(
 ): Promise<FunctionResult<T>> {
   const { data, error } = await supabase.functions.invoke<T>(name, options);
 
-  return {
-    data: data ?? null,
-    error: error?.message ?? null,
-  };
+  if (!error) {
+    return { data: data ?? null, error: null };
+  }
+
+  // On a non-2xx response, error.message is only the generic "Edge Function
+  // returned a non-2xx status code" line; the function's real, human-written
+  // message travels in the response body on error.context.
+  let message = error.message ?? "Request failed";
+  const context = (error as { context?: Response }).context;
+  if (context && typeof context.clone === "function") {
+    try {
+      const body = (await context.clone().json()) as { error?: string };
+      if (body?.error) message = body.error;
+    } catch {
+      // Body was not JSON — keep the generic message.
+    }
+  }
+
+  return { data: null, error: message };
 }
 
 export function createGuestDataPayment(input: GuestDataPaymentInput) {
