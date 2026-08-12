@@ -107,6 +107,19 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
+    if (existingOpen && existingOpen.payment_status === "succeeded") {
+      // A paid order stays open until delivery resolves; issuing a fresh
+      // payment link for it would let the recipient be charged twice.
+      return jsonResponse(
+        {
+          error: `Order ${existingOpen.order_reference} for this number is already paid and on its way. Track it instead of paying again.`,
+          code: "phone_has_paid_open_order",
+          data: { orderReference: existingOpen.order_reference },
+        },
+        { status: 409 },
+      );
+    }
+
     if (existingOpen && existingOpen.product_id !== product.id) {
       return jsonResponse(
         {
