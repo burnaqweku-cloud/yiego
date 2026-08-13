@@ -332,22 +332,27 @@ export default function PublicNav() {
                 </button>
               </div>
             ) : (
-              <div className="mt-8 flex flex-col gap-3" style={{ "--d": "280ms" } as CSSProperties}>
-                <Link to="/shop" onClick={close} className="mk-btn mk-btn-primary group w-full">
-                  Start shopping
-                  <ArrowRight size={16} className="mk-arrow" />
-                </Link>
-                <Link to="/auth?mode=signup" onClick={close} className="mk-btn mk-btn-ghost w-full">
-                  Create account
-                </Link>
-                <Link
-                  to="/auth"
-                  onClick={close}
-                  className="py-2 text-center text-[14px] font-medium text-muted-foreground"
-                >
-                  Already have an account? Sign in
-                </Link>
-              </div>
+              <>
+                <div className="mt-6 flex flex-col gap-1 border-t border-white/[0.07] pt-4">
+                  <SheetLink to="/track-order" icon={Search} label="Track an order" onClick={close} />
+                </div>
+                <div className="mt-6 flex flex-col gap-3" style={{ "--d": "280ms" } as CSSProperties}>
+                  <Link to="/shop" onClick={close} className="mk-btn mk-btn-primary group w-full">
+                    Buy data
+                    <ArrowRight size={16} className="mk-arrow" />
+                  </Link>
+                  <Link to="/auth?mode=signup" onClick={close} className="mk-btn mk-btn-ghost w-full">
+                    Create account
+                  </Link>
+                  <Link
+                    to="/auth"
+                    onClick={close}
+                    className="py-2 text-center text-[14px] font-medium text-muted-foreground"
+                  >
+                    Already have an account? Sign in
+                  </Link>
+                </div>
+              </>
             )}
           </div>
         </div>
