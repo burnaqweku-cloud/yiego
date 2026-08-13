@@ -24,6 +24,26 @@ interface PublicOrderStatus {
   updatedAt: string;
 }
 
+// Order references the guest has looked up on THIS device. Lets someone who
+// closed the tab find their order again without an account or the email.
+const RECENT_KEY = "yiego_recent_orders_v1";
+function getRecent(): string[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+    return Array.isArray(raw) ? raw.filter((r) => typeof r === "string").slice(0, 5) : [];
+  } catch {
+    return [];
+  }
+}
+function rememberRecent(ref: string) {
+  try {
+    const next = [ref, ...getRecent().filter((r) => r !== ref)].slice(0, 5);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    /* private mode / storage disabled — tracking still works, just not remembered */
+  }
+}
+
 function statusLabel(status?: string) {
   switch (status) {
     case "completed":
@@ -49,50 +69,57 @@ export default function TrackOrder() {
   const { isAuthenticated } = useAuth();
   const [searchParams] = useSearchParams();
   const [reference, setReference] = useState(searchParams.get("reference") ?? "");
-  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState<PublicOrderStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const phoneDigits = phone.replace(/\D/g, "");
-  const phoneValid = /^0\d{9}$/.test(phoneDigits);
-
-  const [needsPhone, setNeedsPhone] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [recent, setRecent] = useState<string[]>([]);
 
-  const lookup = async (nextReference = reference, phoneOverride?: string) => {
-    const ref = nextReference.trim().toUpperCase();
-    if (!ref) return;
-    setLoading(true);
-    setError(null);
-    const query = new URLSearchParams({ reference: ref });
-    const digits = (phoneOverride ?? phone).replace(/\D/g, "");
-    if (digits) query.set("phone", digits);
+  useEffect(() => setRecent(getRecent()), []);
 
+  const fetchStatus = async (ref: string) => {
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
     const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
     const headers: Record<string, string> = { apikey: anonKey };
     if (token) headers.Authorization = `Bearer ${token}`;
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-order?reference=${encodeURIComponent(ref)}`,
+      { method: "GET", headers },
+    );
+    const payload = await response.json().catch(() => null);
+    return { response, payload };
+  };
+
+  const lookup = async (nextReference = reference) => {
+    const ref = nextReference.trim().toUpperCase();
+    if (!ref) return;
+    setLoading(true);
+    setError(null);
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-order?${query.toString()}`,
-        { method: "GET", headers },
-      );
-      const payload = await response.json().catch(() => null);
+      let { response, payload } = await fetchStatus(ref);
+
+      // Self-heal: if the order exists but payment hasn't been confirmed on our
+      // side, a Paystack webhook may have been missed. Reconcile directly with
+      // Paystack, then re-read. Safe and idempotent — only completes an order
+      // Paystack confirms as paid.
+      if (response.ok && payload?.data && payload.data.paymentStatus !== "succeeded") {
+        try {
+          await supabase.functions.invoke("reconcile-guest-order", { body: { orderReference: ref } });
+          ({ response, payload } = await fetchStatus(ref));
+        } catch {
+          /* reconcile is best-effort; fall through to whatever status we have */
+        }
+      }
 
       if (response.ok && payload?.data) {
         setOrder(payload.data as PublicOrderStatus);
-        setNeedsPhone(false);
         setError(null);
-      } else if (response.status === 400) {
-        // Reference accepted, but we still need the recipient number to release details.
-        setOrder(null);
-        setNeedsPhone(true);
-        setError("Enter the recipient phone number used at checkout to view this order.");
+        rememberRecent(ref);
+        setRecent(getRecent());
       } else if (response.status === 404) {
         setOrder(null);
-        setNeedsPhone(false);
         setError("No order found with that reference. Double-check the YG- reference.");
       } else {
         setOrder(null);
@@ -124,20 +151,29 @@ export default function TrackOrder() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
   // The site header and footer wrap this page now — it carries only its own
   // content, centred in the standard column.
   return (
     <div className="mx-auto w-full max-w-[760px]">
       <Card className="w-full">
         <CardContent className="p-6 sm:p-7">
-            <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">{isAuthenticated ? "Enter your YieGo order reference to see its payment and delivery status. Your own orders can be opened without re-entering the recipient number." : "Enter your YieGo order reference and the recipient phone number used at checkout."}</p></div>
-            <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_0.8fr_auto]">
-              <input className="onyx-field" value={reference} onChange={(event) => setReference(event.target.value)} placeholder="YG-ORDERREF" />
-              <input className="onyx-field" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder={isAuthenticated ? "Phone for guest orders" : "Recipient phone"} inputMode="numeric" />
-              <Button onClick={() => lookup()} disabled={loading || !reference.trim() || (needsPhone && !phoneValid)}>{loading ? <Loader2 className="animate-spin" /> : <Search />}Track</Button>
+            <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your YieGo order reference — the <span className="font-mono text-foreground">YG-</span> code from your receipt or the link we sent you back to after payment. That's all you need.</p></div>
+            <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto]">
+              <input className="onyx-field font-mono uppercase" value={reference} onChange={(event) => setReference(event.target.value.toUpperCase())} onKeyDown={(event) => { if (event.key === "Enter") lookup(); }} placeholder="YG-XXXXXXXXXX" aria-label="Order reference" />
+              <Button onClick={() => lookup()} disabled={loading || !reference.trim()}>{loading ? <Loader2 className="animate-spin" /> : <Search />}Track</Button>
             </div>
-            {phone.length > 0 && !phoneValid && <p className="mt-2 text-xs text-danger">Enter the 10-digit recipient number beginning with 0.</p>}
+
+            {recent.length > 0 && !order && (
+              <div className="mt-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">Recent orders on this device</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {recent.map((ref) => (
+                    <button key={ref} type="button" onClick={() => { setReference(ref); lookup(ref); }} className="onyx-pill font-mono text-xs">{ref}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {error && <div className="mt-5 rounded-2xl border border-danger/25 bg-danger/[0.08] p-4 text-sm text-ink-rose">{error}</div>}
             {order && <div className="mt-6 rounded-[22px] border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[12px] text-faint-foreground">Order reference</p><p className="font-display text-xl font-semibold text-white">{order.reference}</p></div><Badge variant={order.orderStatus === "completed" ? "success" : "amber"}><ShieldCheck size={12} />{statusLabel(order.orderStatus)}</Badge></div>
@@ -146,7 +182,7 @@ export default function TrackOrder() {
               {order.paymentStatus !== "succeeded" && !["cancelled", "refunded"].includes(order.orderStatus) && (
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <Button onClick={continuePayment} disabled={paying}>{paying ? <Loader2 className="animate-spin" /> : <CreditCard />}Continue payment</Button>
-                  {!isAuthenticated && <p className="text-xs text-muted-foreground">Sign in with the account used at checkout to complete this payment.</p>}
+                  {!isAuthenticated && <p className="text-xs text-muted-foreground">Sign in with the account used at checkout to continue this payment.</p>}
                 </div>
               )}
             </div>}

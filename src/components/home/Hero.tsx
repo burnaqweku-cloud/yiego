@@ -1,4 +1,4 @@
-import type { CSSProperties, MouseEvent } from "react";
+import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { useReveal } from "@/hooks/useReveal";
@@ -16,26 +16,8 @@ import { useReveal } from "@/hooks/useReveal";
 
 const delay = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
-
 export default function Hero() {
   const ref = useReveal<HTMLElement>();
-
-  const goToCategories = (event: MouseEvent<HTMLAnchorElement>) => {
-    const target = document.getElementById("categories");
-    if (!target) return; // No section on this page — let the anchor do its job.
-    event.preventDefault();
-    target.scrollIntoView({
-      behavior: prefersReducedMotion() ? "auto" : "smooth",
-      block: "start",
-    });
-  };
 
   return (
     <section ref={ref} className="mk-hero !pt-0" aria-labelledby="hero-h">
@@ -81,16 +63,15 @@ export default function Hero() {
               to="/shop"
               className="mk-btn mk-btn-primary group w-full !min-h-[54px] !px-8 !text-[15.5px] sm:w-auto"
             >
-              Start shopping
+              Buy data
               <ArrowRight className="mk-arrow" size={18} aria-hidden="true" />
             </Link>
-            <a
-              href="#categories"
-              onClick={goToCategories}
+            <Link
+              to="/track-order"
               className="mk-btn mk-btn-ghost w-full !min-h-[54px] !px-7 !text-[15.5px] sm:w-auto"
             >
-              Explore categories
-            </a>
+              Track an order
+            </Link>
           </div>
 
           <p

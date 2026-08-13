@@ -51,6 +51,9 @@ verify_jwt = true
 [functions.track-order]
 verify_jwt = false
 
+[functions.reconcile-guest-order]
+verify_jwt = false
+
 [functions.create-wallet-data-order]
 verify_jwt = true
 

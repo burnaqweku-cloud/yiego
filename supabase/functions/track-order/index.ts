@@ -34,30 +34,23 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const reference = url.searchParams.get("reference")?.trim().toUpperCase();
-    const phone = url.searchParams.get("phone")?.replace(/\D/g, "");
     if (!reference) return jsonResponse({ error: "reference is required" }, { status: 400 });
 
+    // The order reference is a random, unguessable token (YG- + 10 hex chars),
+    // so it acts as the bearer credential: knowing it is enough to see this
+    // order's masked, customer-safe status. No phone number is required — a
+    // recipient phone would let anyone enumerate orders by number instead.
     const supabase = createSupabaseAdmin();
-    const authHeader = req.headers.get("Authorization");
-    const token = authHeader?.replace(/^Bearer\s+/i, "");
-    const { data: authData } = token ? await supabase.auth.getUser(token) : { data: { user: null } };
-    if (!authData.user && (!phone || phone.length !== 10)) return jsonResponse({ error: "Recipient phone is required" }, { status: 400 });
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("user_id, order_reference, recipient_phone, amount, currency, status, payment_status, paid_at, created_at, updated_at, data_products(name, capacity_gb), networks(name)")
+      .select("order_reference, recipient_phone, amount, currency, status, payment_status, paid_at, created_at, updated_at, data_products(name, capacity_gb), networks(name)")
       .eq("order_reference", reference)
       .limit(1)
       .maybeSingle();
 
     if (error) return jsonResponse({ error: error.message }, { status: 500 });
     if (!order) return jsonResponse({ error: "Order not found" }, { status: 404 });
-
-    const isOwner = Boolean(authData.user && order.user_id === authData.user.id);
-    if (!isOwner) {
-      if (!phone || phone.length !== 10) return jsonResponse({ error: "Recipient phone is required" }, { status: 400 });
-      if (order.recipient_phone !== phone) return jsonResponse({ error: "Order not found" }, { status: 404 });
-    }
 
     const maskedPhone = order.recipient_phone?.length === 10
       ? `${order.recipient_phone.slice(0, 3)}•••${order.recipient_phone.slice(7)}`
