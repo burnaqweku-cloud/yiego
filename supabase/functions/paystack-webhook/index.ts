@@ -1,7 +1,7 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { amountFromSubunit, verifyPaystackTransaction, verifyPaystackWebhookSignature } from "../_shared/paystack.ts";
 import { fulfillOrderWithDataMartGH } from "../_shared/fulfillment.ts";
-import { sendGuestOrderConfirmation } from "../_shared/email.ts";
+import { sendOrderConfirmation } from "../_shared/email.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 Deno.serve(async (req) => {
@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
         // Email the guest their Order ID + track link. Never allowed to break
         // the webhook: guarded, and a no-op for account orders or when email
         // is not configured.
-        try { await sendGuestOrderConfirmation(supabase, order.id); } catch { /* email is best-effort */ }
+        try { await sendOrderConfirmation(supabase, order.id); } catch { /* email is best-effort */ }
 
         await supabase
           .from("payment_events")

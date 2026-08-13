@@ -60,6 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         if (error) throw error;
+        // Fire a welcome email (best-effort). Only possible when signup returns
+        // a session (auto-confirm on); it never blocks or fails the signup.
+        if (data.session) {
+          void supabase.functions
+            .invoke("send-welcome-email", { headers: { Authorization: `Bearer ${data.session.access_token}` } })
+            .catch(() => {});
+        }
         return { requiresEmailConfirmation: !data.session };
       },
       async resetPassword(email) {

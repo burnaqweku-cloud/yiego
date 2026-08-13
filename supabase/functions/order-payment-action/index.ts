@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
+import { sendOrderConfirmation } from "../_shared/email.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
@@ -82,6 +83,8 @@ Deno.serve(async (req) => {
       if (!payable) return json({ error: "This order is not available for payment" }, 403);
       const { data, error } = await supabase.rpc("pay_prepared_order_with_wallet", { p_order_reference: orderReference, p_payer_user_id: auth.user.id });
       if (error) return json({ error: error.message }, 400);
+      // Order is paid — email the buyer their confirmation + Order ID (best-effort).
+      try { await sendOrderConfirmation(supabase, data.orderId); } catch { /* email must never break payment */ }
       try { return json({ status: "success", data: { ...data, fulfillment: await fulfill(supabase, data.orderId) } }); }
       catch (e) { await supabase.from("orders").update({ status: "failed_needs_review", failure_reason: e instanceof Error ? e.message : "Supplier fulfillment failed", updated_at: new Date().toISOString() }).eq("id", data.orderId); return json({ status: "needs_review", data, error: e instanceof Error ? e.message : "Supplier fulfillment failed" }, 202); }
     }

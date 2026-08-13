@@ -22,11 +22,37 @@ interface OrderEmailRow {
   id: string;
   order_reference: string;
   guest_email: string | null;
+  user_id: string | null;
   recipient_phone: string | null;
   amount: number | string;
   currency: string | null;
   data_products: { name: string } | null;
   networks: { name: string } | null;
+}
+
+function welcomeEmailHtml(name: string) {
+  const hi = name ? `Hi ${name},` : "Hi,";
+  return `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+    <table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+      <tr><td style="background:#0b1512;padding:22px 28px;"><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;">YieGo</span></td></tr>
+      <tr><td style="padding:28px;">
+        <p style="margin:0 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#22c387;">Welcome</p>
+        <h1 style="margin:0 0 14px;font-size:22px;line-height:1.25;">Welcome to YieGo</h1>
+        <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#3c4a46;">${hi} your account is ready. Buy data for any Ghana line, top up your wallet, and track every order from one place.</p>
+        <a href="https://yiego.shop/shop" style="display:block;margin:8px 0 6px;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">Buy data</a>
+        <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#8a968f;">Fund your wallet once, then buy in two taps — MTN, Telecel and AirtelTigo, delivered in minutes.</p>
+      </td></tr>
+    </table>
+    <p style="margin:16px 0 0;font-size:11px;color:#8a968f;">YieGo · Ghana data bundles</p>
+  </td></tr></table>
+  </body></html>`;
+}
+
+/** A one-time welcome email for a new account. Dormant without a Resend key. */
+export async function sendWelcomeEmail(to: string, name: string) {
+  if (!to) return { skipped: true, reason: "no_recipient" };
+  return sendEmail({ to, subject: "Welcome to YieGo", html: welcomeEmailHtml(name) });
 }
 
 function orderEmailHtml(o: {
@@ -58,22 +84,31 @@ function orderEmailHtml(o: {
 }
 
 /**
- * Emails a guest their order confirmation + Order ID. No-op for account orders
- * (they have order history) and idempotent — records a one-time order event so
- * the webhook and the reconcile fallback can't both send it twice.
+ * Emails the buyer their order confirmation + Order ID: the guest's email, or a
+ * registered buyer's account email. Idempotent — records a one-time order event
+ * so the webhook, reconcile fallback and wallet-payment path can't send twice.
  */
-export async function sendGuestOrderConfirmation(
+export async function sendOrderConfirmation(
   // deno-lint-ignore no-explicit-any
   supabase: any,
   orderId: string,
 ) {
   const { data: order } = await supabase
     .from("orders")
-    .select("id, order_reference, guest_email, recipient_phone, amount, currency, data_products(name), networks(name)")
+    .select("id, order_reference, guest_email, user_id, recipient_phone, amount, currency, data_products(name), networks(name)")
     .eq("id", orderId)
     .maybeSingle();
   const row = order as OrderEmailRow | null;
-  if (!row?.guest_email) return { skipped: true, reason: "not_a_guest_order" };
+  if (!row) return { skipped: true, reason: "order_not_found" };
+
+  // Guests get the email at their checkout address; registered buyers at their
+  // account email.
+  let to = row.guest_email;
+  if (!to && row.user_id) {
+    const { data: profile } = await supabase.from("profiles").select("email").eq("id", row.user_id).maybeSingle();
+    to = (profile?.email as string | undefined) ?? null;
+  }
+  if (!to) return { skipped: true, reason: "no_recipient_email" };
 
   const { data: already } = await supabase
     .from("order_events")
@@ -89,7 +124,7 @@ export async function sendGuestOrderConfirmation(
   const amount = `${row.currency ?? "GHS"} ${Number(row.amount).toFixed(2)}`;
 
   const result = await sendEmail({
-    to: row.guest_email,
+    to,
     subject: `Your YieGo order ${row.order_reference}`,
     html: orderEmailHtml({
       ref: row.order_reference,
@@ -107,8 +142,8 @@ export async function sendGuestOrderConfirmation(
     await supabase.from("order_events").insert({
       order_id: orderId,
       event_type: "notification.email_sent",
-      message: "Order confirmation email sent to guest",
-      metadata: { to: row.guest_email },
+      message: "Order confirmation email sent",
+      metadata: { to },
     });
   }
   return result;
