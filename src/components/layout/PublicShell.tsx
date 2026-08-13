@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/fx/AuroraBackground";
 import PublicNav from "@/components/layout/PublicNav";
 import PublicFooter from "@/components/layout/PublicFooter";
+import FloatingSupport from "@/components/layout/FloatingSupport";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -25,6 +26,7 @@ export default function PublicShell() {
         </main>
         <PublicFooter />
       </div>
+      <FloatingSupport />
     </div>
   );
 }
