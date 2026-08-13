@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { initializePaystackTransaction, makePaystackReference } from "../_shared/paystack.ts";
+import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 Deno.serve(async (req) => {
@@ -56,9 +57,14 @@ Deno.serve(async (req) => {
     const appUrl = (Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL") ?? "https://yiego.shop").replace(/\/$/, "");
     const callbackUrl = `${appUrl}/wallet?payment=paystack&reference=${encodeURIComponent(reference)}`;
 
+    // The customer is charged the deposit + 4% Paystack fee, but the wallet is
+    // credited only the base deposit — so a "GH₵50 top-up" lands as GH₵50.
+    const feeAmount = paystackFee(amount);
+    const chargeAmount = paystackTotal(amount);
+
     const paystack = await initializePaystackTransaction({
       email,
-      amount,
+      amount: chargeAmount,
       reference,
       currency: "GHS",
       callbackUrl,
@@ -66,6 +72,8 @@ Deno.serve(async (req) => {
         purpose: "wallet_deposit",
         userId: authData.user.id,
         walletId: wallet.id,
+        baseAmount: amount,
+        feeAmount,
       },
     });
 
@@ -92,6 +100,8 @@ Deno.serve(async (req) => {
       metadata: {
         accessCode: paystack.payload.data.access_code,
         callbackUrl,
+        chargedAmount: chargeAmount,
+        feeAmount,
       },
     });
 

@@ -68,7 +68,7 @@ export const REASONS: Reason[] = [
   {
     icon: Landmark,
     title: "Honest prices",
-    body: "One clear price per bundle. No surprise fees added at checkout.",
+    body: "One clear price per bundle — the same whether it's your first order or your fiftieth.",
   },
   {
     icon: Wallet,

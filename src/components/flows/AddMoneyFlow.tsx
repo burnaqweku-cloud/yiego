@@ -4,6 +4,7 @@ import Modal from "@/components/ui/modal";
 import { FlowFooter, FlowHeader, ProcessingView } from "./flow-parts";
 import { TOPUP_AMOUNTS } from "@/data/bundles";
 import { formatGHS } from "@/lib/format";
+import { paystackFee } from "@/lib/fees";
 import { createWalletDeposit } from "@/lib/phase1-api";
 import { useAuth } from "@/store/auth-context";
 import { useWallet } from "@/store/wallet";
@@ -23,6 +24,10 @@ export default function AddMoneyFlow({ open, onClose }: { open: boolean; onClose
 
   const value = Math.round((parseFloat(amount) || 0) * 100) / 100;
   const valid = value >= 1;
+  // Paystack carries a 4% fee. The customer pays the deposit + fee; the wallet
+  // is credited the round deposit amount.
+  const fee = paystackFee(value);
+  const payTotal = Math.round((value + fee) * 100) / 100;
 
   const startDeposit = async () => {
     if (!isAuthenticated) {
@@ -74,11 +79,18 @@ export default function AddMoneyFlow({ open, onClose }: { open: boolean; onClose
                 </button>
               ))}
             </div>
+            {valid && fee > 0 && (
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-1.5">
+                <div className="flex items-center justify-between gap-4 px-3.5 py-2.5"><span className="text-[12.5px] text-faint-foreground">Added to wallet</span><span className="text-[13.5px] font-semibold">{formatGHS(value)}</span></div>
+                <div className="flex items-center justify-between gap-4 border-t border-white/[0.05] px-3.5 py-2.5"><span className="text-[12.5px] text-faint-foreground">Fee</span><span className="text-[13.5px] font-semibold">{formatGHS(fee)}</span></div>
+                <div className="flex items-center justify-between gap-4 border-t border-white/[0.08] px-3.5 py-3"><span className="text-[13px] font-semibold">You pay</span><span className="font-display text-[16px] font-semibold">{formatGHS(payTotal)}</span></div>
+              </div>
+            )}
             <p className="text-xs leading-5 text-faint-foreground">Pay securely with Paystack. Your wallet will update automatically after the payment is confirmed.</p>
           </div>
           <FlowFooter>
             <button type="button" className="onyx-btn-primary w-full disabled:pointer-events-none disabled:opacity-40" disabled={!valid || !hasWallet} onClick={startDeposit}>
-              Pay {formatGHS(value)} with Paystack
+              Pay {formatGHS(payTotal)} with Paystack
             </button>
           </FlowFooter>
         </>

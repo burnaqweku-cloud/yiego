@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { initializePaystackTransaction, makePaystackReference } from "../_shared/paystack.ts";
+import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 function makeOrderReference() {
@@ -230,9 +231,15 @@ Deno.serve(async (req) => {
       ? `${appUrl.replace(/\/$/, "")}/track-order?reference=${encodeURIComponent(orderReference)}`
       : undefined;
 
+    // Paystack payments carry a 4% fee on top of the bundle price. The order's
+    // value stays the bundle price; the customer is charged base + fee.
+    const baseAmount = Number(product.customer_price);
+    const feeAmount = paystackFee(baseAmount);
+    const chargeAmount = paystackTotal(baseAmount);
+
     const paystack = await initializePaystackTransaction({
       email: paymentEmail,
-      amount: Number(product.customer_price),
+      amount: chargeAmount,
       reference: paystackReference,
       currency: "GHS",
       callbackUrl,
@@ -243,6 +250,8 @@ Deno.serve(async (req) => {
         orderId: order.id,
         orderReference,
         recipientPhone,
+        baseAmount,
+        feeAmount,
       },
     });
 
@@ -271,7 +280,7 @@ Deno.serve(async (req) => {
       status: "pending",
       user_id: authenticatedUser?.id ?? null,
       order_id: order.id,
-      amount: product.customer_price,
+      amount: chargeAmount,
       currency: "GHS",
       provider_reference: paystackReference,
       authorization_url: paystack.payload.data.authorization_url,
@@ -279,6 +288,8 @@ Deno.serve(async (req) => {
         accessCode: paystack.payload.data.access_code,
         orderReference,
         checkoutType: authenticatedUser ? "account_paystack" : "guest_paystack",
+        baseAmount,
+        feeAmount,
       },
     });
 

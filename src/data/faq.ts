@@ -62,10 +62,6 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "Payments are processed by Paystack, and YieGo confirms every payment directly with Paystack's servers before an order moves. Your wallet balance can only be changed by our server, never from the browser or app. YieGo never sees or stores your card details or Mobile Money PIN.",
         preview: true,
       },
-      {
-        q: "Are there extra fees?",
-        a: "The price shown on a bundle is the price you pay. There is no separate YieGo service fee added at checkout.",
-      },
     ],
   },
   {

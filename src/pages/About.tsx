@@ -45,8 +45,8 @@ interface Value {
 const VALUES: Value[] = [
   {
     icon: Tag,
-    title: "The price you see is the price you pay",
-    body: "The amount on a bundle is the amount that leaves your wallet. No service fee appears at the last step, and the same bundle costs the same whether it is your first order or your fiftieth.",
+    title: "The same price for everyone",
+    body: "The same bundle costs the same whether it is your first order or your fiftieth — no special rates and no moving targets.",
   },
   {
     icon: Radar,
