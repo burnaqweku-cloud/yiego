@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, BadgeDollarSign, Bot, BriefcaseBusiness, ChevronDown, ChevronRight, ClipboardList, Contact, FileText, Gauge, LogOut, Menu, MessageSquareWarning, Store, Tags, WalletCards, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BadgeDollarSign, Bot, BriefcaseBusiness, ChevronDown, ChevronRight, ClipboardList, Contact, FileText, Gauge, LogOut, Menu, MessageSquareWarning, Store, Tags, Users, WalletCards, X, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import AuroraBackground from "@/components/fx/AuroraBackground";
 import Wordmark from "@/components/brand/Wordmark";
@@ -16,13 +16,13 @@ const sections: AdminNavSection[] = [
   { label: "Operations", icon: ClipboardList, items: [{ label: "Order management", to: "/admin/orders", icon: ClipboardList }, { label: "Disputes", to: "/admin/disputes", icon: MessageSquareWarning }] },
   { label: "Sales management", icon: BadgeDollarSign, items: [{ label: "Data pricing", to: "/admin/sales/pricing", icon: Tags }] },
   { label: "Business", icon: BriefcaseBusiness, items: [{ label: "Suppliers", to: "/admin/suppliers", icon: Store }, { label: "Wallet activity", to: "/admin/wallet", icon: WalletCards }] },
-  { label: "Contacts", icon: Contact, items: [{ label: "Contact information", to: "/admin/contacts/information", icon: Contact }] },
-  { label: "Legal", icon: FileText, items: [{ label: "Legal documents", to: "/admin/legal", icon: FileText }] },
+  { label: "Users", icon: Users, items: [{ label: "All users", to: "/admin/users", icon: Users }] },
+  { label: "Site content", icon: FileText, items: [{ label: "Contact information", to: "/admin/contacts/information", icon: Contact }, { label: "Legal documents", to: "/admin/legal", icon: FileText }] },
   { label: "AI support", icon: Bot, items: [{ label: "Support assistant", to: "/admin/ai-support", icon: Bot }] },
 ];
 
-const routeTitles: Record<string, string> = { "/admin": "Overview", "/admin/orders": "Order management", "/admin/disputes": "Disputes", "/admin/reviews": "Review queue", "/admin/sales/pricing": "Data pricing", "/admin/suppliers": "Suppliers", "/admin/wallet": "Wallet activity", "/admin/contacts/information": "Contact information", "/admin/legal": "Legal documents", "/admin/ai-support": "Support assistant" };
-function sectionFor(pathname: string) { if (pathname === "/admin") return "Workspace"; if (pathname.startsWith("/admin/orders") || pathname.startsWith("/admin/disputes") || pathname.startsWith("/admin/reviews")) return "Operations"; if (pathname.startsWith("/admin/sales")) return "Sales management"; if (pathname.startsWith("/admin/contacts")) return "Contacts"; if (pathname.startsWith("/admin/legal")) return "Legal"; if (pathname.startsWith("/admin/ai-support")) return "AI support"; return "Business"; }
+const routeTitles: Record<string, string> = { "/admin": "Overview", "/admin/orders": "Order management", "/admin/disputes": "Disputes", "/admin/reviews": "Review queue", "/admin/sales/pricing": "Data pricing", "/admin/suppliers": "Suppliers", "/admin/wallet": "Wallet activity", "/admin/users": "All users", "/admin/contacts/information": "Contact information", "/admin/legal": "Legal documents", "/admin/ai-support": "Support assistant" };
+function sectionFor(pathname: string) { if (pathname === "/admin") return "Workspace"; if (pathname.startsWith("/admin/orders") || pathname.startsWith("/admin/disputes") || pathname.startsWith("/admin/reviews")) return "Operations"; if (pathname.startsWith("/admin/sales")) return "Sales management"; if (pathname.startsWith("/admin/users")) return "Users"; if (pathname.startsWith("/admin/contacts") || pathname.startsWith("/admin/legal")) return "Site content"; if (pathname.startsWith("/admin/ai-support")) return "AI support"; return "Business"; }
 
 function AdminNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation(); const activeSection = sectionFor(location.pathname); const [openSection, setOpenSection] = useState(activeSection); useEffect(() => setOpenSection(activeSection), [activeSection]);

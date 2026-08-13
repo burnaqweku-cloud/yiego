@@ -38,6 +38,7 @@ const AdminReviews = lazy(() => import("./pages/AdminReviews"));
 const AdminDisputes = lazy(() => import("./pages/AdminDisputes"));
 const AdminSuppliers = lazy(() => import("./pages/AdminSuppliers"));
 const AdminWallet = lazy(() => import("./pages/AdminWallet"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminPricing = lazy(() => import("./pages/AdminPricing"));
 const AdminAISupport = lazy(() => import("./pages/AdminAISupport"));
 const AdminContact = lazy(() => import("./pages/AdminContact"));
@@ -52,7 +53,7 @@ const App = () => (
   <BrowserRouter><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><AuthReady><Suspense fallback={<RouteFallback />}><Routes>
     {/* Focused, chrome-free task pages. */}
     <Route path="/auth" element={<Auth />} /><Route path="/reset-password" element={<ResetPassword />} />
-    <Route path="/admin" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<Admin />} /><Route path="orders" element={<AdminOrders />} /><Route path="disputes" element={<AdminDisputes />} /><Route path="reviews" element={<AdminReviews />} /><Route path="sales/pricing" element={<AdminPricing />} /><Route path="suppliers" element={<AdminSuppliers />} /><Route path="wallet" element={<AdminWallet />} /><Route path="contacts/information" element={<AdminContact />} /><Route path="legal" element={<AdminLegal />} /><Route path="ai-support" element={<AdminAISupport />} /></Route>
+    <Route path="/admin" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<Admin />} /><Route path="orders" element={<AdminOrders />} /><Route path="disputes" element={<AdminDisputes />} /><Route path="reviews" element={<AdminReviews />} /><Route path="sales/pricing" element={<AdminPricing />} /><Route path="suppliers" element={<AdminSuppliers />} /><Route path="wallet" element={<AdminWallet />} /><Route path="users" element={<AdminUsers />} /><Route path="contacts/information" element={<AdminContact />} /><Route path="legal" element={<AdminLegal />} /><Route path="ai-support" element={<AdminAISupport />} /></Route>
     {/* One shell for the whole site: the same header and footer wrap the
         marketing pages, the shop and the account area. */}
     <Route element={<PublicShell />}>
