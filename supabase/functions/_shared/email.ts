@@ -35,7 +35,7 @@ function welcomeEmailHtml(name: string) {
   return `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
     <table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-      <tr><td style="background:#0b1512;padding:22px 28px;"><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;">YieGo</span></td></tr>
+      <tr><td style="background:#0b1512;padding:18px 28px;"><img src="https://yiego.shop/yiego-icon-192.png" width="34" height="34" alt="YieGo" style="display:inline-block;vertical-align:middle;border-radius:9px;" /><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;margin-left:10px;">YieGo</span></td></tr>
       <tr><td style="padding:28px;">
         <p style="margin:0 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#22c387;">Welcome</p>
         <h1 style="margin:0 0 14px;font-size:22px;line-height:1.25;">Welcome to YieGo</h1>
@@ -61,8 +61,8 @@ function orderEmailHtml(o: {
   return `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
     <table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-      <tr><td style="background:#0b1512;padding:22px 28px;">
-        <span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;">YieGo</span>
+      <tr><td style="background:#0b1512;padding:18px 28px;">
+        <img src="https://yiego.shop/yiego-icon-192.png" width="34" height="34" alt="YieGo" style="display:inline-block;vertical-align:middle;border-radius:9px;" /><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;margin-left:10px;">YieGo</span>
       </td></tr>
       <tr><td style="padding:28px;">
         <p style="margin:0 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#22c387;">Order confirmed</p>
