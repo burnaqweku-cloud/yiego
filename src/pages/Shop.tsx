@@ -41,36 +41,48 @@ export default function Shop() {
 
   return (
     <div ref={ref} className="space-y-8 lg:space-y-11">
-      {/* ── Header ──────────────────────────────────────────────── */}
-      <header data-reveal>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
-          {isAuthenticated ? dateFmt.format(new Date()) : "Data bundles"}
-        </p>
-        <h1 className="mt-1.5 font-display text-[24px] font-semibold tracking-tight text-foreground sm:text-[30px]">
-          {isAuthenticated ? `${greeting()}, ${profile.firstName}` : "Buy Ghana data in minutes"}
-        </h1>
-        <p className="mt-2 max-w-[62ch] text-sm leading-6 text-muted-foreground">
-          Pick a bundle below, enter the recipient number and pay. Delivery starts the moment payment
-          clears — to your own number or anyone else&rsquo;s.
-        </p>
+      {isAuthenticated ? (
+        <>
+          {/* Signed in: a slim greeting, then the wallet as the hero — the
+              first thing a returning customer sees, the way a bank app leads
+              with your balance rather than burying it under copy. */}
+          <header data-reveal>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
+              {dateFmt.format(new Date())}
+            </p>
+            <h1 className="mt-1.5 font-display text-[24px] font-semibold tracking-tight text-foreground sm:text-[30px]">
+              {greeting()}, {profile.firstName}
+            </h1>
+          </header>
 
-        {/* The Order ID lookup lives inside the buy flow, which nothing else
-            opens at step one any more. This quiet line keeps it reachable. */}
-        {isAuthenticated && (
+          {/* ── Wallet, at the forefront ──────────────────────────── */}
+          <BalanceCard />
+
+          {/* Secondary action: settle an Order ID someone shared with you. */}
           <button
             type="button"
             onClick={() => openBuyData({ kind: "payOrder" })}
-            className="group mt-4 inline-flex items-center gap-2 text-[13.5px] font-semibold text-primary-glow"
+            className="group inline-flex items-center gap-2 text-[13.5px] font-semibold text-primary-glow"
           >
             <CreditCard size={15} aria-hidden="true" />
-            Someone sent you an Order ID? Pay for an order
+            Pay for someone&rsquo;s order
             <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
           </button>
-        )}
-      </header>
-
-      {/* ── Wallet ──────────────────────────────────────────────── */}
-      {isAuthenticated && <BalanceCard />}
+        </>
+      ) : (
+        <header data-reveal>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
+            Data bundles
+          </p>
+          <h1 className="mt-1.5 font-display text-[24px] font-semibold tracking-tight text-foreground sm:text-[30px]">
+            Buy Ghana data in minutes
+          </h1>
+          <p className="mt-2 max-w-[62ch] text-sm leading-6 text-muted-foreground">
+            Pick a bundle below, enter the recipient number and pay. Delivery starts the moment payment
+            clears — to your own number or anyone else&rsquo;s.
+          </p>
+        </header>
+      )}
 
       {/* ── The catalogue ───────────────────────────────────────── */}
       <BundleCatalogue />
