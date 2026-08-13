@@ -5,6 +5,7 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { amountFromSubunit, verifyPaystackTransaction } from "../_shared/paystack.ts";
 import { fulfillOrderWithDataMartGH } from "../_shared/fulfillment.ts";
+import { sendGuestOrderConfirmation } from "../_shared/email.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 Deno.serve(async (req) => {
@@ -118,6 +119,10 @@ Deno.serve(async (req) => {
         return jsonResponse({ status: "paid_fulfillment_failed", orderReference, error: message });
       }
     }
+
+    // Email the guest their Order ID + track link (best-effort, no-op without
+    // email configured or for account orders).
+    try { await sendGuestOrderConfirmation(supabase, order.id); } catch { /* best-effort */ }
 
     const { data: fresh } = await supabase
       .from("orders")
