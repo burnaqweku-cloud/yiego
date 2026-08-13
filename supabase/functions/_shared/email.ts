@@ -3,16 +3,20 @@
 // payment and fulfilment paths are unaffected. Every caller wraps this in a
 // try/catch so a mail failure can never break an order.
 const RESEND_URL = "https://api.resend.com/emails";
+// Customer replies to any automated email land in the monitored support inbox.
+const SUPPORT_EMAIL = "support@yiego.shop";
 
-export async function sendEmail(input: { to: string; subject: string; html: string }) {
+export async function sendEmail(input: { to: string; subject: string; html: string; replyTo?: string }) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return { skipped: true as const, reason: "no_api_key" };
 
   const from = Deno.env.get("EMAIL_FROM") ?? "YieGo <noreply@yiego.shop>";
+  const body: Record<string, unknown> = { from, to: [input.to], subject: input.subject, html: input.html };
+  if (input.replyTo) body.reply_to = input.replyTo;
   const res = await fetch(RESEND_URL, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to: [input.to], subject: input.subject, html: input.html }),
+    body: JSON.stringify(body),
   });
   const payload = await res.json().catch(() => null);
   return { skipped: false as const, ok: res.ok, status: res.status, payload };
@@ -52,7 +56,7 @@ function welcomeEmailHtml(name: string) {
 /** A one-time welcome email for a new account. Dormant without a Resend key. */
 export async function sendWelcomeEmail(to: string, name: string) {
   if (!to) return { skipped: true, reason: "no_recipient" };
-  return sendEmail({ to, subject: "Welcome to YieGo", html: welcomeEmailHtml(name) });
+  return sendEmail({ to, subject: "Welcome to YieGo", html: welcomeEmailHtml(name), replyTo: SUPPORT_EMAIL });
 }
 
 function orderEmailHtml(o: {
@@ -126,6 +130,7 @@ export async function sendOrderConfirmation(
   const result = await sendEmail({
     to,
     subject: `Your YieGo order ${row.order_reference}`,
+    replyTo: SUPPORT_EMAIL,
     html: orderEmailHtml({
       ref: row.order_reference,
       product: row.data_products?.name ?? "Data bundle",
