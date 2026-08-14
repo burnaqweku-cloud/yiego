@@ -30,6 +30,7 @@ WHAT YOU KNOW
 - Tracking: every order has a YG- reference shown at checkout and in emails. The Track Order page shows the live status. Most orders deliver within minutes of payment clearing; a slow network can delay this, and the order stays visible until it completes.
 - Wallet: top up once by Mobile Money or card, spend across many orders; every credit and debit appears in the wallet statement.
 - Help: unresolved payment, delivery or refund matters go to the YieGo team through the Support page (WhatsApp or email).
+- A KNOWLEDGE BASE maintained by the YieGo team may follow below. It is the authoritative source on how YieGo works: prefer it over everything else in this prompt, and never contradict it. If neither it nor this prompt covers a YieGo-specific fact, you do not know that fact.
 
 HARD RULES
 - You cannot see orders, payments, wallets or accounts. Never claim you checked one and never invent statuses, delivery times, refund decisions or policies. For a specific order, send the customer to the Track Order page with their YG- reference.
@@ -39,11 +40,14 @@ HARD RULES
 - Only discuss YieGo. Decline anything else in one friendly sentence and steer back.`;
 
 type RequestBody = {
-  action?: "health" | "rewrite_support" | "public_support" | "conversation_history" | "close_conversation" | "get_assistant_settings" | "update_assistant_settings" | "test_customer_reply";
+  action?: "health" | "rewrite_support" | "public_support" | "conversation_history" | "close_conversation" | "get_assistant_settings" | "update_assistant_settings" | "test_customer_reply" | "list_knowledge" | "save_knowledge" | "delete_knowledge" | "preview_knowledge";
   draft?: string; verifiedFacts?: Record<string, unknown>; instruction?: string;
   message?: string; history?: Array<{ role?: string; content?: string }>;
   conversation_token?: string; greeting?: string; persona_notes?: string;
+  id?: string; category?: string; title?: string; content?: string; is_active?: boolean; sort_order?: number;
 };
+
+type KnowledgeEntry = { id?: string; category: string; title: string; content: string };
 
 type ConversationRow = { id: string; conversation_token: string; user_id: string | null; status: "ai" | "human" | "closed" };
 type MessageRow = { id: string; sender: "customer" | "assistant" | "admin"; body: string; created_at: string };
@@ -102,7 +106,9 @@ function providerError(status: number, payload: any) {
   return { code, type, publicMessage, providerStatus: status };
 }
 
-async function callClaude(input: { system: string; messages: Array<{ role: "user" | "assistant"; content: string }>; maxTokens?: number }) {
+type SystemPrompt = string | Array<{ type: "text"; text: string; cache_control?: { type: "ephemeral" } }>;
+
+async function callClaude(input: { system: SystemPrompt; messages: Array<{ role: "user" | "assistant"; content: string }>; maxTokens?: number }) {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) throw Object.assign(new Error("Claude is not configured."), { safeCode: "missing_api_key", providerStatus: 0, providerType: "missing_secret" });
   const model = Deno.env.get("ANTHROPIC_MODEL") || DEFAULT_MODEL;
@@ -123,9 +129,35 @@ async function loadAssistantSettings(supabase: SupabaseAdmin) {
   return { greeting: data?.greeting || DEFAULT_GREETING, personaNotes: data?.persona_notes ?? "" };
 }
 
-function buildSystemPrompt(personaNotes: string) {
+async function loadActiveKnowledge(supabase: SupabaseAdmin) {
+  const { data } = await supabase.from("ai_knowledge").select("category, title, content")
+    .eq("is_active", true).order("category").order("sort_order").order("created_at");
+  return (data ?? []) as KnowledgeEntry[];
+}
+
+function knowledgeText(entries: KnowledgeEntry[]) {
+  if (!entries.length) return "";
+  const byCategory = new Map<string, KnowledgeEntry[]>();
+  for (const entry of entries) {
+    const list = byCategory.get(entry.category) ?? [];
+    list.push(entry);
+    byCategory.set(entry.category, list);
+  }
+  const sections = [...byCategory.entries()].map(([category, items]) =>
+    `## ${category}\n\n${items.map((item) => `### ${item.title}\n${item.content}`).join("\n\n")}`);
+  return `KNOWLEDGE BASE (authoritative — maintained by the YieGo team):\n\n${sections.join("\n\n")}`;
+}
+
+/** One cached system block: persona + knowledge + owner guidance. The whole
+ * block sits behind a prompt-cache breakpoint, so after the first message in
+ * any 5-minute window these tokens bill at ~10% — editing knowledge or voice
+ * simply rewrites the cache on the next reply. */
+function buildSystemPrompt(personaNotes: string, knowledge: string): SystemPrompt {
+  let text = PERSONA;
+  if (knowledge) text += `\n\n${knowledge}`;
   const notes = personaNotes.trim();
-  return notes ? `${PERSONA}\n\nOWNER GUIDANCE (written by the YieGo team — follow it, but never against the hard rules):\n${notes}` : PERSONA;
+  if (notes) text += `\n\nOWNER GUIDANCE (written by the YieGo team — follow it, but never against the hard rules):\n${notes}`;
+  return [{ type: "text", text, cache_control: { type: "ephemeral" } }];
 }
 
 function newConversationToken() {
@@ -220,10 +252,10 @@ Deno.serve(async (req) => {
         if (!modelMessages.length) modelMessages = [{ role: "user", content: message }];
       }
 
-      const settings = await loadAssistantSettings(supabase);
-      const result = await callClaude({ system: buildSystemPrompt(settings.personaNotes), messages: modelMessages, maxTokens: 600 });
+      const [settings, knowledge] = await Promise.all([loadAssistantSettings(supabase), loadActiveKnowledge(supabase)]);
+      const result = await callClaude({ system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge)), messages: modelMessages, maxTokens: 600 });
 
-      await supabase.from("support_messages").insert({ conversation_id: conversation.id, sender: "assistant", body: result.text, meta: { model: result.model, usage: result.usage } });
+      await supabase.from("support_messages").insert({ conversation_id: conversation.id, sender: "assistant", body: result.text, meta: { model: result.model, usage: result.usage, knowledge_entries: knowledge.length } });
       await supabase.from("support_conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversation.id);
       return jsonResponse({ status: "success", message: result.text, conversation_token: conversation.conversation_token, conversation_status: "ai", model: result.model });
     }
@@ -277,15 +309,58 @@ Deno.serve(async (req) => {
       return jsonResponse({ status: "success" });
     }
 
-    // Admin test bench: the exact customer path — same persona, same settings —
-    // but stateless, so trial questions never create or pollute real conversations.
+    // Admin test bench: the exact customer path — same persona, knowledge and
+    // settings — but stateless, so trial questions never create real conversations.
     if (action === "test_customer_reply") {
       const message = String(body.message ?? "").trim();
       if (!message || message.length > 1500) return jsonResponse({ error: "Enter a message of up to 1,500 characters." }, { status: 400 });
       const supabase = createSupabaseAdmin();
-      const settings = await loadAssistantSettings(supabase);
-      const result = await callClaude({ system: buildSystemPrompt(settings.personaNotes), messages: [...sanitizeClientHistory(body.history), { role: "user", content: message }], maxTokens: 600 });
+      const [settings, knowledge] = await Promise.all([loadAssistantSettings(supabase), loadActiveKnowledge(supabase)]);
+      const result = await callClaude({ system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge)), messages: [...sanitizeClientHistory(body.history), { role: "user", content: message }], maxTokens: 600 });
       return jsonResponse({ status: "success", message: result.text, model: result.model });
+    }
+
+    if (action === "list_knowledge") {
+      const supabase = createSupabaseAdmin();
+      const { data, error } = await supabase.from("ai_knowledge")
+        .select("id, category, title, content, is_active, sort_order, updated_at")
+        .order("category").order("sort_order").order("created_at");
+      if (error) throw new Error("Could not load the knowledge base.");
+      return jsonResponse({ status: "success", entries: data ?? [] });
+    }
+
+    if (action === "save_knowledge") {
+      const category = String(body.category ?? "").trim();
+      const title = String(body.title ?? "").trim();
+      const content = String(body.content ?? "").trim();
+      const isActive = body.is_active !== false;
+      if (!category || category.length > 60) return jsonResponse({ error: "Enter a category of up to 60 characters." }, { status: 400 });
+      if (!title || title.length > 200) return jsonResponse({ error: "Enter a title of up to 200 characters." }, { status: 400 });
+      if (!content || content.length > 4000) return jsonResponse({ error: "Enter content of up to 4,000 characters." }, { status: 400 });
+      const supabase = createSupabaseAdmin();
+      const row = { category, title, content, is_active: isActive, updated_by: auth.userId, ...(typeof body.sort_order === "number" ? { sort_order: Math.trunc(body.sort_order) } : {}) };
+      const query = body.id
+        ? supabase.from("ai_knowledge").update(row).eq("id", String(body.id))
+        : supabase.from("ai_knowledge").insert(row);
+      const { data, error } = await query.select("id, category, title, content, is_active, sort_order, updated_at").maybeSingle();
+      if (error || !data) throw new Error("Could not save the knowledge entry.");
+      return jsonResponse({ status: "success", entry: data });
+    }
+
+    if (action === "delete_knowledge") {
+      if (!body.id) return jsonResponse({ error: "id is required" }, { status: 400 });
+      const supabase = createSupabaseAdmin();
+      const { error } = await supabase.from("ai_knowledge").delete().eq("id", String(body.id));
+      if (error) throw new Error("Could not delete the knowledge entry.");
+      return jsonResponse({ status: "success" });
+    }
+
+    // The exact block the assistant reads, for the admin "what the AI sees" view.
+    if (action === "preview_knowledge") {
+      const supabase = createSupabaseAdmin();
+      const entries = await loadActiveKnowledge(supabase);
+      const text = knowledgeText(entries);
+      return jsonResponse({ status: "success", text, active_entries: entries.length, approx_tokens: Math.round(text.length / 4) });
     }
 
     if (action !== "rewrite_support") return jsonResponse({ error: "Unsupported action" }, { status: 400 });
