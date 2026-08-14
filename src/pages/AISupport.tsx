@@ -1,12 +1,13 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { Bot, Loader2, RotateCcw, Send, ShieldCheck, Users } from "lucide-react";
+import { Bot, Loader2, MessageCircle, RotateCcw, Send, ShieldCheck, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { useContactSettings } from "@/hooks/useContactSettings";
 import { assistantHtml } from "@/lib/assistantMarkdown";
 
-type ChatMessage = { id?: string; role: "user" | "assistant" | "team"; content: string };
+type ChatMessage = { id?: string; role: "user" | "assistant" | "team"; content: string; escalated?: boolean };
 type ConversationStatus = "ai" | "human" | "closed";
 
 interface HistoryResponse {
@@ -19,6 +20,7 @@ interface SupportResponse {
   message?: string | null;
   conversation_token?: string;
   conversation_status?: ConversationStatus;
+  escalated?: boolean;
   error?: string;
 }
 
@@ -37,6 +39,7 @@ const senderToRole = { customer: "user", assistant: "assistant", admin: "team" }
 const richText = "text-sm leading-6 [&_p+p]:mt-2 [&_ul]:mt-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mt-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_li+li]:mt-1 [&_strong]:font-semibold [&_strong]:text-white [&_a]:font-semibold [&_a]:text-primary-glow [&_a]:underline [&_code]:rounded [&_code]:bg-white/[0.07] [&_code]:px-1 [&_code]:font-mono [&_code]:text-[13px]";
 
 export default function AISupport() {
+  const { whatsappUrl } = useContactSettings();
   const [greeting, setGreeting] = useState(FALLBACK_GREETING);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<ConversationStatus>("ai");
@@ -87,7 +90,7 @@ export default function AISupport() {
     if (data?.conversation_token) localStorage.setItem(TOKEN_KEY, data.conversation_token);
     if (data?.conversation_status) setStatus(data.conversation_status);
     if (data?.message) {
-      setMessages((current) => [...current, { role: "assistant", content: data.message! }]);
+      setMessages((current) => [...current, { role: "assistant", content: data.message!, escalated: data.escalated }]);
     } else if (data?.conversation_status !== "human") {
       setMessages((current) => [...current, {
         role: "assistant",
@@ -123,6 +126,9 @@ export default function AISupport() {
               : <div key={message.id ?? index} className="flex justify-start"><div className="max-w-[88%] rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-foreground">
                   {message.role === "team" && <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow"><Users size={12} />YieGo team</p>}
                   <div className={richText} dangerouslySetInnerHTML={{ __html: assistantHtml(message.content) }} />
+                  {message.escalated && (whatsappUrl
+                    ? <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-[1.02]"><MessageCircle size={16} />Continue on WhatsApp</a>
+                    : <Link to="/support" className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"><MessageCircle size={16} />Contact the team</Link>)}
                 </div></div>)}
             {status === "human" && <div className="flex justify-start"><p className="flex items-center gap-2 rounded-xl border border-primary-glow/20 bg-primary/[0.05] px-3 py-2 text-xs leading-5 text-muted-foreground"><Users size={13} className="shrink-0 text-primary-glow" />You're through to the YieGo team — a person will reply here.</p></div>}
             {sending && <div className="flex justify-start"><div className="rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3"><Loader2 className="animate-spin text-primary-glow" size={18} /></div></div>}
@@ -131,6 +137,6 @@ export default function AISupport() {
       <form onSubmit={send} className="border-t border-white/[0.07] p-4"><div className="flex gap-2"><textarea value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask YieGo AI a question…" maxLength={1500} rows={2} className="onyx-field min-h-[54px] flex-1 resize-none" /><Button type="submit" disabled={!input.trim() || sending || booting} aria-label="Send message"><Send size={18} /></Button></div><p className="mt-2 flex items-center gap-1.5 text-[11px] text-faint-foreground"><ShieldCheck size={13} />Never share passwords, OTPs, card details or Mobile Money PINs.</p></form>
     </CardContent></Card>
 
-    <div className="grid gap-3 sm:grid-cols-2"><Button variant="ghost" asChild><Link to="/track-order">Track a specific order</Link></Button><Button variant="ghost" asChild><Link to="/support">Contact human support</Link></Button></div>
+    <div className="grid gap-3 sm:grid-cols-2"><Button variant="ghost" asChild><Link to="/track-order">Track a specific order</Link></Button>{whatsappUrl ? <Button variant="ghost" asChild><a href={whatsappUrl} target="_blank" rel="noopener noreferrer"><MessageCircle size={16} />Chat with the team on WhatsApp</a></Button> : <Button variant="ghost" asChild><Link to="/support">Contact human support</Link></Button>}</div>
   </div>;
 }

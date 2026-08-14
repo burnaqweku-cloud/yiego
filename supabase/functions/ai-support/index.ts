@@ -35,6 +35,7 @@ WHAT YOU KNOW
 TOOLS (live YieGo data — use them, never guess)
 - lookup_order: when the customer gives a YG- order reference, or asks where a specific order is and provides its reference, call lookup_order and answer from what it returns — the live delivery and payment status, network, bundle, amount and masked recipient. If they ask about their order but give no reference, ask for the YG- reference first; never guess one. If it finds nothing, say so plainly and ask them to re-check the reference from their confirmation email; if it errors, point them to the Track Order page and Support.
 - quote_bundles: when the customer asks a bundle's price or which sizes a network sells, call quote_bundles (optionally filtered by network and size) and quote only the prices it returns. Never state a price from memory.
+- escalate_to_human: when you cannot resolve the issue — a refund, a payment that went wrong, a delivery that failed, an account or security problem, or when the customer asks for a person — call escalate_to_human with a short reason, then tell them in one sentence that you're connecting them to the YieGo team on WhatsApp and a button to open the chat is shown. Do not escalate questions you can answer or orders you can look up.
 - Rely only on what a tool returns. Never claim you checked an order or price unless a tool result says so.
 
 HARD RULES
@@ -288,6 +289,16 @@ const CUSTOMER_TOOLS: ClaudeTool[] = [
       additionalProperties: false,
     },
   },
+  {
+    name: "escalate_to_human",
+    description: "Hand the customer to the YieGo team on WhatsApp. Call this when you cannot resolve their issue with your other tools or knowledge — a refund, a payment that went wrong, a delivery that failed, an account or security problem, or when the customer explicitly asks for a person. Do NOT call it for questions you can answer or orders you can look up. After calling it, tell the customer in one sentence that you're connecting them to the team on WhatsApp and a button to open the chat is shown.",
+    input_schema: {
+      type: "object",
+      properties: { reason: { type: "string", description: "A short reason for the handoff, e.g. \"refund request\", \"payment failed\", \"customer asked for a person\"." } },
+      required: ["reason"],
+      additionalProperties: false,
+    },
+  },
 ];
 
 const NETWORK_ALIASES: Record<string, string> = { mtn: "MTN", telecel: "Telecel", vodafone: "Telecel", airteltigo: "AirtelTigo", "airtel tigo": "AirtelTigo", at: "AirtelTigo", tigo: "AirtelTigo", airtel: "AirtelTigo" };
@@ -345,9 +356,25 @@ async function toolQuoteBundles(supabase: SupabaseAdmin, args: Record<string, un
   };
 }
 
-async function runCustomerTool(supabase: SupabaseAdmin, name: string, args: Record<string, unknown>) {
+async function toolEscalateToHuman(supabase: SupabaseAdmin, args: Record<string, unknown>, conversation: ConversationRow | null) {
+  const reason = String(args?.reason ?? "").trim().slice(0, 300) || "The customer needs a person.";
+  // Record why a human was wanted (for the team's later review) but keep the
+  // conversation on 'ai' — the handoff goes to WhatsApp, where the team works,
+  // so the assistant should stay responsive here rather than fall silent.
+  if (conversation) {
+    await supabase.from("support_conversations").update({ handoff_reason: reason, last_message_at: new Date().toISOString() }).eq("id", conversation.id);
+  }
+  return {
+    escalated: true,
+    channel: "whatsapp",
+    instruction: "In one short sentence, tell the customer you're connecting them to the YieGo team on WhatsApp and that they can tap the WhatsApp button shown to continue there. Do not ask for personal or payment details.",
+  };
+}
+
+async function runCustomerTool(supabase: SupabaseAdmin, name: string, args: Record<string, unknown>, conversation: ConversationRow | null) {
   if (name === "lookup_order") return await toolLookupOrder(supabase, args);
   if (name === "quote_bundles") return await toolQuoteBundles(supabase, args);
+  if (name === "escalate_to_human") return await toolEscalateToHuman(supabase, args, conversation);
   return { error: `Unknown tool: ${name}` };
 }
 
@@ -415,11 +442,12 @@ Deno.serve(async (req) => {
       }
 
       const [settings, knowledge] = await Promise.all([loadAssistantSettings(supabase), loadActiveKnowledge(supabase)]);
-      const result = await callClaude({ system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge)), messages: modelMessages, maxTokens: 700, tools: CUSTOMER_TOOLS, runTool: (name, args) => runCustomerTool(supabase, name, args) });
+      const result = await callClaude({ system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge)), messages: modelMessages, maxTokens: 700, tools: CUSTOMER_TOOLS, runTool: (name, args) => runCustomerTool(supabase, name, args, conversation) });
+      const escalated = result.toolsUsed.includes("escalate_to_human");
 
-      await supabase.from("support_messages").insert({ conversation_id: conversation.id, sender: "assistant", body: result.text, meta: { model: result.model, usage: result.usage, knowledge_entries: knowledge.length, tools_used: result.toolsUsed } });
+      await supabase.from("support_messages").insert({ conversation_id: conversation.id, sender: "assistant", body: result.text, meta: { model: result.model, usage: result.usage, knowledge_entries: knowledge.length, tools_used: result.toolsUsed, escalated } });
       await supabase.from("support_conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversation.id);
-      return jsonResponse({ status: "success", message: result.text, conversation_token: conversation.conversation_token, conversation_status: "ai", model: result.model });
+      return jsonResponse({ status: "success", message: result.text, conversation_token: conversation.conversation_token, conversation_status: "ai", model: result.model, escalated });
     }
 
     if (action === "conversation_history") {
@@ -478,7 +506,7 @@ Deno.serve(async (req) => {
       if (!message || message.length > 1500) return jsonResponse({ error: "Enter a message of up to 1,500 characters." }, { status: 400 });
       const supabase = createSupabaseAdmin();
       const [settings, knowledge] = await Promise.all([loadAssistantSettings(supabase), loadActiveKnowledge(supabase)]);
-      const result = await callClaude({ system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge)), messages: [...sanitizeClientHistory(body.history), { role: "user", content: message }], maxTokens: 700, tools: CUSTOMER_TOOLS, runTool: (name, args) => runCustomerTool(supabase, name, args) });
+      const result = await callClaude({ system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge)), messages: [...sanitizeClientHistory(body.history), { role: "user", content: message }], maxTokens: 700, tools: CUSTOMER_TOOLS, runTool: (name, args) => runCustomerTool(supabase, name, args, null) });
       return jsonResponse({ status: "success", message: result.text, model: result.model, tools_used: result.toolsUsed });
     }
 
