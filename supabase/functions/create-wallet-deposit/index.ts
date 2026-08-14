@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     }
 
     const reference = makePaystackReference("YGDEP");
-    const appUrl = (Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL") ?? "https://yiego.shop").replace(/\/$/, "");
+    const appUrl = (Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL") ?? "https://datayego.com").replace(/\/$/, "");
     const callbackUrl = `${appUrl}/payment/success?reference=${encodeURIComponent(reference)}&type=deposit`;
 
     // The customer is charged the deposit + 4% Paystack fee, but the wallet is

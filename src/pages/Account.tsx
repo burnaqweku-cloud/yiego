@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Seo from "@/components/seo/Seo";
 import { LogOut, Moon, Pencil, User } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ export default function Account() {
 
   return (
     <div className="space-y-6 lg:space-y-8">
+      <Seo title="Your Account — DataYego" description="Manage your DataYego account details." path="/account" noindex />
       <PageHeader eyebrow="Account" title="Your account" subtitle="Manage your personal details and preferences." />
 
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Seo from "@/components/seo/Seo";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowDownToLine, ArrowUpRight, CheckCircle2, Clock, Loader2, RefreshCcw } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
@@ -52,6 +53,7 @@ export default function Wallet() {
 
   return (
     <div className="space-y-6 lg:space-y-8">
+      <Seo title="Your Wallet — DataYego" description="Your DataYego wallet balance and statement." path="/wallet" noindex />
       <PageHeader
         eyebrow="Wallet"
         title="Your wallet"

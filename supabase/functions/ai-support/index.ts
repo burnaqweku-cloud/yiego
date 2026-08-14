@@ -380,7 +380,7 @@ async function toolEscalateToHuman(supabase: SupabaseAdmin, args: Record<string,
       html: `<p>The AI assistant just escalated a customer conversation.</p>
 <p><strong>Reason:</strong> ${reason.replace(/</g, "&lt;")}</p>
 <p><strong>Conversation:</strong> ${conversation?.conversation_token ?? "unknown"}</p>
-<p>Read it in the <a href="https://yiego.shop/admin/support-inbox">support inbox</a> — the customer was pointed to WhatsApp.</p>`,
+<p>Read it in the <a href="https://datayego.com/admin/support-inbox">support inbox</a> — the customer was pointed to WhatsApp.</p>`,
     });
   } catch (error) {
     console.error("escalation email failed", error instanceof Error ? error.message : error);
