@@ -143,7 +143,7 @@ export default function PaymentSuccess() {
             <div className="text-center">
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-success/[0.12] text-success"><CheckCircle2 size={34} /></div>
               <h1 className="mt-5 font-display text-3xl font-semibold tracking-tight text-white">Wallet topped up</h1>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground"><span className="font-semibold text-foreground">{formatGHS(deposit?.amount ?? 0)}</span> was added to your YieGo Wallet.</p>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground"><span className="font-semibold text-foreground">{formatGHS(deposit?.amount ?? 0)}</span> was added to your DataYego Wallet.</p>
 
               <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-primary-glow/20 bg-primary/[0.07] px-4 py-5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">New balance</p>

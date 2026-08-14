@@ -1,6 +1,7 @@
 import type { ComponentPropsWithoutRef, CSSProperties } from "react";
 import { ArrowRight, ArrowUpRight, Bot, Clock, Mail, MessageCircle, ShieldAlert } from "lucide-react";
 import { Link } from "react-router-dom";
+import Seo from "@/components/seo/Seo";
 import { useContactSettings } from "@/hooks/useContactSettings";
 import { useReveal } from "@/hooks/useReveal";
 
@@ -48,6 +49,7 @@ export default function Support() {
 
   return (
     <>
+      <Seo title="Help & Support — DataYego" description="Get help any hour: the DataYego assistant answers instantly, and WhatsApp and email reach the team directly for orders, payments and refunds." path="/support" />
       {/* ── Page header ─────────────────────────────────────────── */}
       <RevealSection className="mk-section-tight pb-0" aria-labelledby="support-title">
         <div className="mk-wrap">
@@ -65,7 +67,7 @@ export default function Support() {
           <p className="mk-lead mt-6 max-w-[60ch]" data-reveal style={delay(140)}>
             The assistant settles most things on the spot — a pending order, a wallet top-up that has
             not shown up, a shared payment link, a YG- reference you want traced. When it needs a
-            human, WhatsApp and email reach the YieGo team directly.
+            human, WhatsApp and email reach the DataYego team directly.
           </p>
         </div>
       </RevealSection>
@@ -81,7 +83,7 @@ export default function Support() {
                 </span>
                 <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
                   <h2 id="assistant-title" className="mk-h3">
-                    YieGo AI
+                    DataYego AI
                   </h2>
                   <span className="inline-flex items-center gap-2 rounded-full border border-success/25 bg-success/[0.09] px-3 py-1 text-[11.5px] font-semibold text-success">
                     <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
@@ -89,12 +91,12 @@ export default function Support() {
                   </span>
                 </div>
                 <p className="mk-body mt-3 max-w-[54ch]">
-                  It knows how buying, paying, tracking and refunds work on YieGo. Ask in plain
+                  It knows how buying, paying, tracking and refunds work on DataYego. Ask in plain
                   English — no ticket, no queue, no waiting for morning. To confirm a specific
                   payment or delivery, check Track Order or message the team.
                 </p>
                 <Link to="/support/ai" className="mk-btn mk-btn-primary group mt-8">
-                  Chat with YieGo AI
+                  Chat with DataYego AI
                   <ArrowRight size={17} className="mk-arrow" aria-hidden="true" />
                 </Link>
               </div>
@@ -237,7 +239,7 @@ export default function Support() {
                 <ShieldAlert size={20} className="mt-0.5 shrink-0 text-amber" aria-hidden="true" />
                 <div className="min-w-0">
                   <h2 className="font-display text-[15px] font-semibold tracking-tight text-foreground">
-                    Nobody at YieGo will ask for your PIN
+                    Nobody at DataYego will ask for your PIN
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-ink-out">
                     Never send your password, one-time code, card details or Mobile Money PIN to the

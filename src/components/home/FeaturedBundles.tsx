@@ -236,7 +236,7 @@ export default function FeaturedBundles() {
         {hasCards && (
           <p className="mt-6 flex items-center gap-2.5 text-[12.5px] leading-5 text-faint-foreground">
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-glow" aria-hidden="true" />
-            Pulled live from the YieGo catalogue. Prices can change when the networks change theirs.
+            Pulled live from the DataYego catalogue. Prices can change when the networks change theirs.
           </p>
         )}
 

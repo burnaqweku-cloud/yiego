@@ -122,7 +122,7 @@ export default function AdminUsers() {
   const visible = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return <div className="space-y-7">
-    <AdminPageHeader eyebrow="Users" title="All users" description="Everyone who has touched YieGo — registered account holders, administrators, and the guests who checked out without an account. Search by name, email or phone." />
+    <AdminPageHeader eyebrow="Users" title="All users" description="Everyone who has touched DataYego — registered account holders, administrators, and the guests who checked out without an account. Search by name, email or phone." />
     <AdminStatStrip loading={loading} items={[
       { label: "Total", value: counts.total },
       { label: "Registered", value: counts.registered, tone: "success" },

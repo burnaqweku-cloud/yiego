@@ -16,7 +16,7 @@ export default function AppearanceSheet({ open, onClose }: { open: boolean; onCl
 
   return (
     <Modal open={open} onClose={onClose} label="Appearance">
-      <FlowHeader title="Appearance" subtitle="How YieGo looks" onClose={onClose} />
+      <FlowHeader title="Appearance" subtitle="How DataYego looks" onClose={onClose} />
       <div className="space-y-2.5 px-5 pb-[max(28px,env(safe-area-inset-bottom))] pt-5">
         {OPTIONS.map((o) => {
           const selected = mode === o.mode;
@@ -44,7 +44,7 @@ export default function AppearanceSheet({ open, onClose }: { open: boolean; onCl
         })}
 
         <p className="px-1 pt-2 text-[12.5px] leading-relaxed text-faint-foreground">
-          Daylight is YieGo's everyday look; Onyx Dark is the signature night mode. Your wallet
+          Daylight is DataYego's everyday look; Onyx Dark is the signature night mode. Your wallet
           stays the dark jewel in both.
         </p>
       </div>

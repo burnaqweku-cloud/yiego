@@ -3,7 +3,7 @@ import { REASONS } from "@/data/marketing";
 import { useReveal } from "@/hooks/useReveal";
 
 /**
- * Why choose YieGo — an asymmetric bento rather than a row of clones.
+ * Why choose DataYego — an asymmetric bento rather than a row of clones.
  * One reason carries the section (tall lead cell, emerald bloom behind
  * it); the rest sit around it in deliberately uneven spans and close on
  * a full-width band.
@@ -45,7 +45,7 @@ export default function WhyYieGo() {
     <section ref={ref} className="mk-section" aria-labelledby="why-h">
       <div className="mk-wrap">
         <div className="max-w-[38rem]" data-reveal>
-          <span className="mk-eyebrow">Why YieGo</span>
+          <span className="mk-eyebrow">Why DataYego</span>
           <h2 id="why-h" className="mk-h2 mt-4">
             The boring parts, <span className="mk-accent">done right</span>
           </h2>

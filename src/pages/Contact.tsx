@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   type LucideIcon,
 } from "lucide-react";
+import Seo from "@/components/seo/Seo";
 import { useContactSettings } from "@/hooks/useContactSettings";
 import { useReveal } from "@/hooks/useReveal";
 
@@ -74,6 +75,11 @@ export default function Contact() {
 
   return (
     <>
+      <Seo
+        title="Contact DataYego — WhatsApp, Email & Support Hours"
+        description="Reach the DataYego team on WhatsApp or email. Send your YG- reference and the recipient number for the fastest help."
+        path="/contact"
+      />
       {/* ── Page header ─────────────────────────────────────────── */}
       <section className="mk-section-tight" aria-labelledby="contact-title" ref={headRef}>
         <div className="mk-wrap">
@@ -90,7 +96,7 @@ export default function Contact() {
           </h1>
           <p className="mk-lead mt-7 max-w-[62ch]" data-reveal style={d(140)}>
             Start with the assistant for anything quick — it is awake at any hour. For a stuck
-            order, a payment question or a dispute, message the team directly and bring your YieGo
+            order, a payment question or a dispute, message the team directly and bring your DataYego
             reference so we are both looking at the same thing.
           </p>
         </div>
@@ -130,7 +136,7 @@ export default function Contact() {
                       Always on
                     </span>
                   </div>
-                  <h3 className="mk-h3 mt-6">YieGo AI assistant</h3>
+                  <h3 className="mk-h3 mt-6">DataYego AI assistant</h3>
                   <p className="mk-body mt-3 max-w-[52ch]">
                     Answers on buying data, payments, the wallet, shared payments, tracking and what
                     to do when an order stalls. No queue, no waiting for office hours.
@@ -231,7 +237,7 @@ export default function Contact() {
                       </h3>
                       <p className="mt-2 text-[14px] leading-[1.65] text-muted-foreground">
                         Never share your password, a one-time code, your card details or your Mobile
-                        Money PIN. YieGo staff and the AI assistant will never ask you for any of
+                        Money PIN. DataYego staff and the AI assistant will never ask you for any of
                         them — not on WhatsApp, not by email, not on a call. If a message asks, stop
                         and report it.
                       </p>

@@ -29,7 +29,7 @@ export default function SignOutSheet({ open, onClose }: { open: boolean; onClose
           <LogOut size={26} />
         </span>
         <h3 className="mt-4 font-display text-[19px] font-semibold tracking-tight text-white">
-          Sign out of YieGo?
+          Sign out of DataYego?
         </h3>
         <p className="mt-1.5 max-w-[32ch] text-[13.5px] leading-relaxed text-muted-foreground">
           You can sign back in at any time to access your wallet and orders.

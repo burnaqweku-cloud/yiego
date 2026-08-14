@@ -161,7 +161,7 @@ export default function PublicNav() {
     <>
       <header className="mk-nav" data-stuck={stuck}>
         <div className="mk-wrap flex h-[68px] items-center gap-6 sm:h-[76px]">
-          <Link to="/" className="flex shrink-0 items-center" aria-label="YieGo — home">
+          <Link to="/" className="flex shrink-0 items-center" aria-label="DataYego — home">
             <Wordmark className="h-[25px] sm:h-[28px]" />
           </Link>
 
@@ -268,7 +268,7 @@ export default function PublicNav() {
           className={cn("mk-menu lg:hidden", closing && "is-closing")}
         >
           <div className="mk-wrap flex h-[68px] shrink-0 items-center">
-            <Link to="/" onClick={close} className="flex items-center" aria-label="YieGo — home">
+            <Link to="/" onClick={close} className="flex items-center" aria-label="DataYego — home">
               <Wordmark className="h-[26px]" />
             </Link>
             <button

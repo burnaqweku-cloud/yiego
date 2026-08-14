@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CreditCard, Loader2, Search, ShieldCheck } from "lucide-react";
+import Seo from "@/components/seo/Seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -155,9 +156,10 @@ export default function TrackOrder() {
   // content, centred in the standard column.
   return (
     <div className="mx-auto w-full max-w-[760px]">
+      <Seo title="Track Your Data Order — DataYego" description="Enter your YG- reference to see the live payment and delivery status of your DataYego data bundle order. No account needed." path="/track-order" />
       <Card className="w-full">
         <CardContent className="p-6 sm:p-7">
-            <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your YieGo order reference — the <span className="font-mono text-foreground">YG-</span> code from your receipt or the link we sent you back to after payment. That's all you need.</p></div>
+            <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your DataYego order reference — the <span className="font-mono text-foreground">YG-</span> code from your receipt or the link we sent you back to after payment. That's all you need.</p></div>
             <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto]">
               <input className="onyx-field font-mono uppercase" value={reference} onChange={(event) => setReference(event.target.value.toUpperCase())} onKeyDown={(event) => { if (event.key === "Enter") lookup(); }} placeholder="YG-XXXXXXXXXX" aria-label="Order reference" />
               <Button onClick={() => lookup()} disabled={loading || !reference.trim()}>{loading ? <Loader2 className="animate-spin" /> : <Search />}Track</Button>

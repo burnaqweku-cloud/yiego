@@ -1,34 +1,17 @@
+# DataYego — datayego.com
+# Public marketing, shop and content pages are crawlable; app-only and
+# account pages are not. Kept in sync with the routes in src/App.tsx and
+# the sitemap generated at build time (vite.config.ts).
+
 User-agent: *
 Allow: /
-Disallow: /dashboard/
-Disallow: /admin/
-Disallow: /agent/dashboard
-Disallow: /agent/orders
-Disallow: /agent/earnings
-Disallow: /agent/withdrawals
-Disallow: /agent/transactions
-Disallow: /agent/store-settings
-Disallow: /agent/pricing
-Disallow: /agent/activate
-Disallow: /agent/customers
-Disallow: /agent/marketing
-Disallow: /agent/wholesale
-Disallow: /agent/bulk-purchase
-Disallow: /agent/bulk-orders
-Disallow: /checkout
-Disallow: /order-confirmation
-Disallow: /paystack/
+Disallow: /admin
+Disallow: /auth
 Disallow: /reset-password
-Disallow: /reward
-Disallow: /reward-activation
-Disallow: /reward-unlocked
-Disallow: /tg/
-Disallow: /banned
+Disallow: /orders
+Disallow: /wallet
+Disallow: /account
+Disallow: /payment/
+Disallow: /support/ai
 
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
-Sitemap: https://yiego.com/sitemap.xml
+Sitemap: https://datayego.com/sitemap.xml

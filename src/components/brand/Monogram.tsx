@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-/** The YieGo brand mark — the real app icon, framed like an app tile. */
+/** The DataYego brand mark — the real app icon, framed like an app tile. */
 export default function Monogram({
   size = 40,
   className,

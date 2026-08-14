@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import Seo from "@/components/seo/Seo";
 import { useContactSettings } from "@/hooks/useContactSettings";
 import { assistantHtml } from "@/lib/assistantMarkdown";
 
@@ -29,7 +30,7 @@ interface SupportResponse {
  *  server-side by account, even on a fresh device. */
 const TOKEN_KEY = "yiego-support-conversation";
 
-const FALLBACK_GREETING = "Hi! I'm YieGo AI. Ask me anything about buying data, payments, your wallet or an order — I'm here all day, every day.";
+const FALLBACK_GREETING = "Hi! I'm DataYego AI. Ask me anything about buying data, payments, your wallet or an order — I'm here all day, every day.";
 const FAILURE_REPLY = "AI support is temporarily unavailable. Please use Contact Support or Track Order while we restore it.";
 
 const senderToRole = { customer: "user", assistant: "assistant", admin: "team" } as const;
@@ -76,6 +77,30 @@ export default function AISupport() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, booting, sending]);
 
+  // While the DataYego team has the conversation, poll for their replies so they
+  // appear without a refresh; the poll also notices Return-to-AI and Close.
+  useEffect(() => {
+    if (status !== "human") return;
+    let cancelled = false;
+    const poll = async () => {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return;
+      const { data } = await supabase.functions.invoke<HistoryResponse>("ai-support", {
+        body: { action: "conversation_history", conversation_token: token },
+      });
+      if (cancelled || !data || data.error || !data.conversation) return;
+      setStatus(data.conversation.status);
+      setMessages((current) => {
+        const server = (data.messages ?? []).map((m) => ({ id: m.id, role: senderToRole[m.sender], content: m.body }));
+        // A poll that raced a just-sent message can briefly know fewer messages
+        // than the screen shows — never let it shrink the thread.
+        return server.length >= current.length ? server : current;
+      });
+    };
+    const timer = setInterval(() => { void poll(); }, 5000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [status]);
+
   const send = async (event: FormEvent) => {
     event.preventDefault();
     const text = input.trim();
@@ -108,12 +133,13 @@ export default function AISupport() {
   };
 
   return <div className="mx-auto max-w-3xl space-y-5">
+    <Seo title="Chat with DataYego AI" description="Instant answers about buying data, payments, wallets and orders from DataYego's assistant." path="/support/ai" noindex />
     <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-glow">24/7 help</p><h1 className="mt-2 font-display text-3xl font-semibold text-white">AI support</h1><p className="mt-3 text-sm leading-6 text-muted-foreground">Get immediate guidance at any time. Your conversation is saved, so you can leave and pick it up right where you stopped.</p></div>
 
     <Card><CardContent className="p-0">
       <div className="flex items-center gap-3 border-b border-white/[0.07] p-4">
         <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/[0.1] text-primary-glow"><Bot size={20} /></span>
-        <div><p className="font-semibold text-white">YieGo AI</p><p className="text-xs text-success">Available 24/7</p></div>
+        <div><p className="font-semibold text-white">DataYego AI</p><p className="text-xs text-success">Available 24/7</p></div>
         {messages.length > 0 && <Button variant="ghost" size="sm" className="ml-auto text-faint-foreground" onClick={startOver}><RotateCcw size={15} />Start a new chat</Button>}
       </div>
       <div ref={scrollRef} className="max-h-[58dvh] min-h-[360px] space-y-3 overflow-y-auto p-4 sm:p-5">
@@ -124,17 +150,17 @@ export default function AISupport() {
             {messages.map((message, index) => message.role === "user"
               ? <div key={message.id ?? index} className="flex justify-end"><div className="max-w-[88%] whitespace-pre-wrap rounded-2xl bg-primary px-4 py-3 text-sm leading-6 text-primary-foreground">{message.content}</div></div>
               : <div key={message.id ?? index} className="flex justify-start"><div className="max-w-[88%] rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-foreground">
-                  {message.role === "team" && <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow"><Users size={12} />YieGo team</p>}
+                  {message.role === "team" && <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow"><Users size={12} />DataYego team</p>}
                   <div className={richText} dangerouslySetInnerHTML={{ __html: assistantHtml(message.content) }} />
                   {message.escalated && (whatsappUrl
                     ? <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-[1.02]"><MessageCircle size={16} />Continue on WhatsApp</a>
                     : <Link to="/support" className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"><MessageCircle size={16} />Contact the team</Link>)}
                 </div></div>)}
-            {status === "human" && <div className="flex justify-start"><p className="flex items-center gap-2 rounded-xl border border-primary-glow/20 bg-primary/[0.05] px-3 py-2 text-xs leading-5 text-muted-foreground"><Users size={13} className="shrink-0 text-primary-glow" />You're through to the YieGo team — a person will reply here.</p></div>}
+            {status === "human" && <div className="flex justify-start"><p className="flex items-center gap-2 rounded-xl border border-primary-glow/20 bg-primary/[0.05] px-3 py-2 text-xs leading-5 text-muted-foreground"><Users size={13} className="shrink-0 text-primary-glow" />You're through to the DataYego team — a person will reply here.</p></div>}
             {sending && <div className="flex justify-start"><div className="rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3"><Loader2 className="animate-spin text-primary-glow" size={18} /></div></div>}
           </>}
       </div>
-      <form onSubmit={send} className="border-t border-white/[0.07] p-4"><div className="flex gap-2"><textarea value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask YieGo AI a question…" maxLength={1500} rows={2} className="onyx-field min-h-[54px] flex-1 resize-none" /><Button type="submit" disabled={!input.trim() || sending || booting} aria-label="Send message"><Send size={18} /></Button></div><p className="mt-2 flex items-center gap-1.5 text-[11px] text-faint-foreground"><ShieldCheck size={13} />Never share passwords, OTPs, card details or Mobile Money PINs.</p></form>
+      <form onSubmit={send} className="border-t border-white/[0.07] p-4"><div className="flex gap-2"><textarea value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask DataYego AI a question…" maxLength={1500} rows={2} className="onyx-field min-h-[54px] flex-1 resize-none" /><Button type="submit" disabled={!input.trim() || sending || booting} aria-label="Send message"><Send size={18} /></Button></div><p className="mt-2 flex items-center gap-1.5 text-[11px] text-faint-foreground"><ShieldCheck size={13} />Never share passwords, OTPs, card details or Mobile Money PINs.</p></form>
     </CardContent></Card>
 
     <div className="grid gap-3 sm:grid-cols-2"><Button variant="ghost" asChild><Link to="/track-order">Track a specific order</Link></Button>{whatsappUrl ? <Button variant="ghost" asChild><a href={whatsappUrl} target="_blank" rel="noopener noreferrer"><MessageCircle size={16} />Chat with the team on WhatsApp</a></Button> : <Button variant="ghost" asChild><Link to="/support">Contact human support</Link></Button>}</div>

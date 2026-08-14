@@ -21,7 +21,7 @@ describe("assistantHtml", () => {
 
   it("links internal paths and https, leaves unsafe schemes as text", () => {
     expect(assistantHtml("[Track Order](/track-order)")).toBe('<p><a href="/track-order">Track Order</a></p>');
-    expect(assistantHtml("[site](https://yiego.shop)")).toContain('target="_blank"');
+    expect(assistantHtml("[site](https://datayego.com)")).toContain('target="_blank"');
     const unsafe = assistantHtml("[x](javascript:alert(1))");
     expect(unsafe).not.toContain("<a");
     expect(unsafe).toContain("[x](javascript:alert(1))");

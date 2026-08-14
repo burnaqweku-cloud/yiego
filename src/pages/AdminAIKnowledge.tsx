@@ -97,7 +97,7 @@ export default function AdminAIKnowledge() {
   if (loading) return <div className="grid min-h-64 place-items-center"><Loader2 className="animate-spin text-primary-glow" /></div>;
 
   return <div className="space-y-7">
-    <AdminPageHeader eyebrow="AI support" title="Knowledge base" description="Everything the assistant knows about YieGo. Add, correct or disable entries — changes reach customers on the assistant's very next reply, no deploy needed." />
+    <AdminPageHeader eyebrow="AI support" title="Knowledge base" description="Everything the assistant knows about DataYego. Add, correct or disable entries — changes reach customers on the assistant's very next reply, no deploy needed." />
     <AdminStatStrip items={[
       { label: "Entries", value: String(entries.length) },
       { label: "Active", value: String(activeCount), tone: activeCount > 0 ? "success" : "warning" },

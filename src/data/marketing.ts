@@ -14,12 +14,12 @@ import { NETWORKS, type NetworkId } from "@/data/bundles";
 
 /* ══════════════════════════════════════════════════════════════
    Homepage content. Everything here is either factual about how
-   YieGo works today, or clearly marked as replaceable placeholder.
+   DataYego works today, or clearly marked as replaceable placeholder.
    Keep it honest — this copy is what a first-time visitor judges
    the business on.
    ══════════════════════════════════════════════════════════════ */
 
-/* ── Categories: the networks YieGo actually delivers to ────────── */
+/* ── Categories: the networks DataYego actually delivers to ────────── */
 
 export interface Category {
   id: NetworkId;
@@ -43,7 +43,7 @@ export const CATEGORIES: Category[] = NETWORKS.map((n) => ({
   ...CATEGORY_COPY[n.id],
 }));
 
-/* ── Why choose YieGo ───────────────────────────────────────────── */
+/* ── Why choose DataYego ───────────────────────────────────────────── */
 
 export interface Reason {
   icon: LucideIcon;
@@ -78,7 +78,7 @@ export const REASONS: Reason[] = [
   {
     icon: Search,
     title: "Track every order",
-    body: "A YieGo reference on every purchase, so you always know exactly where an order stands.",
+    body: "A DataYego reference on every purchase, so you always know exactly where an order stands.",
   },
   {
     icon: Headphones,
@@ -99,7 +99,7 @@ export const TRUST_POINTS: TrustPoint[] = [
   { icon: Smartphone, label: "All 3 networks", detail: "MTN · Telecel · AirtelTigo" },
   { icon: ShieldCheck, label: "Secure checkout", detail: "Paystack verified" },
   { icon: Clock3, label: "Minutes, not hours", detail: "Automatic delivery" },
-  { icon: ReceiptText, label: "Every order tracked", detail: "YieGo reference" },
+  { icon: ReceiptText, label: "Every order tracked", detail: "DataYego reference" },
 ];
 
 /* ── How it works ───────────────────────────────────────────────── */
@@ -127,13 +127,13 @@ export const STEPS: Step[] = [
   {
     n: "03",
     title: "Pay your way",
-    body: "Pay from your YieGo wallet, by Mobile Money or card — or send the order to someone else to pay.",
+    body: "Pay from your DataYego wallet, by Mobile Money or card — or send the order to someone else to pay.",
     icon: Wallet,
   },
   {
     n: "04",
     title: "Track it land",
-    body: "Follow the order with your YieGo reference until the data is delivered.",
+    body: "Follow the order with your DataYego reference until the data is delivered.",
     icon: Search,
   },
 ];

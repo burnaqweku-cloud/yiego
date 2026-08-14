@@ -17,7 +17,7 @@ export default function TrustStrip() {
     <section ref={ref} className="pb-2 pt-1 sm:pb-6" aria-labelledby="trust-h">
       <div className="mk-wrap">
         <h2 id="trust-h" className="sr-only">
-          What every YieGo order comes with
+          What every DataYego order comes with
         </h2>
 
         <ul className="mk-trust" data-reveal>

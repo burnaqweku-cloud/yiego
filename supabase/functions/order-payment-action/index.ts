@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       if (expired || order.payment_status === "succeeded") return json({ error: "This order can no longer be shared" }, 409);
       const { error } = await supabase.from("orders").update({ payment_arrangement: "shared", selected_payment_method: null, updated_at: new Date().toISOString() }).eq("id", order.id);
       if (error) return json({ error: error.message }, 500);
-      await supabase.from("order_events").insert({ order_id: order.id, event_type: "payment.request.shared", from_status: order.status, to_status: order.status, message: "Order opened for payment by another YieGo user", created_by: auth.user.id });
+      await supabase.from("order_events").insert({ order_id: order.id, event_type: "payment.request.shared", from_status: order.status, to_status: order.status, message: "Order opened for payment by another DataYego user", created_by: auth.user.id });
       return json({ status: "success", data: { orderReference } });
     }
     if (action === "cancel") {

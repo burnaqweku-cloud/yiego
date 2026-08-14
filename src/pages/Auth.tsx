@@ -55,14 +55,14 @@ export default function Auth() {
     try {
       if (mode === "login") {
         await signIn(email.trim(), password);
-        toast.success("Welcome back to YieGo");
+        toast.success("Welcome back to DataYego");
         navigate(nextPath, { replace: true });
       } else if (mode === "signup") {
         const result = await signUp({ fullName: fullName.trim(), email: email.trim(), phone, password });
         if (result.requiresEmailConfirmation) {
           setMode("check-email");
         } else {
-          toast.success("Your YieGo account is ready");
+          toast.success("Your DataYego account is ready");
           navigate(nextPath, { replace: true });
         }
       }
@@ -92,13 +92,13 @@ export default function Auth() {
       <main className="relative z-10 mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[1100px] items-center">
         <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[1fr_430px] lg:items-center">
           <section className="hidden lg:block">
-            <Link to="/" className="inline-flex items-center" aria-label="YieGo — home"><Wordmark variant="full" className="h-[62px]" /></Link>
+            <Link to="/" className="inline-flex items-center" aria-label="DataYego — home"><Wordmark variant="full" className="h-[62px]" /></Link>
             <h1 className="mt-10 max-w-xl font-display text-5xl font-semibold tracking-tight text-white">One account for your wallet, orders and receipts.</h1>
             <p className="mt-4 max-w-lg leading-7 text-muted-foreground">Sign in to fund your wallet, buy data, track orders and keep receipts. Guests can still buy data with Paystack.</p>
           </section>
 
           <Card><CardContent className="p-6 sm:p-7">
-            <Link to="/" className="mb-7 flex items-center lg:hidden" aria-label="YieGo — home"><Wordmark className="h-[26px]" /></Link>
+            <Link to="/" className="mb-7 flex items-center lg:hidden" aria-label="DataYego — home"><Wordmark className="h-[26px]" /></Link>
 
             {mode === "check-email" ? (
               <div className="py-3 text-center">
@@ -121,7 +121,7 @@ export default function Auth() {
             ) : (
               <>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">{mode === "login" ? "Welcome back" : "Create account"}</p>
-                <h2 className="mt-1 font-display text-2xl font-semibold text-white">{mode === "login" ? "Sign in" : "Join YieGo"}</h2>
+                <h2 className="mt-1 font-display text-2xl font-semibold text-white">{mode === "login" ? "Sign in" : "Join DataYego"}</h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{mode === "login" ? "Use your email and password to continue." : "Create an account to activate your wallet and order history."}</p>
                 <form className="mt-7 space-y-4" onSubmit={submit}>
                   {mode === "signup" && <>

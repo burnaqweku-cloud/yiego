@@ -101,7 +101,7 @@ export default function ProfileSheet({ open, onClose }: { open: boolean; onClose
         </div>
 
         <p className="text-[12.5px] leading-relaxed text-faint-foreground">
-          Your name and phone number are saved to your YieGo account.
+          Your name and phone number are saved to your DataYego account.
         </p>
       </div>
       <FlowFooter>

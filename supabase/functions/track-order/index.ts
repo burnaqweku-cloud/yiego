@@ -17,13 +17,13 @@ function customerMessage(orderStatus: string, paymentStatus: string, paidAt: str
   if (orderStatus === "delivered") return "Your data order has been completed.";
   if (orderStatus === "refunded") return "Your payment has been refunded.";
   if (orderStatus === "cancelled") return "This order has been cancelled.";
-  if (orderStatus === "failed") return "We could not complete this order. Please contact YieGo support.";
+  if (orderStatus === "failed") return "We could not complete this order. Please contact DataYego support.";
 
   const started = new Date(paidAt ?? updatedAt).getTime();
   const ageHours = Number.isFinite(started) ? Math.max(0, (Date.now() - started) / 3_600_000) : 0;
   if (ageHours < 24) return "Your payment was successful. Your order is in progress.";
   if (ageHours < 48) return "Your order is still in progress. We will update this page when delivery is completed.";
-  return "Your order is under review. Please contact YieGo support if you need assistance.";
+  return "Your order is under review. Please contact DataYego support if you need assistance.";
 }
 
 Deno.serve(async (req) => {

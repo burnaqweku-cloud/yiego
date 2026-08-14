@@ -17,9 +17,9 @@ interface ContactRow {
 }
 
 const empty: ContactRow = {
-  business_name: "YieGo",
+  business_name: "DataYego",
   whatsapp_number: "",
-  whatsapp_message: "Hello YieGo, I need help with an order.",
+  whatsapp_message: "Hello DataYego, I need help with an order.",
   support_email: "",
   business_hours: "",
   is_whatsapp_enabled: true,
@@ -60,7 +60,7 @@ export default function AdminContact() {
   if (loading) return <div className="grid min-h-64 place-items-center"><Loader2 className="animate-spin text-primary-glow" /></div>;
 
   return <div className="space-y-7">
-    <AdminPageHeader eyebrow="Contacts" title="Contact information" description="Control the official support details displayed throughout YieGo." />
+    <AdminPageHeader eyebrow="Contacts" title="Contact information" description="Control the official support details displayed throughout DataYego." />
     <Card><CardContent>
       <div className="flex items-start gap-4"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-success/[0.1] text-success"><MessageCircle size={20} /></span><div><h2 className="font-display text-lg font-semibold text-white">WhatsApp support</h2><p className="mt-1 text-sm text-muted-foreground">Customers will only see the details saved here. The number is converted into a secure WhatsApp link in the public interface.</p></div></div>
       <div className="mt-6 grid gap-4 md:grid-cols-2">

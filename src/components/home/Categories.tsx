@@ -6,7 +6,7 @@ import type { Category } from "@/data/marketing";
 import { useReveal } from "@/hooks/useReveal";
 
 /**
- * Featured networks — the three carriers YieGo actually delivers to.
+ * Featured networks — the three carriers DataYego actually delivers to.
  * Each card is a doorway into /shop, tinted by the carrier's own brand
  * colour through `--brand` (the one place a raw hex is allowed).
  *

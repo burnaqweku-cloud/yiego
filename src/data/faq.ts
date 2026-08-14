@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   FAQ content. Every answer here describes how YieGo actually
+   FAQ content. Every answer here describes how DataYego actually
    behaves today — if the product changes, change these too.
    `preview: true` marks the questions shown on the homepage.
    ══════════════════════════════════════════════════════════════ */
@@ -36,12 +36,12 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: "Do I need an account to buy?",
-        a: "No. You can check out as a guest and pay by Mobile Money or card. You will get a YieGo reference to track the order. Creating an account adds the wallet, saved details and full order history.",
+        a: "No. You can check out as a guest and pay by Mobile Money or card. You will get a DataYego reference to track the order. Creating an account adds the wallet, saved details and full order history.",
         preview: true,
       },
       {
         q: "Can someone else pay for my order?",
-        a: "Yes. Create the order, then share the YieGo reference with another YieGo user and they can pay it for you. The recipient number and bundle are locked when the order is created, so payment cannot change what was ordered.",
+        a: "Yes. Create the order, then share the DataYego reference with another DataYego user and they can pay it for you. The recipient number and bundle are locked when the order is created, so payment cannot change what was ordered.",
       },
     ],
   },
@@ -50,16 +50,16 @@ export const FAQ_GROUPS: FaqGroup[] = [
     items: [
       {
         q: "How can I pay?",
-        a: "From your YieGo wallet balance, or directly by Mobile Money or card through Paystack. Guests pay by Mobile Money or card.",
+        a: "From your DataYego wallet balance, or directly by Mobile Money or card through Paystack. Guests pay by Mobile Money or card.",
         preview: true,
       },
       {
-        q: "What is the YieGo wallet?",
+        q: "What is the DataYego wallet?",
         a: "A balance you top up once and spend across many orders. It makes buying faster — no re-entering payment details every time — and every credit and debit appears in your wallet statement.",
       },
       {
         q: "Is my payment secure?",
-        a: "Payments are processed by Paystack, and YieGo confirms every payment directly with Paystack's servers before an order moves. Your wallet balance can only be changed by our server, never from the browser or app. YieGo never sees or stores your card details or Mobile Money PIN.",
+        a: "Payments are processed by Paystack, and DataYego confirms every payment directly with Paystack's servers before an order moves. Your wallet balance can only be changed by our server, never from the browser or app. DataYego never sees or stores your card details or Mobile Money PIN.",
         preview: true,
       },
     ],
@@ -69,12 +69,12 @@ export const FAQ_GROUPS: FaqGroup[] = [
     items: [
       {
         q: "How do I track my order?",
-        a: "Every order gets a YieGo reference beginning with YG-. Enter it on the Track Order page to see payment and delivery status. If you have an account, all your orders are listed under Orders.",
+        a: "Every order gets a DataYego reference beginning with YG-. Enter it on the Track Order page to see payment and delivery status. If you have an account, all your orders are listed under Orders.",
         preview: true,
       },
       {
         q: "What if my data does not arrive?",
-        a: "Open the order and check its status first — some networks confirm a little later than others. If it still has not arrived, contact support with your YieGo reference and the team will trace it with the network.",
+        a: "Open the order and check its status first — some networks confirm a little later than others. If it still has not arrived, contact support with your DataYego reference and the team will trace it with the network.",
         preview: true,
       },
       {
@@ -83,7 +83,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: "I entered the wrong number — what now?",
-        a: "Contact support immediately with your YieGo reference. Once a bundle has been delivered to a number by the network it cannot be reversed, so reach out as fast as possible.",
+        a: "Contact support immediately with your DataYego reference. Once a bundle has been delivered to a number by the network it cannot be reversed, so reach out as fast as possible.",
       },
     ],
   },
@@ -96,12 +96,12 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: "How do I get help?",
-        a: "The 24/7 AI assistant answers most questions instantly. For anything account-specific — a stuck order, a payment question, a dispute — contact the team on WhatsApp or by email with your YieGo reference.",
+        a: "The 24/7 AI assistant answers most questions instantly. For anything account-specific — a stuck order, a payment question, a dispute — contact the team on WhatsApp or by email with your DataYego reference.",
         preview: true,
       },
       {
         q: "How do I keep my account safe?",
-        a: "Never share your password, one-time code, card details or Mobile Money PIN with anyone — including anyone claiming to be from YieGo. Our team and the AI assistant will never ask you for them.",
+        a: "Never share your password, one-time code, card details or Mobile Money PIN with anyone — including anyone claiming to be from DataYego. Our team and the AI assistant will never ask you for them.",
       },
     ],
   },

@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Mail, MessageCircle, Megaphone } from "lucide-react";
 import Wordmark from "@/components/brand/Wordmark";
-import { CATEGORIES } from "@/data/marketing";
 import { useContactSettings } from "@/hooks/useContactSettings";
 
 /** Public footer — the site map, kept scannable. */
@@ -22,10 +21,15 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
     ],
   },
   {
-    title: "Shop",
+    // Every page links the money pages — sitewide internal links are the
+    // strongest crawl signal the network landing pages get.
+    title: "Data bundles",
     links: [
       { label: "All bundles", to: "/shop" },
-      ...CATEGORIES.map((c) => ({ label: `${c.name} data`, to: "/shop" })),
+      { label: "Bundle prices", to: "/prices" },
+      { label: "MTN data bundles", to: "/mtn-data-bundles" },
+      { label: "Telecel data bundles", to: "/telecel-data-bundles" },
+      { label: "AirtelTigo data bundles", to: "/airteltigo-data-bundles" },
     ],
   },
   {
@@ -47,7 +51,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
   },
 ];
 
-/** The only channel YieGo actually runs. No other social accounts exist, so
+/** The only channel DataYego actually runs. No other social accounts exist, so
  *  none are linked — a dead icon costs more trust than an absent one. */
 const WHATSAPP_CHANNEL = "https://whatsapp.com/channel/0029Vb7zmhX2f3EClS0Qao2S";
 
@@ -60,7 +64,7 @@ export default function PublicFooter() {
         <div className="grid gap-11 lg:grid-cols-[1.25fr_2.4fr]">
           {/* Brand */}
           <div className="max-w-[330px]">
-            <Link to="/" className="flex items-center" aria-label="YieGo — home">
+            <Link to="/" className="flex items-center" aria-label="DataYego — home">
               <Wordmark className="h-[28px]" />
             </Link>
             <p className="mk-body mt-4 text-[13.5px]">
@@ -136,7 +140,7 @@ export default function PublicFooter() {
 
         <div className="mt-9 flex flex-col gap-3 border-t border-white/[0.07] pt-7 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[13px] text-faint-foreground">
-            © {new Date().getFullYear()} {contact?.business_name || "YieGo"}. All rights reserved.
+            © {new Date().getFullYear()} {contact?.business_name || "DataYego"}. All rights reserved.
           </p>
           <p className="text-[13px] text-faint-foreground">Built for Ghana 🇬🇭</p>
         </div>

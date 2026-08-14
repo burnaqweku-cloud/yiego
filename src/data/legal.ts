@@ -6,7 +6,7 @@
    slug in `phase1.legal_documents`, the published row WINS — this
    file is only the floor, never an override.
 
-   They describe how YieGo actually works today: data bundles for
+   They describe how DataYego actually works today: data bundles for
    MTN, Telecel and AirtelTigo, guest checkout, Paystack payments,
    a wallet, automatic supplier delivery and a YG- reference on
    every order. Nothing here invents a company registration, an
@@ -32,17 +32,17 @@ const EFFECTIVE = "2026-08-05";
    must stay on one line. */
 
 const TERMS = `
-YieGo sells prepaid mobile data bundles in Ghana for MTN, Telecel and AirtelTigo. These terms are the agreement between you and YieGo when you use the website, buy a bundle, or hold a YieGo wallet. By placing an order you accept them.
+DataYego sells prepaid mobile data bundles in Ghana for MTN, Telecel and AirtelTigo. These terms are the agreement between you and DataYego when you use the website, buy a bundle, or hold a DataYego wallet. By placing an order you accept them.
 
-## 1. Who can use YieGo
+## 1. Who can use DataYego
 
-You may use YieGo if you are able to enter a binding contract under Ghanaian law. You can buy as a guest with just an email address, or create an account. If you create an account, you are responsible for keeping your password safe and for everything done through it. Tell us immediately if you think someone else has access.
+You may use DataYego if you are able to enter a binding contract under Ghanaian law. You can buy as a guest with just an email address, or create an account. If you create an account, you are responsible for keeping your password safe and for everything done through it. Tell us immediately if you think someone else has access.
 
 ## 2. What you are buying
 
-Each order is for one data bundle, on one network, for one recipient phone number, at the price shown at checkout. The bundle itself is provided by the mobile network. YieGo buys it and has it delivered to the number you give us.
+Each order is for one data bundle, on one network, for one recipient phone number, at the price shown at checkout. The bundle itself is provided by the mobile network. DataYego buys it and has it delivered to the number you give us.
 
-We show the bundle size and, where the network states one, its validity period. Where no validity is shown, the network sets it when the bundle lands. Data allowances, expiry rules and fair-use limits are set by the network, not by YieGo.
+We show the bundle size and, where the network states one, its validity period. Where no validity is shown, the network sets it when the bundle lands. Data allowances, expiry rules and fair-use limits are set by the network, not by DataYego.
 
 ## 3. The recipient number is your responsibility
 
@@ -56,13 +56,13 @@ You choose the number a bundle is delivered to, and it does not have to be your 
 
 Prices are shown in Ghana cedis and are the full amount you pay. Nothing is added at checkout. Prices can change when the networks change theirs; the price that applies to your order is the one shown when you place it.
 
-You can pay by Mobile Money or card through our payment provider, or from your YieGo wallet. Card and Mobile Money details are handled by the payment provider — YieGo never sees or stores your card number, Mobile Money PIN or one-time codes.
+You can pay by Mobile Money or card through our payment provider, or from your DataYego wallet. Card and Mobile Money details are handled by the payment provider — DataYego never sees or stores your card number, Mobile Money PIN or one-time codes.
 
 An order is only sent to the network once payment has actually cleared. An unpaid order expires after the window shown on the order.
 
-## 5. The YieGo wallet
+## 5. The DataYego wallet
 
-The wallet holds prepaid credit for buying bundles on YieGo. It is not a bank account, it earns no interest, and it is not a means of transferring money to other people.
+The wallet holds prepaid credit for buying bundles on DataYego. It is not a bank account, it earns no interest, and it is not a means of transferring money to other people.
 
 - Your balance can only be changed by our servers — never from your phone or browser.
 - Every credit and debit is recorded on your wallet statement.
@@ -70,7 +70,7 @@ The wallet holds prepaid credit for buying bundles on YieGo. It is not a bank ac
 
 ## 6. Paying for someone else's order
 
-An order can be shared so that another YieGo user pays for it using its order reference. Whoever pays sees the network, bundle, recipient number and amount before paying, and cannot change any of them. Payment requests expire after the period shown when the request is created.
+An order can be shared so that another DataYego user pays for it using its order reference. Whoever pays sees the network, bundle, recipient number and amount before paying, and cannot change any of them. Payment requests expire after the period shown when the request is created.
 
 ## 7. Delivery
 
@@ -84,14 +84,14 @@ You can cancel an order that has not been paid for. Once payment has cleared and
 
 Where an order is paid for but the data is never delivered, you are entitled to your money back. Our Refund policy explains what qualifies, how to ask, and how refunds are paid.
 
-## 9. Using YieGo fairly
+## 9. Using DataYego fairly
 
 You agree not to:
 
-- use YieGo for fraud, money laundering, or with money that is not lawfully yours
+- use DataYego for fraud, money laundering, or with money that is not lawfully yours
 - use someone else's payment details, account or identity
 - attempt to break, overload, probe or reverse-engineer the service, or to obtain data belonging to other customers
-- resell, automate or bulk-purchase through YieGo in a way that breaches a network's own terms
+- resell, automate or bulk-purchase through DataYego in a way that breaches a network's own terms
 - abuse refunds, disputes or chargebacks
 
 ## 10. Suspension
@@ -100,13 +100,13 @@ We may hold, cancel or refuse an order, and suspend or close an account, where w
 
 ## 11. Availability
 
-We work to keep YieGo available, but we do not promise it will be uninterrupted or error free. Features may change, and parts of the service may be unavailable during maintenance or during an outage at a network, a supplier or a payment provider.
+We work to keep DataYego available, but we do not promise it will be uninterrupted or error free. Features may change, and parts of the service may be unavailable during maintenance or during an outage at a network, a supplier or a payment provider.
 
 ## 12. Our responsibility to you
 
 Nothing in these terms limits any right you have under Ghanaian law that cannot lawfully be limited, including for death, personal injury or fraud caused by us.
 
-Subject to that, YieGo is not responsible for loss that was not reasonably foreseeable, for loss of profit, business, or data caused by a delayed or failed delivery, or for the acts of the mobile networks. Our total responsibility to you for any order is limited to the amount you paid for that order.
+Subject to that, DataYego is not responsible for loss that was not reasonably foreseeable, for loss of profit, business, or data caused by a delayed or failed delivery, or for the acts of the mobile networks. Our total responsibility to you for any order is limited to the amount you paid for that order.
 
 ## 13. Changes to these terms
 
@@ -122,7 +122,7 @@ Questions about these terms should go to our support team through any of the cha
 `.trim();
 
 const PRIVACY = `
-This policy explains what personal information YieGo collects when you buy data bundles from us, why we hold it, who we share it with, and the rights you have over it under the Data Protection Act, 2012 (Act 843).
+This policy explains what personal information DataYego collects when you buy data bundles from us, why we hold it, who we share it with, and the rights you have over it under the Data Protection Act, 2012 (Act 843).
 
 ## What we collect
 
@@ -130,7 +130,7 @@ This policy explains what personal information YieGo collects when you buy data 
 
 **When you create an account.** Your name, email address and phone number, and a securely hashed version of your password. We never store your password itself.
 
-**When you pay.** A record that payment succeeded or failed, the amount, and the reference from our payment provider. Card numbers, Mobile Money PINs and one-time codes are entered with the payment provider and never reach YieGo.
+**When you pay.** A record that payment succeeded or failed, the amount, and the reference from our payment provider. Card numbers, Mobile Money PINs and one-time codes are entered with the payment provider and never reach DataYego.
 
 **When you use a wallet.** Every top-up, purchase, refund and adjustment, so your statement is complete and can be reconciled.
 
@@ -168,9 +168,9 @@ Order, payment and wallet records are kept for as long as we need them for accou
 
 ## How we protect it
 
-Traffic between your device and YieGo is encrypted. Access to customer data is restricted to the people who need it to run the service. Wallet balances can only be changed by our servers, never from a phone or a browser.
+Traffic between your device and DataYego is encrypted. Access to customer data is restricted to the people who need it to run the service. Wallet balances can only be changed by our servers, never from a phone or a browser.
 
-Nobody at YieGo will ever ask you for your password, a one-time code, your card details or your Mobile Money PIN. If someone does, they are not from YieGo.
+Nobody at DataYego will ever ask you for your password, a one-time code, your card details or your Mobile Money PIN. If someone does, they are not from DataYego.
 
 ## Your rights
 
@@ -185,7 +185,7 @@ Ask through any channel on our Contact page. We may need to confirm who you are 
 
 ## Children
 
-YieGo is not intended for children. Do not create an account if you cannot enter a binding contract under Ghanaian law.
+DataYego is not intended for children. Do not create an account if you cannot enter a binding contract under Ghanaian law.
 
 ## Changes
 
@@ -219,11 +219,11 @@ Once a bundle has been delivered to a phone number, the network cannot take it b
 - a bundle that has already been used, in whole or in part
 - an amount claimed long after the order, where the delivery can no longer be verified with the network
 
-Data allowances, expiry and fair-use limits are set by the mobile network. A complaint about how fast a bundle ran out, or how long it lasted, is a matter for the network rather than a refund from YieGo.
+Data allowances, expiry and fair-use limits are set by the mobile network. A complaint about how fast a bundle ran out, or how long it lasted, is a matter for the network rather than a refund from DataYego.
 
 ## If you entered the wrong number
 
-Contact support immediately with your order reference. If the order has not yet been sent to the network there may still be time to cancel it. Once it has been delivered it cannot be reversed — this is a limitation of the networks, not a YieGo policy. Always check the recipient number before you pay.
+Contact support immediately with your order reference. If the order has not yet been sent to the network there may still be time to cancel it. Once it has been delivered it cannot be reversed — this is a limitation of the networks, not a DataYego policy. Always check the recipient number before you pay.
 
 ## An order that is stuck, not failed
 
@@ -241,7 +241,7 @@ We aim to look at every refund request within 2 working days. Where we need to c
 
 ## How refunds are paid
 
-Approved refunds are paid as credit to your YieGo wallet, which you can spend on any bundle straight away. If you would rather have the money returned to the account you paid from, tell us when you make the request. Refunds to a card or Mobile Money account are made through our payment provider, and how long they take to appear is decided by your bank or mobile money operator.
+Approved refunds are paid as credit to your DataYego wallet, which you can spend on any bundle straight away. If you would rather have the money returned to the account you paid from, tell us when you make the request. Refunds to a card or Mobile Money account are made through our payment provider, and how long they take to appear is decided by your bank or mobile money operator.
 
 Refunds are always made to the person who paid, and only once per order.
 
@@ -258,7 +258,7 @@ export const LEGAL_FALLBACKS: Record<string, LegalFallback> = {
   terms: {
     title: "Terms of service",
     summary:
-      "The agreement between you and YieGo when you buy a data bundle, hold a wallet, or use this site.",
+      "The agreement between you and DataYego when you buy a data bundle, hold a wallet, or use this site.",
     content: TERMS,
     version: 1,
     published_at: EFFECTIVE,

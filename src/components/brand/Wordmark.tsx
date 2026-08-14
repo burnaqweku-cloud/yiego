@@ -5,7 +5,7 @@ import lockupLight from "@/assets/yiego-lockup.png";
 import { cn } from "@/lib/utils";
 
 /**
- * The YieGo logo.
+ * The DataYego logo.
  *
  * Two files — the supplied artwork, and a variant with its near-black ink
  * lifted so it survives on the dark canvas. They are swapped by a CSS class
@@ -30,8 +30,8 @@ export default function Wordmark({
 
   return (
     <>
-      <img src={dark} alt="YieGo" draggable={false} className={cn("brand-dark", shared)} />
-      <img src={light} alt="YieGo" draggable={false} className={cn("brand-light", shared)} />
+      <img src={dark} alt="DataYego" draggable={false} className={cn("brand-dark", shared)} />
+      <img src={light} alt="DataYego" draggable={false} className={cn("brand-light", shared)} />
     </>
   );
 }

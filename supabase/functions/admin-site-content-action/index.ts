@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     const action = String(body.action ?? "");
 
     if (action === "update_contact") {
-      const businessName = String(body.businessName ?? "YieGo").trim().slice(0, 100);
+      const businessName = String(body.businessName ?? "DataYego").trim().slice(0, 100);
       const whatsappNumber = String(body.whatsappNumber ?? "").replace(/[^0-9+]/g, "").slice(0, 20) || null;
       const whatsappMessage = String(body.whatsappMessage ?? "").trim().slice(0, 500);
       const supportEmail = String(body.supportEmail ?? "").trim().toLowerCase().slice(0, 254) || null;
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
         id: true,
         business_name: businessName,
         whatsapp_number: whatsappNumber,
-        whatsapp_message: whatsappMessage || "Hello YieGo, I need help with an order.",
+        whatsapp_message: whatsappMessage || "Hello DataYego, I need help with an order.",
         support_email: supportEmail,
         business_hours: businessHours,
         is_whatsapp_enabled: enabled,

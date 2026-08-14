@@ -48,7 +48,7 @@ export function useContactSettings() {
     if (!contact?.is_whatsapp_enabled || !contact.whatsapp_number) return "";
     const number = contact.whatsapp_number.replace(/\D/g, "");
     if (!number) return "";
-    const message = contact.whatsapp_message || "Hello YieGo, I need help.";
+    const message = contact.whatsapp_message || "Hello DataYego, I need help.";
     return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
   }, [contact]);
 

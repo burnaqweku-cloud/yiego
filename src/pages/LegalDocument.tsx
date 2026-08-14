@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from "react";
 import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
+import Seo from "@/components/seo/Seo";
 import { supabase } from "@/integrations/supabase/client";
 import { LEGAL_FALLBACKS } from "@/data/legal";
 import { useReveal } from "@/hooks/useReveal";
@@ -123,10 +124,22 @@ function toBlocks(raw: string): Block[] {
   return blocks;
 }
 
+/* These three URLs are sitemap-listed, so each carries its own title,
+   description and canonical; an unknown slug noindexes itself. */
+const LEGAL_META: Record<string, { title: string; description: string }> = {
+  terms: { title: "Terms of Service | DataYego", description: "The terms that govern buying data bundles, wallet top-ups and orders on DataYego." },
+  privacy: { title: "Privacy Policy | DataYego", description: "What DataYego collects, why, and how your details are protected when you buy data bundles." },
+  refunds: { title: "Refund Policy | DataYego", description: "When DataYego refunds a data bundle order, how refunds are paid, and how to raise one." },
+};
+
 export default function LegalDocument() {
   const { slug = "privacy" } = useParams();
   const [document, setDocument] = useState<LegalRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const meta = LEGAL_META[slug];
+  const seo = meta
+    ? <Seo title={meta.title} description={meta.description} path={`/legal/${slug}`} />
+    : <Seo title="Document not found — DataYego" description="This legal document does not exist." path={`/legal/${slug}`} noindex />;
 
   useEffect(() => {
     let mounted = true;
@@ -153,7 +166,7 @@ export default function LegalDocument() {
         className="group inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft size={15} className="transition-transform duration-200 group-hover:-translate-x-0.5" aria-hidden="true" />
-        Back to YieGo
+        Back to DataYego
       </Link>
     </div>
   );
@@ -161,6 +174,7 @@ export default function LegalDocument() {
   if (loading) {
     return (
       <section className="mk-section-tight" aria-label="Loading document">
+        {seo}
         <div className="mk-wrap">
           <div className="mk-skeleton h-3 w-28" />
           <div className="mk-skeleton mt-8 h-10 w-3/4 max-w-md rounded-xl" />
@@ -178,6 +192,7 @@ export default function LegalDocument() {
   if (!document) {
     return (
       <section className="mk-section-tight" aria-labelledby="unavailable-title">
+        {seo}
         <div className="mk-wrap">
           <div className="mk-card mx-auto max-w-xl p-8 text-center sm:p-10">
             <span className="mk-chip mx-auto">
@@ -196,7 +211,7 @@ export default function LegalDocument() {
                 <ArrowRight size={17} className="mk-arrow" aria-hidden="true" />
               </Link>
               <Link to="/" className="mk-btn mk-btn-ghost">
-                Back to YieGo
+                Back to DataYego
               </Link>
             </div>
           </div>
@@ -207,6 +222,7 @@ export default function LegalDocument() {
 
   return (
     <>
+      {seo}
       {/* ── Header ──────────────────────────────────────────────── */}
       <RevealSection className="mk-section-tight pb-0" aria-labelledby="legal-title">
         <div className="mk-wrap">

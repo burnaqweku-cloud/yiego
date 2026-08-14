@@ -2,6 +2,8 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Plus } from "lucide-react";
 import { FAQ_GROUPS } from "@/data/faq";
+import Seo from "@/components/seo/Seo";
+import { faqPageLd } from "@/lib/structuredData";
 import { useReveal } from "@/hooks/useReveal";
 
 /* ══════════════════════════════════════════════════════════════
@@ -53,6 +55,12 @@ export default function Faq() {
 
   return (
     <>
+      <Seo
+        title="Frequently Asked Questions | DataYego"
+        description="How buying data on DataYego works: payments, delivery times, refunds, wallet and order tracking — answered simply."
+        path="/faq"
+        jsonLd={faqPageLd(FAQ_GROUPS.flatMap((g) => g.items.map((i) => ({ q: i.q, a: i.a }))))}
+      />
       {/* ── Page header ─────────────────────────────────────────── */}
       <section className="mk-section-tight" aria-labelledby="faq-title" ref={headRef}>
         <div className="mk-wrap">

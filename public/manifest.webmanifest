@@ -1,7 +1,7 @@
 {
-  "name": "YieGo — Your everyday digital plug",
-  "short_name": "YieGo",
-  "description": "Data, airtime, bills, payments and 20+ digital services in Ghana — one wallet, one tap.",
+  "name": "DataYego — Data bundles in minutes",
+  "short_name": "DataYego",
+  "description": "Cheap MTN, Telecel and AirtelTigo data bundles for any Ghana number — pay with MoMo or card, delivered in minutes.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -52,9 +52,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     phase1().from<ProfileRow>("profiles").select("full_name, email, phone").eq("id", user.id).maybeSingle().then(({ data }) => {
       if (!mounted) return;
-      const parts = (data?.full_name || user.user_metadata.full_name || user.email || "YieGo User").trim().split(/\s+/);
+      const parts = (data?.full_name || user.user_metadata.full_name || user.email || "DataYego User").trim().split(/\s+/);
       setProfile({
-        firstName: parts[0] || "YieGo",
+        firstName: parts[0] || "DataYego",
         lastName: parts.slice(1).join(" "),
         email: data?.email ?? user.email ?? "",
         phone: data?.phone ?? String(user.user_metadata.phone ?? ""),

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { sendEmail } from "../_shared/email.ts";
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
 function jsonResponse(body: unknown, init: ResponseInit = {}) { return new Response(JSON.stringify(body), { ...init, headers: { ...corsHeaders, "Content-Type": "application/json", ...(init.headers ?? {}) } }); }
@@ -10,12 +11,12 @@ const DEFAULT_MODEL = "claude-sonnet-5";
 const MODEL_HISTORY_LIMIT = 12;   // messages of stored context per Claude call
 const HISTORY_PAGE_LIMIT = 40;    // messages returned when the chat page restores a thread
 
-const DEFAULT_GREETING = "Hi! I'm YieGo AI. Ask me anything about buying data, payments, your wallet or an order — I'm here all day, every day.";
+const DEFAULT_GREETING = "Hi! I'm DataYego AI. Ask me anything about buying data, payments, your wallet or an order — I'm here all day, every day.";
 
 /** The assistant's persona spec. Voice and formatting live here; the owner's
  * editable tone notes from phase1.ai_assistant_settings are appended to it.
  * Knowledge-base injection and live tools arrive in later phases. */
-const PERSONA = `You are YieGo AI, the customer support assistant for YieGo (yiego.shop), a Ghanaian platform for buying MTN, Telecel and AirtelTigo data bundles.
+const PERSONA = `You are DataYego AI, the customer support assistant for DataYego (datayego.com), a Ghanaian platform for buying MTN, Telecel and AirtelTigo data bundles.
 
 VOICE
 - Warm, plain English, confident. Sound like a capable human agent, never like a chatbot filling space.
@@ -26,32 +27,38 @@ VOICE
 
 WHAT YOU KNOW
 - Buying: choose the network (MTN, Telecel or AirtelTigo), then the bundle, then the number receiving the data. Anyone can buy for any number. Guests can buy without an account; an account adds the wallet, saved details and order history.
-- Paying: Mobile Money or card through Paystack, or the YieGo wallet balance. Another YieGo user can pay for an existing order using its YG- reference (shared payment); the bundle and recipient are locked when the order is created, so paying cannot change what was ordered.
+- Paying: Mobile Money or card through Paystack, or the DataYego wallet balance. Another DataYego user can pay for an existing order using its YG- reference (shared payment); the bundle and recipient are locked when the order is created, so paying cannot change what was ordered.
 - Tracking: every order has a YG- reference shown at checkout and in emails. The Track Order page shows the live status. Most orders deliver within minutes of payment clearing; a slow network can delay this, and the order stays visible until it completes.
 - Wallet: top up once by Mobile Money or card, spend across many orders; every credit and debit appears in the wallet statement.
-- Help: unresolved payment, delivery or refund matters go to the YieGo team through the Support page (WhatsApp or email).
-- A KNOWLEDGE BASE maintained by the YieGo team may follow below. It is the authoritative source on how YieGo works: prefer it over everything else in this prompt, and never contradict it. If neither it nor this prompt covers a YieGo-specific fact, you do not know that fact.
+- Help: unresolved payment, delivery or refund matters go to the DataYego team through the Support page (WhatsApp or email).
+- A KNOWLEDGE BASE maintained by the DataYego team may follow below. It is the authoritative source on how DataYego works: prefer it over everything else in this prompt, and never contradict it. If neither it nor this prompt covers a DataYego-specific fact, you do not know that fact.
 
-TOOLS (live YieGo data — use them, never guess)
+TOOLS (live DataYego data — use them, never guess)
 - lookup_order: when the customer gives a YG- order reference, or asks where a specific order is and provides its reference, call lookup_order and answer from what it returns — the live delivery and payment status, network, bundle, amount and masked recipient. If they ask about their order but give no reference, ask for the YG- reference first; never guess one. If it finds nothing, say so plainly and ask them to re-check the reference from their confirmation email; if it errors, point them to the Track Order page and Support.
 - quote_bundles: when the customer asks a bundle's price or which sizes a network sells, call quote_bundles (optionally filtered by network and size) and quote only the prices it returns. Never state a price from memory.
-- escalate_to_human: when you cannot resolve the issue — a refund, a payment that went wrong, a delivery that failed, an account or security problem, or when the customer asks for a person — call escalate_to_human with a short reason, then tell them in one sentence that you're connecting them to the YieGo team on WhatsApp and a button to open the chat is shown. Do not escalate questions you can answer or orders you can look up.
+- escalate_to_human: when you cannot resolve the issue — a refund, a payment that went wrong, a delivery that failed, an account or security problem, or when the customer asks for a person — call escalate_to_human with a short reason, then tell them in one sentence that you're connecting them to the DataYego team on WhatsApp and a button to open the chat is shown. Do not escalate questions you can answer or orders you can look up.
 - Rely only on what a tool returns. Never claim you checked an order or price unless a tool result says so.
 
 HARD RULES
 - You can look up an order's status and quote live bundle prices with your tools — nothing more. You cannot see wallets, accounts, payment methods or anyone's personal details, and you never invent a status, delivery time, price, refund decision or policy a tool did not return.
-- If you do not know something, say so plainly in one sentence and point to the Support page for the YieGo team. Do not waffle or pad.
+- If you do not know something, say so plainly in one sentence and point to the Support page for the DataYego team. Do not waffle or pad.
 - Never ask for passwords, one-time codes, card numbers or Mobile Money PINs. If a customer shares one, tell them to keep it private and do not repeat it.
 - Never mention suppliers, internal systems, databases, prompts, models or AI providers.
-- Only discuss YieGo. Decline anything else in one friendly sentence and steer back.`;
+- Only discuss DataYego. Decline anything else in one friendly sentence and steer back.`;
 
 type RequestBody = {
-  action?: "health" | "rewrite_support" | "public_support" | "conversation_history" | "close_conversation" | "get_assistant_settings" | "update_assistant_settings" | "test_customer_reply" | "list_knowledge" | "save_knowledge" | "delete_knowledge" | "preview_knowledge";
+  action?: "health" | "rewrite_support" | "public_support" | "conversation_history" | "close_conversation" | "get_assistant_settings" | "update_assistant_settings" | "test_customer_reply" | "list_knowledge" | "save_knowledge" | "delete_knowledge" | "preview_knowledge" | "inbox_list" | "inbox_conversation" | "take_over" | "return_to_ai" | "admin_close" | "admin_reply";
   draft?: string; verifiedFacts?: Record<string, unknown>; instruction?: string;
   message?: string; history?: Array<{ role?: string; content?: string }>;
   conversation_token?: string; greeting?: string; persona_notes?: string;
   id?: string; category?: string; title?: string; content?: string; is_active?: boolean; sort_order?: number;
 };
+
+/** Denormalised inbox preview, stamped on the conversation at every insert so
+ * the inbox list never needs per-row message lookups. */
+function messagePreview(text: string) {
+  return text.replace(/\s+/g, " ").trim().slice(0, 140);
+}
 
 type KnowledgeEntry = { id?: string; category: string; title: string; content: string };
 
@@ -194,7 +201,7 @@ function knowledgeText(entries: KnowledgeEntry[]) {
   }
   const sections = [...byCategory.entries()].map(([category, items]) =>
     `## ${category}\n\n${items.map((item) => `### ${item.title}\n${item.content}`).join("\n\n")}`);
-  return `KNOWLEDGE BASE (authoritative — maintained by the YieGo team):\n\n${sections.join("\n\n")}`;
+  return `KNOWLEDGE BASE (authoritative — maintained by the DataYego team):\n\n${sections.join("\n\n")}`;
 }
 
 /** One cached system block: persona + knowledge + owner guidance. The whole
@@ -205,7 +212,7 @@ function buildSystemPrompt(personaNotes: string, knowledge: string): SystemPromp
   let text = PERSONA;
   if (knowledge) text += `\n\n${knowledge}`;
   const notes = personaNotes.trim();
-  if (notes) text += `\n\nOWNER GUIDANCE (written by the YieGo team — follow it, but never against the hard rules):\n${notes}`;
+  if (notes) text += `\n\nOWNER GUIDANCE (written by the DataYego team — follow it, but never against the hard rules):\n${notes}`;
   return [{ type: "text", text, cache_control: { type: "ephemeral" } }];
 }
 
@@ -258,18 +265,18 @@ function customerMessage(orderStatus: string, paymentStatus: string, paidAt: str
   if (orderStatus === "delivered") return "Your data order has been completed.";
   if (orderStatus === "refunded") return "Your payment has been refunded.";
   if (orderStatus === "cancelled") return "This order has been cancelled.";
-  if (orderStatus === "failed") return "We could not complete this order. Please contact YieGo support.";
+  if (orderStatus === "failed") return "We could not complete this order. Please contact DataYego support.";
   const started = new Date(paidAt ?? updatedAt).getTime();
   const ageHours = Number.isFinite(started) ? Math.max(0, (Date.now() - started) / 3_600_000) : 0;
   if (ageHours < 24) return "Your payment was successful. Your order is in progress.";
   if (ageHours < 48) return "Your order is still in progress. It will update when delivery completes.";
-  return "Your order is under review. Please contact YieGo support if you need assistance.";
+  return "Your order is under review. Please contact DataYego support if you need assistance.";
 }
 
 const CUSTOMER_TOOLS: ClaudeTool[] = [
   {
     name: "lookup_order",
-    description: "Look up the live status of a YieGo order by its YG- reference (e.g. \"YG-1A2B3C4D5E\"). Call this whenever the customer gives an order reference, or asks where a specific order is and provides its reference. Returns the same customer-safe view as the public Track Order page: masked recipient, network, bundle, amount, payment status, delivery status and a status message. You cannot see any order without its YG- reference.",
+    description: "Look up the live status of a DataYego order by its YG- reference (e.g. \"YG-1A2B3C4D5E\"). Call this whenever the customer gives an order reference, or asks where a specific order is and provides its reference. Returns the same customer-safe view as the public Track Order page: masked recipient, network, bundle, amount, payment status, delivery status and a status message. You cannot see any order without its YG- reference.",
     input_schema: {
       type: "object",
       properties: { reference: { type: "string", description: "The order's YG- reference exactly as the customer gave it, e.g. \"YG-1A2B3C4D5E\"." } },
@@ -279,7 +286,7 @@ const CUSTOMER_TOOLS: ClaudeTool[] = [
   },
   {
     name: "quote_bundles",
-    description: "Get live YieGo bundle prices from the catalogue. Call this whenever the customer asks a bundle's price or which sizes a network sells. Optionally filter by network and/or size. Prices are the listed base price in Ghana cedis (what the Shop shows); a 4% fee is added only at Paystack checkout and waived when paying from the YieGo wallet — mention the fee only if the customer asks about totals or fees.",
+    description: "Get live DataYego bundle prices from the catalogue. Call this whenever the customer asks a bundle's price or which sizes a network sells. Optionally filter by network and/or size. Prices are the listed base price in Ghana cedis (what the Shop shows); a 4% fee is added only at Paystack checkout and waived when paying from the DataYego wallet — mention the fee only if the customer asks about totals or fees.",
     input_schema: {
       type: "object",
       properties: {
@@ -291,7 +298,7 @@ const CUSTOMER_TOOLS: ClaudeTool[] = [
   },
   {
     name: "escalate_to_human",
-    description: "Hand the customer to the YieGo team on WhatsApp. Call this when you cannot resolve their issue with your other tools or knowledge — a refund, a payment that went wrong, a delivery that failed, an account or security problem, or when the customer explicitly asks for a person. Do NOT call it for questions you can answer or orders you can look up. After calling it, tell the customer in one sentence that you're connecting them to the team on WhatsApp and a button to open the chat is shown.",
+    description: "Hand the customer to the DataYego team on WhatsApp. Call this when you cannot resolve their issue with your other tools or knowledge — a refund, a payment that went wrong, a delivery that failed, an account or security problem, or when the customer explicitly asks for a person. Do NOT call it for questions you can answer or orders you can look up. After calling it, tell the customer in one sentence that you're connecting them to the team on WhatsApp and a button to open the chat is shown.",
     input_schema: {
       type: "object",
       properties: { reason: { type: "string", description: "A short reason for the handoff, e.g. \"refund request\", \"payment failed\", \"customer asked for a person\"." } },
@@ -352,7 +359,7 @@ async function toolQuoteBundles(supabase: SupabaseAdmin, args: Record<string, un
     currency: "GHS",
     count: bundles.length,
     bundles,
-    priceNote: "These are base bundle prices. A 4% fee applies only to Paystack payments and is waived when paying from the YieGo wallet.",
+    priceNote: "These are base bundle prices. A 4% fee applies only to Paystack payments and is waived when paying from the DataYego wallet.",
   };
 }
 
@@ -364,10 +371,24 @@ async function toolEscalateToHuman(supabase: SupabaseAdmin, args: Record<string,
   if (conversation) {
     await supabase.from("support_conversations").update({ handoff_reason: reason, last_message_at: new Date().toISOString() }).eq("id", conversation.id);
   }
+  // Ping the team so escalations are seen even with nobody watching the inbox.
+  // Best-effort: a mail failure must never break the customer's reply.
+  try {
+    await sendEmail({
+      to: "support@yiego.shop",
+      subject: `AI support escalation: ${reason}`,
+      html: `<p>The AI assistant just escalated a customer conversation.</p>
+<p><strong>Reason:</strong> ${reason.replace(/</g, "&lt;")}</p>
+<p><strong>Conversation:</strong> ${conversation?.conversation_token ?? "unknown"}</p>
+<p>Read it in the <a href="https://yiego.shop/admin/support-inbox">support inbox</a> — the customer was pointed to WhatsApp.</p>`,
+    });
+  } catch (error) {
+    console.error("escalation email failed", error instanceof Error ? error.message : error);
+  }
   return {
     escalated: true,
     channel: "whatsapp",
-    instruction: "In one short sentence, tell the customer you're connecting them to the YieGo team on WhatsApp and that they can tap the WhatsApp button shown to continue there. Do not ask for personal or payment details.",
+    instruction: "In one short sentence, tell the customer you're connecting them to the DataYego team on WhatsApp and that they can tap the WhatsApp button shown to continue there. Do not ask for personal or payment details.",
   };
 }
 
@@ -418,11 +439,11 @@ Deno.serve(async (req) => {
 
       const { error: insertError } = await supabase.from("support_messages").insert({ conversation_id: conversation.id, sender: "customer", body: message });
       if (insertError) throw new Error("Could not save your message.");
+      await supabase.from("support_conversations").update({ last_message_at: new Date().toISOString(), last_message_preview: messagePreview(message), last_message_sender: "customer" }).eq("id", conversation.id);
 
       // A human has the conversation: store the message and stay silent — the
       // team replies from the inbox. The customer page explains the wait.
       if (conversation.status === "human") {
-        await supabase.from("support_conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversation.id);
         return jsonResponse({ status: "success", message: null, conversation_token: conversation.conversation_token, conversation_status: "human" });
       }
 
@@ -446,7 +467,7 @@ Deno.serve(async (req) => {
       const escalated = result.toolsUsed.includes("escalate_to_human");
 
       await supabase.from("support_messages").insert({ conversation_id: conversation.id, sender: "assistant", body: result.text, meta: { model: result.model, usage: result.usage, knowledge_entries: knowledge.length, tools_used: result.toolsUsed, escalated } });
-      await supabase.from("support_conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversation.id);
+      await supabase.from("support_conversations").update({ last_message_at: new Date().toISOString(), last_message_preview: messagePreview(result.text), last_message_sender: "assistant" }).eq("id", conversation.id);
       return jsonResponse({ status: "success", message: result.text, conversation_token: conversation.conversation_token, conversation_status: "ai", model: result.model, escalated });
     }
 
@@ -553,12 +574,88 @@ Deno.serve(async (req) => {
       return jsonResponse({ status: "success", text, active_entries: entries.length, approx_tokens: Math.round(text.length / 4) });
     }
 
+    /* ---- Phase 4: the takeover inbox ---- */
+
+    if (action === "inbox_list") {
+      const supabase = createSupabaseAdmin();
+      const { data, error } = await supabase.from("support_conversations")
+        .select("id, conversation_token, user_id, status, handoff_reason, assigned_admin, last_message_at, admin_last_seen_at, last_message_preview, last_message_sender, created_at")
+        .order("last_message_at", { ascending: false }).limit(150);
+      if (error) throw new Error("Could not load the inbox.");
+      const conversations = data ?? [];
+      // Names for signed-in customers; guests simply show as guests.
+      const userIds = [...new Set(conversations.map((c) => c.user_id).filter(Boolean))] as string[];
+      const profiles = new Map<string, { full_name: string | null; email: string | null }>();
+      if (userIds.length) {
+        const { data: rows } = await supabase.from("profiles").select("id, full_name, email").in("id", userIds);
+        for (const row of rows ?? []) profiles.set(row.id, { full_name: row.full_name, email: row.email });
+      }
+      return jsonResponse({
+        status: "success",
+        conversations: conversations.map((c) => ({ ...c, customer: c.user_id ? profiles.get(c.user_id) ?? null : null })),
+      });
+    }
+
+    if (action === "inbox_conversation") {
+      if (!body.id) return jsonResponse({ error: "id is required" }, { status: 400 });
+      const supabase = createSupabaseAdmin();
+      const { data: conversation, error } = await supabase.from("support_conversations")
+        .select("id, conversation_token, user_id, status, handoff_reason, assigned_admin, last_message_at, created_at")
+        .eq("id", String(body.id)).maybeSingle();
+      if (error || !conversation) return jsonResponse({ error: "Conversation not found." }, { status: 404 });
+      const { data: messages } = await supabase.from("support_messages")
+        .select("id, sender, body, meta, created_at").eq("conversation_id", conversation.id)
+        .order("created_at", { ascending: false }).limit(100);
+      // Opening the transcript marks it read.
+      await supabase.from("support_conversations").update({ admin_last_seen_at: new Date().toISOString() }).eq("id", conversation.id);
+      let customer: { full_name: string | null; email: string | null } | null = null;
+      if (conversation.user_id) {
+        const { data: profile } = await supabase.from("profiles").select("full_name, email").eq("id", conversation.user_id).maybeSingle();
+        customer = profile ?? null;
+      }
+      return jsonResponse({ status: "success", conversation: { ...conversation, customer }, messages: (messages ?? []).reverse() });
+    }
+
+    if (action === "take_over" || action === "return_to_ai" || action === "admin_close") {
+      if (!body.id) return jsonResponse({ error: "id is required" }, { status: 400 });
+      const supabase = createSupabaseAdmin();
+      const patch = action === "take_over"
+        ? { status: "human", assigned_admin: auth.userId }
+        : action === "return_to_ai"
+          ? { status: "ai", assigned_admin: null }
+          : { status: "closed" };
+      const { data, error } = await supabase.from("support_conversations").update(patch)
+        .eq("id", String(body.id)).select("id, status, assigned_admin").maybeSingle();
+      if (error || !data) throw new Error("The conversation could not be updated.");
+      return jsonResponse({ status: "success", conversation: data });
+    }
+
+    if (action === "admin_reply") {
+      const reply = String(body.message ?? "").trim();
+      if (!body.id) return jsonResponse({ error: "id is required" }, { status: 400 });
+      if (!reply || reply.length > 2000) return jsonResponse({ error: "Enter a reply of up to 2,000 characters." }, { status: 400 });
+      const supabase = createSupabaseAdmin();
+      const { data: conversation } = await supabase.from("support_conversations").select("id, status").eq("id", String(body.id)).maybeSingle();
+      if (!conversation) return jsonResponse({ error: "Conversation not found." }, { status: 404 });
+      const { data: inserted, error: insertError } = await supabase.from("support_messages")
+        .insert({ conversation_id: conversation.id, sender: "admin", body: reply, meta: { admin: auth.userId } })
+        .select("id, sender, body, created_at").maybeSingle();
+      if (insertError || !inserted) throw new Error("The reply could not be sent.");
+      // Replying is taking over: the AI goes silent until the team hands back.
+      await supabase.from("support_conversations").update({
+        status: "human", assigned_admin: auth.userId,
+        last_message_at: new Date().toISOString(), admin_last_seen_at: new Date().toISOString(),
+        last_message_preview: messagePreview(reply), last_message_sender: "admin",
+      }).eq("id", conversation.id);
+      return jsonResponse({ status: "success", message: inserted, conversation_status: "human" });
+    }
+
     if (action !== "rewrite_support") return jsonResponse({ error: "Unsupported action" }, { status: 400 });
     const draft = String(body.draft ?? "").trim();
     if (!draft || draft.length > 4000) return jsonResponse({ error: "Enter a support draft of up to 4,000 characters." }, { status: 400 });
     const verifiedFacts = body.verifiedFacts && typeof body.verifiedFacts === "object" ? body.verifiedFacts : {};
     const instruction = String(body.instruction ?? "Make the message clear, warm and professional.").trim().slice(0, 500);
-    const system = `You rewrite customer-support messages for YieGo. Use only supplied verified facts and the safe draft. Do not invent payment, delivery, refund, supplier, account or policy facts. Do not expose internal notes or technical details. Return only a concise, professional customer message.`;
+    const system = `You rewrite customer-support messages for DataYego. Use only supplied verified facts and the safe draft. Do not invent payment, delivery, refund, supplier, account or policy facts. Do not expose internal notes or technical details. Return only a concise, professional customer message.`;
     const prompt = `VERIFIED FACTS:\n${JSON.stringify(verifiedFacts, null, 2)}\n\nSAFE DRAFT:\n${draft}\n\nSTYLE REQUEST:\n${instruction}`;
     const result = await callClaude({ system, messages: [{ role: "user", content: prompt }], maxTokens: 420 });
     return jsonResponse({ status: "success", message: result.text, provider: "anthropic", model: result.model, usage: result.usage });

@@ -1,4 +1,5 @@
 import { ArrowRight, CreditCard } from "lucide-react";
+import Seo from "@/components/seo/Seo";
 import BalanceCard from "@/components/dashboard/BalanceCard";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import BundleCatalogue from "@/components/shop/BundleCatalogue";
@@ -41,6 +42,11 @@ export default function Shop() {
 
   return (
     <div ref={ref} className="space-y-8 lg:space-y-11">
+      <Seo
+        title="Buy Data Bundles Online — MTN, Telecel & AirtelTigo | DataYego"
+        description="Browse live data bundles for every Ghana network and buy in two taps. Pay with Mobile Money, card or your DataYego wallet — delivered in minutes."
+        path="/shop"
+      />
       {isAuthenticated ? (
         <>
           {/* Signed in: a slim greeting, then the wallet as the hero — the
@@ -90,7 +96,7 @@ export default function Shop() {
       {/* ── What every order comes with ─────────────────────────── */}
       <section aria-labelledby="shop-trust-h">
         <h2 id="shop-trust-h" className="sr-only">
-          What every YieGo order comes with
+          What every DataYego order comes with
         </h2>
         <ul className="mk-trust" data-reveal>
           {TRUST_POINTS.map((point) => {

@@ -36,7 +36,7 @@ export default function Wallet() {
 
       if (data?.status === "success") {
         setConfirmation("success");
-        setConfirmationMessage(`GH₵${Number(data.amount ?? 0).toFixed(2)} was added to your YieGo Wallet.`);
+        setConfirmationMessage(`GH₵${Number(data.amount ?? 0).toFixed(2)} was added to your DataYego Wallet.`);
         await refresh();
       } else if (data?.status === "failed") {
         setConfirmation("failed");
@@ -65,8 +65,8 @@ export default function Wallet() {
             {confirming ? <Loader2 className="animate-spin" size={17} /> : confirmation === "success" ? <CheckCircle2 className="text-success" size={17} /> : <Clock size={17} />}
             {confirming ? "Confirming your payment" : confirmation === "success" ? "Wallet credited" : confirmation === "failed" ? "Payment unsuccessful" : "Confirmation pending"}
           </p>
-          <p className="mt-1 text-muted-foreground">{confirming ? "YieGo is securely verifying the transaction with Paystack." : confirmationMessage}</p>
-          <Button className="mt-4" variant="ghost" onClick={() => navigate("/shop")}>Back to YieGo</Button>
+          <p className="mt-1 text-muted-foreground">{confirming ? "DataYego is securely verifying the transaction with Paystack." : confirmationMessage}</p>
+          <Button className="mt-4" variant="ghost" onClick={() => navigate("/shop")}>Back to DataYego</Button>
         </div>
       )}
 

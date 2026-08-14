@@ -4,6 +4,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
+import { PUBLIC_ROUTES, SITE_ORIGIN } from "./src/lib/site";
 
 const BUILD_VERSION = String(Date.now());
 
@@ -20,6 +21,16 @@ function writeVersionFile() {
         fs.writeFileSync(
           path.join(outDir, "version.json"),
           JSON.stringify({ version: BUILD_VERSION, builtAt: new Date().toISOString() }),
+        );
+        // sitemap.xml is generated from the same route list the Seo component
+        // canonicalises against (src/lib/site.ts) — one source of truth.
+        const today = new Date().toISOString().slice(0, 10);
+        const urls = PUBLIC_ROUTES.map((route) =>
+          `  <url><loc>${SITE_ORIGIN}${route.path === "/" ? "/" : route.path}</loc><lastmod>${today}</lastmod><changefreq>${route.changefreq}</changefreq><priority>${route.priority.toFixed(1)}</priority></url>`,
+        ).join("\n");
+        fs.writeFileSync(
+          path.join(outDir, "sitemap.xml"),
+          `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
         );
       } catch (err) {
         console.warn("[version.json] write failed:", err);

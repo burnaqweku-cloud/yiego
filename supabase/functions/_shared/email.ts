@@ -10,7 +10,7 @@ export async function sendEmail(input: { to: string; subject: string; html: stri
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return { skipped: true as const, reason: "no_api_key" };
 
-  const from = Deno.env.get("EMAIL_FROM") ?? "YieGo <noreply@yiego.shop>";
+  const from = Deno.env.get("EMAIL_FROM") ?? "DataYego <noreply@yiego.shop>";
   const body: Record<string, unknown> = { from, to: [input.to], subject: input.subject, html: input.html };
   if (input.replyTo) body.reply_to = input.replyTo;
   const res = await fetch(RESEND_URL, {
@@ -39,16 +39,16 @@ function welcomeEmailHtml(name: string) {
   return `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
     <table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-      <tr><td style="background:#0b1512;padding:18px 28px;"><img src="https://yiego.shop/yiego-icon-192.png" width="34" height="34" alt="YieGo" style="display:inline-block;vertical-align:middle;border-radius:9px;" /><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;margin-left:10px;">YieGo</span></td></tr>
+      <tr><td style="background:#0b1512;padding:18px 28px;"><img src="https://yiego.shop/yiego-icon-192.png" width="34" height="34" alt="DataYego" style="display:inline-block;vertical-align:middle;border-radius:9px;" /><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;margin-left:10px;">DataYego</span></td></tr>
       <tr><td style="padding:28px;">
         <p style="margin:0 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#22c387;">Welcome</p>
-        <h1 style="margin:0 0 14px;font-size:22px;line-height:1.25;">Welcome to YieGo</h1>
+        <h1 style="margin:0 0 14px;font-size:22px;line-height:1.25;">Welcome to DataYego</h1>
         <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#3c4a46;">${hi} your account is ready. Buy data for any Ghana line, top up your wallet, and track every order from one place.</p>
         <a href="https://yiego.shop/shop" style="display:block;margin:8px 0 6px;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">Buy data</a>
         <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#8a968f;">Fund your wallet once, then buy in two taps — MTN, Telecel and AirtelTigo, delivered in minutes.</p>
       </td></tr>
     </table>
-    <p style="margin:16px 0 0;font-size:11px;color:#8a968f;">YieGo · Ghana data bundles</p>
+    <p style="margin:16px 0 0;font-size:11px;color:#8a968f;">DataYego · Ghana data bundles</p>
   </td></tr></table>
   </body></html>`;
 }
@@ -56,7 +56,7 @@ function welcomeEmailHtml(name: string) {
 /** A one-time welcome email for a new account. Dormant without a Resend key. */
 export async function sendWelcomeEmail(to: string, name: string) {
   if (!to) return { skipped: true, reason: "no_recipient" };
-  return sendEmail({ to, subject: "Welcome to YieGo", html: welcomeEmailHtml(name), replyTo: SUPPORT_EMAIL });
+  return sendEmail({ to, subject: "Welcome to DataYego", html: welcomeEmailHtml(name), replyTo: SUPPORT_EMAIL });
 }
 
 function orderEmailHtml(o: {
@@ -66,7 +66,7 @@ function orderEmailHtml(o: {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
     <table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
       <tr><td style="background:#0b1512;padding:18px 28px;">
-        <img src="https://yiego.shop/yiego-icon-192.png" width="34" height="34" alt="YieGo" style="display:inline-block;vertical-align:middle;border-radius:9px;" /><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;margin-left:10px;">YieGo</span>
+        <img src="https://yiego.shop/yiego-icon-192.png" width="34" height="34" alt="DataYego" style="display:inline-block;vertical-align:middle;border-radius:9px;" /><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;margin-left:10px;">DataYego</span>
       </td></tr>
       <tr><td style="padding:28px;">
         <p style="margin:0 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#22c387;">Order confirmed</p>
@@ -82,7 +82,7 @@ function orderEmailHtml(o: {
         <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#8a968f;">Or go to yiego.shop, choose “Track an order”, and enter <b>${o.ref}</b>.</p>
       </td></tr>
     </table>
-    <p style="margin:16px 0 0;font-size:11px;color:#8a968f;">YieGo · Ghana data bundles</p>
+    <p style="margin:16px 0 0;font-size:11px;color:#8a968f;">DataYego · Ghana data bundles</p>
   </td></tr></table>
   </body></html>`;
 }
@@ -129,7 +129,7 @@ export async function sendOrderConfirmation(
 
   const result = await sendEmail({
     to,
-    subject: `Your YieGo order ${row.order_reference}`,
+    subject: `Your DataYego order ${row.order_reference}`,
     replyTo: SUPPORT_EMAIL,
     html: orderEmailHtml({
       ref: row.order_reference,

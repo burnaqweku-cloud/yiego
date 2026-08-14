@@ -1,10 +1,11 @@
 import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Headphones, Radar, ShieldCheck, Tag, type LucideIcon } from "lucide-react";
+import Seo from "@/components/seo/Seo";
 import { useReveal } from "@/hooks/useReveal";
 
 /* ══════════════════════════════════════════════════════════════
-   About — why YieGo exists, in plain language.
+   About — why DataYego exists, in plain language.
    Everything here is verifiable from how the product behaves.
    No invented numbers, dates, team size or awards.
    ══════════════════════════════════════════════════════════════ */
@@ -28,7 +29,7 @@ const CONTRASTS: Contrast[] = [
   },
   {
     was: "A payment you cannot prove afterwards. No receipt, nothing to quote to anybody.",
-    now: "A YieGo reference beginning with YG- on every single order, checkable without logging in.",
+    now: "A DataYego reference beginning with YG- on every single order, checkable without logging in.",
   },
   {
     was: "Money scattered across one-off top-ups you never see again.",
@@ -61,7 +62,7 @@ const VALUES: Value[] = [
   {
     icon: ShieldCheck,
     title: "Your money, handled properly",
-    body: "Payments are confirmed with Paystack on our servers before an order moves, and a wallet balance can only be changed server-side — never from a phone or a browser. YieGo never sees your card details or your Mobile Money PIN.",
+    body: "Payments are confirmed with Paystack on our servers before an order moves, and a wallet balance can only be changed server-side — never from a phone or a browser. DataYego never sees your card details or your Mobile Money PIN.",
   },
 ];
 
@@ -85,7 +86,7 @@ const STEPS: Step[] = [
   {
     n: "03",
     title: "Pay how it suits you",
-    body: "From your YieGo wallet, by Mobile Money or card, as a guest — or share the order for someone else to pay.",
+    body: "From your DataYego wallet, by Mobile Money or card, as a guest — or share the order for someone else to pay.",
   },
   {
     n: "04",
@@ -103,11 +104,16 @@ export default function About() {
 
   return (
     <>
+      <Seo
+        title="About DataYego — Ghana's Data Bundle Shop"
+        description="DataYego sells MTN, Telecel and AirtelTigo data bundles online, delivered to any Ghana number in minutes. Here's who we are and how it works."
+        path="/about"
+      />
       {/* ── Page header ─────────────────────────────────────────── */}
       <section className="mk-section-tight" aria-labelledby="about-title" ref={headRef}>
         <div className="mk-wrap">
           <p className="mk-eyebrow" data-reveal>
-            About YieGo
+            About DataYego
           </p>
           <h1
             id="about-title"
@@ -118,7 +124,7 @@ export default function About() {
             Data should arrive <span className="mk-accent">without a story</span> attached.
           </h1>
           <p className="mk-lead mt-7 max-w-[62ch]" data-reveal style={d(140)}>
-            YieGo sells prepaid data bundles for MTN, Telecel and AirtelTigo. You pick a network,
+            DataYego sells prepaid data bundles for MTN, Telecel and AirtelTigo. You pick a network,
             pick a bundle, type the number that should receive it, and pay — from your wallet, by
             Mobile Money or card, or by handing the order to someone else to settle. The data lands
             in minutes, and the order keeps a reference you can come back to.
@@ -154,7 +160,7 @@ export default function About() {
                 takes your word for it.
               </p>
               <p className="mk-body" data-reveal style={d(220)}>
-                So YieGo was built around the unglamorous parts. Show the price before the money
+                So DataYego was built around the unglamorous parts. Show the price before the money
                 moves. Send the order to the network automatically instead of waiting for a person.
                 And give every purchase a reference that outlives the conversation.
               </p>
@@ -165,7 +171,7 @@ export default function About() {
           <div className="mt-16 lg:mt-20" data-reveal style={d(80)}>
             <div className="hidden pb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] sm:gap-10">
               <span>What used to happen</span>
-              <span>How YieGo handles it</span>
+              <span>How DataYego handles it</span>
             </div>
             <dl className="border-t border-white/[0.07]">
               {CONTRASTS.map((row) => (
@@ -233,7 +239,7 @@ export default function About() {
         <hr className="mk-rule" />
       </div>
 
-      {/* ── How YieGo works ─────────────────────────────────────── */}
+      {/* ── How DataYego works ─────────────────────────────────────── */}
       <section className="mk-section" aria-labelledby="about-how" ref={howRef}>
         <div className="mk-wrap">
           <div className="grid gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16">

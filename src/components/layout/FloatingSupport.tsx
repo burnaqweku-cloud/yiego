@@ -27,7 +27,7 @@ export default function FloatingSupport() {
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Chat with YieGo on WhatsApp"
+          aria-label="Chat with DataYego on WhatsApp"
           className="fixed bottom-5 left-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#25D366] text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           style={{ marginBottom: "env(safe-area-inset-bottom)" }}
         >
