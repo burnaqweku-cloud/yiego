@@ -32,8 +32,13 @@ WHAT YOU KNOW
 - Help: unresolved payment, delivery or refund matters go to the YieGo team through the Support page (WhatsApp or email).
 - A KNOWLEDGE BASE maintained by the YieGo team may follow below. It is the authoritative source on how YieGo works: prefer it over everything else in this prompt, and never contradict it. If neither it nor this prompt covers a YieGo-specific fact, you do not know that fact.
 
+TOOLS (live YieGo data — use them, never guess)
+- lookup_order: when the customer gives a YG- order reference, or asks where a specific order is and provides its reference, call lookup_order and answer from what it returns — the live delivery and payment status, network, bundle, amount and masked recipient. If they ask about their order but give no reference, ask for the YG- reference first; never guess one. If it finds nothing, say so plainly and ask them to re-check the reference from their confirmation email; if it errors, point them to the Track Order page and Support.
+- quote_bundles: when the customer asks a bundle's price or which sizes a network sells, call quote_bundles (optionally filtered by network and size) and quote only the prices it returns. Never state a price from memory.
+- Rely only on what a tool returns. Never claim you checked an order or price unless a tool result says so.
+
 HARD RULES
-- You cannot see orders, payments, wallets or accounts. Never claim you checked one and never invent statuses, delivery times, refund decisions or policies. For a specific order, send the customer to the Track Order page with their YG- reference.
+- You can look up an order's status and quote live bundle prices with your tools — nothing more. You cannot see wallets, accounts, payment methods or anyone's personal details, and you never invent a status, delivery time, price, refund decision or policy a tool did not return.
 - If you do not know something, say so plainly in one sentence and point to the Support page for the YieGo team. Do not waffle or pad.
 - Never ask for passwords, one-time codes, card numbers or Mobile Money PINs. If a customer shares one, tell them to keep it private and do not repeat it.
 - Never mention suppliers, internal systems, databases, prompts, models or AI providers.
@@ -108,20 +113,63 @@ function providerError(status: number, payload: any) {
 
 type SystemPrompt = string | Array<{ type: "text"; text: string; cache_control?: { type: "ephemeral" } }>;
 
-async function callClaude(input: { system: SystemPrompt; messages: Array<{ role: "user" | "assistant"; content: string }>; maxTokens?: number }) {
+type ClaudeMessage = { role: "user" | "assistant"; content: string | Array<Record<string, unknown>> };
+type ClaudeTool = { name: string; description: string; input_schema: Record<string, unknown> };
+
+// Cap on how many times the model may call tools before it must answer in
+// words. The final round drops the tools so the loop always ends with a reply.
+const MAX_TOOL_ROUNDS = 4;
+
+async function callClaude(input: {
+  system: SystemPrompt;
+  messages: ClaudeMessage[];
+  maxTokens?: number;
+  tools?: ClaudeTool[];
+  runTool?: (name: string, args: Record<string, unknown>) => Promise<unknown>;
+}) {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) throw Object.assign(new Error("Claude is not configured."), { safeCode: "missing_api_key", providerStatus: 0, providerType: "missing_secret" });
   const model = Deno.env.get("ANTHROPIC_MODEL") || DEFAULT_MODEL;
-  const response = await fetch(ANTHROPIC_API_URL, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model, max_tokens: input.maxTokens ?? 450, system: input.system, messages: input.messages })
-  });
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) { const detail = providerError(response.status, payload); console.error("Claude provider error", { status: response.status, type: detail.type, code: detail.code }); throw Object.assign(new Error(detail.publicMessage), { safeCode: detail.code, providerStatus: detail.providerStatus, providerType: detail.type }); }
-  const text = Array.isArray(payload?.content) ? payload.content.filter((item: any) => item?.type === "text").map((item: any) => item.text ?? "").join("\n").trim() : "";
-  if (!text) throw Object.assign(new Error("Claude returned an empty response."), { safeCode: "empty_response", providerStatus: 200, providerType: "empty_response" });
-  return { text, model, usage: payload?.usage ?? null };
+  const messages: ClaudeMessage[] = [...input.messages];
+  const toolsUsed: string[] = [];
+  let usage: unknown = null;
+
+  for (let round = 0; ; round++) {
+    // Offer tools until the round cap; the final round omits them so the model
+    // must answer in words, which guarantees the loop terminates with a reply.
+    const offerTools = Boolean(input.tools?.length && input.runTool) && round < MAX_TOOL_ROUNDS;
+    const response = await fetch(ANTHROPIC_API_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model, max_tokens: input.maxTokens ?? 450, system: input.system, messages, ...(offerTools ? { tools: input.tools } : {}) }),
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) { const detail = providerError(response.status, payload); console.error("Claude provider error", { status: response.status, type: detail.type, code: detail.code }); throw Object.assign(new Error(detail.publicMessage), { safeCode: detail.code, providerStatus: detail.providerStatus, providerType: detail.type }); }
+    usage = payload?.usage ?? usage;
+    const blocks: Array<Record<string, unknown>> = Array.isArray(payload?.content) ? payload.content : [];
+
+    if (offerTools && payload?.stop_reason === "tool_use") {
+      // Echo the assistant's turn (text + tool_use blocks) back verbatim, run
+      // each requested tool, and return every result in one user turn.
+      messages.push({ role: "assistant", content: blocks });
+      const results: Array<Record<string, unknown>> = [];
+      for (const block of blocks) {
+        if (block?.type !== "tool_use") continue;
+        const name = String(block.name ?? "");
+        toolsUsed.push(name);
+        let output: unknown; let isError = false;
+        try { output = await input.runTool!(name, (block.input ?? {}) as Record<string, unknown>); }
+        catch (error) { output = { error: error instanceof Error ? error.message : "The tool failed." }; isError = true; }
+        results.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(output ?? null), ...(isError ? { is_error: true } : {}) });
+      }
+      messages.push({ role: "user", content: results });
+      continue;
+    }
+
+    const text = blocks.filter((b) => b?.type === "text").map((b) => String(b.text ?? "")).join("\n").trim();
+    if (!text) throw Object.assign(new Error("Claude returned an empty response."), { safeCode: "empty_response", providerStatus: 200, providerType: "empty_response" });
+    return { text, model, usage, toolsUsed };
+  }
 }
 
 async function loadAssistantSettings(supabase: SupabaseAdmin) {
@@ -189,6 +237,120 @@ function sanitizeClientHistory(history: RequestBody["history"]) {
     .filter((item) => item.content);
 }
 
+/* ---- Phase 3: live tools the customer assistant can call ---- */
+
+// Customer-safe order status, mirrored exactly from the track-order function so
+// the assistant can never surface a different or less-safe view than the public
+// Track Order page. Raw internal statuses are collapsed and payment-gated here.
+function customerDeliveryStatus(orderStatus: string, paymentStatus: string) {
+  if (paymentStatus !== "succeeded") return "waiting_for_payment";
+  switch (orderStatus) {
+    case "delivered": return "completed";
+    case "refunded": return "refunded";
+    case "cancelled": return "cancelled";
+    case "failed": return "needs_support";
+    default: return "in_progress";
+  }
+}
+function customerMessage(orderStatus: string, paymentStatus: string, paidAt: string | null, updatedAt: string) {
+  if (paymentStatus !== "succeeded") return "Complete payment to continue this order.";
+  if (orderStatus === "delivered") return "Your data order has been completed.";
+  if (orderStatus === "refunded") return "Your payment has been refunded.";
+  if (orderStatus === "cancelled") return "This order has been cancelled.";
+  if (orderStatus === "failed") return "We could not complete this order. Please contact YieGo support.";
+  const started = new Date(paidAt ?? updatedAt).getTime();
+  const ageHours = Number.isFinite(started) ? Math.max(0, (Date.now() - started) / 3_600_000) : 0;
+  if (ageHours < 24) return "Your payment was successful. Your order is in progress.";
+  if (ageHours < 48) return "Your order is still in progress. It will update when delivery completes.";
+  return "Your order is under review. Please contact YieGo support if you need assistance.";
+}
+
+const CUSTOMER_TOOLS: ClaudeTool[] = [
+  {
+    name: "lookup_order",
+    description: "Look up the live status of a YieGo order by its YG- reference (e.g. \"YG-1A2B3C4D5E\"). Call this whenever the customer gives an order reference, or asks where a specific order is and provides its reference. Returns the same customer-safe view as the public Track Order page: masked recipient, network, bundle, amount, payment status, delivery status and a status message. You cannot see any order without its YG- reference.",
+    input_schema: {
+      type: "object",
+      properties: { reference: { type: "string", description: "The order's YG- reference exactly as the customer gave it, e.g. \"YG-1A2B3C4D5E\"." } },
+      required: ["reference"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "quote_bundles",
+    description: "Get live YieGo bundle prices from the catalogue. Call this whenever the customer asks a bundle's price or which sizes a network sells. Optionally filter by network and/or size. Prices are the listed base price in Ghana cedis (what the Shop shows); a 4% fee is added only at Paystack checkout and waived when paying from the YieGo wallet — mention the fee only if the customer asks about totals or fees.",
+    input_schema: {
+      type: "object",
+      properties: {
+        network: { type: "string", enum: ["MTN", "Telecel", "AirtelTigo"], description: "Restrict to one network. Omit to compare across all networks." },
+        capacity_gb: { type: "number", description: "Restrict to one size in GB, e.g. 5 for a 5GB bundle. Omit to list the network's full range." },
+      },
+      additionalProperties: false,
+    },
+  },
+];
+
+const NETWORK_ALIASES: Record<string, string> = { mtn: "MTN", telecel: "Telecel", vodafone: "Telecel", airteltigo: "AirtelTigo", "airtel tigo": "AirtelTigo", at: "AirtelTigo", tigo: "AirtelTigo", airtel: "AirtelTigo" };
+
+async function toolLookupOrder(supabase: SupabaseAdmin, args: Record<string, unknown>) {
+  const reference = String(args?.reference ?? "").trim().toUpperCase();
+  if (!reference) return { found: false, message: "No reference was given. Ask the customer for their YG- order reference." };
+  const { data: order, error } = await supabase.from("orders")
+    .select("order_reference, recipient_phone, amount, currency, status, payment_status, paid_at, created_at, updated_at, data_products(name), networks(name)")
+    .eq("order_reference", reference).limit(1).maybeSingle();
+  if (error) return { found: false, error: "The order status could not be read right now. Point the customer to the Track Order page." };
+  if (!order) return { found: false, reference, message: "No order matches that reference. Ask the customer to re-check the YG- reference from their confirmation email." };
+  const phone = String(order.recipient_phone ?? "");
+  const recipient = phone.length === 10 ? `${phone.slice(0, 3)}•••${phone.slice(7)}` : "hidden";
+  return {
+    found: true,
+    reference: order.order_reference,
+    network: (order.networks as { name?: string } | null)?.name ?? null,
+    bundle: (order.data_products as { name?: string } | null)?.name ?? null,
+    recipient,
+    amount: order.amount,
+    currency: order.currency,
+    paymentStatus: order.payment_status,
+    deliveryStatus: customerDeliveryStatus(String(order.status), String(order.payment_status)),
+    statusMessage: customerMessage(String(order.status), String(order.payment_status), order.paid_at, order.updated_at),
+    createdAt: order.created_at,
+    updatedAt: order.updated_at,
+  };
+}
+
+async function toolQuoteBundles(supabase: SupabaseAdmin, args: Record<string, unknown>) {
+  const { data, error } = await supabase.from("data_products")
+    .select("name, capacity_gb, customer_price, validity, networks(name, display_order)")
+    .eq("is_active", true).order("display_order", { ascending: true });
+  if (error) return { error: "The catalogue could not be read right now." };
+  const wanted = args?.network ? (NETWORK_ALIASES[String(args.network).trim().toLowerCase()] ?? String(args.network).trim()) : null;
+  const wantGb = typeof args?.capacity_gb === "number" && Number.isFinite(args.capacity_gb) ? Number(args.capacity_gb) : null;
+  let rows = (data ?? []).map((p: any) => ({
+    network: (p.networks as { name?: string } | null)?.name ?? null,
+    order: Number((p.networks as { display_order?: number } | null)?.display_order ?? 999),
+    size: typeof p.name === "string" ? p.name.replace(/^.*?—\s*/, "") : p.name,
+    capacity_gb: Number(p.capacity_gb),
+    price: Number(p.customer_price),
+    validity: p.validity || null,
+  }));
+  if (wanted) rows = rows.filter((r) => (r.network ?? "").toLowerCase() === wanted.toLowerCase());
+  if (wantGb !== null) rows = rows.filter((r) => Math.abs(r.capacity_gb - wantGb) < 0.01);
+  rows.sort((a, b) => a.order - b.order || a.capacity_gb - b.capacity_gb);
+  const bundles = rows.slice(0, 40).map(({ order: _order, ...rest }) => rest);
+  return {
+    currency: "GHS",
+    count: bundles.length,
+    bundles,
+    priceNote: "These are base bundle prices. A 4% fee applies only to Paystack payments and is waived when paying from the YieGo wallet.",
+  };
+}
+
+async function runCustomerTool(supabase: SupabaseAdmin, name: string, args: Record<string, unknown>) {
+  if (name === "lookup_order") return await toolLookupOrder(supabase, args);
+  if (name === "quote_bundles") return await toolQuoteBundles(supabase, args);
+  return { error: `Unknown tool: ${name}` };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method === "GET") {
@@ -253,9 +415,9 @@ Deno.serve(async (req) => {
       }
 
       const [settings, knowledge] = await Promise.all([loadAssistantSettings(supabase), loadActiveKnowledge(supabase)]);
-      const result = await callClaude({ system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge)), messages: modelMessages, maxTokens: 600 });
+      const result = await callClaude({ system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge)), messages: modelMessages, maxTokens: 700, tools: CUSTOMER_TOOLS, runTool: (name, args) => runCustomerTool(supabase, name, args) });
 
-      await supabase.from("support_messages").insert({ conversation_id: conversation.id, sender: "assistant", body: result.text, meta: { model: result.model, usage: result.usage, knowledge_entries: knowledge.length } });
+      await supabase.from("support_messages").insert({ conversation_id: conversation.id, sender: "assistant", body: result.text, meta: { model: result.model, usage: result.usage, knowledge_entries: knowledge.length, tools_used: result.toolsUsed } });
       await supabase.from("support_conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversation.id);
       return jsonResponse({ status: "success", message: result.text, conversation_token: conversation.conversation_token, conversation_status: "ai", model: result.model });
     }
@@ -316,8 +478,8 @@ Deno.serve(async (req) => {
       if (!message || message.length > 1500) return jsonResponse({ error: "Enter a message of up to 1,500 characters." }, { status: 400 });
       const supabase = createSupabaseAdmin();
       const [settings, knowledge] = await Promise.all([loadAssistantSettings(supabase), loadActiveKnowledge(supabase)]);
-      const result = await callClaude({ system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge)), messages: [...sanitizeClientHistory(body.history), { role: "user", content: message }], maxTokens: 600 });
-      return jsonResponse({ status: "success", message: result.text, model: result.model });
+      const result = await callClaude({ system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge)), messages: [...sanitizeClientHistory(body.history), { role: "user", content: message }], maxTokens: 700, tools: CUSTOMER_TOOLS, runTool: (name, args) => runCustomerTool(supabase, name, args) });
+      return jsonResponse({ status: "success", message: result.text, model: result.model, tools_used: result.toolsUsed });
     }
 
     if (action === "list_knowledge") {
