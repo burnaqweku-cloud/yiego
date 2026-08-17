@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, Clock3, Info } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import Seo from "@/components/seo/Seo";
 import InlineText from "@/components/blog/InlineText";
+import BestValueTable from "@/components/blog/BestValueTable";
 import { metaFor } from "@/lib/site";
 import { postBySlug, sortedPosts, type BlogBlock } from "@/data/blog";
 import { articleLd, breadcrumbLd } from "@/lib/structuredData";
@@ -56,6 +57,8 @@ function Block({ block }: { block: BlogBlock }) {
           <p className="text-sm leading-6 text-foreground"><InlineText text={block.text} /></p>
         </div>
       );
+    case "bestValue":
+      return <BestValueTable />;
     case "cta":
       return (
         <div className="rounded-[18px] border border-white/[0.07] bg-white/[0.025] p-6">

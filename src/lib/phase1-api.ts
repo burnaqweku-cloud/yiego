@@ -82,6 +82,7 @@ export interface Phase1Product {
   app_product_code: string | null;
   name: string;
   validity: string | null;
+  capacity_gb?: number | string | null;
   customer_price: number;
   network_id?: string;
 }
@@ -162,7 +163,7 @@ export async function loadPhase1Products() {
   const phase1Client = (supabase as unknown as { schema: (name: string) => Phase1SchemaClient }).schema("phase1");
   const { data, error } = await phase1Client
     .from("data_products")
-    .select("id, app_product_code, name, validity, customer_price, network_id")
+    .select("id, app_product_code, name, validity, capacity_gb, customer_price, network_id")
     .eq("is_active", true)
     .order("display_order", { ascending: true });
 

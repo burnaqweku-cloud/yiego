@@ -23,7 +23,11 @@ export type BlogBlock =
   | { type: "ol"; items: string[] }
   | { type: "table"; head: string[]; rows: string[][] }
   | { type: "callout"; text: string }
-  | { type: "cta"; label: string; to: string; text: string };
+  | { type: "cta"; label: string; to: string; text: string }
+  /* Renders the live catalogue ranked by price per GB. A post carrying this
+     block re-dates itself every time it loads, so the recurring "what is
+     cheapest right now" article never needs rewriting by hand. */
+  | { type: "bestValue" };
 
 export interface BlogPost {
   slug: string;
@@ -43,6 +47,40 @@ export interface BlogPost {
 }
 
 export const BLOG_POSTS: BlogPost[] = [
+  {
+    slug: "cheapest-data-bundles-ghana",
+    title: "Cheapest Data Bundles in Ghana: Price per GB | DataYego",
+    heading: "Cheapest data bundles in Ghana: how to compare properly",
+    description: "The cheapest bundle is rarely the smallest one. How to compare Ghanaian data bundles by price per gigabyte, with our live MTN, Telecel and AirtelTigo prices.",
+    excerpt: "The cheapest bundle is rarely the one with the smallest price tag. Here is how to compare by price per gigabyte, with our live prices for all three networks.",
+    category: "Guides",
+    published: "2026-08-17",
+    readMinutes: 5,
+    body: [
+      { type: "p", text: "The cheapest data bundle is not the one with the smallest price tag. It is the one that costs you least **per gigabyte**. A GHS 5 bundle looks cheaper than a GHS 50 one, but if the small bundle works out at GHS 10 a gigabyte and the large one at GHS 4, the large one is better value by a distance — provided you will actually use it." },
+      { type: "p", text: "That single sum, price divided by gigabytes, is how to compare any two bundles on any network. Here is what it looks like across the bundles we sell today." },
+      { type: "bestValue" },
+      { type: "callout", text: "These are DataYego's own prices, read live from our catalogue as you load the page. We cannot survey every seller in Ghana, so treat this as an honest look at our shelf rather than a league table of the whole market." },
+      { type: "h2", text: "Work out price per gigabyte before you buy" },
+      { type: "p", text: "Take the price, divide by the number of gigabytes, and you have a number you can compare against anything else. A 2GB bundle at GHS 12 is GHS 6 a gigabyte. A 10GB bundle at GHS 40 is GHS 4. The second is a third cheaper for every gigabyte you use, even though it costs more to buy." },
+      { type: "p", text: "Headline prices are designed to be compared badly. Price per gigabyte is the number that cannot be dressed up." },
+      { type: "h2", text: "Bigger is usually better value — up to a point" },
+      { type: "p", text: "On every network in Ghana, larger bundles almost always cost less per gigabyte. That is normal pricing, not a trick. But it only helps if the data gets used." },
+      { type: "p", text: "A 25GB bundle at a low price per gigabyte is poor value to someone who browses lightly and lets half of it lapse. The honest rule: buy the largest bundle you are confident of finishing within its validity, and no larger. Check the [full price list](/prices) and compare two or three sizes before deciding." },
+      { type: "h2", text: "Validity changes the maths" },
+      { type: "p", text: "A bundle that expires in a day and one that does not expire are not the same product, even at the same price per gigabyte. If a cheap weekly bundle leaves 3GB unused when it lapses, you did not pay for 10GB — you paid for 7GB, at a much worse rate than the label suggested." },
+      { type: "p", text: "Every bundle on our pages shows its validity next to its price, so you can weigh the two together. Our [non-expiry guide](/blog/non-expiry-data-bundles-ghana) explains what happens to leftover data in more detail." },
+      { type: "h2", text: "Compare the networks, not just the bundles" },
+      { type: "p", text: "The three networks price differently, and the best value shifts between them as offers change. It is worth checking all three rather than staying loyal out of habit — especially if you are buying for someone else's line, where the network is theirs, not yours." },
+      { type: "ul", items: ["[MTN bundles](/mtn-data-bundles) — the widest coverage, and the range most people compare against.", "[Telecel bundles](/telecel-data-bundles) — the network formerly known as Vodafone Ghana.", "[AirtelTigo bundles](/airteltigo-data-bundles) — often the value pick, and the one worth checking before you assume."] },
+      { type: "h2", text: "Why prices move" },
+      { type: "p", text: "Bundle prices in Ghana are not fixed for long. Networks run promotions, revise their line-ups, and occasionally change what a given price buys. Regulation moves them too: in July 2025 operators were directed to increase the amount of data customers receive for the same money." },
+      { type: "p", text: "This is why a price list published as an article goes stale, and why the table above reads our live catalogue instead of quoting numbers we typed in months ago. Whatever it shows is what you would pay at checkout right now." },
+      { type: "h2", text: "A short checklist before you pay" },
+      { type: "ol", items: ["Divide price by gigabytes for the two or three bundles you are weighing up.", "Check the validity, and be honest about whether you will finish the data inside it.", "Confirm which network the receiving number is actually on — if it was ported, the prefix will mislead you.", "Read the receiving number back to yourself before paying. It is the one mistake that is hard to undo.", "Keep the YG- reference from your receipt so you can follow the order on [Track Order](/track-order)."] },
+      { type: "cta", label: "Compare live prices", to: "/prices", text: "Every bundle we sell for MTN, Telecel and AirtelTigo, with today's prices and validity side by side." },
+    ],
+  },
   {
     slug: "how-to-buy-data-online-ghana",
     title: "How to Buy Data Bundles Online in Ghana | DataYego",

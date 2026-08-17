@@ -14,6 +14,19 @@ export interface LiveBundle {
   size: string;
   validity: string | null;
   price: number;
+  /** Size in GB, used to compare bundles by price per GB. */
+  capacityGb: number;
+}
+
+/** "500MB" and "1.5GB" both appear as labels, so parse rather than assume GB. */
+function capacityFrom(product: Phase1Product): number {
+  const declared = Number(product.capacity_gb);
+  if (Number.isFinite(declared) && declared > 0) return declared;
+  const match = /([\d.]+)\s*(GB|MB)/i.exec(product.name);
+  if (!match) return 0;
+  const value = Number(match[1]);
+  if (!Number.isFinite(value)) return 0;
+  return match[2].toUpperCase() === "MB" ? value / 1024 : value;
 }
 
 const PREFIX: Record<NetworkId, string> = { mtn: "mtn", telecel: "tel", at: "at" };
@@ -24,6 +37,7 @@ function toBundle(product: Phase1Product): LiveBundle {
     size: product.name.replace(/^.*?—\s*/, ""),
     validity: product.validity,
     price: Number(product.customer_price),
+    capacityGb: capacityFrom(product),
   };
 }
 
