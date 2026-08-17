@@ -4,6 +4,7 @@ import { metaFor } from "@/lib/site";
 import BalanceCard from "@/components/dashboard/BalanceCard";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import BundleCatalogue from "@/components/shop/BundleCatalogue";
+import DeliveryNotice from "@/components/shop/DeliveryNotice";
 import { TRUST_POINTS } from "@/data/marketing";
 import { useReveal } from "@/hooks/useReveal";
 import { useAuth } from "@/store/auth-context";
@@ -86,6 +87,8 @@ export default function Shop() {
           </p>
         </header>
       )}
+
+      <DeliveryNotice className="mb-5" />
 
       {/* ── The catalogue ───────────────────────────────────────── */}
       <BundleCatalogue />
