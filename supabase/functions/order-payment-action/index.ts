@@ -1,33 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { sendOrderConfirmation } from "../_shared/email.ts";
+import { fulfillOrder } from "../_shared/fulfillment.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 const admin = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { autoRefreshToken: false, persistSession: false }, db: { schema: "phase1" } });
 const ref = (v: unknown) => String(v ?? "").trim().toUpperCase();
 const paystackRef = () => `YGORDER-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`.toUpperCase();
-
-async function fulfill(supabase: ReturnType<typeof admin>, orderId: string) {
-  const { data: order, error } = await supabase.from("orders").select("*").eq("id", orderId).single();
-  if (error || !order) throw new Error(error?.message ?? "order_not_found");
-  if (order.supplier_order_reference) return { skipped: true };
-  const { data: mapping, error: mappingError } = await supabase.from("supplier_product_mappings").select("*,suppliers(*)").eq("product_id", order.product_id).eq("is_active", true).limit(1).single();
-  if (mappingError || !mapping) throw new Error(mappingError?.message ?? "supplier_mapping_not_found");
-  const key = Deno.env.get("DATAMARTGH_API_KEY");
-  if (!key) throw new Error("DATAMARTGH_API_KEY is not configured");
-  await supabase.from("orders").update({ status: "processing", updated_at: new Date().toISOString() }).eq("id", order.id);
-  const started = Date.now();
-  const response = await fetch(`${Deno.env.get("DATAMARTGH_BASE_URL") ?? "https://api.datamartgh.shop/api/developer"}/purchase`, { method: "POST", headers: { "X-API-Key": key, "X-API-Secret": Deno.env.get("DATAMARTGH_API_SECRET") ?? "", "X-Idempotency-Key": order.supplier_idempotency_key, "Content-Type": "application/json" }, body: JSON.stringify({ phoneNumber: order.recipient_phone, network: mapping.supplier_network_code, capacity: mapping.supplier_capacity, gateway: "wallet", ref: order.order_reference }) });
-  const payload = await response.json().catch(() => ({}));
-  const supplierStatus = payload?.data?.orderStatus ?? payload?.status;
-  const normalized = String(supplierStatus ?? "").toLowerCase();
-  const next = !response.ok ? "failed_needs_review" : normalized === "completed" ? "delivered" : normalized === "failed" ? "failed_needs_review" : normalized === "refunded" ? "refunded" : "pending_supplier";
-  await supabase.from("supplier_api_logs").insert({ supplier_id: mapping.supplier_id, order_id: order.id, action: "purchase", endpoint: "/purchase", request_payload: { phoneNumber: order.recipient_phone, network: mapping.supplier_network_code, capacity: mapping.supplier_capacity }, response_payload: payload, http_status: response.status, call_status: response.ok ? "success" : "error", supplier_reference: payload?.data?.orderReference ?? null, idempotency_key: order.supplier_idempotency_key, error_message: response.ok ? null : payload?.message ?? "DataMartGH purchase failed", duration_ms: Date.now() - started });
-  await supabase.from("orders").update({ status: next, supplier_order_reference: payload?.data?.orderReference ?? null, supplier_purchase_id: payload?.data?.purchaseId ?? null, supplier_transaction_reference: payload?.data?.transactionReference ?? null, supplier_status: supplierStatus ?? null, failure_reason: response.ok ? null : payload?.message ?? "DataMartGH purchase failed", updated_at: new Date().toISOString() }).eq("id", order.id);
-  await supabase.from("order_events").insert({ order_id: order.id, event_type: response.ok ? "supplier.fulfillment_response" : "supplier.fulfillment_failed", from_status: "processing", to_status: next, message: response.ok ? `Supplier returned ${supplierStatus ?? "a response"}` : "Supplier order placement failed" });
-  return { status: next, supplierReference: payload?.data?.orderReference ?? null };
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -85,7 +65,7 @@ Deno.serve(async (req) => {
       if (error) return json({ error: error.message }, 400);
       // Order is paid — email the buyer their confirmation + Order ID (best-effort).
       try { await sendOrderConfirmation(supabase, data.orderId); } catch { /* email must never break payment */ }
-      try { return json({ status: "success", data: { ...data, fulfillment: await fulfill(supabase, data.orderId) } }); }
+      try { return json({ status: "success", data: { ...data, fulfillment: await fulfillOrder(supabase, data.orderId) } }); }
       catch (e) { await supabase.from("orders").update({ status: "failed_needs_review", failure_reason: e instanceof Error ? e.message : "Supplier fulfillment failed", updated_at: new Date().toISOString() }).eq("id", data.orderId); return json({ status: "needs_review", data, error: e instanceof Error ? e.message : "Supplier fulfillment failed" }, 202); }
     }
     if (action === "pay_paystack") {

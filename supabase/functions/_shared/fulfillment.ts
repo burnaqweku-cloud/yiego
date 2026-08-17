@@ -1,23 +1,10 @@
-import { callDataMartGH, mapDataMartGHStatusToYieGo } from "./datamartgh.ts";
+import { mapDataMartGHStatusToYieGo } from "./datamartgh.ts";
+import { adapterFor, type PurchaseContext } from "./supplierAdapters.ts";
 
-interface SupabaseAdminClient {
-  from: (table: string) => {
-    select: (columns?: string) => unknown;
-    update: (values: Record<string, unknown>) => unknown;
-    insert: (values: Record<string, unknown>) => unknown;
-  };
-}
-
-interface SupplierPurchasePayload {
-  status?: string;
-  message?: string;
-  data?: {
-    orderStatus?: string;
-    orderReference?: string;
-    purchaseId?: string;
-    transactionReference?: string;
-  };
-}
+// Deliberately loose: these helpers are handed a real supabase-js client and
+// only need it to be chainable.
+// deno-lint-ignore no-explicit-any
+type SupabaseAdminClient = any;
 
 const TERMINAL_ORDER_STATUSES = new Set(["delivered", "refunded", "cancelled"]);
 
@@ -76,7 +63,19 @@ export async function applySupplierStatusToOrder(
   return { changed: true, mapped };
 }
 
-export async function fulfillOrderWithDataMartGH(supabase: SupabaseAdminClient, orderId: string) {
+/**
+ * Sends a paid order to its supplier.
+ *
+ * The supplier is whichever the customer chose (orders.supplier_id); with no
+ * choice recorded it falls back to the lowest display_order among the active
+ * suppliers that stock the bundle. That ordering is what keeps routing
+ * deterministic once more than one supplier can serve the same product —
+ * previously this took the first row the database happened to return.
+ *
+ * Every supplier-specific detail lives behind an adapter, so a new supplier is
+ * an entry in supplierAdapters.ts and no change here.
+ */
+export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: string) {
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select("*")
@@ -86,37 +85,71 @@ export async function fulfillOrderWithDataMartGH(supabase: SupabaseAdminClient, 
   if (orderError) throw new Error(orderError.message);
   if (!order) throw new Error("order_not_found");
 
-  if (order.supplier_order_reference) {
-    return { skipped: true, reason: "already_has_supplier_reference", order };
+  if (order.supplier_order_reference || order.supplier_purchase_id) {
+    return { skipped: true, reason: "already_sent_to_supplier", order };
   }
 
-  const { data: product, error: productError } = await supabase
-    .from("data_products")
-    .select("*")
-    .eq("id", order.product_id)
-    .maybeSingle();
-
-  if (productError) throw new Error(productError.message);
-  if (!product) throw new Error("product_not_found");
-
-  const { data: mapping, error: mappingError } = await supabase
+  let query = supabase
     .from("supplier_product_mappings")
-    .select("*, suppliers(*)")
+    .select("*, suppliers!inner(id, code, name, status, display_order)")
     .eq("product_id", order.product_id)
     .eq("is_active", true)
+    .eq("suppliers.status", "active");
+
+  // A recorded choice is honoured exactly; otherwise pick by a stable order.
+  if (order.supplier_id) query = query.eq("supplier_id", order.supplier_id);
+
+  const { data: mapping, error: mappingError } = await query
+    .order("display_order", { foreignTable: "suppliers", ascending: true })
+    .order("id", { ascending: true })
     .limit(1)
     .maybeSingle();
 
   if (mappingError) throw new Error(mappingError.message);
   if (!mapping) throw new Error("supplier_mapping_not_found");
 
+  const supplier = mapping.suppliers as { id: string; code: string; name: string };
+  const adapter = adapterFor(supplier.code);
+  if (!adapter) throw new Error(`no_adapter_for_supplier_${supplier.code}`);
+  if (!adapter.isConfigured()) throw new Error(`supplier_not_configured_${supplier.code}`);
+
   const idempotencyKey = order.supplier_idempotency_key ?? crypto.randomUUID();
+  const context: PurchaseContext = {
+    recipientPhone: order.recipient_phone,
+    orderReference: order.order_reference,
+    idempotencyKey,
+    supplierNetworkCode: mapping.supplier_network_code ?? null,
+    supplierCapacity: mapping.supplier_capacity ?? null,
+  };
+
+  // Refuse an order this supplier cannot serve before any money moves.
+  const preflight = adapter.preflight(context);
+  if (!preflight.ok) {
+    await supabase
+      .from("orders")
+      .update({
+        status: "failed_needs_review",
+        supplier_id: supplier.id,
+        failure_reason: `preflight_${preflight.reason}`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", order.id);
+    await supabase.from("order_events").insert({
+      order_id: order.id,
+      event_type: "supplier.fulfillment_blocked",
+      from_status: order.status,
+      to_status: "failed_needs_review",
+      message: `Not sent: ${preflight.reason.replace(/_/g, " ")}`,
+      metadata: { supplier: supplier.code, reason: preflight.reason },
+    });
+    return { skipped: true, reason: preflight.reason, orderId: order.id, status: "failed_needs_review" };
+  }
 
   await supabase
     .from("orders")
     .update({
       status: "processing",
-      supplier_id: mapping.supplier_id,
+      supplier_id: supplier.id,
       supplier_idempotency_key: idempotencyKey,
       updated_at: new Date().toISOString(),
     })
@@ -127,77 +160,53 @@ export async function fulfillOrderWithDataMartGH(supabase: SupabaseAdminClient, 
     event_type: "supplier.fulfillment_started",
     from_status: order.status,
     to_status: "processing",
-    message: "Sending paid order to DataMartGH",
-    metadata: {
-      supplier: "datamartgh",
-      idempotencyKey,
-    },
+    message: `Sending paid order to ${supplier.name}`,
+    metadata: { supplier: supplier.code, idempotencyKey },
   });
 
-  const requestPayload = {
-    phoneNumber: order.recipient_phone,
-    network: mapping.supplier_network_code,
-    capacity: mapping.supplier_capacity,
-    gateway: "wallet",
-    ref: order.order_reference,
-  };
-
-  const result = await callDataMartGH("/purchase", {
-    method: "POST",
-    headers: {
-      "X-Idempotency-Key": idempotencyKey,
-    },
-    body: JSON.stringify(requestPayload),
-  });
-
-  const supplierPayload = result.payload as SupplierPurchasePayload;
-  const supplierData = supplierPayload?.data ?? {};
-  const supplierStatus = supplierData.orderStatus ?? supplierPayload?.status;
-  const nextStatus = result.ok
-    ? mapDataMartGHStatusToYieGo(supplierStatus)
-    : "failed_needs_review";
+  const outcome = await adapter.purchase(context);
+  const nextStatus = outcome.ok ? adapter.mapStatus(outcome.supplierStatus) : "failed_needs_review";
 
   await supabase.from("supplier_api_logs").insert({
-    supplier_id: mapping.supplier_id,
+    supplier_id: supplier.id,
     order_id: order.id,
     action: "purchase",
-    endpoint: "/purchase",
-    request_payload: requestPayload,
-    response_payload: supplierPayload,
-    http_status: result.status,
-    call_status: result.ok ? "success" : "error",
-    supplier_reference: supplierData.orderReference ?? null,
+    endpoint: outcome.endpoint,
+    request_payload: outcome.requestPayload,
+    response_payload: outcome.responsePayload,
+    http_status: outcome.httpStatus,
+    call_status: outcome.ok ? "success" : "error",
+    supplier_reference: outcome.supplierReference,
     idempotency_key: idempotencyKey,
-    error_message: result.ok ? null : supplierPayload?.message ?? "DataMartGH purchase failed",
-    duration_ms: result.durationMs,
+    error_message: outcome.message,
+    duration_ms: outcome.durationMs,
   });
 
   await supabase
     .from("orders")
     .update({
       status: nextStatus,
-      supplier_order_reference: supplierData.orderReference ?? order.supplier_order_reference,
-      supplier_purchase_id: supplierData.purchaseId ?? order.supplier_purchase_id,
-      supplier_transaction_reference:
-        supplierData.transactionReference ?? order.supplier_transaction_reference,
-      supplier_status: supplierStatus ?? order.supplier_status,
-      failure_reason: result.ok ? null : supplierPayload?.message ?? "DataMartGH purchase failed",
+      supplier_order_reference: outcome.supplierReference ?? order.supplier_order_reference,
+      supplier_purchase_id: outcome.purchaseId ?? order.supplier_purchase_id,
+      supplier_transaction_reference: outcome.transactionReference ?? order.supplier_transaction_reference,
+      supplier_status: outcome.supplierStatus ?? order.supplier_status,
+      failure_reason: outcome.ok ? null : outcome.message,
       updated_at: new Date().toISOString(),
     })
     .eq("id", order.id);
 
   await supabase.from("order_events").insert({
     order_id: order.id,
-    event_type: result.ok ? "supplier.fulfillment_response" : "supplier.fulfillment_failed",
+    event_type: outcome.ok ? "supplier.fulfillment_response" : "supplier.fulfillment_failed",
     from_status: "processing",
     to_status: nextStatus,
-    message: result.ok
-      ? `DataMartGH returned ${supplierStatus ?? "a response"}`
-      : "DataMartGH order placement failed",
+    message: outcome.ok
+      ? `${supplier.name} returned ${outcome.supplierStatus ?? "a response"}`
+      : `${supplier.name} order placement failed`,
     metadata: {
-      supplier: "datamartgh",
-      supplierReference: supplierData.orderReference ?? null,
-      httpStatus: result.status,
+      supplier: supplier.code,
+      supplierReference: outcome.supplierReference,
+      httpStatus: outcome.httpStatus,
     },
   });
 
@@ -205,6 +214,9 @@ export async function fulfillOrderWithDataMartGH(supabase: SupabaseAdminClient, 
     skipped: false,
     orderId: order.id,
     status: nextStatus,
-    supplierReference: supplierData.orderReference ?? null,
+    supplierReference: outcome.supplierReference,
   };
 }
+
+/** Previous name, kept so existing call sites keep working. */
+export const fulfillOrderWithDataMartGH = fulfillOrder;
