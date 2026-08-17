@@ -121,16 +121,6 @@ async function refresh() {
   return json({ status: "success", ...snapshot });
 }
 
-function clock(iso?: string) {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleString("en-GB", {
-    day: "numeric", month: "short", hour: "numeric", minute: "2-digit",
-    hour12: true, timeZone: "Africa/Accra",
-  });
-}
-
 /** The Delivery Progress panel the site renders: a status banner and timed
  *  rows, mirroring what the supplier shows its own agents. Anything the admin
  *  typed is passed through verbatim; the rest is measured. Wording only —
@@ -181,18 +171,8 @@ async function current() {
       source: "manual",
     }));
 
-  const last = (snap?.raw as { lastDelivered?: { placedAt?: string; deliveredAt?: string } } | null)?.lastDelivered;
-  if (lag !== null && rows.length === 0) {
-    const placed = clock(last?.placedAt);
-    const delivered = clock(last?.deliveredAt);
-    rows.push({
-      label: "Most recent delivery",
-      value: humanise(lag),
-      detail: placed && delivered ? `placed ${placed} → delivered ${delivered}` : null,
-      tone: slow ? "queue" : "fast",
-      source: "measured",
-    });
-  }
+  // No auto-generated row: the panel shows the banner plus whatever rows the
+  // admin has written. The measurement still drives the banner's tone.
 
   return json({
     status: "success",
