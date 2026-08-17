@@ -1,6 +1,7 @@
 import { ArrowRight, Loader2, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import Seo from "@/components/seo/Seo";
+import { metaFor } from "@/lib/site";
 import { NETWORKS, type NetworkId } from "@/data/bundles";
 import { useFlows } from "@/store/flows";
 import { useLiveBundles } from "@/hooks/useLiveBundles";
@@ -27,12 +28,7 @@ export default function Prices() {
 
   return (
     <section className="mk-section-tight" aria-labelledby="prices-title">
-      <Seo
-        title="Data Bundle Prices in Ghana Today — MTN, Telecel & AirtelTigo | DataYego"
-        description="Compare today's data bundle prices for MTN, Telecel and AirtelTigo in Ghana, live from DataYego's catalogue. Buy online with Mobile Money or card in minutes."
-        path="/prices"
-        jsonLd={breadcrumbLd([{ name: "Home", path: "/" }, { name: "Prices", path: "/prices" }])}
-      />
+      <Seo {...metaFor("/prices")} jsonLd={breadcrumbLd([{ name: "Home", path: "/" }, { name: "Prices", path: "/prices" }])} />
       <div className="mk-wrap">
         <p className="mk-eyebrow">Live prices</p>
         <h1 id="prices-title" className="mk-display mt-5 max-w-[16ch] !text-[clamp(30px,5vw,50px)]">Data bundle prices in Ghana</h1>

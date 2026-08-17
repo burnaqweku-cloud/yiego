@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import Seo from "@/components/seo/Seo";
+import { metaFor } from "@/lib/site";
 import { organizationLd, websiteLd } from "@/lib/structuredData";
 import Hero from "@/components/home/Hero";
 import TrustStrip from "@/components/home/TrustStrip";
@@ -28,12 +29,7 @@ function SectionFallback() {
 export default function Home() {
   return (
     <>
-      <Seo
-        title="DataYego — Buy Cheap MTN, Telecel & AirtelTigo Data Bundles in Ghana"
-        description="Buy data bundles online in Ghana. Cheap MTN, Telecel and AirtelTigo bundles delivered to any number in minutes — pay with Mobile Money or card, no account needed."
-        path="/"
-        jsonLd={[organizationLd(), websiteLd()]}
-      />
+      <Seo {...metaFor("/")} jsonLd={[organizationLd(), websiteLd()]} />
       <Hero />
       <TrustStrip />
       <Categories />

@@ -3,6 +3,7 @@ import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from "react";
 import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import Seo from "@/components/seo/Seo";
+import { isPublicRoute, metaFor } from "@/lib/site";
 import { supabase } from "@/integrations/supabase/client";
 import { LEGAL_FALLBACKS } from "@/data/legal";
 import { useReveal } from "@/hooks/useReveal";
@@ -124,21 +125,12 @@ function toBlocks(raw: string): Block[] {
   return blocks;
 }
 
-/* These three URLs are sitemap-listed, so each carries its own title,
-   description and canonical; an unknown slug noindexes itself. */
-const LEGAL_META: Record<string, { title: string; description: string }> = {
-  terms: { title: "Terms of Service | DataYego", description: "The terms that govern buying data bundles, wallet top-ups and orders on DataYego." },
-  privacy: { title: "Privacy Policy | DataYego", description: "What DataYego collects, why, and how your details are protected when you buy data bundles." },
-  refunds: { title: "Refund Policy | DataYego", description: "When DataYego refunds a data bundle order, how refunds are paid, and how to raise one." },
-};
-
 export default function LegalDocument() {
   const { slug = "privacy" } = useParams();
   const [document, setDocument] = useState<LegalRow | null>(null);
   const [loading, setLoading] = useState(true);
-  const meta = LEGAL_META[slug];
-  const seo = meta
-    ? <Seo title={meta.title} description={meta.description} path={`/legal/${slug}`} />
+  const seo = isPublicRoute(`/legal/${slug}`)
+    ? <Seo {...metaFor(`/legal/${slug}`)} />
     : <Seo title="Document not found — DataYego" description="This legal document does not exist." path={`/legal/${slug}`} noindex />;
 
   useEffect(() => {

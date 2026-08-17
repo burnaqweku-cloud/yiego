@@ -12,6 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Seo from "@/components/seo/Seo";
+import { metaFor } from "@/lib/site";
 import { useContactSettings } from "@/hooks/useContactSettings";
 import { useReveal } from "@/hooks/useReveal";
 
@@ -75,11 +76,7 @@ export default function Contact() {
 
   return (
     <>
-      <Seo
-        title="Contact DataYego — WhatsApp, Email & Support Hours"
-        description="Reach the DataYego team on WhatsApp or email. Send your YG- reference and the recipient number for the fastest help."
-        path="/contact"
-      />
+      <Seo {...metaFor("/contact")} />
       {/* ── Page header ─────────────────────────────────────────── */}
       <section className="mk-section-tight" aria-labelledby="contact-title" ref={headRef}>
         <div className="mk-wrap">

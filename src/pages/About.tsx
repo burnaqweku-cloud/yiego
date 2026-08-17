@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Headphones, Radar, ShieldCheck, Tag, type LucideIcon } from "lucide-react";
 import Seo from "@/components/seo/Seo";
+import { metaFor } from "@/lib/site";
 import { useReveal } from "@/hooks/useReveal";
 
 /* ══════════════════════════════════════════════════════════════
@@ -104,11 +105,7 @@ export default function About() {
 
   return (
     <>
-      <Seo
-        title="About DataYego — Ghana's Data Bundle Shop"
-        description="DataYego sells MTN, Telecel and AirtelTigo data bundles online, delivered to any Ghana number in minutes. Here's who we are and how it works."
-        path="/about"
-      />
+      <Seo {...metaFor("/about")} />
       {/* ── Page header ─────────────────────────────────────────── */}
       <section className="mk-section-tight" aria-labelledby="about-title" ref={headRef}>
         <div className="mk-wrap">

@@ -8,6 +8,44 @@ import { PUBLIC_ROUTES, SITE_ORIGIN } from "./src/lib/site";
 
 const BUILD_VERSION = String(Date.now());
 
+function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/* Give every indexable route its own HTML file (dist/shop/index.html, …).
+ *
+ * The app is client-rendered, so without this every URL served the same shell:
+ * Google runs the JS and recovers, but WhatsApp and Facebook do not, so every
+ * shared link previewed as the homepage. Static hosts serve an exact file
+ * match before the SPA fallback, so these files reach scrapers while humans
+ * still land in the normal single-page app — the markup is byte-identical to
+ * index.html apart from the head. */
+function writeRouteHtml(outDir: string) {
+  const shell = fs.readFileSync(path.join(outDir, "index.html"), "utf8");
+  for (const route of PUBLIC_ROUTES) {
+    const url = SITE_ORIGIN + route.path;
+    const title = escapeHtml(route.title);
+    const description = escapeHtml(route.description);
+    const html = shell
+      .replace(/<title>[\s\S]*?<\/title>/, `<title>${title}</title>`)
+      .replace(/(<meta name="description" content=")[^"]*(")/, `$1${description}$2`)
+      .replace(/(<meta property="og:title" content=")[^"]*(")/, `$1${title}$2`)
+      .replace(/(<meta property="og:description" content=")[^"]*(")/, `$1${description}$2`)
+      .replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${url}$2`)
+      .replace(/(<meta name="twitter:title" content=")[^"]*(")/, `$1${title}$2`)
+      .replace("</head>", `    <link rel="canonical" href="${url}" />\n  </head>`);
+
+    if (route.path === "/") {
+      fs.writeFileSync(path.join(outDir, "index.html"), html);
+      continue;
+    }
+    const dir = path.join(outDir, route.path.replace(/^\//, ""));
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "index.html"), html);
+  }
+  console.log(`[seo] wrote ${PUBLIC_ROUTES.length} route HTML files`);
+}
+
 // Writes dist/version.json at the end of every production build.
 // The runtime polls this file to detect new deployments and auto-reload.
 function writeVersionFile() {
@@ -32,6 +70,7 @@ function writeVersionFile() {
           path.join(outDir, "sitemap.xml"),
           `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
         );
+        writeRouteHtml(outDir);
       } catch (err) {
         console.warn("[version.json] write failed:", err);
       }

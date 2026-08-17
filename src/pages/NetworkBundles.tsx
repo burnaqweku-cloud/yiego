@@ -1,6 +1,7 @@
 import { ArrowRight, CheckCircle2, Loader2, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import Seo from "@/components/seo/Seo";
+import { metaFor } from "@/lib/site";
 import { NETWORKS, type NetworkId } from "@/data/bundles";
 import { useFlows } from "@/store/flows";
 import { useLiveBundles } from "@/hooks/useLiveBundles";
@@ -17,8 +18,6 @@ import { breadcrumbLd, bundleOffersLd, faqPageLd } from "@/lib/structuredData";
 
 interface NetworkPageConfig {
   path: string;
-  metaTitle: string;
-  metaDescription: string;
   h1: string;
   intro: string;
   bullets: string[];
@@ -28,8 +27,6 @@ interface NetworkPageConfig {
 const PAGES: Record<NetworkId, NetworkPageConfig> = {
   mtn: {
     path: "/mtn-data-bundles",
-    metaTitle: "MTN Data Bundle Prices in Ghana — Buy Online in Minutes | DataYego",
-    metaDescription: "Live MTN data bundle prices in Ghana. Buy online with Mobile Money or card and get data delivered to any MTN number in minutes — no account needed.",
     h1: "MTN data bundles, delivered in minutes",
     intro: "Buy MTN data online for any Ghana number — yours, family, friends or customers. Pick a bundle below, pay with Mobile Money or card, and the data lands on the line within minutes of payment clearing. The prices you see are the live prices you pay at checkout.",
     bullets: [
@@ -48,8 +45,6 @@ const PAGES: Record<NetworkId, NetworkPageConfig> = {
   },
   telecel: {
     path: "/telecel-data-bundles",
-    metaTitle: "Telecel Data Bundle Prices Ghana (formerly Vodafone) — Buy Online | DataYego",
-    metaDescription: "Live Telecel Ghana data bundle prices (formerly Vodafone). Buy online with Mobile Money or card — delivered to any Telecel number in minutes, no account needed.",
     h1: "Telecel data bundles (formerly Vodafone)",
     intro: "Buy Telecel Ghana data online — the network formerly known as Vodafone Ghana. Choose a bundle below, pay with Mobile Money or card, and it's delivered to any Telecel number in minutes. Prices come straight from our live catalogue, so what you see is what you pay.",
     bullets: [
@@ -67,8 +62,6 @@ const PAGES: Record<NetworkId, NetworkPageConfig> = {
   },
   at: {
     path: "/airteltigo-data-bundles",
-    metaTitle: "AirtelTigo (AT) Data Bundle Prices Ghana — Buy Online | DataYego",
-    metaDescription: "Live AirtelTigo data bundle prices in Ghana. Buy AT data online with Mobile Money or card — delivered to any AirtelTigo number in minutes, no account needed.",
     h1: "AirtelTigo data bundles, built for value",
     intro: "Buy AirtelTigo (AT) data online for any Ghana number. AT bundles stretch further for students, teams and heavy browsers — pick one below, pay with Mobile Money or card, and it's delivered within minutes. Prices are live from our catalogue.",
     bullets: [
@@ -103,7 +96,7 @@ export default function NetworkBundles({ network }: { network: NetworkId }) {
 
   return (
     <section className="mk-section-tight" aria-labelledby="network-title">
-      <Seo title={config.metaTitle} description={config.metaDescription} path={config.path} jsonLd={jsonLd} />
+      <Seo {...metaFor(config.path)} jsonLd={jsonLd} />
       <div className="mk-wrap">
         <p className="mk-eyebrow">{networkName} · Ghana</p>
         <h1 id="network-title" className="mk-display mt-5 max-w-[18ch] !text-[clamp(30px,5vw,50px)]">{config.h1}</h1>

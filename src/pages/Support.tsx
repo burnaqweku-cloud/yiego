@@ -2,6 +2,7 @@ import type { ComponentPropsWithoutRef, CSSProperties } from "react";
 import { ArrowRight, ArrowUpRight, Bot, Clock, Mail, MessageCircle, ShieldAlert } from "lucide-react";
 import { Link } from "react-router-dom";
 import Seo from "@/components/seo/Seo";
+import { metaFor } from "@/lib/site";
 import { useContactSettings } from "@/hooks/useContactSettings";
 import { useReveal } from "@/hooks/useReveal";
 
@@ -49,7 +50,7 @@ export default function Support() {
 
   return (
     <>
-      <Seo title="Help & Support — DataYego" description="Get help any hour: the DataYego assistant answers instantly, and WhatsApp and email reach the team directly for orders, payments and refunds." path="/support" />
+      <Seo {...metaFor("/support")} />
       {/* ── Page header ─────────────────────────────────────────── */}
       <RevealSection className="mk-section-tight pb-0" aria-labelledby="support-title">
         <div className="mk-wrap">
