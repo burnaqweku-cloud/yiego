@@ -53,6 +53,31 @@ export function breadcrumbLd(crumbs: Array<{ name: string; path: string }>) {
   };
 }
 
+/** Article markup for a blog post — what makes a guide eligible to show its
+ *  published date and byline in search results. */
+export function articleLd(post: { slug: string; heading: string; description: string; published: string; updated?: string }) {
+  const url = `${SITE_ORIGIN}/blog/${post.slug}`;
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.heading,
+    description: post.description,
+    datePublished: post.published,
+    dateModified: post.updated ?? post.published,
+    image: SITE_OG_IMAGE,
+    inLanguage: "en-GH",
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    url,
+    author: { "@type": "Organization", name: SITE_NAME, url: SITE_ORIGIN },
+    publisher: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: SITE_ORIGIN,
+      logo: { "@type": "ImageObject", url: SITE_OG_IMAGE },
+    },
+  };
+}
+
 /** Product + Offer markup for a network's bundle list (prices in GHS). */
 export function bundleOffersLd(network: string, path: string, bundles: Array<{ name: string; price: number }>) {
   return {

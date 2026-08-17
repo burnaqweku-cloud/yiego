@@ -23,10 +23,14 @@ interface NavLinkItem {
   to: string;
 }
 
+/* Prices and Guides earn their place here over About (still linked in the
+   footer): they are the two pages search traffic lands on, and a link in the
+   header puts them on every page of the site. */
 const GUEST_LINKS: NavLinkItem[] = [
   { label: "Home", to: "/" },
   { label: "Shop", to: "/shop" },
-  { label: "About", to: "/about" },
+  { label: "Prices", to: "/prices" },
+  { label: "Guides", to: "/blog" },
   { label: "FAQ", to: "/faq" },
   { label: "Support", to: "/support" },
 ];

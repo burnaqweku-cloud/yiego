@@ -21,6 +21,8 @@ const About = lazy(() => import("./pages/About"));
 const Prices = lazy(() => import("./pages/Prices"));
 const NetworkBundles = lazy(() => import("./pages/NetworkBundles"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
 const Faq = lazy(() => import("./pages/Faq"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Support = lazy(() => import("./pages/Support"));
@@ -72,6 +74,9 @@ const App = () => (
       <Route path="/mtn-data-bundles" element={<NetworkBundles network="mtn" />} />
       <Route path="/telecel-data-bundles" element={<NetworkBundles network="telecel" />} />
       <Route path="/airteltigo-data-bundles" element={<NetworkBundles network="at" />} />
+      {/* Guides — the informational searches the media blogs currently own. */}
+      <Route path="/blog" element={<Blog />} />
+      <Route path="/blog/:slug" element={<BlogPost />} />
       <Route path="/faq" element={<Faq />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/support" element={<Support />} />

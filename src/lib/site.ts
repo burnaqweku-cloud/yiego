@@ -14,6 +14,11 @@
    rendered page and the sitemap can never disagree.
    ══════════════════════════════════════════════════════════════ */
 
+/* Relative, not the "@/" alias: vite.config.ts imports this module to build the
+   sitemap and the per-route HTML, and the alias it defines is not available
+   while its own config is being loaded. */
+import { BLOG_INDEX_DESCRIPTION, BLOG_INDEX_TITLE, sortedPosts } from "../data/blog";
+
 export const SITE_ORIGIN = "https://datayego.com";
 export const SITE_NAME = "DataYego";
 
@@ -30,8 +35,9 @@ export interface PublicRoute {
 }
 
 /** Every indexable public route. Add a new landing page here and it joins the
- *  sitemap, gets its own share-ready HTML file, and can feed its own <Seo>. */
-export const PUBLIC_ROUTES: PublicRoute[] = [
+ *  sitemap, gets its own share-ready HTML file, and can feed its own <Seo>.
+ *  Blog posts are appended automatically from src/data/blog.ts. */
+const STATIC_ROUTES: PublicRoute[] = [
   {
     path: "/",
     priority: 1.0,
@@ -131,6 +137,28 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
     description: "When DataYego refunds a data bundle order, how refunds are paid, and how to raise one.",
   },
 ];
+
+/* The blog index and one entry per post, derived from the posts themselves so
+   publishing a post is a single edit to src/data/blog.ts — the sitemap, the
+   pre-rendered HTML and the page's own <Seo> all follow from it. */
+const BLOG_ROUTES: PublicRoute[] = [
+  {
+    path: "/blog",
+    priority: 0.8,
+    changefreq: "weekly",
+    title: BLOG_INDEX_TITLE,
+    description: BLOG_INDEX_DESCRIPTION,
+  },
+  ...sortedPosts().map((post) => ({
+    path: `/blog/${post.slug}`,
+    priority: 0.7,
+    changefreq: "monthly" as const,
+    title: post.title,
+    description: post.description,
+  })),
+];
+
+export const PUBLIC_ROUTES: PublicRoute[] = [...STATIC_ROUTES, ...BLOG_ROUTES];
 
 /** Props for <Seo> for one indexable route: `<Seo {...metaFor("/shop")} />`.
  *  Unknown paths fall back to the site title so a page can never render blank
