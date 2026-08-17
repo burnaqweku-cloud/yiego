@@ -121,19 +121,31 @@ async function refresh() {
   return json({ status: "success", ...snapshot });
 }
 
-/** What the site is allowed to show. Deliberately returns wording, never the
- *  supplier's name, backlog internals or our costs. */
+function clock(iso?: string) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString("en-GB", {
+    day: "numeric", month: "short", hour: "numeric", minute: "2-digit",
+    hour12: true, timeZone: "Africa/Accra",
+  });
+}
+
+/** The Delivery Progress panel the site renders: a status banner and timed
+ *  rows, mirroring what the supplier shows its own agents. Anything the admin
+ *  typed is passed through verbatim; the rest is measured. Wording only —
+ *  never the supplier's identity. */
 async function current() {
   const supabase = admin();
   const { data: supplier } = await supabase
     .from("suppliers")
-    .select("id, delivery_estimate_manual, delivery_slow_threshold_minutes")
+    .select("id, delivery_estimate_manual, delivery_slow_threshold_minutes, delivery_panel")
     .eq("code", "datamartgh").maybeSingle();
-  if (!supplier) return json({ status: "success", state: "unknown", estimate: null, slow: false });
+  if (!supplier) return json({ status: "success", banner: null, rows: [] });
 
   const { data: snap } = await supabase
     .from("supplier_delivery_status")
-    .select("scanner_state, last_lag_minutes, checked_at")
+    .select("scanner_state, last_lag_minutes, checked_at, raw")
     .eq("supplier_id", supplier.id).maybeSingle();
 
   const threshold = Number(supplier.delivery_slow_threshold_minutes ?? 45);
@@ -141,26 +153,54 @@ async function current() {
     ? null : Number(snap.last_lag_minutes);
   const slow = lag !== null && lag > threshold;
 
-  // A typed estimate is the owner's word and always wins. Otherwise describe
-  // the measurement, and say nothing at all rather than guess.
-  // State the measurement and nothing else. Any characterisation of what is
-  // "normal" is the owner's to make, through the manual override.
-  const manual = (supplier.delivery_estimate_manual ?? "").trim();
-  let estimate: string | null = manual || null;
-  if (!manual && lag !== null) {
-    estimate = slow
-      ? `Deliveries are slower than usual right now — the most recent order took about ${humanise(lag)}.`
-      : `The most recent order was delivered in about ${humanise(lag)}.`;
+  const panel = (supplier.delivery_panel ?? {}) as {
+    banner?: string;
+    rows?: Array<{ label?: string; value?: string; detail?: string; tone?: string }>;
+  };
+
+  // Banner: the admin's sentence wins. Otherwise state the condition plainly,
+  // and say nothing at all when nothing has been measured.
+  const bannerText = (panel.banner ?? "").trim() || (supplier.delivery_estimate_manual ?? "").trim();
+  const banner = bannerText
+    ? { text: bannerText, tone: slow ? "slow" : "ok" }
+    : lag === null
+      ? null
+      : slow
+        ? { text: `Deliveries are slower than usual — orders are taking about ${humanise(lag)}. Every order still gets delivered.`, tone: "slow" }
+        : { text: "Deliveries are running normally.", tone: "ok" };
+
+  // Rows the admin typed come first. The measured row only fills in when they
+  // have written none, so their wording is never contradicted underneath.
+  const rows: Array<Record<string, unknown>> = (panel.rows ?? [])
+    .filter((row) => (row?.label ?? "").toString().trim() && (row?.value ?? "").toString().trim())
+    .map((row) => ({
+      label: String(row.label).trim(),
+      value: String(row.value).trim(),
+      detail: (row.detail ?? "").toString().trim() || null,
+      tone: row.tone === "fast" ? "fast" : "queue",
+      source: "manual",
+    }));
+
+  const last = (snap?.raw as { lastDelivered?: { placedAt?: string; deliveredAt?: string } } | null)?.lastDelivered;
+  if (lag !== null && rows.length === 0) {
+    const placed = clock(last?.placedAt);
+    const delivered = clock(last?.deliveredAt);
+    rows.push({
+      label: "Most recent delivery",
+      value: humanise(lag),
+      detail: placed && delivered ? `placed ${placed} → delivered ${delivered}` : null,
+      tone: slow ? "queue" : "fast",
+      source: "measured",
+    });
   }
 
   return json({
     status: "success",
-    state: snap?.scanner_state ?? "unknown",
+    banner,
+    rows,
     slow,
-    estimate,
     measured_minutes: lag,
     checked_at: snap?.checked_at ?? null,
-    source: manual ? "manual" : lag !== null ? "measured" : "none",
   });
 }
 
@@ -184,6 +224,36 @@ async function adminState(req: Request) {
   return { supabase, userId: auth.user.id };
 }
 
+/** Save the admin-authored panel. Everything is trimmed and length-capped;
+ *  empty fields simply drop out, which is how a row is deleted and how the
+ *  panel hands control back to the measurement. */
+async function setPanel(req: Request, body: Record<string, unknown>) {
+  const gate = await adminState(req);
+  if (gate instanceof Response) return gate;
+
+  const banner = String(body.banner ?? "").trim().slice(0, 240);
+  const rawRows = Array.isArray(body.rows) ? body.rows : [];
+  const rows = rawRows
+    .slice(0, 4)
+    .map((row) => {
+      const r = (row ?? {}) as Record<string, unknown>;
+      return {
+        label: String(r.label ?? "").trim().slice(0, 60),
+        value: String(r.value ?? "").trim().slice(0, 40),
+        detail: String(r.detail ?? "").trim().slice(0, 120),
+        tone: r.tone === "fast" ? "fast" : "queue",
+      };
+    })
+    .filter((row) => row.label && row.value);
+
+  const { error } = await gate.supabase
+    .from("suppliers")
+    .update({ delivery_panel: { banner, rows }, delivery_estimate_updated_at: new Date().toISOString() })
+    .eq("code", "datamartgh");
+  if (error) return json({ error: "Could not save the panel." }, { status: 500 });
+  return json({ status: "success", banner, rows });
+}
+
 async function setManual(req: Request, value: string) {
   const gate = await adminState(req);
   if (gate instanceof Response) return gate;
@@ -203,16 +273,22 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     if (body?.action === "refresh") return await refresh();
     if (body?.action === "set_manual") return await setManual(req, String(body.estimate ?? ""));
+    if (body?.action === "set_panel") return await setPanel(req, body as Record<string, unknown>);
     if (body?.action === "admin_state") {
       const gate = await adminState(req);
       if (gate instanceof Response) return gate;
       const { data: supplier } = await gate.supabase
-        .from("suppliers").select("id, delivery_estimate_manual").eq("code", "datamartgh").maybeSingle();
+        .from("suppliers").select("id, delivery_estimate_manual, delivery_panel").eq("code", "datamartgh").maybeSingle();
       const { data: snap } = await gate.supabase
         .from("supplier_delivery_status")
         .select("scanner_state, message, last_lag_minutes, pending_batches, checked_at, error_message")
         .eq("supplier_id", supplier?.id ?? "").maybeSingle();
-      return json({ status: "success", manual: supplier?.delivery_estimate_manual ?? null, snapshot: snap ?? null });
+      return json({
+        status: "success",
+        manual: supplier?.delivery_estimate_manual ?? null,
+        panel: supplier?.delivery_panel ?? {},
+        snapshot: snap ?? null,
+      });
     }
     return await current();
   } catch (error) {

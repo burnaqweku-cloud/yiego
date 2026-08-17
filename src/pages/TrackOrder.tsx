@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CreditCard, Loader2, Search, ShieldCheck } from "lucide-react";
 import Seo from "@/components/seo/Seo";
+import DeliveryProgress from "@/components/shop/DeliveryProgress";
 import { metaFor } from "@/lib/site";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -158,6 +159,7 @@ export default function TrackOrder() {
   return (
     <div className="mx-auto w-full max-w-[760px]">
       <Seo {...metaFor("/track-order")} />
+      <DeliveryProgress className="mb-4" />
       <Card className="w-full">
         <CardContent className="p-6 sm:p-7">
             <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your DataYego order reference — the <span className="font-mono text-foreground">YG-</span> code from your receipt or the link we sent you back to after payment. That's all you need.</p></div>

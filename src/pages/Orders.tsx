@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Seo from "@/components/seo/Seo";
+import DeliveryProgress from "@/components/shop/DeliveryProgress";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Loader2, PackageCheck, RefreshCcw, Search } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
@@ -119,6 +120,8 @@ export default function Orders() {
     <div className="space-y-6 lg:space-y-8">
       <Seo title="Your Orders — DataYego" description="Your DataYego order history." path="/orders" noindex />
       <PageHeader eyebrow="Data orders" title="Your orders" subtitle="Search your purchase history and follow every delivery." action={<Button variant="soft" onClick={() => void load()} disabled={loading}><RefreshCcw className={loading ? "animate-spin" : ""} size={16} /> Refresh</Button>} />
+
+      <DeliveryProgress />
 
       <section className="onyx-panel rounded-[24px] p-4 sm:p-5">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
