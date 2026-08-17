@@ -143,12 +143,14 @@ async function current() {
 
   // A typed estimate is the owner's word and always wins. Otherwise describe
   // the measurement, and say nothing at all rather than guess.
+  // State the measurement and nothing else. Any characterisation of what is
+  // "normal" is the owner's to make, through the manual override.
   const manual = (supplier.delivery_estimate_manual ?? "").trim();
   let estimate: string | null = manual || null;
   if (!manual && lag !== null) {
     estimate = slow
-      ? `Deliveries are slower than usual right now — recent orders took about ${humanise(lag)}.`
-      : `Most orders arrive within minutes — the last one took about ${humanise(lag)}.`;
+      ? `Deliveries are slower than usual right now — the most recent order took about ${humanise(lag)}.`
+      : `The most recent order was delivered in about ${humanise(lag)}.`;
   }
 
   return json({

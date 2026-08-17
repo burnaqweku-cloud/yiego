@@ -97,7 +97,7 @@ export default function DeliverySpeedCard() {
               <input
                 className="onyx-field w-full"
                 maxLength={200}
-                placeholder="e.g. Most orders arrive within minutes."
+                placeholder="Leave empty to show the measured figure"
                 value={manual}
                 onChange={(event) => setManual(event.target.value)}
               />
