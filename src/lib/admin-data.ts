@@ -20,6 +20,9 @@ export interface AdminOrderRow {
   updated_at: string;
   data_products: { name: string; capacity_gb: number | string } | null;
   networks: { name: string; code: string } | null;
+  /** Which supplier the order was routed to. public_name is what customers
+   *  would see; the admin sees both that and the real one. */
+  suppliers: { code: string; name: string; public_name: string | null } | null;
 }
 
 export interface AdminOrderEventRow {

@@ -27,6 +27,14 @@ function normalizedSupplierStatus(order: AdminOrderRow) {
   return (order.supplier_status ?? "not_sent").toLowerCase();
 }
 
+/** The supplier an order actually went to, named the way customers see it so a
+ *  complaint about "Zola" can be matched to a row without a lookup. */
+function routeLabel(order: AdminOrderRow) {
+  const supplier = order.suppliers;
+  if (!supplier) return "Not routed";
+  return supplier.public_name ?? supplier.name;
+}
+
 function supportMessage(order: AdminOrderRow) {
   const reference = order.order_reference;
   const status = displayedStatus(order);
@@ -49,6 +57,7 @@ export default function AdminOrders() {
   const [lifecycleFilter, setLifecycleFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [supplierFilter, setSupplierFilter] = useState("all");
+  const [routeFilter, setRouteFilter] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -64,7 +73,7 @@ export default function AdminOrders() {
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, recipient_phone, guest_email, amount, cost_amount, currency, status, payment_status, supplier_status, supplier_order_reference, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, created_at, updated_at, data_products(name, capacity_gb), networks(name, code)").order("created_at", { ascending: false });
+    const { data, error } = await adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, recipient_phone, guest_email, amount, cost_amount, currency, status, payment_status, supplier_status, supplier_order_reference, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name)").order("created_at", { ascending: false });
     if (error) { toast.error("Could not load orders."); setOrders([]); }
     else {
       const next = (data ?? []) as AdminOrderRow[];
@@ -76,7 +85,7 @@ export default function AdminOrders() {
   }, []);
 
   useEffect(() => { void loadOrders(); }, [loadOrders]);
-  useEffect(() => { setPage(1); }, [search, lifecycleFilter, paymentFilter, supplierFilter, customerFilter, pageSize]);
+  useEffect(() => { setPage(1); }, [search, lifecycleFilter, paymentFilter, supplierFilter, routeFilter, customerFilter, pageSize]);
 
   const loadEvents = useCallback(async (orderId: string) => {
     const { data } = await adminDatabase().from<AdminOrderEventRow>("order_events").select("id, event_type, from_status, to_status, message, created_at").eq("order_id", orderId).order("created_at", { ascending: false });
@@ -102,11 +111,18 @@ export default function AdminOrders() {
       const matchesLifecycle = lifecycleFilter === "all" || (lifecycleFilter === "in_progress" && PENDING_STATUSES.includes(order.status)) || (lifecycleFilter === "failed_group" && FAILED_STATUSES.includes(order.status)) || order.status === lifecycleFilter;
       const matchesPayment = paymentFilter === "all" || order.payment_status === paymentFilter;
       const matchesSupplier = supplierFilter === "all" || supplierStatus === supplierFilter;
+      const matchesRoute = routeFilter === "all" || routeLabel(order) === routeFilter;
       const matchesCustomer = customerFilter === "all" || customerStatus === customerFilter;
-      const matchesSearch = !needle || [order.order_reference, order.recipient_phone, order.supplier_order_reference ?? "", order.status, order.payment_status, supplierStatus, customerStatus, order.networks?.name ?? "", order.data_products?.name ?? ""].some((value) => value.toLowerCase().includes(needle));
-      return matchesLifecycle && matchesPayment && matchesSupplier && matchesCustomer && matchesSearch;
+      const matchesSearch = !needle || [order.order_reference, order.recipient_phone, order.supplier_order_reference ?? "", order.status, order.payment_status, supplierStatus, customerStatus, order.networks?.name ?? "", order.data_products?.name ?? "", routeLabel(order)].some((value) => value.toLowerCase().includes(needle));
+      return matchesLifecycle && matchesPayment && matchesSupplier && matchesRoute && matchesCustomer && matchesSearch;
     });
-  }, [orders, search, lifecycleFilter, paymentFilter, supplierFilter, customerFilter]);
+  }, [orders, search, lifecycleFilter, paymentFilter, supplierFilter, routeFilter, customerFilter]);
+
+  // Only the routes that actually appear, so the filter never offers an empty one.
+  const routes = useMemo(
+    () => [...new Set(orders.map(routeLabel))].sort(),
+    [orders],
+  );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -179,18 +195,19 @@ export default function AdminOrders() {
         <select value={lifecycleFilter} onChange={(event) => setLifecycleFilter(event.target.value)} className="onyx-field"><option value="all">All order stages</option><option value="in_progress">All in progress</option><option value="failed_group">All failed/review</option>{LIFECYCLE_STATUSES.map((status) => <option key={status} value={status}>{readableStatus(status)}</option>)}</select>
         <select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)} className="onyx-field"><option value="all">All payments</option>{PAYMENT_STATUSES.map((status) => <option key={status} value={status}>{readableStatus(status)}</option>)}</select>
         <select value={supplierFilter} onChange={(event) => setSupplierFilter(event.target.value)} className="onyx-field"><option value="all">All delivery responses</option>{SUPPLIER_STATUSES.map((status) => <option key={status} value={status}>{readableStatus(status)}</option>)}</select>
+        <select value={routeFilter} onChange={(event) => setRouteFilter(event.target.value)} className="onyx-field" aria-label="Filter by supplier"><option value="all">All suppliers</option>{routes.map((route) => <option key={route} value={route}>{route}</option>)}</select>
         <select value={customerFilter} onChange={(event) => setCustomerFilter(event.target.value)} className="onyx-field"><option value="all">All customer views</option>{CUSTOMER_STATUSES.map((status) => <option key={status} value={status}>{readableStatus(status)}</option>)}</select>
         <Button variant="ghost" onClick={clearFilters}><FilterX />Reset</Button>
       </div>
       <div className="mt-5 space-y-3 md:hidden">{visible.map((order) => <article key={order.id} className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4"><div className="min-w-0 flex-1"><p className="truncate font-semibold text-white">{order.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{order.recipient_phone} · {formatGHS(Number(order.amount))}</p><div className="mt-2 flex flex-wrap gap-2"><Badge variant={order.status === "delivered" ? "success" : FAILED_STATUSES.includes(order.status) ? "amber" : "neutral"}>{readableStatus(order.status)}</Badge><Badge variant={order.payment_status === "succeeded" ? "success" : "neutral"}>{readableStatus(order.payment_status)}</Badge></div></div><AdminDetailsButton label={`View order ${order.order_reference}`} onClick={() => openDetails(order)} /></article>)}</div>
-      <div className="mt-5 hidden overflow-x-auto md:block"><table className="w-full min-w-[1050px] text-left text-sm"><thead><tr className="border-b border-white/[0.08] text-[10px] uppercase tracking-[0.15em] text-faint-foreground"><th className="pb-3">Order</th><th className="pb-3">Amount</th><th className="pb-3">Order stage</th><th className="pb-3">Payment</th><th className="pb-3">Delivery response</th><th className="pb-3">Customer sees</th><th className="pb-3">Created</th><th className="pb-3 text-right">Details</th></tr></thead><tbody>{visible.map((order) => <tr key={order.id} className="border-b border-white/[0.055] last:border-0"><td className="py-4"><p className="font-semibold text-white">{order.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{order.recipient_phone}</p></td><td className="py-4 font-display font-semibold text-white">{formatGHS(Number(order.amount))}</td><td className="py-4"><Badge variant={order.status === "delivered" ? "success" : FAILED_STATUSES.includes(order.status) ? "amber" : "neutral"}>{readableStatus(order.status)}</Badge></td><td className="py-4"><Badge variant={order.payment_status === "succeeded" ? "success" : order.payment_status === "failed" ? "amber" : "neutral"}>{readableStatus(order.payment_status)}</Badge></td><td className="py-4 text-muted-foreground">{readableStatus(normalizedSupplierStatus(order))}</td><td className="py-4"><Badge variant={displayedStatus(order) === "delivered" ? "success" : "neutral"}>{readableStatus(displayedStatus(order))}</Badge></td><td className="py-4 text-xs text-muted-foreground">{formatAdminDate(order.created_at)}</td><td className="py-4 text-right"><AdminDetailsButton label={`View order ${order.order_reference}`} onClick={() => openDetails(order)} /></td></tr>)}</tbody></table></div>
+      <div className="mt-5 hidden overflow-x-auto md:block"><table className="w-full min-w-[1180px] text-left text-sm"><thead><tr className="border-b border-white/[0.08] text-[10px] uppercase tracking-[0.15em] text-faint-foreground"><th className="pb-3">Order</th><th className="pb-3">Amount</th><th className="pb-3">Order stage</th><th className="pb-3">Payment</th><th className="pb-3">Supplier</th><th className="pb-3">Delivery response</th><th className="pb-3">Customer sees</th><th className="pb-3">Created</th><th className="pb-3 text-right">Details</th></tr></thead><tbody>{visible.map((order) => <tr key={order.id} className="border-b border-white/[0.055] last:border-0"><td className="py-4"><p className="font-semibold text-white">{order.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{order.recipient_phone}</p></td><td className="py-4 font-display font-semibold text-white">{formatGHS(Number(order.amount))}</td><td className="py-4"><Badge variant={order.status === "delivered" ? "success" : FAILED_STATUSES.includes(order.status) ? "amber" : "neutral"}>{readableStatus(order.status)}</Badge></td><td className="py-4"><Badge variant={order.payment_status === "succeeded" ? "success" : order.payment_status === "failed" ? "amber" : "neutral"}>{readableStatus(order.payment_status)}</Badge></td><td className="py-4 text-muted-foreground">{routeLabel(order)}</td><td className="py-4 text-muted-foreground">{readableStatus(normalizedSupplierStatus(order))}</td><td className="py-4"><Badge variant={displayedStatus(order) === "delivered" ? "success" : "neutral"}>{readableStatus(displayedStatus(order))}</Badge></td><td className="py-4 text-xs text-muted-foreground">{formatAdminDate(order.created_at)}</td><td className="py-4 text-right"><AdminDetailsButton label={`View order ${order.order_reference}`} onClick={() => openDetails(order)} /></td></tr>)}</tbody></table></div>
       {!loading && filtered.length === 0 && <div className="grid min-h-48 place-items-center text-center"><div><ClipboardList className="mx-auto text-faint-foreground" /><p className="mt-3 font-semibold text-foreground">No matching orders</p><p className="mt-1 text-sm text-muted-foreground">Change the filters or search term.</p></div></div>}
       <AdminListPagination page={safePage} pageSize={pageSize} totalItems={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} itemLabel="orders" />
       <div className="mt-3 flex justify-end"><Button variant="ghost" size="sm" onClick={() => void loadOrders()} disabled={loading}><RefreshCw className={loading ? "animate-spin" : ""} />Refresh data</Button></div>
     </CardContent></Card>
 
     <AdminRecordModal open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.order_reference ?? "Order"} subtitle={`${selected?.networks?.name ?? "Network"} · ${selected?.data_products?.name ?? "Data bundle"}`} fields={selected ? [
-      { label: "Recipient", value: selected.recipient_phone }, { label: "Customer email", value: selected.guest_email ?? "Signed-in customer" }, { label: "Amount", value: formatGHS(Number(selected.amount)) }, { label: "Supplier cost", value: selected.cost_amount === null ? "Not recorded" : formatGHS(Number(selected.cost_amount)) }, { label: "System order status", value: readableStatus(selected.status) }, { label: "Customer sees", value: readableStatus(displayedStatus(selected)) }, { label: "Payment", value: readableStatus(selected.payment_status) }, { label: "Supplier", value: readableStatus(normalizedSupplierStatus(selected)) }, { label: "Supplier reference", value: selected.supplier_order_reference ?? "Not assigned" }, { label: "Created", value: formatAdminDate(selected.created_at) }, { label: "Failure reason", value: selected.failure_reason ?? "None" }, { label: "Admin reason", value: selected.admin_resolution_reason ?? "Automatic status" },
+      { label: "Recipient", value: selected.recipient_phone }, { label: "Customer email", value: selected.guest_email ?? "Signed-in customer" }, { label: "Amount", value: formatGHS(Number(selected.amount)) }, { label: "Supplier cost", value: selected.cost_amount === null ? "Not recorded" : formatGHS(Number(selected.cost_amount)) }, { label: "System order status", value: readableStatus(selected.status) }, { label: "Customer sees", value: readableStatus(displayedStatus(selected)) }, { label: "Payment", value: readableStatus(selected.payment_status) }, { label: "Delivery response", value: readableStatus(normalizedSupplierStatus(selected)) }, { label: "Supplier", value: routeLabel(selected) }, { label: "Supplier reference", value: selected.supplier_order_reference ?? "Not assigned" }, { label: "Created", value: formatAdminDate(selected.created_at) }, { label: "Failure reason", value: selected.failure_reason ?? "None" }, { label: "Admin reason", value: selected.admin_resolution_reason ?? "Automatic status" },
     ] : []}>
       <div className="space-y-6"><section><h3 className="font-display text-lg font-semibold text-white">Customer-visible status</h3><p className="mt-1 text-sm leading-6 text-muted-foreground">This changes what the customer sees without overwriting payment or delivery records.</p><div className="mt-4 grid gap-3"><select value={displayStatus} onChange={(event) => setDisplayStatus(event.target.value)} className="onyx-field">{CUSTOMER_STATUSES.map((status) => <option key={status} value={status}>{readableStatus(status)}</option>)}</select><textarea className="onyx-field min-h-24 resize-y" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Customer update message and audit reason" /><div className="grid gap-2 sm:grid-cols-2"><Button onClick={saveDisplayStatus} disabled={Boolean(runningAction)}>{runningAction === "set_display_status" ? <Loader2 className="animate-spin" /> : <Save />}Save customer status</Button><Button variant="ghost" onClick={clearDisplayStatus} disabled={Boolean(runningAction) || !selected?.admin_resolution_status}>{runningAction === "clear_display_status" ? <Loader2 className="animate-spin" /> : <RotateCcw />}Use automatic status</Button></div></div></section><section><h3 className="font-display text-lg font-semibold text-white">Operational actions</h3><div className="mt-3 flex flex-wrap gap-2"><Button variant="ghost" size="sm" onClick={() => void runAction("recheck")} disabled={Boolean(runningAction) || !selected?.supplier_order_reference}><RefreshCw />Recheck delivery</Button><Button variant="ghost" size="sm" onClick={() => void runAction("retry")} disabled={Boolean(runningAction) || !selected || !FAILED_STATUSES.includes(selected.status)}><RotateCcw />Retry fulfilment</Button></div></section><section><h3 className="font-display text-lg font-semibold text-white">Order timeline</h3>{events.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">No status events recorded yet.</p> : <div className="mt-3 space-y-2">{events.map((event) => <div key={event.id} className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3"><div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold text-white">{readableStatus(event.event_type)}</p><p className="text-[11px] text-faint-foreground">{formatAdminDate(event.created_at)}</p></div>{event.message && <p className="mt-2 text-sm text-muted-foreground">{event.message}</p>}</div>)}</div>}</section></div>
     </AdminRecordModal>
