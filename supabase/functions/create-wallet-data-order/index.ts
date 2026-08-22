@@ -1,4 +1,5 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
+import { friendlyError } from "../_shared/friendlyErrors.ts";
 import { fulfillOrderWithDataMartGH } from "../_shared/fulfillment.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
     });
 
     if (orderError) {
-      return jsonResponse({ error: orderError.message }, { status: 400 });
+      return jsonResponse({ error: friendlyError(orderError.message, "We couldn't create this order. Please try again.") }, { status: 400 });
     }
 
     try {

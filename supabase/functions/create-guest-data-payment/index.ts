@@ -2,6 +2,7 @@ import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { initializePaystackTransaction, makePaystackReference } from "../_shared/paystack.ts";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { friendlyError } from "../_shared/friendlyErrors.ts";
 
 function makeOrderReference() {
   return `YG-${crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`;
@@ -67,7 +68,7 @@ Deno.serve(async (req) => {
     ).maybeSingle();
 
     if (productError) {
-      return jsonResponse({ error: productError.message }, { status: 500 });
+      return jsonResponse({ error: friendlyError(productError.message, "That bundle isn't available right now.") }, { status: 500 });
     }
 
     if (!product) {
@@ -90,7 +91,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (mappingError) {
-      return jsonResponse({ error: mappingError.message }, { status: 500 });
+      return jsonResponse({ error: friendlyError(mappingError.message, "That bundle can't be delivered right now.") }, { status: 500 });
     }
 
     if (!mapping) {
@@ -173,7 +174,7 @@ Deno.serve(async (req) => {
         .eq("id", existingOpen.id);
 
       if (reuseError) {
-        return jsonResponse({ error: reuseError.message }, { status: 500 });
+        return jsonResponse({ error: friendlyError(reuseError.message, "We couldn't reuse your earlier order. Please try again.") }, { status: 500 });
       }
 
       order = { id: existingOpen.id, order_reference: existingOpen.order_reference };
@@ -220,7 +221,7 @@ Deno.serve(async (req) => {
           );
         }
 
-        return jsonResponse({ error: orderError.message }, { status: 500 });
+        return jsonResponse({ error: friendlyError(orderError.message, "We couldn't create this order. Please try again.") }, { status: 500 });
       }
 
       order = inserted;
