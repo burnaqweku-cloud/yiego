@@ -121,18 +121,11 @@ async function refresh() {
   return json({ status: "success", ...snapshot });
 }
 
-/** The Delivery Progress panel the site renders: a status banner and timed
- *  rows, mirroring what the supplier shows its own agents. Anything the admin
- *  typed is passed through verbatim; the rest is measured. Wording only —
- *  never the supplier's identity. */
-async function current() {
-  const supabase = admin();
-  const { data: supplier } = await supabase
-    .from("suppliers")
-    .select("id, delivery_estimate_manual, delivery_slow_threshold_minutes, delivery_panel")
-    .eq("code", "datamartgh").maybeSingle();
-  if (!supplier) return json({ status: "success", banner: null, rows: [] });
-
+/** One supplier's Delivery Progress panel. Whatever the admin has written
+ *  wins; the measurement only supplies tone and fills gaps. Suppliers with no
+ *  tracker of their own simply have nothing measured, so their panel is
+ *  exactly what the admin typed. */
+async function buildPanel(supabase: ReturnType<typeof admin>, supplier: Record<string, any>) {
   const { data: snap } = await supabase
     .from("supplier_delivery_status")
     .select("scanner_state, last_lag_minutes, checked_at, raw")
@@ -174,14 +167,52 @@ async function current() {
   // No auto-generated row: the panel shows the banner plus whatever rows the
   // admin has written. The measurement still drives the banner's tone.
 
-  return json({
-    status: "success",
+  return {
     banner,
     rows,
     slow,
     measured_minutes: lag,
     checked_at: snap?.checked_at ?? null,
-  });
+  };
+}
+
+/** The existing single-supplier panel, kept for the pages already using it. */
+async function current() {
+  const supabase = admin();
+  const { data: supplier } = await supabase
+    .from("suppliers")
+    .select("id, delivery_estimate_manual, delivery_slow_threshold_minutes, delivery_panel")
+    .eq("code", "datamartgh").maybeSingle();
+  if (!supplier) return json({ status: "success", banner: null, rows: [] });
+  return json({ status: "success", ...(await buildPanel(supabase, supplier)) });
+}
+
+/** What the shop offers the customer to choose between. Returns only the name
+ *  we invented and that supplier's delivery wording — never the real supplier,
+ *  and never anything about cost. */
+async function choices() {
+  const supabase = admin();
+  const { data: suppliers } = await supabase
+    .from("suppliers")
+    .select("id, public_name, public_blurb, delivery_estimate_manual, delivery_slow_threshold_minutes, delivery_panel")
+    .eq("is_customer_visible", true)
+    .eq("status", "active")
+    .order("display_order", { ascending: true });
+
+  const list = [];
+  for (const supplier of suppliers ?? []) {
+    if (!supplier.public_name) continue;   // unnamed suppliers are never offered
+    const panel = await buildPanel(supabase, supplier);
+    list.push({
+      id: supplier.id,
+      name: supplier.public_name,
+      blurb: supplier.public_blurb ?? null,
+      banner: panel.banner,
+      rows: panel.rows,
+      slow: panel.slow,
+    });
+  }
+  return json({ status: "success", suppliers: list });
 }
 
 function humanise(minutes: number) {
@@ -251,6 +282,7 @@ Deno.serve(async (req) => {
   try {
     if (req.method === "GET") return await current();
     const body = await req.json().catch(() => ({}));
+    if (body?.action === "choices") return await choices();
     if (body?.action === "refresh") return await refresh();
     if (body?.action === "set_manual") return await setManual(req, String(body.estimate ?? ""));
     if (body?.action === "set_panel") return await setPanel(req, body as Record<string, unknown>);
