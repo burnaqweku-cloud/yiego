@@ -99,13 +99,20 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
   // A recorded choice is honoured exactly; otherwise pick by a stable order.
   if (order.supplier_id) query = query.eq("supplier_id", order.supplier_id);
 
-  const { data: mapping, error: mappingError } = await query
-    .order("display_order", { foreignTable: "suppliers", ascending: true })
-    .order("id", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
+  // Ordering by a column on an embedded table does not reorder the parent rows,
+  // so asking the database for the best row and taking limit(1) silently
+  // returned an arbitrary supplier. Fetch the candidates and rank them here,
+  // where the comparison is explicit and testable.
+  const { data: candidates, error: mappingError } = await query;
   if (mappingError) throw new Error(mappingError.message);
+
+  const mapping = (candidates ?? [])
+    .slice()
+    .sort((a: any, b: any) => {
+      const byPriority = (a.suppliers?.display_order ?? 100) - (b.suppliers?.display_order ?? 100);
+      if (byPriority !== 0) return byPriority;
+      return String(a.id).localeCompare(String(b.id));
+    })[0];
   if (!mapping) throw new Error("supplier_mapping_not_found");
 
   const supplier = mapping.suppliers as { id: string; code: string; name: string };
