@@ -135,9 +135,11 @@ const dataBundlesHub: SupplierAdapter = {
       endpoint: "/api/developer/purchase",
       requestPayload,
       responsePayload: result.payload,
-      // Their purchaseId is the handle for every later status check.
+      // Status is polled by requestId, not purchaseId — their documented
+      // check_order_status route does not exist on the live API. Keep the
+      // requestId as the reference so a later status check has it.
       supplierReference: data.transactionReference ?? null,
-      purchaseId: data.purchaseId != null ? String(data.purchaseId) : null,
+      purchaseId: data.requestId != null ? String(data.requestId) : (data.purchaseId != null ? String(data.purchaseId) : null),
       transactionReference: data.transactionReference ?? null,
       supplierStatus: data.orderStatus ?? data.status ?? null,
       message: result.ok

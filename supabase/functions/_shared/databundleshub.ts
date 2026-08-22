@@ -5,7 +5,10 @@
      • the network is inferred from the phone prefix and cannot be
        overridden, so a ported number is a real failure mode;
      • there are no webhooks, so delivery is confirmed by polling
-       check_order_status with the purchaseId;
+       /purchase-status with the requestId. Their documentation
+       names /check_order_status with an order_id instead; that
+       route returns "could not be found" on the live API, so the
+       reply's own requestId is what we keep;
      • the wallet balance is not exposed, so an empty float shows
        up only as an INSUFFICIENT_BALANCE error on a live order.
    ══════════════════════════════════════════════════════════════ */
@@ -26,14 +29,17 @@ export interface DataBundlesHubPayload {
   code?: string;
   error_code?: string;
   data?: {
+    requestId?: number;
     purchaseId?: number;
+    /** Their own queue state; delivery to the customer is orderStatus. */
+    processingStatus?: string;
     transactionReference?: string;
     network?: string;
     capacity?: string | number;
     price?: number;
     remainingBalance?: number;
     orderStatus?: string;
-    /* check_order_status */
+    /* purchase-status */
     order_id?: number;
     status?: string;
     status_description?: string;
@@ -111,12 +117,11 @@ export function purchase(input: PurchaseInput) {
   });
 }
 
-/** Status is polled with the purchaseId returned at purchase time. The api_key
- *  goes in the query string because this endpoint requires it there. */
-export function checkOrderStatus(purchaseId: number | string) {
-  const { apiKey } = config();
-  const query = `?order_id=${encodeURIComponent(String(purchaseId))}&api_key=${encodeURIComponent(apiKey)}`;
-  return call(`/api/developer/check_order_status${query}`, { method: "GET", timeoutMs: 15_000 });
+/** Polled with the requestId from the purchase reply. Auth travels in the
+ *  Bearer header, as it does everywhere else. */
+export function checkOrderStatus(requestId: number | string) {
+  const query = `?request_id=${encodeURIComponent(String(requestId))}`;
+  return call(`/api/developer/purchase-status${query}`, { method: "GET", timeoutMs: 15_000 });
 }
 
 /** Their statuses → ours. `verified` means accepted upstream but not yet with
