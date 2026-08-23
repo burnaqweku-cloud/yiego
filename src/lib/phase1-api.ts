@@ -31,6 +31,9 @@ export interface WalletDepositInput {
 export interface WalletDataOrderInput {
   productId: string;
   recipientPhone: string;
+  /** The supplier the customer chose in the shop. Omitted means "whichever
+   *  the system ranks first". */
+  supplierId?: string;
 }
 
 export interface WalletDataOrderResponse {

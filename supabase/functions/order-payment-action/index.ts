@@ -23,7 +23,9 @@ Deno.serve(async (req) => {
     const action = String(body.action ?? "");
 
     if (action === "prepare") {
-      const { data, error } = await supabase.rpc("prepare_data_order", { p_user_id: auth.user.id, p_product_code: String(body.productId ?? ""), p_recipient_phone: String(body.recipientPhone ?? "") });
+      const supplierRaw = typeof body?.supplierId === "string" ? body.supplierId.trim() : "";
+      const supplierId = /^[0-9a-f-]{36}$/i.test(supplierRaw) ? supplierRaw : null;
+      const { data, error } = await supabase.rpc("prepare_data_order", { p_user_id: auth.user.id, p_product_code: String(body.productId ?? ""), p_recipient_phone: String(body.recipientPhone ?? ""), p_supplier_id: supplierId });
       return error ? json({ error: error.message }, 400) : json({ status: "success", data });
     }
     if (action === "list_pending") {

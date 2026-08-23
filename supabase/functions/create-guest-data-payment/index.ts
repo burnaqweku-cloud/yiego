@@ -82,13 +82,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { data: mapping, error: mappingError } = await supabase
+    // The supplier the guest chose in the shop, if they chose one.
+    const supplierRaw = typeof body?.supplierId === "string" ? body.supplierId.trim() : "";
+    const chosenSupplierId = /^[0-9a-f-]{36}$/i.test(supplierRaw) ? supplierRaw : null;
+
+    let mappingQuery = supabase
       .from("supplier_product_mappings")
-      .select("supplier_id")
+      .select("supplier_id, suppliers!inner(id, status, display_order)")
       .eq("product_id", product.id)
       .eq("is_active", true)
-      .limit(1)
-      .maybeSingle();
+      .eq("suppliers.status", "active");
+    if (chosenSupplierId) mappingQuery = mappingQuery.eq("supplier_id", chosenSupplierId);
+
+    const { data: mappingRows, error: mappingError } = await mappingQuery;
+    // Ranked here rather than by the database: ordering on an embedded table
+    // does not reorder the parent rows, so limit(1) would pick arbitrarily.
+    const mapping = (mappingRows ?? [])
+      .slice()
+      .sort((a: any, b: any) =>
+        ((a.suppliers?.display_order ?? 100) - (b.suppliers?.display_order ?? 100)) ||
+        String(a.supplier_id).localeCompare(String(b.supplier_id)))[0] ?? null;
 
     if (mappingError) {
       return jsonResponse({ error: friendlyError(mappingError.message, "That bundle can't be delivered right now.") }, { status: 500 });

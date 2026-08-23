@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, Clock3, Copy, CreditCard, ListChecks, Share2, WalletCards, Wifi } from "lucide-react";
+import { ChevronRight, Clock3, Copy, CreditCard, ListChecks, Share2, WalletCards, Wifi, Zap } from "lucide-react";
 import { toast } from "sonner";
 import Modal from "@/components/ui/modal";
 import { FlowFooter, FlowHeader, ProcessingView, SelectRow, SuccessView } from "./flow-parts";
 import { NETWORKS, type Bundle, type Network, type NetworkId } from "@/data/bundles";
+import { useSupplierChoices, type SupplierChoice } from "@/hooks/useSupplierChoices";
 import DeliveryProgress from "@/components/shop/DeliveryProgress";
 import { useWallet } from "@/store/wallet";
 import { useProfile } from "@/store/profile";
@@ -20,7 +21,7 @@ import {
   type PreparedOrderSummary,
 } from "@/lib/phase1-api";
 
-type Step = "network" | "bundle" | "phone" | "review" | "pending" | "payOrder" | "shared" | "processing" | "success";
+type Step = "supplier" | "network" | "bundle" | "phone" | "review" | "pending" | "payOrder" | "shared" | "processing" | "success";
 type PaymentMethod = "wallet" | "paystack" | "shared";
 
 /** Where the flow should open when the shop already knows what the shopper
@@ -88,11 +89,41 @@ function pendingToActive(order: PreparedOrderSummary): ActiveOrder {
   };
 }
 
+
+/** The chosen plan's delivery status, in the customer's words. Empty when the
+ *  team has written nothing and nothing has been measured, so a plan never
+ *  shows a hollow promise. */
+function DeliveryStatusPanel({ supplier }: { supplier: SupplierChoice }) {
+  if (!supplier.banner && supplier.rows.length === 0) return null;
+  return (
+    <div className="mt-3 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">Delivery status</p>
+      {supplier.banner && (
+        <p className={`mt-2 text-sm leading-6 ${supplier.banner.tone === "slow" ? "text-amber" : "text-foreground"}`}>
+          {supplier.banner.text}
+        </p>
+      )}
+      {supplier.rows.map((row) => (
+        <div key={`${row.label}-${row.value}`} className="mt-2.5 flex items-baseline justify-between gap-3">
+          <span className="text-xs text-muted-foreground">{row.label}</span>
+          <span className="font-mono text-[13px] text-foreground">{row.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { open: boolean; preselect?: BuyPreselect | null; onClose: () => void; onAddMoney: () => void }) {
   const { balance } = useWallet();
   const { profile } = useProfile();
   const { isAuthenticated, user } = useAuth();
-  const [step, setStep] = useState<Step>("network");
+  const [step, setStep] = useState<Step>("supplier");
+  const { suppliers, loading: suppliersLoading } = useSupplierChoices();
+  const [supplierId, setSupplierId] = useState<string | null>(null);
+  // The default is the first supplier the backend ranks; the customer can
+  // switch, and switching is what re-prices the bundle list.
+  const chosenSupplier: SupplierChoice | null =
+    suppliers.find((s) => s.id === supplierId) ?? suppliers[0] ?? null;
   const [network, setNetwork] = useState<Network | null>(null);
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [products, setProducts] = useState<Phase1Product[]>([]);
@@ -108,7 +139,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
   const [receiptRef, setReceiptRef] = useState<string | null>(null);
 
   useEffect(() => {
-    setStep("network"); setNetwork(null); setBundle(null); setPhone(profile.phone);
+    setStep("supplier"); setNetwork(null); setBundle(null); setPhone(profile.phone);
     setGuestEmail(user?.email ?? profile.email); setPaymentMethod("wallet");
     setActiveOrder(null); setHighlightOrder(null); setLookupReference(""); setReceiptRef(null);
   }, [open, profile.email, profile.phone, user?.email]);
@@ -158,7 +189,20 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
   const fee = feeApplies ? paystackFee(price) : 0;
   const payTotal = Math.round((price + fee) * 100) / 100;
 
+  /* Each supplier sells its own list at its own prices, so the bundles shown
+     depend on which one is selected. */
   function bundlesFor(networkId: Network["id"]): Bundle[] {
+    if (chosenSupplier) {
+      return chosenSupplier.bundles
+        .filter((offer) => offer.networkId === networkId)
+        .map((offer) => ({
+          id: offer.productCode,
+          size: offer.size,
+          validity: offer.validity ?? "Supplier terms",
+          price: offer.price,
+          tag: offer.price <= 10 ? "Popular" : offer.price >= 40 ? "Best value" : undefined,
+        }));
+    }
     const prefix = networkId === "mtn" ? "mtn" : networkId === "telecel" ? "tel" : "at";
     return products.filter((product) => product.app_product_code?.startsWith(prefix)).map((product) => ({
       id: product.app_product_code ?? product.id,
@@ -179,7 +223,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
     if (!network || !bundle || !phoneValid) return;
     if (!isAuthenticated) { setStep("review"); return; }
     setStep("processing");
-    const result = await prepareDataOrder({ productId: bundle.id, recipientPhone: digits });
+    const result = await prepareDataOrder({ productId: bundle.id, recipientPhone: digits, supplierId: chosenSupplier?.id });
     if (result.error || !result.data?.data) {
       toast.error(result.error ?? result.data?.error ?? "Could not create the order"); setStep("phone"); return;
     }
@@ -222,7 +266,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
   async function startGuestPaystack() {
     if (!bundle || !emailValid) { toast.error("Enter a valid email for your receipt"); return; }
     setStep("processing");
-    const result = await createGuestDataPayment({ productId: bundle.id, recipientPhone: digits, guestEmail: guestEmail.trim(), guestPhone: digits });
+    const result = await createGuestDataPayment({ productId: bundle.id, recipientPhone: digits, supplierId: chosenSupplier?.id, guestEmail: guestEmail.trim(), guestPhone: digits });
     if (result.error || !result.data?.data?.authorizationUrl) { toast.error(result.error ?? "Could not start Paystack payment"); setStep("review"); return; }
     window.location.assign(result.data.data.authorizationUrl);
   }
@@ -242,7 +286,21 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
   }, [activeOrder, bundle, digits, guestEmail, isAuthenticated, network]);
 
   return <Modal open={open} onClose={onClose} label="Buy data">
-    {step === "network" && <><FlowHeader title="Buy data" subtitle="Choose what you want to do" onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">
+    {step === "supplier" && <><FlowHeader title="Buy data" subtitle="Choose your plan" onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">
+      {suppliersLoading && <p className="px-1 pb-2 text-[12px] text-faint-foreground">Loading plans...</p>}
+      {!suppliersLoading && suppliers.length === 0 && <p className="rounded-xl border border-danger/20 bg-danger/[0.08] p-3 text-xs text-ink-rose">No plans are available right now. Please try again shortly.</p>}
+      {suppliers.map((option) => <SelectRow
+        key={option.id}
+        selected={chosenSupplier?.id === option.id}
+        onClick={() => { setSupplierId(option.id); setNetwork(null); setBundle(null); setStep("network"); }}
+        leading={<span className="onyx-tile-icon"><Zap size={18} /></span>}
+        title={option.name}
+        subtitle={option.blurb ?? `${option.bundles.length} bundle${option.bundles.length === 1 ? "" : "s"} available`}
+        trailing={<ChevronRight size={18} className="text-faint-foreground" />}
+      />)}
+      {chosenSupplier && <DeliveryStatusPanel supplier={chosenSupplier} />}
+    </div></>}
+    {step === "network" && <><FlowHeader title={chosenSupplier ? chosenSupplier.name : "Buy data"} subtitle="Choose what you want to do" onBack={() => setStep("supplier")} onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">
       {productsLoading && <p className="px-1 pb-2 text-[12px] text-faint-foreground">Loading available bundles...</p>}
       {productsError && <p className="rounded-xl border border-danger/20 bg-danger/[0.08] p-3 text-xs text-ink-rose">{productsError}</p>}
       {!productsError && NETWORKS.map((n) => <SelectRow key={n.id} onClick={() => { setNetwork(n); setBundle(null); setStep("bundle"); }} leading={<NetLogo network={n} />} title={n.name} subtitle="Data bundles" trailing={<ChevronRight size={18} className="text-faint-foreground" />} />)}

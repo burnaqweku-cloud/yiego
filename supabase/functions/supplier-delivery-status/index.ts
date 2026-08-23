@@ -203,6 +203,40 @@ async function choices() {
   for (const supplier of suppliers ?? []) {
     if (!supplier.public_name) continue;   // unnamed suppliers are never offered
     const panel = await buildPanel(supabase, supplier);
+
+    // Each supplier sells its own list at its own prices. A bundle it has not
+    // mapped simply is not offered under that name.
+    const { data: offers } = await supabase
+      .from("supplier_product_mappings")
+      .select("customer_price, data_products!inner(app_product_code, name, validity, capacity_gb, is_active, display_order)")
+      .eq("supplier_id", supplier.id)
+      .eq("is_active", true)
+      .eq("data_products.is_active", true);
+
+    const bundles = (offers ?? [])
+      .map((offer: any) => {
+        const product = offer.data_products;
+        const price = offer.customer_price ?? product?.customer_price;
+        if (!product?.app_product_code || price === null || price === undefined) return null;
+        const code = String(product.app_product_code);
+        // The catalogue encodes the network in the code prefix; check the
+        // longer prefixes first so "at-" cannot swallow the others.
+        const networkId = code.startsWith("mtn") ? "mtn" : code.startsWith("tel") ? "telecel" : code.startsWith("at") ? "at" : null;
+        if (!networkId) return null;
+        return {
+          productCode: product.app_product_code,
+          networkId,
+          size: String(product.name ?? "").replace(/^.*?—\s*/, ""),
+          validity: product.validity ?? null,
+          price: Number(price),
+          capacityGb: Number(product.capacity_gb ?? 0),
+          order: Number(product.display_order ?? 999),
+        };
+      })
+      .filter(Boolean)
+      .sort((a: any, b: any) => a.order - b.order || a.capacityGb - b.capacityGb)
+      .map(({ order: _order, ...rest }: any) => rest);
+
     list.push({
       id: supplier.id,
       name: supplier.public_name,
@@ -210,6 +244,7 @@ async function choices() {
       banner: panel.banner,
       rows: panel.rows,
       slow: panel.slow,
+      bundles,
     });
   }
   return json({ status: "success", suppliers: list });

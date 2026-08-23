@@ -42,10 +42,16 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "A valid 10-digit Ghana recipient phone is required" }, { status: 400 });
     }
 
+    // A supplier the customer picked in the shop. Optional, and validated here
+    // so a malformed value is refused rather than passed into the query.
+    const supplierIdRaw = typeof body?.supplierId === "string" ? body.supplierId.trim() : "";
+    const supplierId = /^[0-9a-f-]{36}$/i.test(supplierIdRaw) ? supplierIdRaw : null;
+
     const { data: createdOrder, error: orderError } = await supabase.rpc("create_wallet_data_order", {
       p_user_id: authData.user.id,
       p_product_code: productId,
       p_recipient_phone: recipientPhone,
+      p_supplier_id: supplierId,
     });
 
     if (orderError) {
