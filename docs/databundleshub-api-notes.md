@@ -41,7 +41,7 @@ Success returns `data.purchaseId` (integer), `transactionReference`, `network`,
 > **`purchaseId` is the order id.** Store it — it is the `order_id` required by
 > the status endpoint. It is an integer, unlike DataMartGH's string reference.
 
-### Check order status — `GET /api/developer/check_order_status`
+### Check order status — `GET /api/developer/purchase-status`
 
 Query params `order_id` (the `purchaseId`) and `api_key`, both required.
 Returns `status`, `status_description`, `is_completed`, `package_size`,
@@ -121,3 +121,65 @@ or legal pages, payment historically went to a personal Mobile Money number,
 and an identical deployment runs at `e-cubetechsolutions.com`. The API itself is
 competent; the corporate footprint is thin. Fund it with an amount that could be
 written off.
+
+---
+
+## Verified against the live API — 2026-08-23
+
+Everything below was confirmed by real calls, not read from their documentation.
+Where the two disagree, the documentation is wrong.
+
+### Status is polled on a different route than documented
+`/api/developer/check_order_status?order_id=…` answers **"route could not be
+found"**. The purchase reply returns its own `requestId` plus a `statusUrl`, and
+that route answers:
+
+    GET /api/developer/purchase-status?request_id={requestId}
+
+So keep the `requestId`, not just the `purchaseId`.
+
+### The purchase reply carries two states
+`processingStatus` is their own queue ("completed" as soon as they accept it);
+`orderStatus` is delivery to the customer, and moves `pending` → `processing` →
+`delivered`. Only `orderStatus` may be shown to a customer.
+
+### Idempotency genuinely works
+Replaying a purchase with the same `Idempotency-Key` returned `duplicate: true`
+with the original `purchaseId` and an unchanged balance. A retry cannot double
+charge.
+
+### Cost prices, read from the API
+A purchase that exceeds the wallet balance is refused but still returns the
+price, so the whole list can be read without buying anything.
+
+| Size | Cost | Per GB |
+| --- | --- | --- |
+| 1GB | 4.00 | 4.00 |
+| 8GB | 32.00 | 4.00 |
+| 10GB | 40.00 | 4.00 |
+| 15GB | 60.00 | 4.00 |
+| 20GB | 78.00 | 3.90 |
+| 25GB | 97.50 | 3.90 |
+| 30GB | 117.00 | 3.90 |
+| 40GB | 156.00 | 3.90 |
+| 50GB | 195.00 | 3.90 |
+
+Two bands: **GHS 4.00 per GB up to 15GB, GHS 3.90 from 20GB.** Dearer than
+DataMartGH (~3.80–4.10) on most sizes, so this is a backup route, not a cheaper
+one.
+
+### They do not sell every size
+`12`, `35`, `45` and `100` GB answer `INVALID_CAPACITY`, so the "1–200GB" range
+in their documentation is not a continuous range. Confirmed sellable: 1, 8, 10,
+15, 20, 25, 30, 40, 50. Sizes 2–6GB are unverified — each costs less than the
+float, so probing them would place a real order.
+
+### Base URL
+`https://databundleshub.com/api/developer` works without the `www.` prefix.
+
+### What still has no answer
+- No webhook: delivery is confirmed only by polling.
+- No balance endpoint: an empty float appears only as `INSUFFICIENT_BALANCE` on
+  a live order.
+- The network cannot be overridden; it is read from the phone prefix, so a
+  ported number is delivered to the wrong network unless we refuse it first.
