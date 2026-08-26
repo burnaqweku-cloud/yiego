@@ -1,7 +1,7 @@
-import fullDark from "@/assets/yiego-full-dark.png";
-import fullLight from "@/assets/yiego-full.png";
-import lockupDark from "@/assets/yiego-lockup-dark.png";
-import lockupLight from "@/assets/yiego-lockup.png";
+import fullDark from "@/assets/yiego-full-dark.webp";
+import fullLight from "@/assets/yiego-full.webp";
+import lockupDark from "@/assets/yiego-lockup-dark.webp";
+import lockupLight from "@/assets/yiego-lockup.webp";
 import { cn } from "@/lib/utils";
 
 /**

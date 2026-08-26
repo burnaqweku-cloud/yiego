@@ -114,7 +114,7 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         // Precache hashed build assets ONLY — NEVER precache HTML (keeps app shell fresh on every visit)
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
-        globPatterns: ["**/*.{js,css,ico,svg,woff2,woff,ttf}"],
+        globPatterns: ["**/*.{js,css,ico,svg,woff2,woff,ttf,webp}"],
         // Exclude large PNGs from precache — they'll be cached at runtime instead
         globIgnores: [
           "**/datasika-icon*.png",
