@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { ArrowRight, RotateCw, Search, X } from "lucide-react";
 import { NETWORKS, type Network, type NetworkId } from "@/data/bundles";
 import { formatGHS } from "@/lib/format";
-import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
+import { useSupplierChoices, type SupplierBundle, type SupplierChoice } from "@/hooks/useSupplierChoices";
 import { useFlows } from "@/store/flows";
 import { useReveal } from "@/hooks/useReveal";
 import { cn } from "@/lib/utils";
@@ -10,13 +10,18 @@ import { cn } from "@/lib/utils";
 /**
  * The shop floor: every live bundle, on the page itself.
  *
+ * The catalogue is one shop with several counters. Each supplier sells its
+ * own list at its own prices, set independently in the admin — so the tabs at
+ * the top swap the entire catalogue, prices and delivery wording included.
+ * The first supplier the backend ranks is the default counter.
+ *
  * With no filter on, bundles are grouped by network in catalogue order — MTN
  * first — rather than interleaved by price, so a shopper who came for one
  * network never has to hunt. Each group shows its cheapest few; "see all"
  * simply switches the filter to that network.
  *
- * Tapping a card opens the existing BuyDataFlow already standing on the
- * recipient step. The flow, its pricing and payment paths are untouched.
+ * Tapping a card opens the existing BuyDataFlow on the recipient step with
+ * both the bundle and the supplier tab the shopper was on already chosen.
  */
 
 type Filter = "all" | NetworkId;
@@ -45,18 +50,18 @@ function networkForCode(code: string | null): Network | null {
   return NETWORKS.find((n) => code.startsWith(CODE_PREFIX[n.id])) ?? null;
 }
 
-/** Catalogue names read "MTN — 5GB"; the part after the dash is the headline. */
-function toRow(product: Phase1Product): Row | null {
-  const network = networkForCode(product.app_product_code);
+/** A supplier's offer, shaped for the grid. */
+function toRow(offer: SupplierBundle): Row | null {
+  const network = NETWORKS.find((n) => n.id === offer.networkId) ?? networkForCode(offer.productCode);
   if (!network) return null;
-  const size = product.name.replace(/^.*?—\s*/, "").trim() || product.name;
+  const size = offer.size.trim() || offer.productCode;
   return {
-    id: product.id,
-    code: product.app_product_code ?? product.id,
+    id: offer.productCode,
+    code: offer.productCode,
     network,
     size,
-    validity: product.validity,
-    price: Number(product.customer_price),
+    validity: offer.validity,
+    price: Number(offer.price),
     haystack: `${size} ${network.name}`.toLowerCase().replace(/\s+/g, ""),
   };
 }
@@ -151,32 +156,93 @@ function SkeletonGrid() {
   );
 }
 
+/* ── Supplier tabs ───────────────────────────────────────────────── */
+
+/** The counters of the shop. Each supplier is its own tab; switching swaps
+ *  the whole catalogue below, prices included. Renders nothing when there is
+ *  only one supplier — a choice of one is not a choice. */
+function SupplierTabs({
+  suppliers,
+  activeId,
+  onPick,
+}: {
+  suppliers: SupplierChoice[];
+  activeId: string;
+  onPick: (id: string) => void;
+}) {
+  if (suppliers.length < 2) return null;
+  return (
+    <div role="tablist" aria-label="Choose a plan" className="mt-5 flex flex-wrap items-center gap-2">
+      {suppliers.map((supplier) => {
+        const on = supplier.id === activeId;
+        return (
+          <button
+            key={supplier.id}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            onClick={() => onPick(supplier.id)}
+            className={cn("onyx-pill !px-4 !text-[13.5px]", on && "onyx-pill-on")}
+          >
+            {supplier.name}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The selected supplier's delivery wording, straight from the admin panel /
+ *  live measurement. Slow days show in amber; normal days read plainly. */
+function SupplierBanner({ supplier }: { supplier: SupplierChoice }) {
+  if (!supplier.banner && !supplier.blurb) return null;
+  return (
+    <div className="mt-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] px-4 py-3.5">
+      {supplier.banner && (
+        <p
+          className={cn(
+            "flex items-start gap-2.5 text-[13px] leading-5",
+            supplier.banner.tone === "slow" ? "text-amber" : "text-foreground",
+          )}
+        >
+          <span
+            className={cn(
+              "mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full",
+              supplier.banner.tone === "slow" ? "bg-amber" : "bg-primary-glow",
+            )}
+            aria-hidden="true"
+          />
+          {supplier.banner.text}
+        </p>
+      )}
+      {supplier.blurb && (
+        <p className={cn("text-[12.5px] leading-5 text-muted-foreground", supplier.banner && "mt-1.5 pl-4")}>
+          {supplier.blurb}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ── Section ─────────────────────────────────────────────────────── */
 
 export default function BundleCatalogue() {
   const { openBuyData } = useFlows();
-  const [products, setProducts] = useState<Phase1Product[]>([]);
-  const [state, setState] = useState<LoadState>("loading");
+  const { suppliers, loading, error, reload } = useSupplierChoices();
+  const [supplierId, setSupplierId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
-  const [attempt, setAttempt] = useState(0);
 
-  useEffect(() => {
-    let mounted = true;
-    setState("loading");
-    void loadPhase1Products().then((result) => {
-      if (!mounted) return;
-      setProducts(result.data);
-      setState(result.error || result.data.length === 0 ? "error" : "ready");
-    });
-    return () => {
-      mounted = false;
-    };
-  }, [attempt]);
+  const state: LoadState = loading ? "loading" : error ? "error" : "ready";
+
+  // The first supplier the backend ranks is the default counter; the shopper
+  // can flick to any other. A stale pick (supplier withdrawn) falls back.
+  const supplier: SupplierChoice | null =
+    suppliers.find((s) => s.id === supplierId) ?? suppliers[0] ?? null;
 
   const rows = useMemo(
-    () => products.map(toRow).filter((row): row is Row => row !== null),
-    [products],
+    () => (supplier?.bundles ?? []).map(toRow).filter((row): row is Row => row !== null),
+    [supplier],
   );
 
   const term = query.trim().toLowerCase().replace(/\s+/g, "");
@@ -214,7 +280,7 @@ export default function BundleCatalogue() {
   ];
 
   const buy = (row: Row) =>
-    openBuyData({ kind: "bundle", networkId: row.network.id, productCode: row.code });
+    openBuyData({ kind: "bundle", networkId: row.network.id, productCode: row.code, supplierId: supplier?.id });
 
   return (
     <section aria-labelledby="catalogue-title" className="scroll-mt-24" id="bundles">
@@ -255,6 +321,19 @@ export default function BundleCatalogue() {
           </label>
         )}
       </div>
+
+      {/* Suppliers: pick a counter, then everything below is theirs —
+          catalogue, prices and delivery wording. */}
+      {state === "ready" && supplier && (
+        <>
+          <SupplierTabs
+            suppliers={suppliers}
+            activeId={supplier.id}
+            onPick={(id) => { setSupplierId(id); setFilter("all"); setQuery(""); }}
+          />
+          <SupplierBanner supplier={supplier} />
+        </>
+      )}
 
       {/* Filters */}
       {state === "ready" && (
@@ -302,7 +381,7 @@ export default function BundleCatalogue() {
             </div>
             <button
               type="button"
-              onClick={() => setAttempt((n) => n + 1)}
+              onClick={reload}
               className="onyx-btn-ghost w-full shrink-0 sm:w-auto"
             >
               <RotateCw size={16} />

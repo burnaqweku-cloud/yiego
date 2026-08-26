@@ -37,20 +37,26 @@ export interface SupplierChoice {
 export function useSupplierChoices() {
   const [suppliers, setSuppliers] = useState<SupplierChoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setError(null);
     void (async () => {
-      const { data } = await supabase.functions.invoke<{ suppliers?: SupplierChoice[] }>(
+      const { data, error: invokeError } = await supabase.functions.invoke<{ suppliers?: SupplierChoice[] }>(
         "supplier-delivery-status", { body: { action: "choices" } },
       );
       if (cancelled) return;
       // Only suppliers with something to sell are worth offering.
-      setSuppliers((data?.suppliers ?? []).filter((s) => s.bundles?.length));
+      const list = (data?.suppliers ?? []).filter((s) => s.bundles?.length);
+      setSuppliers(list);
+      setError(invokeError || list.length === 0 ? "Plans are temporarily unavailable." : null);
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [attempt]);
 
-  return { suppliers, loading };
+  return { suppliers, loading, error, reload: () => setAttempt((n) => n + 1) };
 }

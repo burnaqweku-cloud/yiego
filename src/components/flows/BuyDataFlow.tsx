@@ -30,7 +30,7 @@ type PaymentMethod = "wallet" | "paystack" | "shared";
  *  of truth for what actually gets ordered. Omit it and the flow opens exactly
  *  where it always has. */
 export type BuyPreselect =
-  | { kind: "bundle"; networkId: NetworkId; productCode: string }
+  | { kind: "bundle"; networkId: NetworkId; productCode: string; supplierId?: string }
   | { kind: "payOrder" };
 
 interface ActiveOrder {
@@ -164,11 +164,22 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
     if (open && preselect?.kind === "payOrder") setStep("payOrder");
   }, [open, preselect]);
 
-  // Opened on a specific bundle from the shop grid: skip the network and
-  // bundle steps. If the row has since left the catalogue we simply stay on
-  // step one rather than ordering something the shopper did not pick.
+  // Opened on a specific bundle from the shop grid: adopt the supplier tab the
+  // shopper was on, then skip the network and bundle steps. If the row has
+  // since left the catalogue we simply stay on step one rather than ordering
+  // something the shopper did not pick.
   useEffect(() => {
-    if (!open || preselect?.kind !== "bundle" || products.length === 0) return;
+    if (!open || preselect?.kind !== "bundle") return;
+    // The grid names a supplier; wait until that list has arrived so the
+    // bundle is looked up at that supplier's own prices.
+    if (preselect.supplierId) {
+      if (suppliersLoading) return;
+      const preferred = suppliers.find((s) => s.id === preselect.supplierId);
+      if (preferred && supplierId !== preferred.id) {
+        setSupplierId(preferred.id);
+        return; // effect re-runs with the right supplier selected
+      }
+    } else if (products.length === 0) return;
     const chosenNetwork = NETWORKS.find((n) => n.id === preselect.networkId);
     const chosenBundle = bundlesFor(preselect.networkId).find((b) => b.id === preselect.productCode);
     if (!chosenNetwork || !chosenBundle) return;
@@ -176,7 +187,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
     setBundle(chosenBundle);
     setStep("phone");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, preselect, products]);
+  }, [open, preselect, products, suppliers, suppliersLoading, supplierId]);
 
   const digits = phone.replace(/\D/g, "");
   const phoneValid = digits.length === 10 && digits.startsWith("0");
