@@ -75,6 +75,34 @@ Deno.serve(async (req) => {
       return jsonResponse({ status: "success", data });
     }
 
+    if (action === "update_notice") {
+      const slug = String(body.slug ?? "shop_important_notice");
+      if (slug !== "shop_important_notice") return jsonResponse({ error: "Unsupported notice" }, { status: 400 });
+      const title = String(body.title ?? "").trim().slice(0, 80) || "Important notice";
+      const rawPoints = Array.isArray(body.points) ? body.points : [];
+      const points = rawPoints
+        .map((point: unknown) => String(point ?? "").trim().slice(0, 240))
+        .filter(Boolean)
+        .slice(0, 8);
+      const mtnNote = String(body.mtnNote ?? "").trim().slice(0, 500) || null;
+      const published = body.isPublished !== false;
+      if (published && points.length === 0 && !mtnNote) {
+        return jsonResponse({ error: "A published notice needs at least one point" }, { status: 400 });
+      }
+
+      const { data, error } = await supabase.from("site_notices").upsert({
+        slug,
+        title,
+        points,
+        mtn_note: mtnNote,
+        is_published: published,
+        updated_at: new Date().toISOString(),
+        updated_by: authData.user.id,
+      }).select("*").single();
+      if (error) return jsonResponse({ error: error.message }, { status: 500 });
+      return jsonResponse({ status: "success", data });
+    }
+
     return jsonResponse({ error: "Unsupported action" }, { status: 400 });
   } catch (error) {
     return jsonResponse({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });

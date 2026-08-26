@@ -1,5 +1,6 @@
 import { AlertTriangle } from "lucide-react";
 import type { NetworkId } from "@/data/bundles";
+import { useSiteNotice } from "@/hooks/useSiteNotice";
 import { cn } from "@/lib/utils";
 
 /**
@@ -7,20 +8,13 @@ import { cn } from "@/lib/utils";
  * disputes: variable delivery, the airtime-debt condition, wrong-number
  * finality, and MTN's one-time verification hold.
  *
+ * The wording lives in the database (Admin → Legal → Shop notice), with the
+ * shipped copy as fallback. Unpublishing in the admin hides the card.
+ *
  * On the shop page everything shows. Inside the buy flow the MTN line only
  * appears when the order actually is MTN, so other networks read a shorter
  * notice rather than someone else's caveat.
  */
-
-const POINTS = [
-  "Delivery times may vary.",
-  "The receiving phone must not owe airtime.",
-  "No refunds for orders sent to a wrong number — double-check before paying.",
-];
-
-const MTN_NOTE =
-  "MTN: a number ordering MTN data through us for the first time may show \u201CAwaiting Verification\u201D for a quick one-time check before it delivers. Future orders to that same number go through normally.";
-
 export default function ImportantNotice({
   compact = false,
   network = null,
@@ -33,10 +27,12 @@ export default function ImportantNotice({
   network?: NetworkId | null;
   className?: string;
 }) {
-  const showMtn = network === null || network === "mtn";
+  const notice = useSiteNotice();
+  const showMtn = Boolean(notice.mtn_note) && (network === null || network === "mtn");
+  if (!notice.is_published || (notice.points.length === 0 && !showMtn)) return null;
   return (
     <aside
-      aria-label="Important notice"
+      aria-label={notice.title}
       className={cn(
         "rounded-2xl border border-amber/20 bg-amber/[0.06]",
         compact ? "px-3.5 py-3" : "px-4 py-4 sm:px-5",
@@ -50,7 +46,7 @@ export default function ImportantNotice({
         )}
       >
         <AlertTriangle size={compact ? 13 : 14} aria-hidden="true" />
-        Important notice
+        {notice.title}
       </p>
       <ul
         className={cn(
@@ -58,10 +54,10 @@ export default function ImportantNotice({
           compact ? "mt-1.5 text-[12px] leading-5" : "mt-2.5 text-[13px] leading-6",
         )}
       >
-        {POINTS.map((point) => (
+        {notice.points.map((point) => (
           <li key={point}>{point}</li>
         ))}
-        {showMtn && <li>{MTN_NOTE}</li>}
+        {showMtn && <li>{notice.mtn_note}</li>}
       </ul>
     </aside>
   );
