@@ -160,6 +160,12 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isAuthenticated]);
 
+  // A choice of one is not a choice: with a single supplier on offer the
+  // plan step is skipped entirely and the flow opens on the network step.
+  useEffect(() => {
+    if (open && step === "supplier" && !suppliersLoading && suppliers.length === 1) setStep("network");
+  }, [open, step, suppliersLoading, suppliers]);
+
   // Opened straight on the Order ID lookup from the shop.
   useEffect(() => {
     if (open && preselect?.kind === "payOrder") setStep("payOrder");
@@ -312,7 +318,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
       />)}
       {chosenSupplier && <DeliveryStatusPanel supplier={chosenSupplier} />}
     </div></>}
-    {step === "network" && <><FlowHeader title={chosenSupplier ? chosenSupplier.name : "Buy data"} subtitle="Choose what you want to do" onBack={() => setStep("supplier")} onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">
+    {step === "network" && <><FlowHeader title={suppliers.length > 1 && chosenSupplier ? chosenSupplier.name : "Buy data"} subtitle="Choose what you want to do" onBack={suppliers.length > 1 ? () => setStep("supplier") : undefined} onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">
       {productsLoading && <p className="px-1 pb-2 text-[12px] text-faint-foreground">Loading available bundles...</p>}
       {productsError && <p className="rounded-xl border border-danger/20 bg-danger/[0.08] p-3 text-xs text-ink-rose">{productsError}</p>}
       {!productsError && NETWORKS.map((n) => <SelectRow key={n.id} onClick={() => { setNetwork(n); setBundle(null); setStep("bundle"); }} leading={<NetLogo network={n} />} title={n.name} subtitle="Data bundles" trailing={<ChevronRight size={18} className="text-faint-foreground" />} />)}
