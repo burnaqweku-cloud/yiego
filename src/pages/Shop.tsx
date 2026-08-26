@@ -4,6 +4,7 @@ import { metaFor } from "@/lib/site";
 import BalanceCard from "@/components/dashboard/BalanceCard";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import BundleCatalogue from "@/components/shop/BundleCatalogue";
+import ImportantNotice from "@/components/shop/ImportantNotice";
 import { TRUST_POINTS } from "@/data/marketing";
 import { useReveal } from "@/hooks/useReveal";
 import { useAuth } from "@/store/auth-context";
@@ -89,6 +90,9 @@ export default function Shop() {
 
       {/* ── The catalogue ───────────────────────────────────────── */}
       <BundleCatalogue />
+
+      {/* ── The house rules, before anyone pays ───────────────── */}
+      <ImportantNotice />
 
       {/* ── What every order comes with ─────────────────────────── */}
       <section aria-labelledby="shop-trust-h">
