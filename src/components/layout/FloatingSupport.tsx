@@ -2,6 +2,11 @@ import { Link } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 import { useContactSettings } from "@/hooks/useContactSettings";
 
+/** The public DataYego WhatsApp channel — announcements and updates. The
+ *  floating bubble opens this; person-to-person chat stays on the support
+ *  number via the Support page's "Chat on WhatsApp" button. */
+const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029Vb8aDCX4NVitZcIPeR2W";
+
 /** WhatsApp brand glyph — lucide ships no brand icons, so it's inlined. */
 function WhatsAppGlyph({ size = 27 }: { size?: number }) {
   return (
@@ -13,9 +18,10 @@ function WhatsAppGlyph({ size = 27 }: { size?: number }) {
 
 /**
  * Two floating action buttons on every customer-facing page:
- * WhatsApp (bottom-left) and AI support (bottom-right). The WhatsApp button
- * only appears once a support number is configured in contact settings — until
- * then it stays hidden rather than linking nowhere. Sits below modals (z-40).
+ * WhatsApp (bottom-left) and AI support (bottom-right). The WhatsApp bubble
+ * opens the DataYego channel; it only appears while WhatsApp support is
+ * enabled in contact settings, so one admin switch still controls both the
+ * bubble and the Support page. Sits below modals (z-40).
  */
 export default function FloatingSupport() {
   const { whatsappUrl } = useContactSettings();
@@ -24,10 +30,10 @@ export default function FloatingSupport() {
     <>
       {whatsappUrl && (
         <a
-          href={whatsappUrl}
+          href={WHATSAPP_CHANNEL_URL}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Chat with DataYego on WhatsApp"
+          aria-label="DataYego on WhatsApp"
           className="fixed bottom-5 left-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#25D366] text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           style={{ marginBottom: "env(safe-area-inset-bottom)" }}
         >

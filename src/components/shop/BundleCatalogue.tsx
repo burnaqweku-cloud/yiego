@@ -1,7 +1,8 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { ArrowRight, RotateCw, Search, X } from "lucide-react";
 import { NETWORKS, type Network, type NetworkId } from "@/data/bundles";
 import { formatGHS } from "@/lib/format";
+import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
 import { useSupplierChoices, type SupplierBundle, type SupplierChoice } from "@/hooks/useSupplierChoices";
 import { useFlows } from "@/store/flows";
 import { useReveal } from "@/hooks/useReveal";
@@ -10,10 +11,12 @@ import { cn } from "@/lib/utils";
 /**
  * The shop floor: every live bundle, on the page itself.
  *
- * The catalogue is one shop with several counters. Each supplier sells its
- * own list at its own prices, set independently in the admin — so the tabs at
- * the top swap the entire catalogue, prices and delivery wording included.
- * The first supplier the backend ranks is the default counter.
+ * The catalogue is one shop with, sometimes, several counters. When two or
+ * more suppliers are customer-visible, tabs at the top swap the entire
+ * catalogue — each supplier's own list at its own prices. With one visible
+ * supplier the tabs hide. With none, the shop sells the base catalogue at the
+ * base prices and each order routes behind the scenes to whichever supplier
+ * stocks that bundle — the shopper never sees or chooses a supplier.
  *
  * With no filter on, bundles are grouped by network in catalogue order — MTN
  * first — rather than interleaved by price, so a shopper who came for one
@@ -48,6 +51,22 @@ const CODE_PREFIX: Record<NetworkId, string> = { mtn: "mtn", telecel: "tel", at:
 function networkForCode(code: string | null): Network | null {
   if (!code) return null;
   return NETWORKS.find((n) => code.startsWith(CODE_PREFIX[n.id])) ?? null;
+}
+
+/** Catalogue names read "MTN — 5GB"; the part after the dash is the headline. */
+function toRowFromProduct(product: Phase1Product): Row | null {
+  const network = networkForCode(product.app_product_code);
+  if (!network) return null;
+  const size = product.name.replace(/^.*?—\s*/, "").trim() || product.name;
+  return {
+    id: product.id,
+    code: product.app_product_code ?? product.id,
+    network,
+    size,
+    validity: product.validity,
+    price: Number(product.customer_price),
+    haystack: `${size} ${network.name}`.toLowerCase().replace(/\s+/g, ""),
+  };
 }
 
 /** A supplier's offer, shaped for the grid. */
@@ -228,21 +247,48 @@ function SupplierBanner({ supplier }: { supplier: SupplierChoice }) {
 
 export default function BundleCatalogue() {
   const { openBuyData } = useFlows();
-  const { suppliers, loading, error, reload } = useSupplierChoices();
+  const { suppliers, loading: choicesLoading, error: choicesError, reload } = useSupplierChoices();
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
-
-  const state: LoadState = loading ? "loading" : error ? "error" : "ready";
+  const [attempt, setAttempt] = useState(0);
 
   // The first supplier the backend ranks is the default counter; the shopper
   // can flick to any other. A stale pick (supplier withdrawn) falls back.
   const supplier: SupplierChoice | null =
     suppliers.find((s) => s.id === supplierId) ?? suppliers[0] ?? null;
 
+  // No customer-visible suppliers: the shop sells the base catalogue and each
+  // order routes behind the scenes. Loaded only when that mode is in effect.
+  const baseMode = !choicesLoading && !choicesError && suppliers.length === 0;
+  const [products, setProducts] = useState<Phase1Product[]>([]);
+  const [productsState, setProductsState] = useState<LoadState>("loading");
+  useEffect(() => {
+    if (!baseMode) return;
+    let mounted = true;
+    setProductsState("loading");
+    void loadPhase1Products().then((result) => {
+      if (!mounted) return;
+      setProducts(result.data);
+      setProductsState(result.error || result.data.length === 0 ? "error" : "ready");
+    });
+    return () => { mounted = false; };
+  }, [baseMode, attempt]);
+
+  const state: LoadState = choicesLoading
+    ? "loading"
+    : choicesError
+      ? "error"
+      : baseMode
+        ? productsState
+        : "ready";
+
   const rows = useMemo(
-    () => (supplier?.bundles ?? []).map(toRow).filter((row): row is Row => row !== null),
-    [supplier],
+    () =>
+      supplier
+        ? supplier.bundles.map(toRow).filter((row): row is Row => row !== null)
+        : products.map(toRowFromProduct).filter((row): row is Row => row !== null),
+    [supplier, products],
   );
 
   const term = query.trim().toLowerCase().replace(/\s+/g, "");
@@ -381,7 +427,7 @@ export default function BundleCatalogue() {
             </div>
             <button
               type="button"
-              onClick={reload}
+              onClick={() => { reload(); setAttempt((n) => n + 1); }}
               className="onyx-btn-ghost w-full shrink-0 sm:w-auto"
             >
               <RotateCw size={16} />

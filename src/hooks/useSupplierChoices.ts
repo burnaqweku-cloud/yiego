@@ -49,10 +49,12 @@ export function useSupplierChoices() {
         "supplier-delivery-status", { body: { action: "choices" } },
       );
       if (cancelled) return;
-      // Only suppliers with something to sell are worth offering.
+      // Suppliers with nothing to sell are not worth offering. An empty list
+      // is a valid state — no public plans means the shop sells from the base
+      // catalogue and routing happens behind the scenes.
       const list = (data?.suppliers ?? []).filter((s) => s.bundles?.length);
       setSuppliers(list);
-      setError(invokeError || list.length === 0 ? "Plans are temporarily unavailable." : null);
+      setError(invokeError ? "Plans are temporarily unavailable." : null);
       setLoading(false);
     })();
     return () => { cancelled = true; };

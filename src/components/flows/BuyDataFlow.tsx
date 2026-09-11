@@ -160,10 +160,12 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isAuthenticated]);
 
-  // A choice of one is not a choice: with a single supplier on offer the
-  // plan step is skipped entirely and the flow opens on the network step.
+  // A choice of one is not a choice — and with no public plans at all the
+  // shop sells the base catalogue and routing happens behind the scenes. In
+  // both cases the plan step is skipped and the flow opens on the network
+  // step; with zero suppliers, bundles come from the base product list.
   useEffect(() => {
-    if (open && step === "supplier" && !suppliersLoading && suppliers.length === 1) setStep("network");
+    if (open && step === "supplier" && !suppliersLoading && suppliers.length <= 1) setStep("network");
   }, [open, step, suppliersLoading, suppliers]);
 
   // Opened straight on the Order ID lookup from the shop.
