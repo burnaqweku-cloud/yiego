@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, BadgeDollarSign, BookOpen, Bot, BriefcaseBusiness, ChevronDown, ChevronRight, ClipboardList, Contact, FileText, Gauge, Inbox as InboxIcon, LogOut, Menu, MessageSquareWarning, Store, Tags, Users, WalletCards, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BadgeDollarSign, BookOpen, Bot, BriefcaseBusiness, ChevronDown, ChevronRight, ClipboardList, Contact, FileText, Gauge, Inbox as InboxIcon, LogOut, Menu, MessageSquareWarning, Store, Tags, TrendingUp, Users, WalletCards, X, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import AuroraBackground from "@/components/fx/AuroraBackground";
 import Wordmark from "@/components/brand/Wordmark";
