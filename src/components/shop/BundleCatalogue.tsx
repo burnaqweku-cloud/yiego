@@ -20,8 +20,9 @@ import { cn } from "@/lib/utils";
  *
  * With no filter on, bundles are grouped by network in catalogue order — MTN
  * first — rather than interleaved by price, so a shopper who came for one
- * network never has to hunt. Each group shows its cheapest few; "see all"
- * simply switches the filter to that network.
+ * network never has to hunt. Every bundle a network sells is on screen —
+ * nothing hides behind a "see all", so nobody mistakes the catalogue for a
+ * short one.
  *
  * Tapping a card opens the existing BuyDataFlow on the recipient step with
  * both the bundle and the supplier tab the shopper was on already chosen.
@@ -41,9 +42,6 @@ interface Row {
   /** Lowercased and space-stripped so "5gb" matches "5 GB". */
   haystack: string;
 }
-
-/** How many of a network's bundles to show before "see all" takes over. */
-const PER_GROUP = 6;
 
 /** Same mapping the buy flow uses — the network lives in the product code. */
 const CODE_PREFIX: Record<NetworkId, string> = { mtn: "mtn", telecel: "tel", at: "at" };
@@ -465,10 +463,6 @@ export default function BundleCatalogue() {
 
             <div className="space-y-10 sm:space-y-12">
               {visibleGroups.map((group) => {
-                // Whole network on screen when it is the one being filtered.
-                const shown = filter === "all" ? group.rows.slice(0, PER_GROUP) : group.rows;
-                const rest = group.rows.length - shown.length;
-
                 return (
                   <div key={group.network.id}>
                     <div className="mb-4 flex items-center justify-between gap-4">
@@ -486,20 +480,9 @@ export default function BundleCatalogue() {
                           {group.rows.length}
                         </span>
                       </h3>
-
-                      {rest > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setFilter(group.network.id)}
-                          className="group inline-flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-primary-glow"
-                        >
-                          See all {group.rows.length}
-                          <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
-                        </button>
-                      )}
                     </div>
 
-                    <BundleGrid rows={shown} onBuy={buy} />
+                    <BundleGrid rows={group.rows} onBuy={buy} />
                   </div>
                 );
               })}

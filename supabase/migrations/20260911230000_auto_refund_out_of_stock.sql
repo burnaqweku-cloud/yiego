@@ -1,0 +1,5 @@
+-- (applied live 2026-09-11) Auto-refund for supplier out-of-stock failures:
+-- phase1.refund_order_to_wallet(uuid) credits wallet-paid orders back
+-- atomically; a trigger on phase1.orders nudges the auto-refund-order edge
+-- function via pg_net when a paid order fails with an out-of-stock reason.
+-- See the live database for the authoritative definitions.
