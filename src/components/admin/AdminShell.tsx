@@ -15,7 +15,7 @@ const sections: AdminNavSection[] = [
   { label: "Workspace", icon: Gauge, items: [{ label: "Overview", to: "/admin", icon: Gauge, end: true }] },
   { label: "Operations", icon: ClipboardList, items: [{ label: "Order management", to: "/admin/orders", icon: ClipboardList }, { label: "Disputes", to: "/admin/disputes", icon: MessageSquareWarning }] },
   { label: "Sales management", icon: BadgeDollarSign, items: [{ label: "Data pricing", to: "/admin/sales/pricing", icon: Tags }] },
-  { label: "Business", icon: BriefcaseBusiness, items: [{ label: "Suppliers", to: "/admin/suppliers", icon: Store }, { label: "Wallet activity", to: "/admin/wallet", icon: WalletCards }] },
+  { label: "Business", icon: BriefcaseBusiness, items: [{ label: "Suppliers", to: "/admin/suppliers", icon: Store }, { label: "Wallet activity", to: "/admin/wallet", icon: WalletCards }, { label: "Finance", to: "/admin/finance", icon: TrendingUp }] },
   { label: "Users", icon: Users, items: [{ label: "All users", to: "/admin/users", icon: Users }] },
   { label: "Site content", icon: FileText, items: [{ label: "Contact information", to: "/admin/contacts/information", icon: Contact }, { label: "Legal documents", to: "/admin/legal", icon: FileText }] },
   { label: "AI support", icon: Bot, items: [{ label: "Support inbox", to: "/admin/support-inbox", icon: InboxIcon }, { label: "Support assistant", to: "/admin/ai-support", icon: Bot }, { label: "Knowledge base", to: "/admin/ai-knowledge", icon: BookOpen }] },
