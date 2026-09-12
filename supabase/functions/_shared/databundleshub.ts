@@ -44,6 +44,13 @@ export interface DataBundlesHubPayload {
     status?: string;
     status_description?: string;
     is_completed?: boolean;
+    /** Present on refunds. null on a silent MTN refund = number under
+     *  first-time verification; a real code is a genuine refund. */
+    errorCode?: string | number | null;
+    error_code?: string | number | null;
+    /* transactions list */
+    transactions?: Array<{ _id?: number | string; status?: string; type?: string; errorCode?: string | number | null; error_code?: string | number | null }>;
+    pagination?: { hasNextPage?: boolean };
   };
 }
 
@@ -122,6 +129,11 @@ export function purchase(input: PurchaseInput) {
 export function checkOrderStatus(requestId: number | string) {
   const query = `?request_id=${encodeURIComponent(String(requestId))}`;
   return call(`/api/developer/purchase-status${query}`, { method: "GET", timeoutMs: 15_000 });
+}
+
+/** The whole recent order book in one request. */
+export function listTransactions(limit = 100, page = 1) {
+  return call(`/api/developer/transactions?limit=${limit}&page=${page}`, { method: "GET", timeoutMs: 25_000 });
 }
 
 /** Their statuses → ours. `verified` means accepted upstream but not yet with
