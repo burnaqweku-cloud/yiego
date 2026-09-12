@@ -1,3 +1,4 @@
+import { WHATSAPP_CHANNEL_URL } from "@/lib/site";
 import { Link } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 import { useContactSettings } from "@/hooks/useContactSettings";
@@ -5,7 +6,6 @@ import { useContactSettings } from "@/hooks/useContactSettings";
 /** The public DataYego WhatsApp channel — announcements and updates. The
  *  floating bubble opens this; person-to-person chat stays on the support
  *  number via the Support page's "Chat on WhatsApp" button. */
-const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029Vb8aDCX4NVitZcIPeR2W";
 
 /** WhatsApp brand glyph — lucide ships no brand icons, so it's inlined. */
 function WhatsAppGlyph({ size = 27 }: { size?: number }) {

@@ -22,6 +22,11 @@ import { BLOG_INDEX_DESCRIPTION, BLOG_INDEX_TITLE, sortedPosts } from "../data/b
 export const SITE_ORIGIN = "https://datayego.com";
 export const SITE_NAME = "DataYego";
 
+/** The public DataYego WhatsApp channel (announcements and updates). The
+ *  footer button and the floating WhatsApp bubble both open this — one
+ *  constant so the two can never point at different channels again. */
+export const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029Vb7PDdK30LKT6VfzS33J";
+
 /** The default social-share image (absolute URL required by scrapers). */
 export const SITE_OG_IMAGE = `${SITE_ORIGIN}/brand/yiego-og-1200x630.png`;
 

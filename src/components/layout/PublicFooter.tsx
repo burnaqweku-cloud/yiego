@@ -1,3 +1,4 @@
+import { WHATSAPP_CHANNEL_URL } from "@/lib/site";
 import { Link } from "react-router-dom";
 import { Mail, MessageCircle, Megaphone } from "lucide-react";
 import Wordmark from "@/components/brand/Wordmark";
@@ -54,7 +55,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
 
 /** The only channel DataYego actually runs. No other social accounts exist, so
  *  none are linked — a dead icon costs more trust than an absent one. */
-const WHATSAPP_CHANNEL = "https://whatsapp.com/channel/0029Vb7zmhX2f3EClS0Qao2S";
+const WHATSAPP_CHANNEL = WHATSAPP_CHANNEL_URL;
 
 export default function PublicFooter() {
   const { contact, whatsappUrl } = useContactSettings();
