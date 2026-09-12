@@ -114,7 +114,8 @@ export default function AdminOrders() {
   );
   const [queueCopied, setQueueCopied] = useState(false);
   const copyQueue = async () => {
-    const lines = verificationQueue.map((order) => `${order.recipient_phone}\t${order.data_products?.name ?? ""}\t${order.order_reference}`);
+    // Numbers only, one per line — this is pasted straight into the DBH portal.
+    const lines = verificationQueue.map((order) => order.recipient_phone);
     try { await navigator.clipboard.writeText(lines.join("\n")); setQueueCopied(true); toast.success(`Copied ${lines.length} number${lines.length === 1 ? "" : "s"}.`); }
     catch { toast.error("Could not copy the list."); }
   };
