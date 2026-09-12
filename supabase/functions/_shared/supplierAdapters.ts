@@ -92,7 +92,7 @@ const dataMartGH: SupplierAdapter = {
       message: result.ok ? null : payload?.message ?? "DataMartGH purchase failed",
     };
   },
-  mapStatus: (supplierStatus) => mapDataMartGHStatusToYieGo(supplierStatus) as OrderStatus,
+  mapStatus: (supplierStatus) => mapDataMartGHStatusToYieGo(supplierStatus ?? undefined) as OrderStatus,
 };
 
 /* ── DataBundlesHub ─────────────────────────────────────────── */

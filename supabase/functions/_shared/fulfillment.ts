@@ -120,7 +120,30 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
   if (!adapter) throw new Error(`no_adapter_for_supplier_${supplier.code}`);
   if (!adapter.isConfigured()) throw new Error(`supplier_not_configured_${supplier.code}`);
 
+  // Claim the order atomically before anything is sent. Two callers (the
+  // Paystack webhook and the tracker page's reconcile) can both see the order
+  // as paid in the same instant; the read-then-act check above is not enough.
+  // Only the caller whose update actually matches a row gets to purchase —
+  // the other sees zero rows and stops. YG-E4B46D7A20 was sent twice this way.
   const idempotencyKey = order.supplier_idempotency_key ?? crypto.randomUUID();
+  const { data: claimed, error: claimError } = await supabase
+    .from("orders")
+    .update({
+      status: "processing",
+      supplier_id: supplier.id,
+      supplier_idempotency_key: idempotencyKey,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", order.id)
+    .eq("status", order.status)
+    .is("supplier_purchase_id", null)
+    .is("supplier_order_reference", null)
+    .select("id");
+  if (claimError) throw new Error(claimError.message);
+  if (!claimed || claimed.length === 0) {
+    return { skipped: true, reason: "already_claimed_by_concurrent_fulfillment", order };
+  }
+
   const context: PurchaseContext = {
     recipientPhone: order.recipient_phone,
     orderReference: order.order_reference,
@@ -152,16 +175,6 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
     return { skipped: true, reason: preflight.reason, orderId: order.id, status: "failed_needs_review" };
   }
 
-  await supabase
-    .from("orders")
-    .update({
-      status: "processing",
-      supplier_id: supplier.id,
-      supplier_idempotency_key: idempotencyKey,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", order.id);
-
   await supabase.from("order_events").insert({
     order_id: order.id,
     event_type: "supplier.fulfillment_started",
@@ -172,6 +185,31 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
   });
 
   const outcome = await adapter.purchase(context);
+
+  // DBH's "a recent order already exists for this number" means an order for
+  // this number was placed moments ago. If it was ours (a concurrent attempt
+  // that won the race), the winner's details are already on the row — leave
+  // them and stop. If it was genuinely a different order, review it by hand.
+  const duplicateWindow = !outcome.ok && String((outcome.responsePayload as { code?: string } | null)?.code ?? "") === "DUPLICATE_BENEFICIARY_WINDOW";
+  if (duplicateWindow) {
+    const { data: current } = await supabase
+      .from("orders")
+      .select("supplier_purchase_id, supplier_order_reference, status")
+      .eq("id", order.id)
+      .maybeSingle();
+    if (current?.supplier_purchase_id || current?.supplier_order_reference) {
+      await supabase.from("order_events").insert({
+        order_id: order.id,
+        event_type: "supplier.duplicate_attempt_ignored",
+        from_status: "processing",
+        to_status: current.status,
+        message: `${supplier.name} rejected a second send as a duplicate; the first send already succeeded and is kept.`,
+        metadata: { supplier: supplier.code, idempotencyKey, httpStatus: outcome.httpStatus },
+      });
+      return { skipped: true, reason: "duplicate_of_own_successful_send", orderId: order.id, status: current.status };
+    }
+  }
+
   const nextStatus = outcome.ok ? adapter.mapStatus(outcome.supplierStatus) : "failed_needs_review";
 
   await supabase.from("supplier_api_logs").insert({
@@ -189,7 +227,9 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
     duration_ms: outcome.durationMs,
   });
 
-  await supabase
+  // A failed attempt only writes if no attempt has stored a supplier reference
+  // yet, so a late failure can never erase a success already on the row.
+  let finalUpdate = supabase
     .from("orders")
     .update({
       status: nextStatus,
@@ -201,6 +241,8 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
       updated_at: new Date().toISOString(),
     })
     .eq("id", order.id);
+  if (!outcome.ok) finalUpdate = finalUpdate.is("supplier_purchase_id", null).is("supplier_order_reference", null);
+  await finalUpdate;
 
   await supabase.from("order_events").insert({
     order_id: order.id,
