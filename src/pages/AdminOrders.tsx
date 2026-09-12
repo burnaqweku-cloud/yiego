@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Clipboard, ClipboardCheck, ClipboardList, Clock, FilterX, Loader2, RefreshCw, RotateCcw, Save, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Clipboard, ClipboardCheck, ClipboardList, Clock, FilterX, Loader2, RefreshCw, RotateCcw, Save, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import AdminListPagination from "@/components/admin/AdminListPagination";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -109,16 +109,31 @@ export default function AdminOrders() {
   // resubmitted by hand on the DBH portal, so this list is what the admin
   // works from — oldest first, since those are the likeliest to be cleared.
   const verificationQueue = useMemo(
-    () => orders.filter((order) => order.admin_resolution_status === AWAITING_VERIFICATION).sort((a, b) => a.created_at.localeCompare(b.created_at)),
+    () => orders.filter((order) => order.admin_resolution_status === AWAITING_VERIFICATION).sort((a, b) => b.created_at.localeCompare(a.created_at)),
     [orders],
   );
+  // The queue will grow. It shows the newest few by default, opens out on
+  // request, and can be searched by number or order reference — the two
+  // things an admin has in hand when a customer asks.
+  const QUEUE_PREVIEW = 5;
+  const [queueSearch, setQueueSearch] = useState("");
+  const [queueOpen, setQueueOpen] = useState(false);
+  const queueMatches = useMemo(() => {
+    const q = queueSearch.trim().toLowerCase().replace(/\s+/g, "");
+    if (!q) return verificationQueue;
+    return verificationQueue.filter((order) => order.recipient_phone.includes(q) || order.order_reference.toLowerCase().includes(q));
+  }, [verificationQueue, queueSearch]);
+  const queueShown = queueOpen || queueSearch.trim() ? queueMatches : queueMatches.slice(0, QUEUE_PREVIEW);
+  const queueHidden = queueMatches.length - queueShown.length;
   const [queueCopied, setQueueCopied] = useState(false);
   const copyQueue = async () => {
-    // Numbers only, one per line — this is pasted straight into the DBH portal.
-    const lines = verificationQueue.map((order) => order.recipient_phone);
+    // Numbers only, one per line — pasted straight into the DBH portal.
+    // Copies the whole queue, or just the search matches while searching.
+    const lines = queueMatches.map((order) => order.recipient_phone);
     try { await navigator.clipboard.writeText(lines.join("\n")); setQueueCopied(true); toast.success(`Copied ${lines.length} number${lines.length === 1 ? "" : "s"}.`); }
     catch { toast.error("Could not copy the list."); }
   };
+  useEffect(() => { setQueueCopied(false); }, [queueSearch, verificationQueue.length]);
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -223,14 +238,24 @@ export default function AdminOrders() {
       { label: "Awaiting verification", value: verificationQueue.length, active: customerFilter === AWAITING_VERIFICATION, onClick: () => { setLifecycleFilter("all"); setCustomerFilter(customerFilter === AWAITING_VERIFICATION ? "all" : AWAITING_VERIFICATION); } },
     ]} />
 
-    {verificationQueue.length > 0 && <Card><CardContent>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div><div className="flex items-center gap-2"><Clock size={16} className="text-primary-glow" /><h2 className="font-display text-lg font-semibold text-white">MTN verification queue</h2><Badge variant="mint">{verificationQueue.length}</Badge></div><p className="mt-1 text-sm text-muted-foreground">DBH refunded these silently (no error code) — the numbers are under MTN first-time verification. Once MTN clears a number, submit the bundle manually on the DBH portal, then mark the order delivered here.</p></div>
-        <Button variant="ghost" size="sm" onClick={copyQueue}>{queueCopied ? <ClipboardCheck /> : <Clipboard />}{queueCopied ? "Copied" : "Copy numbers"}</Button>
+    {verificationQueue.length > 0 && <Card><CardContent className="p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2"><Clock size={15} className="shrink-0 text-primary-glow" /><h2 className="truncate font-display text-base font-semibold text-white">MTN verification queue</h2><Badge variant="mint">{verificationQueue.length}</Badge></div>
+        <Button variant="ghost" size="sm" onClick={copyQueue} title="Copy every number, one per line, for the DBH portal">{queueCopied ? <ClipboardCheck /> : <Clipboard />}<span className="hidden sm:inline">{queueCopied ? "Copied" : queueSearch.trim() ? `Copy ${queueMatches.length}` : "Copy all"}</span></Button>
       </div>
-      <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm"><thead><tr className="border-b border-white/[0.08] text-[10px] uppercase tracking-[0.15em] text-faint-foreground"><th className="pb-2">Number</th><th className="pb-2">Bundle</th><th className="pb-2">Order</th><th className="pb-2">Held since</th><th className="pb-2 text-right">Details</th></tr></thead><tbody>
-        {verificationQueue.map((order) => <tr key={order.id} className="border-b border-white/[0.055] last:border-0"><td className="py-3 font-mono font-semibold text-white">{order.recipient_phone}</td><td className="py-3 text-muted-foreground">{order.data_products?.name ?? "—"}</td><td className="py-3 text-muted-foreground">{order.order_reference}</td><td className="py-3 text-xs text-muted-foreground">{formatAdminDate(order.admin_resolution_updated_at ?? order.created_at)}</td><td className="py-3 text-right"><AdminDetailsButton label={`View order ${order.order_reference}`} onClick={() => openDetails(order)} /></td></tr>)}
-      </tbody></table></div>
+      <p className="mt-1 text-xs text-muted-foreground">Silent DBH refunds on MTN numbers. Resubmit on the DBH portal once MTN clears the number, then mark delivered.</p>
+      <label className="mt-3 flex items-center gap-2 rounded-lg border border-white/10 bg-black/10 px-3 py-2"><Search size={14} className="shrink-0 text-faint-foreground" /><input value={queueSearch} onChange={(event) => setQueueSearch(event.target.value)} placeholder="Find a number or order ID" inputMode="search" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-faint-foreground" />{queueSearch && <button type="button" onClick={() => setQueueSearch("")} aria-label="Clear search" className="text-faint-foreground hover:text-foreground"><X size={14} /></button>}</label>
+      <ul className="mt-2 divide-y divide-white/[0.055]">
+        {queueShown.length === 0 && <li className="py-3 text-center text-xs text-muted-foreground">No number in the queue matches.</li>}
+        {queueShown.map((order) => <li key={order.id} className="flex items-center gap-3 py-2">
+          <button type="button" onClick={() => openDetails(order)} className="min-w-0 flex-1 text-left" title={`View order ${order.order_reference}`}>
+            <span className="flex items-baseline gap-2"><span className="font-mono text-sm font-semibold text-white">{order.recipient_phone}</span><span className="truncate text-xs text-muted-foreground">{(order.data_products?.name ?? "").replace(/^MTN Data — /, "") || "—"}</span></span>
+            <span className="block truncate text-[11px] text-faint-foreground">{order.order_reference} · {formatAdminDate(order.admin_resolution_updated_at ?? order.created_at)}</span>
+          </button>
+          <AdminDetailsButton label={`View order ${order.order_reference}`} onClick={() => openDetails(order)} />
+        </li>)}
+      </ul>
+      {!queueSearch.trim() && queueMatches.length > QUEUE_PREVIEW && <button type="button" onClick={() => setQueueOpen((value) => !value)} className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg py-2 text-xs font-semibold text-primary-glow hover:bg-white/[0.04]">{queueOpen ? <><ChevronUp size={14} /> Show latest {QUEUE_PREVIEW} only</> : <><ChevronDown size={14} /> Show {queueHidden} older</>}</button>}
     </CardContent></Card>}
 
     <Card><CardContent>
