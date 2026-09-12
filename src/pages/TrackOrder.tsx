@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CreditCard, Loader2, Search, ShieldCheck } from "lucide-react";
+import { Clock, CreditCard, Loader2, Search, ShieldCheck } from "lucide-react";
 import Seo from "@/components/seo/Seo";
 import DeliveryProgress from "@/components/shop/DeliveryProgress";
 import { metaFor } from "@/lib/site";
@@ -56,6 +56,7 @@ function statusLabel(status?: string) {
     case "processing":
     case "pending_supplier":
     case "in_progress": return "In progress";
+    case "awaiting_verification": return "Awaiting verification";
     case "waiting_for_payment":
     case "awaiting_payment":
     case "pending": return "Waiting for payment";
@@ -181,9 +182,21 @@ export default function TrackOrder() {
 
             {error && <div className="mt-5 rounded-2xl border border-danger/25 bg-danger/[0.08] p-4 text-sm text-ink-rose">{error}</div>}
             {order && <div className="mt-6 rounded-[22px] border border-white/10 bg-white/[0.03] p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[12px] text-faint-foreground">Order reference</p><p className="font-display text-xl font-semibold text-white">{order.reference}</p></div><Badge variant={order.orderStatus === "completed" ? "success" : "amber"}><ShieldCheck size={12} />{statusLabel(order.orderStatus)}</Badge></div>
+              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[12px] text-faint-foreground">Order reference</p><p className="font-display text-xl font-semibold text-white">{order.reference}</p></div><Badge variant={order.orderStatus === "completed" ? "success" : order.orderStatus === "awaiting_verification" ? "mint" : "amber"}>{order.orderStatus === "awaiting_verification" ? <Clock size={12} /> : <ShieldCheck size={12} />}{statusLabel(order.orderStatus)}</Badge></div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">{[["Network", order.network ?? "—"],["Bundle", order.product ?? "—"],["Recipient", order.recipient],["Payment", statusLabel(order.paymentStatus)],["Amount", formatGHS(Number(order.amount))],["Delivery", statusLabel(order.deliveryStatus)]].map(([label, value]) => <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">{label}</p><p className="mt-1 text-sm font-semibold capitalize text-foreground">{value}</p></div>)}</div>
-              {order.statusMessage && <div className="mt-4 rounded-2xl border border-primary-glow/15 bg-primary/[0.06] p-4"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-glow">Latest update</p><p className="mt-1 text-sm leading-6 text-foreground">{order.statusMessage}</p></div>}
+              {order.orderStatus === "awaiting_verification" ? (
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                  <div className="flex items-center gap-2"><Clock size={14} className="text-primary-glow" /><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-glow">MTN number verification</p></div>
+                  <p className="mt-2 text-sm font-semibold text-white">Your order hasn't failed — it's on hold while MTN verifies the number.</p>
+                  <p className="mt-2 text-sm leading-6 text-foreground">{order.statusMessage}</p>
+                  <ul className="mt-3 space-y-1.5 text-sm leading-6 text-muted-foreground">
+                    <li>• MTN checks numbers receiving a bundle for the first time.</li>
+                    <li>• This usually takes a few days.</li>
+                    <li>• Your data is delivered automatically once the check is done — nothing to do on your side.</li>
+                    <li>• Future orders to this number will go through normally.</li>
+                  </ul>
+                </div>
+              ) : order.statusMessage && <div className="mt-4 rounded-2xl border border-primary-glow/15 bg-primary/[0.06] p-4"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-glow">Latest update</p><p className="mt-1 text-sm leading-6 text-foreground">{order.statusMessage}</p></div>}
               {order.paymentStatus !== "succeeded" && !["cancelled", "refunded"].includes(order.orderStatus) && (
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <Button onClick={continuePayment} disabled={paying}>{paying ? <Loader2 className="animate-spin" /> : <CreditCard />}Continue payment</Button>

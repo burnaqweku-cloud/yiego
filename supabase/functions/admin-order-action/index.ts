@@ -91,6 +91,7 @@ Deno.serve(async (req) => {
       const supportedDisplayStatuses = new Set([
         "processing",
         "pending_supplier",
+        "awaiting_verification",
         "delivered",
         "failed",
         "cancelled",

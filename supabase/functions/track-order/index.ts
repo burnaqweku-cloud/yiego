@@ -1,8 +1,12 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { AWAITING_VERIFICATION, AWAITING_VERIFICATION_CUSTOMER_MESSAGE } from "../_shared/verification.ts";
 
-function customerDeliveryStatus(orderStatus: string, paymentStatus: string) {
+function customerDeliveryStatus(orderStatus: string, paymentStatus: string, adminStatus: string | null) {
   if (paymentStatus !== "succeeded") return "waiting_for_payment";
+  // An MTN number under first-time verification is held, not failed — this
+  // outranks whatever the lifecycle status says.
+  if (adminStatus === AWAITING_VERIFICATION) return AWAITING_VERIFICATION;
   switch (orderStatus) {
     case "delivered": return "completed";
     case "refunded": return "refunded";
@@ -12,8 +16,9 @@ function customerDeliveryStatus(orderStatus: string, paymentStatus: string) {
   }
 }
 
-function customerMessage(orderStatus: string, paymentStatus: string, paidAt: string | null, updatedAt: string) {
+function customerMessage(orderStatus: string, paymentStatus: string, adminStatus: string | null, paidAt: string | null, updatedAt: string) {
   if (paymentStatus !== "succeeded") return "Complete payment to continue this order.";
+  if (adminStatus === AWAITING_VERIFICATION) return AWAITING_VERIFICATION_CUSTOMER_MESSAGE;
   if (orderStatus === "delivered") return "Your data order has been completed.";
   if (orderStatus === "refunded") return "Your payment has been refunded.";
   if (orderStatus === "cancelled") return "This order has been cancelled.";
@@ -44,7 +49,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("order_reference, recipient_phone, amount, currency, status, payment_status, paid_at, created_at, updated_at, data_products(name, capacity_gb), networks(name)")
+      .select("order_reference, recipient_phone, amount, currency, status, payment_status, admin_resolution_status, paid_at, created_at, updated_at, data_products(name, capacity_gb), networks(name)")
       .eq("order_reference", reference)
       .limit(1)
       .maybeSingle();
@@ -55,7 +60,7 @@ Deno.serve(async (req) => {
     const maskedPhone = order.recipient_phone?.length === 10
       ? `${order.recipient_phone.slice(0, 3)}•••${order.recipient_phone.slice(7)}`
       : "Hidden";
-    const deliveryStatus = customerDeliveryStatus(order.status, order.payment_status);
+    const deliveryStatus = customerDeliveryStatus(order.status, order.payment_status, order.admin_resolution_status ?? null);
 
     return jsonResponse({
       status: "success",
@@ -69,7 +74,7 @@ Deno.serve(async (req) => {
         orderStatus: deliveryStatus,
         paymentStatus: order.payment_status,
         deliveryStatus,
-        statusMessage: customerMessage(order.status, order.payment_status, order.paid_at, order.updated_at),
+        statusMessage: customerMessage(order.status, order.payment_status, order.admin_resolution_status ?? null, order.paid_at, order.updated_at),
         createdAt: order.created_at,
         updatedAt: order.updated_at,
       },

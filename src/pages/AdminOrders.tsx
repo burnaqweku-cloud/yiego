@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Clipboard, ClipboardCheck, ClipboardList, FilterX, Loader2, RefreshCw, RotateCcw, Save, Search } from "lucide-react";
+import { Clipboard, ClipboardCheck, ClipboardList, Clock, FilterX, Loader2, RefreshCw, RotateCcw, Save, Search } from "lucide-react";
 import { toast } from "sonner";
 import AdminListPagination from "@/components/admin/AdminListPagination";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -15,7 +15,8 @@ import { adminDatabase, formatAdminDate, readableStatus, type AdminOrderEventRow
 const LIFECYCLE_STATUSES = ["created", "awaiting_payment", "paid", "processing", "pending_supplier", "delivered", "failed", "failed_needs_review", "cancelled", "refunded"];
 const PAYMENT_STATUSES = ["created", "pending", "succeeded", "failed", "abandoned", "refunded"];
 const SUPPLIER_STATUSES = ["not_sent", "waiting", "pending", "processing", "completed", "success", "failed", "refunded", "timeout", "unknown"];
-const CUSTOMER_STATUSES = ["processing", "pending_supplier", "delivered", "failed", "cancelled", "refunded"];
+const CUSTOMER_STATUSES = ["processing", "pending_supplier", "awaiting_verification", "delivered", "failed", "cancelled", "refunded"];
+const AWAITING_VERIFICATION = "awaiting_verification";
 const PENDING_STATUSES = ["created", "awaiting_payment", "paid", "processing", "pending_supplier"];
 const FAILED_STATUSES = ["failed", "failed_needs_review"];
 
@@ -38,6 +39,7 @@ function routeLabel(order: AdminOrderRow) {
 function supportMessage(order: AdminOrderRow) {
   const reference = order.order_reference;
   const status = displayedStatus(order);
+  if (status === AWAITING_VERIFICATION) return `Hello, your DataYego order ${reference} has not failed. MTN verifies numbers receiving a bundle for the first time, which usually takes a few days. Your data will be delivered automatically once MTN completes the check, and future orders to this number will go through normally.`;
   if (order.admin_resolution_reason) return `Hello, your DataYego order ${reference} is currently ${readableStatus(status).toLowerCase()}. ${order.admin_resolution_reason}`;
   if (order.payment_status === "failed") return `Hello, payment for your DataYego order ${reference} was not completed. No successful payment has been confirmed.`;
   if (["created", "pending"].includes(order.payment_status) || status === "awaiting_payment") return `Hello, your DataYego order ${reference} is awaiting payment. You can continue the payment before the order expires.`;
@@ -103,6 +105,20 @@ export default function AdminOrders() {
   const delivered = orders.filter((order) => order.status === "delivered").length;
   const failed = orders.filter((order) => FAILED_STATUSES.includes(order.status)).length;
 
+  // Numbers MTN is still verifying. Once MTN clears one, the bundle is
+  // resubmitted by hand on the DBH portal, so this list is what the admin
+  // works from — oldest first, since those are the likeliest to be cleared.
+  const verificationQueue = useMemo(
+    () => orders.filter((order) => order.admin_resolution_status === AWAITING_VERIFICATION).sort((a, b) => a.created_at.localeCompare(b.created_at)),
+    [orders],
+  );
+  const [queueCopied, setQueueCopied] = useState(false);
+  const copyQueue = async () => {
+    const lines = verificationQueue.map((order) => `${order.recipient_phone}\t${order.data_products?.name ?? ""}\t${order.order_reference}`);
+    try { await navigator.clipboard.writeText(lines.join("\n")); setQueueCopied(true); toast.success(`Copied ${lines.length} number${lines.length === 1 ? "" : "s"}.`); }
+    catch { toast.error("Could not copy the list."); }
+  };
+
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return orders.filter((order) => {
@@ -133,6 +149,7 @@ export default function AdminOrders() {
     setLifecycleFilter("all");
     setPaymentFilter("all");
     setSupplierFilter("all");
+    setRouteFilter("all");
     setCustomerFilter("all");
   };
 
@@ -202,7 +219,18 @@ export default function AdminOrders() {
       { label: "In progress", value: pending, active: lifecycleFilter === "in_progress", onClick: () => setLifecycleFilter("in_progress") },
       { label: "Delivered", value: delivered, tone: "success", active: lifecycleFilter === "delivered", onClick: () => setLifecycleFilter("delivered") },
       { label: "Failed/review", value: failed, tone: failed ? "warning" : "default", active: lifecycleFilter === "failed_group", onClick: () => setLifecycleFilter("failed_group") },
+      { label: "Awaiting verification", value: verificationQueue.length, active: customerFilter === AWAITING_VERIFICATION, onClick: () => { setLifecycleFilter("all"); setCustomerFilter(customerFilter === AWAITING_VERIFICATION ? "all" : AWAITING_VERIFICATION); } },
     ]} />
+
+    {verificationQueue.length > 0 && <Card><CardContent>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div><div className="flex items-center gap-2"><Clock size={16} className="text-primary-glow" /><h2 className="font-display text-lg font-semibold text-white">MTN verification queue</h2><Badge variant="mint">{verificationQueue.length}</Badge></div><p className="mt-1 text-sm text-muted-foreground">DBH refunded these silently (no error code) — the numbers are under MTN first-time verification. Once MTN clears a number, submit the bundle manually on the DBH portal, then mark the order delivered here.</p></div>
+        <Button variant="ghost" size="sm" onClick={copyQueue}>{queueCopied ? <ClipboardCheck /> : <Clipboard />}{queueCopied ? "Copied" : "Copy numbers"}</Button>
+      </div>
+      <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm"><thead><tr className="border-b border-white/[0.08] text-[10px] uppercase tracking-[0.15em] text-faint-foreground"><th className="pb-2">Number</th><th className="pb-2">Bundle</th><th className="pb-2">Order</th><th className="pb-2">Held since</th><th className="pb-2 text-right">Details</th></tr></thead><tbody>
+        {verificationQueue.map((order) => <tr key={order.id} className="border-b border-white/[0.055] last:border-0"><td className="py-3 font-mono font-semibold text-white">{order.recipient_phone}</td><td className="py-3 text-muted-foreground">{order.data_products?.name ?? "—"}</td><td className="py-3 text-muted-foreground">{order.order_reference}</td><td className="py-3 text-xs text-muted-foreground">{formatAdminDate(order.admin_resolution_updated_at ?? order.created_at)}</td><td className="py-3 text-right"><AdminDetailsButton label={`View order ${order.order_reference}`} onClick={() => openDetails(order)} /></td></tr>)}
+      </tbody></table></div>
+    </CardContent></Card>}
 
     <Card><CardContent>
       <div className="flex items-start justify-between gap-4"><div><h2 className="font-display text-lg font-semibold text-white">Track and assist with an order</h2><p className="mt-1 text-sm text-muted-foreground">Search by DataYego reference, recipient phone or supplier reference.</p></div><Badge variant="mint">AI-ready fallback</Badge></div>
@@ -221,7 +249,7 @@ export default function AdminOrders() {
         <Button variant="ghost" onClick={clearFilters}><FilterX />Reset</Button>
       </div>
       <div className="mt-5 space-y-3 md:hidden">{visible.map((order) => <article key={order.id} className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4"><div className="min-w-0 flex-1"><p className="truncate font-semibold text-white">{order.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{order.recipient_phone} · {formatGHS(Number(order.amount))}</p><div className="mt-2 flex flex-wrap gap-2"><Badge variant={order.status === "delivered" ? "success" : FAILED_STATUSES.includes(order.status) ? "amber" : "neutral"}>{readableStatus(order.status)}</Badge><Badge variant={order.payment_status === "succeeded" ? "success" : "neutral"}>{readableStatus(order.payment_status)}</Badge></div></div><AdminDetailsButton label={`View order ${order.order_reference}`} onClick={() => openDetails(order)} /></article>)}</div>
-      <div className="mt-5 hidden overflow-x-auto md:block"><table className="w-full min-w-[1180px] text-left text-sm"><thead><tr className="border-b border-white/[0.08] text-[10px] uppercase tracking-[0.15em] text-faint-foreground"><th className="pb-3">Order</th><th className="pb-3">Amount</th><th className="pb-3">Order stage</th><th className="pb-3">Payment</th><th className="pb-3">Supplier</th><th className="pb-3">Delivery response</th><th className="pb-3">Customer sees</th><th className="pb-3">Created</th><th className="pb-3 text-right">Details</th></tr></thead><tbody>{visible.map((order) => <tr key={order.id} className="border-b border-white/[0.055] last:border-0"><td className="py-4"><p className="font-semibold text-white">{order.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{order.recipient_phone}</p></td><td className="py-4 font-display font-semibold text-white">{formatGHS(Number(order.amount))}</td><td className="py-4"><Badge variant={order.status === "delivered" ? "success" : FAILED_STATUSES.includes(order.status) ? "amber" : "neutral"}>{readableStatus(order.status)}</Badge></td><td className="py-4"><Badge variant={order.payment_status === "succeeded" ? "success" : order.payment_status === "failed" ? "amber" : "neutral"}>{readableStatus(order.payment_status)}</Badge></td><td className="py-4 text-muted-foreground">{routeLabel(order)}</td><td className="py-4 text-muted-foreground">{readableStatus(normalizedSupplierStatus(order))}</td><td className="py-4"><Badge variant={displayedStatus(order) === "delivered" ? "success" : "neutral"}>{readableStatus(displayedStatus(order))}</Badge></td><td className="py-4 text-xs text-muted-foreground">{formatAdminDate(order.created_at)}</td><td className="py-4 text-right"><AdminDetailsButton label={`View order ${order.order_reference}`} onClick={() => openDetails(order)} /></td></tr>)}</tbody></table></div>
+      <div className="mt-5 hidden overflow-x-auto md:block"><table className="w-full min-w-[1180px] text-left text-sm"><thead><tr className="border-b border-white/[0.08] text-[10px] uppercase tracking-[0.15em] text-faint-foreground"><th className="pb-3">Order</th><th className="pb-3">Amount</th><th className="pb-3">Order stage</th><th className="pb-3">Payment</th><th className="pb-3">Supplier</th><th className="pb-3">Delivery response</th><th className="pb-3">Customer sees</th><th className="pb-3">Created</th><th className="pb-3 text-right">Details</th></tr></thead><tbody>{visible.map((order) => <tr key={order.id} className="border-b border-white/[0.055] last:border-0"><td className="py-4"><p className="font-semibold text-white">{order.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{order.recipient_phone}</p></td><td className="py-4 font-display font-semibold text-white">{formatGHS(Number(order.amount))}</td><td className="py-4"><Badge variant={order.status === "delivered" ? "success" : FAILED_STATUSES.includes(order.status) ? "amber" : "neutral"}>{readableStatus(order.status)}</Badge></td><td className="py-4"><Badge variant={order.payment_status === "succeeded" ? "success" : order.payment_status === "failed" ? "amber" : "neutral"}>{readableStatus(order.payment_status)}</Badge></td><td className="py-4 text-muted-foreground">{routeLabel(order)}</td><td className="py-4 text-muted-foreground">{readableStatus(normalizedSupplierStatus(order))}</td><td className="py-4"><Badge variant={displayedStatus(order) === "delivered" ? "success" : displayedStatus(order) === AWAITING_VERIFICATION ? "mint" : "neutral"}>{readableStatus(displayedStatus(order))}</Badge></td><td className="py-4 text-xs text-muted-foreground">{formatAdminDate(order.created_at)}</td><td className="py-4 text-right"><AdminDetailsButton label={`View order ${order.order_reference}`} onClick={() => openDetails(order)} /></td></tr>)}</tbody></table></div>
       {!loading && filtered.length === 0 && <div className="grid min-h-48 place-items-center text-center"><div><ClipboardList className="mx-auto text-faint-foreground" /><p className="mt-3 font-semibold text-foreground">No matching orders</p><p className="mt-1 text-sm text-muted-foreground">Change the filters or search term.</p></div></div>}
       <AdminListPagination page={safePage} pageSize={pageSize} totalItems={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} itemLabel="orders" />
       <div className="mt-3 flex justify-end"><Button variant="ghost" size="sm" onClick={() => void loadOrders()} disabled={loading}><RefreshCw className={loading ? "animate-spin" : ""} />Refresh data</Button></div>
