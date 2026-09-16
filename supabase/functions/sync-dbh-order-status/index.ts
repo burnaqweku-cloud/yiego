@@ -20,6 +20,17 @@ import { AWAITING_VERIFICATION, isSilentMtnRefund, markAwaitingVerification } fr
    instead of dropping into the refund queue. First case:
    YG-C62E960906 (2026-09-12).
 
+   A "failed"/"refunded"/etc. read is confirmed before it's written as
+   terminal: YG-A7E2EF67D0 (2026-09-16) was marked failed_needs_review
+   off a single batch read of "failed", but DBH's own dashboard showed
+   it delivered — the transactions list gave a transient, wrong answer
+   for that one purchase. A delivered/completed read is trusted at once
+   (a false positive there is rare and self-corrects on delivery), but
+   a losing read only sticks once a same-day re-check of that specific
+   purchase, via /purchase-status, agrees. If it doesn't agree, or the
+   supplier can't be reached to ask, the order is left alone rather
+   than downgraded on a guess — next run tries again.
+
    Scales to hundreds of pending orders in a single request.
    Publicly callable but read-and-apply only; scheduled via cron.
    ════════════════════════════════════════════════════════════ */
@@ -27,6 +38,7 @@ import { AWAITING_VERIFICATION, isSilentMtnRefund, markAwaitingVerification } fr
 const MAX_ORDERS_PER_RUN = 100;
 const MAX_TX_PAGES = 3;
 const MAX_FALLBACK_CHECKS = 10;
+const LOSING_STATUSES = new Set(["failed", "refunded", "cancelled", "reversed"]);
 
 type OrderRow = {
   id: string;
@@ -123,31 +135,11 @@ Deno.serve(async (req) => {
     const results: Record<string, unknown>[] = [];
     const unmatched: OrderRow[] = [];
 
-    const apply = async (order: OrderRow, report: SupplierReport, source: string) => {
-      const supplierStatus = report.status;
-
-      /* ── Silent MTN refund → verification hold, not a failure ── */
-      if (isSilentMtnRefund(order, report)) {
-        const held = await markAwaitingVerification(supabase, order, source, { supplierStatus });
-        if ((order.supplier_status ?? "") !== supplierStatus) {
-          await supabase.from("orders").update({ supplier_status: supplierStatus, updated_at: new Date().toISOString() }).eq("id", order.id);
-        }
-        results.push({ reference: order.order_reference, outcome: held.changed ? AWAITING_VERIFICATION : "already_awaiting_verification", supplierStatus });
-        return;
-      }
-
-      const terminal = terminalFor(supplierStatus);
-      if (!terminal || (order.status === terminal.nextStatus && (order.supplier_status ?? "") === supplierStatus)) {
-        if ((order.supplier_status ?? "") !== supplierStatus) {
-          await supabase.from("orders").update({ supplier_status: supplierStatus, updated_at: new Date().toISOString() }).eq("id", order.id);
-        }
-        results.push({ reference: order.order_reference, outcome: `still_${supplierStatus}` });
-        return;
-      }
+    const writeTerminal = async (order: OrderRow, report: SupplierReport, terminal: { nextStatus: string; failureReason: string | null }, source: string) => {
       const errorSuffix = report.errorCode != null && String(report.errorCode) !== "" ? ` (errorCode ${report.errorCode})` : "";
       await supabase.from("orders").update({
         status: terminal.nextStatus,
-        supplier_status: supplierStatus,
+        supplier_status: report.status,
         failure_reason: terminal.failureReason ? terminal.failureReason + errorSuffix : null,
         updated_at: new Date().toISOString(),
       }).eq("id", order.id);
@@ -156,10 +148,83 @@ Deno.serve(async (req) => {
         event_type: "supplier.status_update",
         from_status: order.status,
         to_status: terminal.nextStatus,
-        message: `DataBundlesHub reported ${supplierStatus}${errorSuffix} (${source})`,
-        metadata: { supplier: "databundleshub", supplierStatus, errorCode: report.errorCode, source },
+        message: `DataBundlesHub reported ${report.status}${errorSuffix} (${source})`,
+        metadata: { supplier: "databundleshub", supplierStatus: report.status, errorCode: report.errorCode, source },
       });
-      results.push({ reference: order.order_reference, outcome: terminal.nextStatus, supplierStatus });
+      results.push({ reference: order.order_reference, outcome: terminal.nextStatus, supplierStatus: report.status });
+    };
+
+    const bumpSupplierStatus = async (order: OrderRow, supplierStatus: string) => {
+      if ((order.supplier_status ?? "") !== supplierStatus) {
+        await supabase.from("orders").update({ supplier_status: supplierStatus, updated_at: new Date().toISOString() }).eq("id", order.id);
+      }
+    };
+
+    const apply = async (order: OrderRow, report: SupplierReport, source: string) => {
+      const supplierStatus = report.status;
+
+      /* ── Silent MTN refund → verification hold, not a failure ── */
+      if (isSilentMtnRefund(order, report)) {
+        const held = await markAwaitingVerification(supabase, order, source, { supplierStatus });
+        await bumpSupplierStatus(order, supplierStatus);
+        results.push({ reference: order.order_reference, outcome: held.changed ? AWAITING_VERIFICATION : "already_awaiting_verification", supplierStatus });
+        return;
+      }
+
+      const terminal = terminalFor(supplierStatus);
+      if (!terminal || (order.status === terminal.nextStatus && (order.supplier_status ?? "") === supplierStatus)) {
+        await bumpSupplierStatus(order, supplierStatus);
+        results.push({ reference: order.order_reference, outcome: `still_${supplierStatus}` });
+        return;
+      }
+
+      /* ── A losing read from the batch list is confirmed, not trusted
+       *    outright: YG-A7E2EF67D0 was marked failed on a single "failed"
+       *    seen in /transactions, but DBH's own records showed it delivered.
+       *    Delivered/completed reads still write immediately — a wrong
+       *    delivery read is rare and self-corrects. A losing read from the
+       *    per-order fallback is already a direct, current answer for this
+       *    exact purchase, so it's trusted as-is too. ── */
+      if (source === "batch sync" && LOSING_STATUSES.has(supplierStatus) && order.supplier_purchase_id) {
+        const confirmation = await checkOrderStatus(order.supplier_purchase_id);
+        const confirmedStatus = String(confirmation.payload?.data?.status ?? confirmation.payload?.data?.orderStatus ?? "").toLowerCase();
+        await supabase.from("supplier_api_logs").insert({
+          supplier_id: supplier.id,
+          order_id: order.id,
+          action: "check_order_status",
+          endpoint: "/api/developer/purchase-status",
+          request_payload: { request_id: order.supplier_purchase_id, reason: "confirming batch failure before writing terminal status" },
+          response_payload: confirmation.payload ?? {},
+          http_status: confirmation.status,
+          call_status: confirmation.ok ? "success" : "error",
+          duration_ms: confirmation.durationMs,
+        });
+        if (!confirmation.ok || !confirmedStatus) {
+          // Could not confirm — leave the order alone, try again next run.
+          results.push({ reference: order.order_reference, outcome: "unconfirmed_failure_left_alone", supplierStatus });
+          return;
+        }
+        if (confirmedStatus !== supplierStatus) {
+          // The batch list was wrong. Trust the direct, current re-check.
+          const confirmedReport: SupplierReport = { status: confirmedStatus, errorCode: confirmation.payload?.data?.errorCode ?? confirmation.payload?.data?.error_code ?? null };
+          if (isSilentMtnRefund(order, confirmedReport)) {
+            const held = await markAwaitingVerification(supabase, order, "batch sync (corrected on confirm)", { supplierStatus: confirmedStatus });
+            await bumpSupplierStatus(order, confirmedStatus);
+            results.push({ reference: order.order_reference, outcome: held.changed ? AWAITING_VERIFICATION : "already_awaiting_verification", supplierStatus: confirmedStatus, corrected: true });
+            return;
+          }
+          const confirmedTerminal = terminalFor(confirmedStatus);
+          if (confirmedTerminal) await writeTerminal(order, confirmedReport, confirmedTerminal, "batch sync (corrected on confirm)");
+          else await bumpSupplierStatus(order, confirmedStatus);
+          results.push({ reference: order.order_reference, outcome: confirmedTerminal?.nextStatus ?? `still_${confirmedStatus}`, corrected: true });
+          return;
+        }
+        // Confirmed — the loss is real.
+        await writeTerminal(order, report, terminal, "batch sync (confirmed)");
+        return;
+      }
+
+      await writeTerminal(order, report, terminal, source);
     };
 
     for (const order of orders as OrderRow[]) {
