@@ -75,7 +75,7 @@ export default function AdminOrders() {
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, recipient_phone, guest_email, amount, cost_amount, currency, status, payment_status, supplier_status, supplier_order_reference, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name)").order("created_at", { ascending: false });
+    const { data, error } = await adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, recipient_phone, guest_email, amount, cost_amount, currency, status, payment_status, supplier_status, supplier_order_reference, supplier_retry_after, supplier_retry_count, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name)").order("created_at", { ascending: false });
     if (error) { toast.error("Could not load orders."); setOrders([]); }
     else {
       const next = (data ?? []) as AdminOrderRow[];
