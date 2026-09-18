@@ -37,7 +37,7 @@ const PaidFrom = ({ value, onChange }: { value: string; onChange: (v: string) =>
 
 export function RecordTopupModal({ open, onClose, actorId, suppliers, onDone }: { open: boolean; onClose: () => void; actorId: string; suppliers: Supplier[]; onDone: () => void }) {
   const [supplier, setSupplier] = useState(suppliers[0]?.code ?? "");
-  const [amount, setAmount] = useState(""); const [when, setWhen] = useState(nowLocal()); const [paidFrom, setPaidFrom] = useState("outside_funding"); const [note, setNote] = useState(""); const [busy, setBusy] = useState(false);
+  const [amount, setAmount] = useState(""); const [when, setWhen] = useState(nowLocal()); const paidFrom = "bank"; const [note, setNote] = useState(""); const [busy, setBusy] = useState(false);
   const rate = suppliers.find((s) => s.code === supplier)?.fee_rate ?? 0;
   const fee = Math.round(Number(amount || 0) * rate * 100) / 100;
   const submit = async () => {
@@ -53,7 +53,6 @@ export function RecordTopupModal({ open, onClose, actorId, suppliers, onDone }: 
       <Field label="Supplier"><select value={supplier} onChange={(e) => setSupplier(e.target.value)} className={inputCls}>{suppliers.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}</select></Field>
       <Field label="Float credited (GH₵)" hint={amount ? `Charge ${Math.round(rate * 100)}% = ${formatGHS(fee)} · you paid ${formatGHS(Number(amount) + fee)}` : `The supplier's charge (${Math.round(rate * 100)}%) is added on top`}><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="500" className={inputCls} /></Field>
       <Field label="When"><input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className={inputCls} /></Field>
-      <PaidFrom value={paidFrom} onChange={setPaidFrom} />
       <Field label="Note (optional)"><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. MoMo ref 1234" className={inputCls} /></Field>
     </Shell>
   );
@@ -76,6 +75,26 @@ export function RecordPayoutModal({ open, onClose, actorId, onDone }: { open: bo
       <Field label="Gross before Paystack fees (optional)" hint="Leave blank if unknown; fees will show as 0 until Paystack confirms"><input inputMode="decimal" value={gross} onChange={(e) => setGross(e.target.value)} placeholder="431.08" className={inputCls} /></Field>
       <Field label="When"><input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className={inputCls} /></Field>
       <Field label="Note (optional)"><input value={note} onChange={(e) => setNote(e.target.value)} className={inputCls} /></Field>
+    </Shell>
+  );
+}
+
+export function RecordPartnerCapitalModal({ open, onClose, actorId, onDone }: { open: boolean; onClose: () => void; actorId: string; onDone: () => void }) {
+  const [amount, setAmount] = useState(""); const [when, setWhen] = useState(nowLocal()); const [note, setNote] = useState(""); const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    if (!(Number(amount) > 0)) return toast.error("Enter the amount put in.");
+    setBusy(true);
+    const { error } = await rpc("finance_record_partner_capital", { p_actor: actorId, p_amount: Number(amount), p_occurred_at: toIso(when), p_note: note || null });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Partner money recorded. Master balance goes up by this amount."); onDone(); onClose();
+  };
+  return (
+    <Shell open={open} onClose={onClose} title="Partner put in money" onSubmit={submit} busy={busy} submitLabel="Record">
+      <p className="text-[12.5px] text-muted-foreground">Fresh money from a partner's own pocket into the business — not a top-up. It raises the master balance; a top-up afterwards lowers it again.</p>
+      <Field label="Amount (GH₵)"><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1000" className={inputCls} /></Field>
+      <Field label="When"><input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className={inputCls} /></Field>
+      <Field label="Note (optional)" hint="who put it in, for the record"><input value={note} onChange={(e) => setNote(e.target.value)} className={inputCls} /></Field>
     </Shell>
   );
 }
