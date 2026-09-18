@@ -91,8 +91,9 @@ export default function AdminFinance() {
   const o = overview; const p = o?.period; 
   const cashTotal = Number(o?.cash.bank ?? 0) + Number(o?.cash.paystack_transit ?? 0);
   const bank = Number(o?.cash.bank ?? 0);
-  const putInOutside = Number(o?.funding.outside ?? 0);
+  const floats = Object.values(o?.cash.supplier_float ?? {}).reduce((a, b) => a + Number(b), 0);
   const owedTotal = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0);
+  const master = bank + Number(o?.cash.paystack_transit ?? 0) + floats - owedTotal;
 
   return (
     <div className="space-y-5">
@@ -100,9 +101,9 @@ export default function AdminFinance() {
         action={<div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={15} /></Button><Button size="sm" onClick={() => setModal("topup")}>Record top-up</Button></div>} />
 
       <Link to="/admin/finance/master" className="block">
-        <Panel title="Master balance" icon={Landmark} note="tap to confirm supplier balances">
-          <p className={`text-[28px] font-semibold leading-none tabular-nums ${bank - putInOutside >= 0 ? "text-ink-emerald" : "text-ink-rose"}`}>{loading ? "…" : formatGHS(bank - putInOutside)}</p>
-          <p className="mt-1.5 text-[11.5px] text-muted-foreground">in your hand: bank {formatGHS(bank)} − put in {formatGHS(putInOutside)} · {formatGHS(Number(o?.cash.paystack_transit ?? 0))} still coming from Paystack</p>
+        <Panel title="Master balance" icon={Landmark} note="everything that's ours · tap for detail">
+          <p className={`text-[28px] font-semibold leading-none tabular-nums ${master >= 0 ? "text-ink-emerald" : "text-ink-rose"}`}>{loading ? "…" : formatGHS(master)}</p>
+          <p className="mt-1.5 text-[11.5px] text-muted-foreground">bank {formatGHS(bank)} + Paystack {formatGHS(Number(o?.cash.paystack_transit ?? 0))} + suppliers {formatGHS(floats)} − customers {formatGHS(owedTotal)}</p>
         </Panel>
       </Link>
 
