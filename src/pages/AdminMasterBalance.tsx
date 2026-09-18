@@ -64,7 +64,7 @@ export default function AdminMasterBalance() {
       <AdminPageHeader title="Master balance" description="The pot: money partners put in, plus every Paystack payout, minus every top-up. It's the cash in the account." action={<div className="flex gap-2"><Link to="/admin/finance"><Button variant="ghost" size="sm"><ArrowLeft size={14} />Finance</Button></Link><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={14} /></Button>{isMaster && <Button variant="soft" size="sm" onClick={() => setAdding(true)}>Partner put in</Button>}<Button size="sm" onClick={() => setTopping(true)}>Record top-up</Button></div>} />
 
       <Panel title="Master balance" icon={Landmark} note={lastConfirmed ? `suppliers as reported ${formatAdminDate(lastConfirmed)}` : "waiting for supplier readings"}>
-        {staleHours > 24 && <p className="mb-2 text-[11.5px] text-amber">One supplier hasn't reported for {Math.floor(staleHours / 24)} day{Math.floor(staleHours / 24) === 1 ? "" : "s"} — check its site and Calculate if it differs.</p>}
+        {staleHours > 24 && <p className="mb-2 text-[11.5px] text-amber">One supplier hasn't reported for {Math.floor(staleHours / 24)} day{Math.floor(staleHours / 24) === 1 ? "" : "s"} — its figure may be out of date.</p>}
         <p className={`text-[30px] font-semibold leading-none tabular-nums ${master >= 0 ? "text-ink-emerald" : "text-ink-rose"}`}>{loading ? "…" : formatGHS(master)}</p>
         <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] tabular-nums">
           <span className="text-ink-emerald">Partners put in {formatGHS(partnerMoney)}</span><span className="text-faint-foreground">+</span>
