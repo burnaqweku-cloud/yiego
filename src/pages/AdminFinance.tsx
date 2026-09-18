@@ -93,7 +93,9 @@ export default function AdminFinance() {
   const bank = Number(o?.cash.bank ?? 0);
   const floats = suppliers.reduce((a, s) => a + Number((s as SupplierRow & { confirmed_balance?: number | null }).confirmed_balance ?? o?.cash.supplier_float?.[s.code] ?? 0), 0);
   const owedTotal = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0);
-  const master = bank + Number(o?.cash.paystack_transit ?? 0) + floats - owedTotal;
+  const putInByPartners = Number(o?.funding.outside ?? 0);
+  const master = bank - putInByPartners;
+  const netWorth = bank + Number(o?.cash.paystack_transit ?? 0) + floats - owedTotal;
 
   return (
     <div className="space-y-5">
@@ -101,9 +103,9 @@ export default function AdminFinance() {
         action={<div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={15} /></Button><Button size="sm" onClick={() => setModal("topup")}>Record top-up</Button></div>} />
 
       <Link to="/admin/finance/master" className="block">
-        <Panel title="Master balance" icon={Landmark} note="suppliers as they report it · tap for detail">
+        <Panel title="Master balance" icon={Landmark} note="cash in hand · tap for detail">
           <p className={`text-[28px] font-semibold leading-none tabular-nums ${master >= 0 ? "text-ink-emerald" : "text-ink-rose"}`}>{loading ? "…" : formatGHS(master)}</p>
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-[11.5px] tabular-nums"><span className="text-ink-emerald">Withdrawn {formatGHS(bank)}</span><span className="text-faint-foreground">+</span><span className="text-ink-rose">Held by Paystack {formatGHS(Number(o?.cash.paystack_transit ?? 0))}</span><span className="text-faint-foreground">+</span><span className="text-amber">Suppliers {formatGHS(floats)}</span><span className="text-faint-foreground">−</span><span className="text-muted-foreground">Customers' money {formatGHS(owedTotal)}</span></p>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-[11.5px] tabular-nums"><span className="text-ink-emerald">Withdrawn {formatGHS(bank)}</span><span className="text-faint-foreground">−</span><span className="text-ink-rose">Put in by partners {formatGHS(putInByPartners)}</span><span className="text-faint-foreground">·</span><span className="text-muted-foreground">net worth {formatGHS(netWorth)}</span></p>
         </Panel>
       </Link>
 
