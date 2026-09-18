@@ -63,7 +63,7 @@ export async function applySupplierStatusToOrder(
     event_type: "supplier.status_update",
     from_status: order.status,
     to_status: mapped,
-    message: `DataMartGH reported ${supplierStatus ?? "an unknown status"} (${source})`,
+    message: `Supplier reported ${supplierStatus ?? "an unknown status"} (${source})`,
     metadata: {
       supplier: "datamartgh",
       supplierStatus: supplierStatus ?? null,
