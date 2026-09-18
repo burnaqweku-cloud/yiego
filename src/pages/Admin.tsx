@@ -1,56 +1,91 @@
-import { useEffect, useState } from "react";
-import { ArrowRight, Store } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { AlertTriangle, CheckCircle2, ClipboardList, Clock3, Receipt, ShieldCheck, Store, TrendingUp, Users, Wallet } from "lucide-react";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
-import AdminStatStrip from "@/components/admin/AdminStatStrip";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { adminDatabase, type AdminLedgerRow, type AdminOrderRow, type SupplierLogRow, formatAdminDate, readableStatus } from "@/lib/admin-data";
+import { InlineAction, Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid } from "@/components/admin/ui";
+import { adminDatabase, formatAdminDate, readableStatus } from "@/lib/admin-data";
+import { formatGHS } from "@/lib/format";
+
+/* Overview — the first screen of the day. Counts for the chosen period,
+   money for the same period, what needs a human, and the latest orders. */
+
+type Period = "today" | "7d" | "30d" | "all";
+const PERIODS = [{ value: "today" as const, label: "Today" }, { value: "7d" as const, label: "7 days" }, { value: "30d" as const, label: "30 days" }, { value: "all" as const, label: "Since launch" }];
+const since = (p: Period) => { if (p === "all") return "2026-09-12T00:00:00Z"; const d = new Date(); if (p === "today") d.setHours(0, 0, 0, 0); else d.setDate(d.getDate() - (p === "7d" ? 7 : 30)); return d.toISOString(); };
+
+interface OrderRow { order_reference: string; recipient_phone: string; amount: number; status: string; admin_resolution_status: string | null; supplier_retry_after: string | null; created_at: string; networks: { name: string } | null; data_products: { name: string } | null }
+interface Overview { period: { revenue: number; net: number; fee_income: number }; owed: { undelivered: number; undelivered_count: number }; cash: { supplier_float: Record<string, number> } }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown }> };
+const statusTone = (s: string) => s === "delivered" ? "good" : s.startsWith("failed") ? "bad" : s === "processing" || s === "pending_supplier" ? "warn" : "muted";
 
 export default function Admin() {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<AdminOrderRow[]>([]);
-  const [ledger, setLedger] = useState<AdminLedgerRow[]>([]);
-  const [logs, setLogs] = useState<SupplierLogRow[]>([]);
-  const [supplierBalance, setSupplierBalance] = useState<number | null>(null);
+  const [period, setPeriod] = useState<Period>("today");
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [overview, setOverview] = useState<Overview | null>(null);
+  const [suppliers, setSuppliers] = useState<{ code: string; name: string; balance: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let mounted = true;
-    Promise.all([
-      adminDatabase().from<AdminOrderRow>("orders").select("order_reference, recipient_phone, amount, status, payment_status, supplier_status, created_at").order("created_at", { ascending: false }),
-      adminDatabase().from<AdminLedgerRow>("wallet_ledger_entries").select("reference, amount, direction, type, created_at").order("created_at", { ascending: false }).limit(5),
-      adminDatabase().from<SupplierLogRow>("supplier_api_logs").select("action, endpoint, http_status, call_status, created_at").order("created_at", { ascending: false }).limit(5),
-      adminDatabase().from<{ balance: number | string }>("suppliers").select("balance").limit(1),
-    ]).then(([orderResult, ledgerResult, logResult, supplierResult]) => {
-      if (!mounted) return;
-      setOrders(orderResult.data ?? []);
-      setLedger(ledgerResult.data ?? []);
-      setLogs(logResult.data ?? []);
-      const balance = supplierResult.data?.[0]?.balance;
-      setSupplierBalance(balance === undefined || balance === null ? null : Number(balance));
-      setLoading(false);
-    });
-    return () => { mounted = false; };
-  }, []);
+  const load = useCallback(async () => {
+    const [o, ov, su] = await Promise.all([
+      db().from("orders").select("order_reference, recipient_phone, amount, status, admin_resolution_status, supplier_retry_after, created_at, networks(name), data_products(name)").gte("created_at", since(period)).order("created_at", { ascending: false }).limit(500),
+      db().rpc("finance_overview", { p_from: since(period), p_to: null }),
+      db().from("suppliers").select("code, name, balance").neq("status", "disabled").order("display_order"),
+    ]);
+    setOrders(o.data ?? []); setOverview((ov.data as Overview) ?? null); setSuppliers(su.data ?? []); setLoading(false);
+  }, [period]);
+  useEffect(() => { void load(); }, [load]);
 
-  const pending = orders.filter((order) => ["awaiting_payment", "processing", "pending_supplier"].includes(order.status)).length;
-  const failed = orders.filter((order) => ["failed", "failed_needs_review"].includes(order.status)).length;
+  const paid = orders.filter((x) => !["awaiting_payment", "cancelled"].includes(x.status));
+  const delivered = paid.filter((x) => x.status === "delivered").length;
+  const inFlight = paid.filter((x) => ["processing", "pending_supplier", "paid"].includes(x.status));
+  const cooldown = inFlight.filter((x) => x.supplier_retry_after).length;
+  const verification = paid.filter((x) => x.admin_resolution_status === "awaiting_verification").length;
+  const failed = paid.filter((x) => x.status.startsWith("failed")).length;
+  const rate = paid.length ? Math.round((delivered / paid.length) * 100) : 0;
+  const p = overview?.period;
 
   return (
-    <div className="space-y-7">
-      <AdminPageHeader eyebrow="Command centre" title="Overview" description="A quick operational snapshot. Open a section when you need to investigate or take action." />
-      <AdminStatStrip loading={loading} items={[
-        { label: "Orders", value: orders.length, onClick: () => navigate("/admin/orders") },
-        { label: "In progress", value: pending, onClick: () => navigate("/admin/orders?status=pending") },
-        { label: "Attention", value: failed, tone: failed ? "warning" : "default", onClick: () => navigate("/admin/orders?status=failed") },
-        { label: "Wallet entries", value: ledger.length, onClick: () => navigate("/admin/wallet") },
-      ]} />
+    <div className="space-y-5">
+      <AdminPageHeader title="Overview" description="Orders, money and anything that needs a hand." action={<div className="w-[240px] sm:w-[320px]"><Segmented<Period> value={period} onChange={setPeriod} options={PERIODS} /></div>} />
 
-      <section className="grid gap-5 xl:grid-cols-[1.45fr_0.55fr]">
-        <Card><CardHeader><div><CardTitle>Latest orders</CardTitle><p className="mt-1 text-xs text-faint-foreground">Most recent customer activity</p></div><Link to="/admin/orders" className="text-xs font-semibold text-primary-glow">View all</Link></CardHeader><CardContent className="space-y-2">{!loading && orders.length === 0 ? <p className="py-6 text-sm text-muted-foreground">No orders have been placed yet.</p> : orders.slice(0, 5).map((order) => <div key={order.order_reference} className="flex flex-col gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-white">{order.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{order.recipient_phone} · {formatAdminDate(order.created_at)}</p></div><div className="flex items-center gap-3 sm:text-right"><Badge variant="neutral">{readableStatus(order.status)}</Badge><p className="min-w-20 font-display text-sm font-semibold text-white">GH₵{Number(order.amount).toFixed(2)}</p></div></div>)}</CardContent></Card>
-        <div className="space-y-5"><Card><CardHeader><CardTitle>Supplier status</CardTitle><Store className="text-primary-glow" size={19} /></CardHeader><CardContent><div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-success" /><p className="text-sm font-semibold text-foreground">Integration connected</p></div><p className="mt-5 text-xs uppercase tracking-[0.14em] text-faint-foreground">Recorded balance</p><p className="mt-1 font-display text-2xl font-semibold text-white">{supplierBalance === null ? "Unavailable" : `GH₵${supplierBalance.toFixed(2)}`}</p><p className="mt-4 text-xs text-muted-foreground">{logs.length} recent supplier API events</p><Link to="/admin/suppliers" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary-glow">Open suppliers <ArrowRight size={15} /></Link></CardContent></Card><Card><CardContent><p className="text-xs font-semibold uppercase tracking-[0.14em] text-faint-foreground">Wallet snapshot</p><p className="mt-3 text-sm text-muted-foreground">Review deposits and customer wallet movements in their own finance workspace.</p><Link to="/admin/wallet" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary-glow">Open wallet activity <ArrowRight size={15} /></Link></CardContent></Card></div>
-      </section>
+      <StatGrid>
+        <Stat loading={loading} label="Paid orders" value={paid.length} note={`${rate}% delivered`} icon={ClipboardList} to="/admin/orders" />
+        <Stat loading={loading} label="Delivered" value={delivered} icon={CheckCircle2} tone="good" />
+        <Stat loading={loading} label="In progress" value={inFlight.length} note={cooldown ? `${cooldown} waiting on supplier cooldown` : "with the supplier"} icon={Clock3} tone={inFlight.length ? "warn" : "default"} to="/admin/orders?status=pending" />
+        <Stat loading={loading} label="Needs a human" value={failed + verification} note={`${failed} failed · ${verification} MTN verification`} icon={AlertTriangle} tone={failed ? "bad" : verification ? "warn" : "default"} to="/admin/orders?status=failed" />
+        <Stat loading={loading} label="Revenue" value={<Money value={p?.revenue} />} note="delivered bundles" icon={TrendingUp} to="/admin/finance" />
+        <Stat loading={loading} label="Net profit" value={<Money value={p?.net} tone={Number(p?.net) < 0 ? "bad" : "good"} />} note={`incl. ${formatGHS(Number(p?.fee_income ?? 0))} checkout fee`} icon={Receipt} tone={Number(p?.net) < 0 ? "bad" : "good"} to="/admin/finance" />
+      </StatGrid>
+
+      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <Panel title="Latest orders" icon={ClipboardList} action={<InlineAction to="/admin/orders">View all</InlineAction>}>
+          <Rows empty="No orders in this period.">
+            {orders.slice(0, 8).map((x) => (
+              <Row key={x.order_reference} onClick={() => navigate(`/admin/orders?q=${x.order_reference}`)}
+                primary={<span className="font-mono text-[13px]">{x.order_reference}</span>}
+                secondary={`${x.recipient_phone} · ${x.networks?.name ?? ""} ${x.data_products?.name ?? ""} · ${formatAdminDate(x.created_at)}`}
+                right={formatGHS(Number(x.amount))}
+                rightNote={<Pill tone={statusTone(x.status)}>{x.admin_resolution_status === "awaiting_verification" ? "Awaiting verification" : x.supplier_retry_after ? "Cooldown" : readableStatus(x.status)}</Pill>} />
+            ))}
+          </Rows>
+        </Panel>
+
+        <div className="space-y-5">
+          <Panel title="Supplier float" icon={Store} action={<InlineAction to="/admin/finance">Finance</InlineAction>}>
+            <StatGrid>
+              {suppliers.map((s) => <Stat key={s.code} loading={loading} label={s.name} value={s.balance == null ? "—" : <Money value={s.balance} tone={Number(s.balance) < 100 ? "bad" : "default"} />} note={Number(s.balance) < 100 ? "low — top up soon" : "live balance"} tone={Number(s.balance) < 100 ? "bad" : "default"} />)}
+            </StatGrid>
+          </Panel>
+          <Panel title="Owed to customers" icon={Wallet}>
+            <StatGrid>
+              <Stat loading={loading} label="Paid, not delivered" value={<Money value={overview?.owed.undelivered} />} note={`${overview?.owed.undelivered_count ?? 0} orders`} icon={ShieldCheck} tone={Number(overview?.owed.undelivered_count) > 0 ? "warn" : "default"} to="/admin/orders" />
+              <Stat loading={loading} label="Customers" value="→" note="all users" icon={Users} to="/admin/users" />
+            </StatGrid>
+          </Panel>
+        </div>
+      </div>
     </div>
   );
 }

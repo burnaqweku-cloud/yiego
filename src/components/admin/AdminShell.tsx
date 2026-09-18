@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { Menu, Moon, Sun } from "lucide-react";
+import { useTheme } from "@/store/theme";
 import AuroraBackground from "@/components/fx/AuroraBackground";
 import Wordmark from "@/components/brand/Wordmark";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -15,6 +16,7 @@ export default function AdminShell() {
   const location = useLocation();
   const page = pageForPath(location.pathname);
   const group = groupForPath(location.pathname);
+  const { resolved, setMode } = useTheme();
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }); setMenuOpen(false); }, [location.pathname]);
   useEffect(() => {
@@ -43,6 +45,7 @@ export default function AdminShell() {
               {group && group.pages.length > 1 && <span className="hidden text-faint-foreground sm:inline">{group.label} /</span>}
               <span className="truncate font-semibold text-foreground">{page?.label ?? "Admin"}</span>
             </div>
+            <button type="button" onClick={() => setMode(resolved === "light" ? "dark" : "light")} className="onyx-iconbtn ml-auto" aria-label={resolved === "light" ? "Switch to dark mode" : "Switch to light mode"}>{resolved === "light" ? <Moon size={18} /> : <Sun size={18} />}</button>
           </header>
           <main className="px-4 pb-16 pt-5 sm:px-6 lg:px-8 lg:pt-6"><Outlet /></main>
         </div>

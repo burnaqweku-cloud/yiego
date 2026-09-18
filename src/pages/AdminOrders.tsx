@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ChevronDown, ChevronUp, Clipboard, ClipboardCheck, ClipboardList, Clock, FilterX, Loader2, RefreshCw, RotateCcw, Save, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import AdminListPagination from "@/components/admin/AdminListPagination";
@@ -55,7 +56,8 @@ function supportMessage(order: AdminOrderRow) {
 export default function AdminOrders() {
   const [orders, setOrders] = useState<AdminOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
   const [lifecycleFilter, setLifecycleFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [supplierFilter, setSupplierFilter] = useState("all");
