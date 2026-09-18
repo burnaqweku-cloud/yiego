@@ -101,7 +101,7 @@ export default function AdminFinance() {
         action={<div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={15} /></Button><Button size="sm" onClick={() => setModal("topup")}>Record top-up</Button></div>} />
 
       <Link to="/admin/finance/master" className="block">
-        <Panel title="Master balance" icon={Landmark} note={`as of your last calculation · tap to recalculate`}>
+        <Panel title="Master balance" icon={Landmark} note="suppliers as they report it · tap for detail">
           <p className={`text-[28px] font-semibold leading-none tabular-nums ${master >= 0 ? "text-ink-emerald" : "text-ink-rose"}`}>{loading ? "…" : formatGHS(master)}</p>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-[11.5px] tabular-nums"><span className="text-ink-emerald">Withdrawn {formatGHS(bank)}</span><span className="text-faint-foreground">+</span><span className="text-ink-rose">Held by Paystack {formatGHS(Number(o?.cash.paystack_transit ?? 0))}</span><span className="text-faint-foreground">+</span><span className="text-amber">Suppliers {formatGHS(floats)}</span><span className="text-faint-foreground">−</span><span className="text-muted-foreground">Customers' money {formatGHS(owedTotal)}</span></p>
         </Panel>

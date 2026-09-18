@@ -12,10 +12,10 @@ import { useAuth } from "@/store/auth-context";
 /* Master balance — everything that is yours right now, wherever it sits,
    after setting aside what belongs to customers:
      bank + Paystack pending + supplier balances − owed to customers.
-   The supplier figures here are exactly what you last typed and calculated.
-   Nothing else changes them — not deliveries, not top-ups. The master
-   balance is exact at the moment you calculate; the page says how old that
-   moment is. */
+   Supplier figures are what the suppliers themselves report: DataMartGH and
+   InstantDataGH from their balance endpoint (every 10 min), DataBundlesHub
+   from the receipt of the latest order sent. Each shows when it was read.
+   Calculate lets you override with what you see on their site. */
 
 interface Overview { start: string; cash: { bank: number; paystack_transit: number; supplier_float: Record<string, number> }; owed: { customer_wallets: number; undelivered: number; undelivered_count: number; refunds_due: number }; funding: { outside: number; carried_in: number } }
 interface Supplier { id: string; code: string; name: string; balance: number | null; last_balance_checked_at: string | null; confirmed_balance: number | null; confirmed_at: string | null }
@@ -74,8 +74,8 @@ export default function AdminMasterBalance() {
     <div className="space-y-5">
       <AdminPageHeader title="Master balance" description="Everything that's yours right now, wherever it sits, after setting aside what belongs to customers." action={<div className="flex gap-2"><Link to="/admin/finance"><Button variant="ghost" size="sm"><ArrowLeft size={14} />Finance</Button></Link><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={14} /></Button></div>} />
 
-      <Panel title="Master balance" icon={Landmark} note={lastConfirmed ? `as of ${formatAdminDate(lastConfirmed)}` : "suppliers not yet confirmed"}>
-        {staleHours > 24 && <p className="mb-2 text-[11.5px] text-amber">Supplier figures are {Math.floor(staleHours / 24)} day{Math.floor(staleHours / 24) === 1 ? "" : "s"} old — type today's balances below and Calculate.</p>}
+      <Panel title="Master balance" icon={Landmark} note={lastConfirmed ? `suppliers as reported ${formatAdminDate(lastConfirmed)}` : "waiting for supplier readings"}>
+        {staleHours > 24 && <p className="mb-2 text-[11.5px] text-amber">One supplier hasn't reported for {Math.floor(staleHours / 24)} day{Math.floor(staleHours / 24) === 1 ? "" : "s"} — check its site and Calculate if it differs.</p>}
         <p className={`text-[30px] font-semibold leading-none tabular-nums ${master >= 0 ? "text-ink-emerald" : "text-ink-rose"}`}>{loading ? "…" : formatGHS(master)}</p>
         <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] tabular-nums">
           <span className="text-ink-emerald">Withdrawn to bank {formatGHS(bank)}</span><span className="text-faint-foreground">+</span>
@@ -89,17 +89,17 @@ export default function AdminMasterBalance() {
       <StatGrid cols={3}>
         <Stat loading={loading} label="Withdrawn to bank" value={<Money value={bank} tone="good" />} note="payouts Paystack has sent us" tone="good" />
         <Stat loading={loading} label="Held by Paystack" value={<Money value={atPaystack} tone="bad" />} note="paid by customers, not yet sent to us" tone="bad" />
-        <Stat loading={loading} label="At suppliers" value={<Money value={suppliersTotal} />} note={lastConfirmed ? `as you confirmed ${formatAdminDate(lastConfirmed)}` : "not yet confirmed"} icon={Store} tone="warn" />
+        <Stat loading={loading} label="At suppliers" value={<Money value={suppliersTotal} />} note="as the suppliers report it" icon={Store} tone="warn" />
       </StatGrid>
 
-      <Panel title="Calculate" icon={Calculator} note="type what each supplier's site shows now">
+      <Panel title="Override" icon={Calculator} note="only if a supplier's site shows something different">
         <div className="grid gap-2 sm:grid-cols-3">
-          {suppliers.map((s) => <Field key={s.code} label={`${s.name} · last confirmed ${formatGHS(confirmedFloat(s.code))}`}><input inputMode="decimal" value={stated[s.code] ?? ""} onChange={(e) => setStated((x) => ({ ...x, [s.code]: e.target.value }))} placeholder="0.00" className={inputCls} /></Field>)}
+          {suppliers.map((s) => <Field key={s.code} label={`${s.name} · reported ${formatGHS(confirmedFloat(s.code))}${s.confirmed_at ? ` at ${formatAdminDate(s.confirmed_at)}` : ""}`}><input inputMode="decimal" value={stated[s.code] ?? ""} onChange={(e) => setStated((x) => ({ ...x, [s.code]: e.target.value }))} placeholder="0.00" className={inputCls} /></Field>)}
         </div>
         {diffs.length > 0 && (
           <Rows empty="">{diffs.map((d) => <Row key={d.s.code} primary={d.s.name} secondary={`books ${formatGHS(d.books)} → you say ${formatGHS(d.typed ?? 0)}`} right={`${(d.typed ?? 0) - d.books >= 0 ? "+" : "−"}${formatGHS(Math.abs((d.typed ?? 0) - d.books))}`} rightNote="books will move" tone={(d.typed ?? 0) - d.books < 0 ? "bad" : "good"} />)}</Rows>
         )}
-        <p className="mt-2 text-[11px] text-faint-foreground">These figures change only when you type them here and Calculate. The master balance is exact at that moment; between calculations it goes stale, and the page says how old it is.</p>
+        <p className="mt-2 text-[11px] text-faint-foreground">DataMartGH and InstantDataGH are read from their balance endpoint every 10 minutes; DataBundlesHub from the receipt of the latest order sent. If a site shows something else, type it and Calculate — your figure wins until the next reading.</p>
         <div className="mt-3 flex justify-end"><Button onClick={() => void calculate()} disabled={busy || loading}>{busy ? "Calculating…" : "Calculate"}</Button></div>
       </Panel>
 
