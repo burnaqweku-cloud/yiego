@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, Banknote, Download, Landmark, PiggyBank, Receipt, RefreshCw, Store, Undo2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
-import { ConfirmTopupModal, RecordExpenseModal, RecordPayoutModal, RecordTopupModal, ReverseEntryModal, type TopupCandidate } from "@/components/admin/FinanceForms";
+import { RecordExpenseModal, RecordPayoutModal, RecordTopupModal, ReverseEntryModal } from "@/components/admin/FinanceForms";
 import { InlineAction, Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid, type Tone } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
@@ -36,7 +36,6 @@ interface Overview {
 }
 interface Entry { id: string; kind: string; reference: string | null; occurred_at: string; amount: number; source: string; note: string | null; metadata: Record<string, unknown>; supplier_id: string | null; reverses: string | null; created_at: string }
 interface SupplierRow { id: string; code: string; name: string; balance: number | null; last_balance_checked_at: string | null; metadata: Record<string, unknown> | null }
-interface CandidateRow { id: string; supplier_id: string; amount: number; balance_before: number; balance_after: number; detected_at: string; status: string }
 
 const KIND_LABEL: Record<string, string> = { order_paid: "Order paid", order_delivered: "Order delivered", order_refunded: "Order refunded", wallet_deposit: "Wallet deposit", paystack_payout: "Paystack payout", supplier_topup: "Supplier top-up", expense: "Expense", reversal: "Reversal", opening_balance: "Carried in" };
 const KIND_TONE: Record<string, Tone> = { order_paid: "good", wallet_deposit: "good", paystack_payout: "good", order_delivered: "default", supplier_topup: "default", order_refunded: "warn", expense: "bad", reversal: "muted", opening_balance: "muted" };
@@ -56,23 +55,20 @@ export default function AdminFinance() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [suppliers, setSuppliers] = useState<SupplierRow[]>([]);
-  const [candidates, setCandidates] = useState<CandidateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [ledgerFilter, setLedgerFilter] = useState<LedgerFilter>("all");
   const [ledgerLimit, setLedgerLimit] = useState(30);
   const [modal, setModal] = useState<"topup" | "payout" | "expense" | null>(null);
-  const [confirming, setConfirming] = useState<TopupCandidate | null>(null);
   const [reversing, setReversing] = useState<Entry | null>(null);
 
   const load = useCallback(async () => {
-    const [ov, en, su, ca] = await Promise.all([
+    const [ov, en, su] = await Promise.all([
       db().rpc("finance_overview", { p_from: periodFrom(period), p_to: null }),
       db().from("finance_entries").select("id, kind, reference, occurred_at, amount, source, note, metadata, supplier_id, reverses, created_at").order("occurred_at", { ascending: false }).limit(400),
       db().from("suppliers").select("id, code, name, balance, last_balance_checked_at, metadata").order("display_order"),
-      db().from("supplier_topup_candidates").select("id, supplier_id, amount, balance_before, balance_after, detected_at, status").eq("status", "pending").order("detected_at", { ascending: false }),
     ]);
     if (ov.error) toast.error(ov.error.message);
-    setOverview((ov.data as Overview) ?? null); setEntries(en.data ?? []); setSuppliers(su.data ?? []); setCandidates(ca.data ?? []); setLoading(false);
+    setOverview((ov.data as Overview) ?? null); setEntries(en.data ?? []); setSuppliers(su.data ?? []); setLoading(false);
   }, [period]);
   useEffect(() => { void load(); }, [load]);
 
@@ -83,7 +79,6 @@ export default function AdminFinance() {
   const topups = useMemo(() => entries.filter((e) => e.kind === "supplier_topup" && live(e)).slice(0, 8), [entries, live]);
   const ledger = useMemo(() => { const f = LEDGER_FILTERS.find((x) => x.value === ledgerFilter)!; return entries.filter((e) => !f.kinds || f.kinds.includes(e.kind)); }, [entries, ledgerFilter]);
   const supplierOptions = useMemo(() => suppliers.map((s) => ({ code: s.code, name: s.name, fee_rate: Number(s.metadata?.topup_fee_rate ?? 0) })), [suppliers]);
-  const candidateFor = (c: CandidateRow): TopupCandidate | null => { const s = supplierById.get(c.supplier_id); return s ? { id: c.id, supplier_code: s.code, supplier_name: s.name, amount: Number(c.amount), balance_before: Number(c.balance_before), balance_after: Number(c.balance_after), detected_at: c.detected_at, fee_rate: Number(s.metadata?.topup_fee_rate ?? 0) } : null; };
 
   const exportCsv = () => {
     const head = ["date", "kind", "reference", "amount", "source", "note"];
@@ -102,9 +97,6 @@ export default function AdminFinance() {
       <AdminPageHeader title="Finance" description={o ? `Official books since ${new Date(o.start).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}. Balances are live; profit follows the period.` : "Loading the books…"}
         action={<div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={15} /></Button><Button size="sm" onClick={() => setModal("topup")}>Record top-up</Button></div>} />
 
-      {candidates.length > 0 && (
-        <Panel title={`${candidates.length} top-up${candidates.length > 1 ? "s" : ""} detected`} icon={Store} note="tap to confirm or dismiss">
-          <Rows empty="">{candidates.map((c) => { const s = supplierById.get(c.supplier_id); return <Row key={c.id} primary={`${s?.name ?? "Supplier"} balance rose by ${formatGHS(Number(c.amount))}`} secondary={`${formatGHS(Number(c.balance_before))} → ${formatGHS(Number(c.balance_after))} · ${formatAdminDate(c.detected_at)}`} right="Confirm" tone="good" onClick={() => setConfirming(candidateFor(c))} />; })}</Rows>
         </Panel>
       )}
 
@@ -177,7 +169,6 @@ export default function AdminFinance() {
       <RecordTopupModal open={modal === "topup"} onClose={() => setModal(null)} actorId={actorId} suppliers={supplierOptions} onDone={load} />
       <RecordPayoutModal open={modal === "payout"} onClose={() => setModal(null)} actorId={actorId} onDone={load} />
       <RecordExpenseModal open={modal === "expense"} onClose={() => setModal(null)} actorId={actorId} onDone={load} />
-      <ConfirmTopupModal open={confirming !== null} onClose={() => setConfirming(null)} actorId={actorId} candidate={confirming} onDone={load} />
       <ReverseEntryModal open={reversing !== null} onClose={() => setReversing(null)} actorId={actorId} entry={reversing ? { id: reversing.id, kind: reversing.kind, amount: Number(reversing.amount), reference: reversing.reference } : null} onDone={load} />
     </div>
   );

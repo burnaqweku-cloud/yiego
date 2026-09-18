@@ -89,3 +89,9 @@ create trigger orders_availability_guard_trg before insert on phase1.orders for 
 
 -- The shop reads pause flags for anonymous visitors too.
 grant select (id, code, name, is_active, is_paused, pause_reason, display_order) on phase1.networks to anon, authenticated;
+
+-- ── Later the same day: automatic top-up detection removed ─────────────
+-- A rising supplier balance is not proof of a top-up (refunds from failed
+-- orders raise it too), so top-ups are recorded by hand on the Finance page.
+-- Balance readings are still stored for display. Applied as migration
+-- finance_remove_topup_detection.
