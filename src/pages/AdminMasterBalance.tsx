@@ -12,10 +12,10 @@ import { useAuth } from "@/store/auth-context";
 /* Master balance — everything that is yours right now, wherever it sits,
    after setting aside what belongs to customers:
      bank + Paystack pending + supplier balances − owed to customers.
-   The supplier figures here are what you last confirmed by hand (plus any
-   top-ups recorded since). They do not move with deliveries — so the
-   master balance is exact at the moment you calculate, and the page tells
-   you how old that moment is. */
+   The supplier figures here are exactly what you last typed and calculated.
+   Nothing else changes them — not deliveries, not top-ups. The master
+   balance is exact at the moment you calculate; the page says how old that
+   moment is. */
 
 interface Overview { start: string; cash: { bank: number; paystack_transit: number; supplier_float: Record<string, number> }; owed: { customer_wallets: number; undelivered: number; undelivered_count: number; refunds_due: number }; funding: { outside: number; carried_in: number } }
 interface Supplier { id: string; code: string; name: string; balance: number | null; last_balance_checked_at: string | null; confirmed_balance: number | null; confirmed_at: string | null }
@@ -99,7 +99,7 @@ export default function AdminMasterBalance() {
         {diffs.length > 0 && (
           <Rows empty="">{diffs.map((d) => <Row key={d.s.code} primary={d.s.name} secondary={`books ${formatGHS(d.books)} → you say ${formatGHS(d.typed ?? 0)}`} right={`${(d.typed ?? 0) - d.books >= 0 ? "+" : "−"}${formatGHS(Math.abs((d.typed ?? 0) - d.books))}`} rightNote="books will move" tone={(d.typed ?? 0) - d.books < 0 ? "bad" : "good"} />)}</Rows>
         )}
-        <p className="mt-2 text-[11px] text-faint-foreground">These figures only change when you calculate or record a top-up. The master balance is exact at that moment; between calculations it goes stale, and the page says how old it is.</p>
+        <p className="mt-2 text-[11px] text-faint-foreground">These figures change only when you type them here and Calculate. The master balance is exact at that moment; between calculations it goes stale, and the page says how old it is.</p>
         <div className="mt-3 flex justify-end"><Button onClick={() => void calculate()} disabled={busy || loading}>{busy ? "Calculating…" : "Calculate"}</Button></div>
       </Panel>
 
