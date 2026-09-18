@@ -22,8 +22,8 @@ export default function AdminStatStrip({ items, loading = false }: { items: Admi
         {items.map((item, index) => {
           const content = (
             <>
-              <p className="min-h-7 break-words text-[8px] font-semibold uppercase leading-[1.35] tracking-[0.08em] text-faint-foreground sm:min-h-0 sm:text-[10px] sm:leading-normal sm:tracking-[0.11em]">{item.label}</p>
-              <p className={cn("mt-1 break-words font-display text-base font-semibold leading-tight sm:text-xl", toneClass[item.tone ?? "default"])}>{loading ? "—" : item.value}</p>
+              <p className="min-h-8 break-words text-[11px] leading-4 text-faint-foreground sm:min-h-0">{item.label}</p>
+              <p className={cn("mt-0.5 break-words text-[17px] font-semibold leading-tight sm:text-[19px]", toneClass[item.tone ?? "default"])}>{loading ? "—" : item.value}</p>
             </>
           );
           const mobileBorder = items.length > 2 ? cn(index % 2 === 1 && "border-l border-white/[0.07]", index >= 2 && "border-t border-white/[0.07]", "sm:border-t-0", index % 2 === 1 && "sm:border-l") : "";
