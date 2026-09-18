@@ -1,0 +1,7 @@
+-- See applied migrations finance_official_start + finance_overview_exclude_reversed.
+-- The business officially started 12 Sep 2026 (phase1.finance_start_at()).
+-- Pre-launch test orders, deposits and payouts are reversed out; the balances
+-- that genuinely existed on launch day (bank, customer wallets, DataMartGH
+-- float) are booked once against 'opening_balance' — "carried in from before
+-- launch". Automatic posters skip anything dated before the start.
+-- finance_live_entries excludes reversed entries for the all-time counters.
