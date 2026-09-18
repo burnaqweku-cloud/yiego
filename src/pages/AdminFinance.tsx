@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, Banknote, Download, Landmark, PiggyBank, Receipt, RefreshCw, Undo2, Wallet } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { RecordExpenseModal, RecordPayoutModal, RecordTopupModal, ReverseEntryModal } from "@/components/admin/FinanceForms";
@@ -89,11 +90,8 @@ export default function AdminFinance() {
 
   const o = overview; const p = o?.period; 
   const cashTotal = Number(o?.cash.bank ?? 0) + Number(o?.cash.paystack_transit ?? 0);
-  // Master balance: everything we hold, minus everything we owe, is ours.
-  // Compared with what was put in, the difference is what the business has made.
-  const floats = Object.values(o?.cash.supplier_float ?? {}).reduce((a, b) => a + Number(b), 0);
-  const owe = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0);
-  const ours = hold - owe;
+  const bank = Number(o?.cash.bank ?? 0);
+  const putInOutside = Number(o?.funding.outside ?? 0);
   const owedTotal = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0);
 
   return (
@@ -101,14 +99,12 @@ export default function AdminFinance() {
       <AdminPageHeader title="Finance" description={o ? `Official books since ${new Date(o.start).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}. Balances are live; profit follows the period.` : "Loading the books…"}
         action={<div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={15} /></Button><Button size="sm" onClick={() => setModal("topup")}>Record top-up</Button></div>} />
 
-      <Panel title="Master balance" icon={Landmark} note="received, minus what you put in">
-        <StatGrid cols={3}>
-          <Stat loading={loading} label="Master balance" value={<Money value={Number(o?.cash.bank ?? 0) - Number(o?.funding.outside ?? 0)} tone={Number(o?.cash.bank ?? 0) - Number(o?.funding.outside ?? 0) >= 0 ? "good" : "bad"} />} note="in the bank and not put back in" tone="good" />
-          <Stat loading={loading} label="Received" value={<Money value={o?.cash.bank} />} note="Paystack payouts in the bank" />
-          <Stat loading={loading} label="Put in" value={<Money value={o?.funding.outside} />} note="top-ups + charges from your pocket" to="/admin/finance/funding" />
-        </StatGrid>
-        <p className="mt-2 text-[11px] text-faint-foreground">Not counted: {formatGHS(floats)} still in supplier floats and {formatGHS(owe)} owed to customers. Ours after everything: {formatGHS(ours)}.</p>
-      </Panel>
+      <Link to="/admin/finance/master" className="block">
+        <Panel title="Master balance" icon={Landmark} note="tap to confirm supplier balances">
+          <p className={`text-[28px] font-semibold leading-none tabular-nums ${bank - putInOutside >= 0 ? "text-ink-emerald" : "text-ink-rose"}`}>{loading ? "…" : formatGHS(bank - putInOutside)}</p>
+          <p className="mt-1.5 text-[11.5px] text-muted-foreground">in your hand: bank {formatGHS(bank)} − put in {formatGHS(putInOutside)} · {formatGHS(Number(o?.cash.paystack_transit ?? 0))} still coming from Paystack</p>
+        </Panel>
+      </Link>
 
       <Panel title="Where the money is" icon={Landmark} note={`total ${formatGHS(cashTotal)} · supplier floats on the Suppliers page`}>
         <StatGrid>
