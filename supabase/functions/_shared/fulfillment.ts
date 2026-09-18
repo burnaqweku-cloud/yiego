@@ -8,6 +8,17 @@ type SupabaseAdminClient = any;
 
 const TERMINAL_ORDER_STATUSES = new Set(["delivered", "refunded", "cancelled"]);
 
+/** DataBundlesHub refuses a second order to the same number within 10 minutes
+ *  of the previous one, delivered or not. Wait a little longer than that. */
+const COOLDOWN_RETRY_MS = 11 * 60 * 1000;
+const MAX_COOLDOWN_RETRIES = 3;
+
+function isDuplicateWindow(outcome: { ok: boolean; responsePayload: unknown; message: string | null }) {
+  if (outcome.ok) return false;
+  const code = String((outcome.responsePayload as { code?: string } | null)?.code ?? "");
+  return code === "DUPLICATE_BENEFICIARY_WINDOW" || /recent order already exists/i.test(outcome.message ?? "");
+}
+
 interface OrderStatusSnapshot {
   id: string;
   status: string;
@@ -186,15 +197,13 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
 
   const outcome = await adapter.purchase(context);
 
-  // DBH's "a recent order already exists for this number" means an order for
-  // this number was placed moments ago. If it was ours (a concurrent attempt
-  // that won the race), the winner's details are already on the row — leave
-  // them and stop. If it was genuinely a different order, review it by hand.
-  const duplicateWindow = !outcome.ok && String((outcome.responsePayload as { code?: string } | null)?.code ?? "") === "DUPLICATE_BENEFICIARY_WINDOW";
-  if (duplicateWindow) {
+  // DBH "recent order already exists": either a concurrent attempt of ours
+  // won the race (keep it), or the customer bought twice within DBH's
+  // 10-minute per-number cooldown (park it and re-send later).
+  if (isDuplicateWindow(outcome)) {
     const { data: current } = await supabase
       .from("orders")
-      .select("supplier_purchase_id, supplier_order_reference, status")
+      .select("supplier_purchase_id, supplier_order_reference, status, supplier_retry_count")
       .eq("id", order.id)
       .maybeSingle();
     if (current?.supplier_purchase_id || current?.supplier_order_reference) {
@@ -208,6 +217,43 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
       });
       return { skipped: true, reason: "duplicate_of_own_successful_send", orderId: order.id, status: current.status };
     }
+
+    // A cooldown, not a failure. The order stays "processing" (which is what
+    // the customer sees) with a retry time; sync-dbh-order-status re-sends it.
+    const attempt = (current?.supplier_retry_count ?? 0) + 1;
+    if (attempt <= MAX_COOLDOWN_RETRIES) {
+      const retryAt = new Date(Date.now() + COOLDOWN_RETRY_MS).toISOString();
+      await supabase.from("supplier_api_logs").insert({
+        supplier_id: supplier.id,
+        order_id: order.id,
+        action: "purchase",
+        endpoint: outcome.endpoint,
+        request_payload: outcome.requestPayload,
+        response_payload: outcome.responsePayload,
+        http_status: outcome.httpStatus,
+        call_status: "error",
+        idempotency_key: idempotencyKey,
+        error_message: outcome.message,
+        duration_ms: outcome.durationMs,
+      });
+      await supabase.from("orders").update({
+        status: "processing",
+        failure_reason: null,
+        supplier_retry_after: retryAt,
+        supplier_retry_count: attempt,
+        updated_at: new Date().toISOString(),
+      }).eq("id", order.id);
+      await supabase.from("order_events").insert({
+        order_id: order.id,
+        event_type: "supplier.retry_scheduled",
+        from_status: "processing",
+        to_status: "processing",
+        message: `${supplier.name} asked us to wait (a bundle went to this number in the last 10 minutes). Re-sending automatically at ${retryAt.slice(11, 16)} UTC (attempt ${attempt} of ${MAX_COOLDOWN_RETRIES}).`,
+        metadata: { supplier: supplier.code, idempotencyKey, retryAt, attempt, httpStatus: outcome.httpStatus },
+      });
+      return { skipped: true, reason: "retry_scheduled", orderId: order.id, status: "processing", retryAt };
+    }
+    // Out of retries — fall through and record it as a real failure.
   }
 
   const nextStatus = outcome.ok ? adapter.mapStatus(outcome.supplierStatus) : "failed_needs_review";
@@ -233,6 +279,7 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
     .from("orders")
     .update({
       status: nextStatus,
+      supplier_retry_after: null,
       supplier_order_reference: outcome.supplierReference ?? order.supplier_order_reference,
       supplier_purchase_id: outcome.purchaseId ?? order.supplier_purchase_id,
       supplier_transaction_reference: outcome.transactionReference ?? order.supplier_transaction_reference,

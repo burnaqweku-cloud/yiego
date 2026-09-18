@@ -2,6 +2,7 @@ import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { checkOrderStatus, listTransactions } from "../_shared/databundleshub.ts";
 import { AWAITING_VERIFICATION, isSilentMtnRefund, markAwaitingVerification } from "../_shared/verification.ts";
+import { fulfillOrder } from "../_shared/fulfillment.ts";
 
 /* ════════════════════════════════════════════════════════════
    DataBundlesHub order-status sync — batch edition.
@@ -31,6 +32,11 @@ import { AWAITING_VERIFICATION, isSilentMtnRefund, markAwaitingVerification } fr
    supplier can't be reached to ask, the order is left alone rather
    than downgraded on a guess — next run tries again.
 
+   Orders parked by DBH's 10-minute per-number cooldown (see
+   fulfillment.ts) are re-sent here first, once their retry time
+   has passed — the same fulfillOrder path the webhook uses, so
+   there is still exactly one send per order.
+
    Scales to hundreds of pending orders in a single request.
    Publicly callable but read-and-apply only; scheduled via cron.
    ════════════════════════════════════════════════════════════ */
@@ -38,6 +44,7 @@ import { AWAITING_VERIFICATION, isSilentMtnRefund, markAwaitingVerification } fr
 const MAX_ORDERS_PER_RUN = 100;
 const MAX_TX_PAGES = 3;
 const MAX_FALLBACK_CHECKS = 10;
+const MAX_RESENDS_PER_RUN = 20;
 const LOSING_STATUSES = new Set(["failed", "refunded", "cancelled", "reversed"]);
 
 type OrderRow = {
@@ -77,6 +84,28 @@ Deno.serve(async (req) => {
       .from("suppliers").select("id").eq("code", "databundleshub").maybeSingle();
     if (!supplier) return jsonResponse({ error: "supplier_not_found" }, { status: 404 });
 
+    /* ── Re-send orders whose cooldown has passed ─────────────────── */
+    const resent: Record<string, unknown>[] = [];
+    const { data: due } = await supabase
+      .from("orders")
+      .select("id, order_reference")
+      .eq("supplier_id", supplier.id)
+      .eq("payment_status", "succeeded")
+      .eq("status", "processing")
+      .is("supplier_purchase_id", null)
+      .is("supplier_order_reference", null)
+      .lte("supplier_retry_after", new Date().toISOString())
+      .order("supplier_retry_after", { ascending: true })
+      .limit(MAX_RESENDS_PER_RUN);
+    for (const row of due ?? []) {
+      try {
+        const r = await fulfillOrder(supabase, row.id);
+        resent.push({ reference: row.order_reference, outcome: r.skipped ? `skipped_${r.reason}` : r.status });
+      } catch (error) {
+        resent.push({ reference: row.order_reference, outcome: "exception", message: error instanceof Error ? error.message : String(error) });
+      }
+    }
+
     // Orders already held for verification are excluded: their DBH status is
     // "refunded" and will stay so until the admin resubmits by hand. Polling
     // them again would only try to fail them.
@@ -90,7 +119,7 @@ Deno.serve(async (req) => {
       .order("updated_at", { ascending: true })
       .limit(MAX_ORDERS_PER_RUN);
     if (ordersError) return jsonResponse({ error: ordersError.message }, { status: 500 });
-    if (!orders || orders.length === 0) return jsonResponse({ checked: 0, results: [] });
+    if (!orders || orders.length === 0) return jsonResponse({ checked: 0, resent, results: [] });
 
     /* ── purchaseId per order, from the purchase receipts we logged ── */
     const orderIds = orders.map((o: OrderRow) => o.id);
@@ -261,7 +290,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return jsonResponse({ checked: results.length, batchMatched: results.length - Math.min(unmatched.length, MAX_FALLBACK_CHECKS), results });
+    return jsonResponse({ checked: results.length, resent, batchMatched: results.length - Math.min(unmatched.length, MAX_FALLBACK_CHECKS), results });
   } catch (error) {
     return jsonResponse({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }

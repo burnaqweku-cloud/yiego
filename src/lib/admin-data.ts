@@ -12,6 +12,8 @@ export interface AdminOrderRow {
   payment_status: string;
   supplier_status: string | null;
   supplier_order_reference: string | null;
+  supplier_retry_after: string | null;
+  supplier_retry_count: number;
   failure_reason: string | null;
   admin_resolution_status: string | null;
   admin_resolution_reason: string | null;
