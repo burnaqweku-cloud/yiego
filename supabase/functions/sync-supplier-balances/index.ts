@@ -7,7 +7,7 @@ import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
    is remembered in suppliers.metadata.balance_path for next time. */
 
 type Probe = { path: string; pick: (p: any) => number | null };
-const num = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+const num = (v: unknown) => { if (v == null || String(v).trim() === "") return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
 const PROBES: Record<string, { base: string; auth: () => HeadersInit; paths: Probe[] }> = {
   databundleshub: {
     base: (Deno.env.get("DATABUNDLESHUB_BASE_URL") ?? "https://www.databundleshub.com").replace(/\/$/, ""),
@@ -20,7 +20,7 @@ const PROBES: Record<string, { base: string; auth: () => HeadersInit; paths: Pro
   instantdatagh: {
     base: (Deno.env.get("INSTANTDATAGH_BASE_URL") ?? "https://instantdatagh.com/api.php").replace(/\/$/, ""),
     auth: () => ({ "x-api-key": Deno.env.get("INSTANTDATAGH_API_KEY") ?? "", Accept: "application/json" }),
-    paths: [{ path: "/balance", pick: (p) => num(p?.balance_raw ?? String(p?.balance ?? "").replace(/[^\d.-]/g, "")) }],
+    paths: [{ path: "/balance", pick: (p) => num(p?.data?.balance_raw ?? p?.balance_raw ?? String(p?.data?.balance ?? p?.balance ?? "").replace(/[^\d.-]/g, "")) }],
   },
   datamartgh: {
     base: (Deno.env.get("DATAMARTGH_BASE_URL") ?? "https://api.datamartgh.shop/api/developer").replace(/\/$/, ""),
