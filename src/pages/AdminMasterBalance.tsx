@@ -53,7 +53,8 @@ export default function AdminMasterBalance() {
   const suppliersTotal = suppliers.reduce((a, s) => a + (statedFloat(s.code) ?? booksFloat(s.code)), 0);
   const hold = bank + atPaystack + suppliersTotal;
   const master = hold - owed;
-  const made = master - invested;
+  const totalInvested = Number(o?.funding.outside ?? 0);
+  const made = master - totalInvested;
 
   const calculate = async () => {
     if (diffs.length === 0) { toast.success("Books already match what you typed."); return; }
@@ -72,14 +73,19 @@ export default function AdminMasterBalance() {
 
       <Panel title="Master balance" icon={Landmark} note={lastConfirmed ? `suppliers last confirmed ${formatAdminDate(lastConfirmed)}` : "suppliers not yet confirmed by hand"}>
         <p className={`text-[30px] font-semibold leading-none tabular-nums ${master >= 0 ? "text-ink-emerald" : "text-ink-rose"}`}>{loading ? "…" : formatGHS(master)}</p>
-        <p className="mt-2 text-[12px] text-muted-foreground">bank {formatGHS(bank)} + Paystack {formatGHS(atPaystack)} + suppliers {formatGHS(suppliersTotal)} − customers {formatGHS(owed)}</p>
-        <p className="mt-1 text-[12px] text-muted-foreground">invested {formatGHS(invested)} · <span className={made >= 0 ? "text-ink-emerald" : "text-ink-rose"}>{made >= 0 ? "ahead by" : "behind by"} {formatGHS(Math.abs(made))}</span></p>
+        <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] tabular-nums">
+          <span className="text-ink-emerald">Withdrawn to bank {formatGHS(bank)}</span><span className="text-faint-foreground">+</span>
+          <span className="text-ink-rose">Held by Paystack {formatGHS(atPaystack)}</span><span className="text-faint-foreground">+</span>
+          <span className="text-amber">At suppliers {formatGHS(suppliersTotal)}</span><span className="text-faint-foreground">−</span>
+          <span className="text-muted-foreground">Customers' money {formatGHS(owed)}</span>
+        </p>
+        <p className="mt-1.5 text-[12px] text-muted-foreground">Total invested {formatGHS(totalInvested)} · <span className={made >= 0 ? "text-ink-emerald" : "text-ink-rose"}>{made >= 0 ? "made" : "lost"} {formatGHS(Math.abs(made))}</span></p>
       </Panel>
 
       <StatGrid cols={3}>
-        <Stat loading={loading} label="In the bank" value={<Money value={bank} />} note="Paystack payouts received" />
-        <Stat loading={loading} label="At Paystack" value={<Money value={atPaystack} />} note="next payout" />
-        <Stat loading={loading} label="At suppliers" value={<Money value={suppliersTotal} />} note={diffs.length ? "using what you typed" : "as the books have it"} icon={Store} />
+        <Stat loading={loading} label="Withdrawn to bank" value={<Money value={bank} tone="good" />} note="payouts Paystack has sent us" tone="good" />
+        <Stat loading={loading} label="Held by Paystack" value={<Money value={atPaystack} tone="bad" />} note="paid by customers, not yet sent to us" tone="bad" />
+        <Stat loading={loading} label="At suppliers" value={<Money value={suppliersTotal} />} note={diffs.length ? "using what you typed" : "as the books have it"} icon={Store} tone="warn" />
       </StatGrid>
 
       <Panel title="Supplier balances" icon={Calculator} note="type what each supplier's site shows, then Calculate">
@@ -95,13 +101,13 @@ export default function AdminMasterBalance() {
 
       <Panel title="How it's made up">
         <Rows empty="">
-          <Row primary="In the bank" secondary="Paystack payouts received" right={formatGHS(bank)} tone="good" />
-          <Row primary="At Paystack" secondary="paid by customers, next payout" right={`+ ${formatGHS(atPaystack)}`} tone="good" />
-          <Row primary="At suppliers" secondary={suppliers.map((s) => `${s.name} ${formatGHS(statedFloat(s.code) ?? booksFloat(s.code))}`).join(" · ")} right={`+ ${formatGHS(suppliersTotal)}`} tone="good" />
-          <Row primary="Belongs to customers" secondary={`wallets ${formatGHS(Number(o?.owed.customer_wallets ?? 0))} · undelivered ${formatGHS(Number(o?.owed.undelivered ?? 0))} · refunds ${formatGHS(Number(o?.owed.refunds_due ?? 0))}`} right={`− ${formatGHS(owed)}`} tone="warn" />
+          <Row primary="Withdrawn to bank" secondary="payouts Paystack has already sent us" right={formatGHS(bank)} tone="good" />
+          <Row primary="Held by Paystack" secondary="paid by customers, waiting for the next payout" right={`+ ${formatGHS(atPaystack)}`} tone="bad" />
+          <Row primary="At suppliers" secondary={suppliers.map((s) => `${s.name} ${formatGHS(statedFloat(s.code) ?? booksFloat(s.code))}`).join(" · ")} right={`+ ${formatGHS(suppliersTotal)}`} tone="warn" />
+          <Row primary="Customers' money we hold" secondary={`wallets ${formatGHS(Number(o?.owed.customer_wallets ?? 0))} · paid, not delivered ${formatGHS(Number(o?.owed.undelivered ?? 0))} · refunds ${formatGHS(Number(o?.owed.refunds_due ?? 0))}`} right={`− ${formatGHS(owed)}`} tone="muted" />
           <Row primary="Master balance" secondary="everything that's ours" right={formatGHS(master)} tone={master >= 0 ? "good" : "bad"} />
-          <Row primary="Invested" secondary="first top-up to each supplier: DBH 500 · DataMartGH 200 · InstantDataGH 100" right={formatGHS(invested)} />
-          <Row primary={made >= 0 ? "Ahead by" : "Behind by"} secondary="master balance minus invested — what the business has made" right={formatGHS(Math.abs(made))} tone={made >= 0 ? "good" : "bad"} />
+          <Row primary="Total invested" secondary={`every top-up and its charge, from the first 500 to today · started with ${formatGHS(invested)}`} right={formatGHS(totalInvested)} />
+          <Row primary={made >= 0 ? "Made" : "Lost"} secondary="master balance minus total invested" right={formatGHS(Math.abs(made))} tone={made >= 0 ? "good" : "bad"} />
         </Rows>
       </Panel>
     </div>

@@ -103,7 +103,7 @@ export default function AdminFinance() {
       <Link to="/admin/finance/master" className="block">
         <Panel title="Master balance" icon={Landmark} note="everything that's ours · tap for detail">
           <p className={`text-[28px] font-semibold leading-none tabular-nums ${master >= 0 ? "text-ink-emerald" : "text-ink-rose"}`}>{loading ? "…" : formatGHS(master)}</p>
-          <p className="mt-1.5 text-[11.5px] text-muted-foreground">bank {formatGHS(bank)} + Paystack {formatGHS(Number(o?.cash.paystack_transit ?? 0))} + suppliers {formatGHS(floats)} − customers {formatGHS(owedTotal)}</p>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-[11.5px] tabular-nums"><span className="text-ink-emerald">Withdrawn {formatGHS(bank)}</span><span className="text-faint-foreground">+</span><span className="text-ink-rose">Held by Paystack {formatGHS(Number(o?.cash.paystack_transit ?? 0))}</span><span className="text-faint-foreground">+</span><span className="text-amber">Suppliers {formatGHS(floats)}</span><span className="text-faint-foreground">−</span><span className="text-muted-foreground">Customers' money {formatGHS(owedTotal)}</span></p>
         </Panel>
       </Link>
 
