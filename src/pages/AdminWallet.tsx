@@ -1,53 +1,56 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, Search, WalletCards } from "lucide-react";
+import { Search, WalletCards } from "lucide-react";
 import AdminListPagination from "@/components/admin/AdminListPagination";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
-import AdminStatStrip from "@/components/admin/AdminStatStrip";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { adminDatabase, formatAdminDate, readableStatus, type AdminLedgerRow } from "@/lib/admin-data";
+import { formatGHS } from "@/lib/format";
+
+type Dir = "all" | "credit" | "debit";
 
 export default function AdminWallet() {
   const [entries, setEntries] = useState<AdminLedgerRow[]>([]);
+  const [balanceTotal, setBalanceTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [direction, setDirection] = useState("all");
+  const [direction, setDirection] = useState<Dir>("all");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(25);
 
   useEffect(() => {
     let mounted = true;
-    adminDatabase().from<AdminLedgerRow>("wallet_ledger_entries").select("reference, amount, direction, type, created_at").order("created_at", { ascending: false }).limit(500).then(({ data }) => {
-      if (!mounted) return;
-      setEntries(data ?? []);
-      setLoading(false);
-    });
+    Promise.all([
+      adminDatabase().from<AdminLedgerRow>("wallet_ledger_entries").select("reference, amount, direction, type, created_at").order("created_at", { ascending: false }).limit(500),
+      adminDatabase().from<{ balance: number }>("wallets").select("balance"),
+    ]).then(([l, w]) => { if (!mounted) return; setEntries(l.data ?? []); setBalanceTotal((w.data ?? []).reduce((a, x) => a + Number(x.balance), 0)); setLoading(false); });
     return () => { mounted = false; };
   }, []);
-
   useEffect(() => { setPage(1); }, [search, direction, pageSize]);
 
-  const credits = useMemo(() => entries.filter((entry) => entry.direction === "credit").reduce((sum, entry) => sum + Number(entry.amount), 0), [entries]);
-  const debits = useMemo(() => entries.filter((entry) => entry.direction === "debit").reduce((sum, entry) => sum + Number(entry.amount), 0), [entries]);
-  const filtered = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    return entries.filter((entry) => (direction === "all" || entry.direction === direction) && (!needle || entry.reference.toLowerCase().includes(needle) || entry.type.toLowerCase().includes(needle)));
-  }, [direction, entries, search]);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const safePage = Math.min(page, totalPages);
+  const credits = useMemo(() => entries.filter((e) => e.direction === "credit").reduce((s, e) => s + Number(e.amount), 0), [entries]);
+  const debits = useMemo(() => entries.filter((e) => e.direction === "debit").reduce((s, e) => s + Number(e.amount), 0), [entries]);
+  const filtered = useMemo(() => { const q = search.trim().toLowerCase(); return entries.filter((e) => (direction === "all" || e.direction === direction) && (!q || e.reference.toLowerCase().includes(q) || e.type.toLowerCase().includes(q))); }, [entries, search, direction]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize)); const safePage = Math.min(page, totalPages);
   const visible = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-  return <div className="space-y-7">
-    <AdminPageHeader eyebrow="Business" title="Wallet activity" description="A focused ledger view for customer deposits, order debits and other wallet movements." />
-    <AdminStatStrip loading={loading} items={[
-      { label: "Entries", value: entries.length },
-      { label: "Credits", value: `GH₵${credits.toFixed(2)}`, tone: "success" },
-      { label: "Debits", value: `GH₵${debits.toFixed(2)}`, tone: "warning" },
-    ]} />
-    <Card><CardContent>
-      <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_200px]"><label className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 px-4 py-3"><Search size={17} className="text-faint-foreground" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reference or activity type" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-faint-foreground" /></label><select className="onyx-field" value={direction} onChange={(event) => setDirection(event.target.value)}><option value="all">All movements</option><option value="credit">Credits</option><option value="debit">Debits</option></select></div>
-      {!loading && filtered.length === 0 ? <div className="grid min-h-72 place-items-center text-center"><div><WalletCards className="mx-auto text-faint-foreground" size={28} /><h2 className="mt-4 font-display text-xl font-semibold text-white">No wallet activity found</h2><p className="mt-2 text-sm text-muted-foreground">Change the search or movement filter.</p></div></div> : <div className="mt-5 space-y-2">{visible.map((entry) => <div key={`${entry.reference}-${entry.created_at}`} className="flex items-center gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4"><span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${entry.direction === "credit" ? "bg-success/[0.1] text-success" : "bg-amber/[0.1] text-amber"}`}>{entry.direction === "credit" ? <ArrowDownLeft size={19} /> : <ArrowUpRight size={19} />}</span><div className="min-w-0 flex-1"><p className="truncate font-semibold text-white">{entry.reference}</p><p className="mt-1 text-xs text-muted-foreground">{formatAdminDate(entry.created_at)}</p></div><div className="text-right"><p className={`font-display font-semibold ${entry.direction === "credit" ? "text-success" : "text-amber"}`}>{entry.direction === "credit" ? "+" : "−"}GH₵{Number(entry.amount).toFixed(2)}</p><Badge variant="neutral" className="mt-1">{readableStatus(entry.type)}</Badge></div></div>)}</div>}
-      <AdminListPagination page={safePage} pageSize={pageSize} totalItems={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} itemLabel="entries" />
-    </CardContent></Card>
-  </div>;
+  return (
+    <div className="space-y-5">
+      <AdminPageHeader title="Wallet activity" description="Customer deposits, order debits and other wallet movements." />
+      <StatGrid cols={3}>
+        <Stat loading={loading} label="Held by customers" value={<Money value={balanceTotal} />} note="what we owe wallet holders" icon={WalletCards} tone="warn" />
+        <Stat loading={loading} label="Credits (last 500)" value={<Money value={credits} tone="good" />} tone="good" />
+        <Stat loading={loading} label="Debits (last 500)" value={<Money value={debits} />} />
+      </StatGrid>
+      <Panel title="Entries" note={`${filtered.length} shown`}>
+        <div className="mb-2 grid gap-2 sm:grid-cols-[1fr_240px]">
+          <label className="relative block"><Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-faint-foreground" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Reference or type" className={`${inputCls} pl-8`} /></label>
+          <Segmented<Dir> value={direction} onChange={setDirection} options={[{ value: "all", label: "All" }, { value: "credit", label: "Credits" }, { value: "debit", label: "Debits" }]} />
+        </div>
+        <Rows empty={loading ? "Loading…" : "No wallet activity matches."}>
+          {visible.map((e) => <Row key={`${e.reference}-${e.created_at}`} primary={<span className="font-mono text-[12px]">{e.reference}</span>} secondary={`${readableStatus(e.type)} · ${formatAdminDate(e.created_at)}`} right={`${e.direction === "credit" ? "+" : "−"}${formatGHS(Number(e.amount))}`} rightNote={<Pill tone={e.direction === "credit" ? "good" : "muted"}>{e.direction}</Pill>} tone={e.direction === "credit" ? "good" : "default"} />)}
+        </Rows>
+        <AdminListPagination page={safePage} pageSize={pageSize} totalItems={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} itemLabel="entries" />
+      </Panel>
+    </div>
+  );
 }

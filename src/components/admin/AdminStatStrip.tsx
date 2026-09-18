@@ -22,15 +22,15 @@ export default function AdminStatStrip({ items, loading = false }: { items: Admi
         {items.map((item, index) => {
           const content = (
             <>
-              <p className="min-h-8 break-words text-[11px] leading-4 text-faint-foreground sm:min-h-0">{item.label}</p>
-              <p className={cn("mt-0.5 break-words text-[17px] font-semibold leading-tight sm:text-[19px]", toneClass[item.tone ?? "default"])}>{loading ? "—" : item.value}</p>
+              <p className="min-h-8 break-words text-[10.5px] leading-4 text-faint-foreground sm:min-h-0">{item.label}</p>
+              <p className={cn("mt-0.5 break-words text-[16px] font-semibold leading-tight sm:text-[17px]", toneClass[item.tone ?? "default"])}>{loading ? "—" : item.value}</p>
             </>
           );
           const mobileBorder = items.length > 2 ? cn(index % 2 === 1 && "border-l border-white/[0.07]", index >= 2 && "border-t border-white/[0.07]", "sm:border-t-0", index % 2 === 1 && "sm:border-l") : "";
           return item.onClick ? (
-            <button key={item.label} type="button" onClick={item.onClick} className={cn("min-w-0 px-2 py-3 text-center transition-colors sm:px-4", mobileBorder, item.active ? "bg-primary/[0.09]" : "hover:bg-white/[0.035]")}>{content}</button>
+            <button key={item.label} type="button" onClick={item.onClick} className={cn("min-w-0 px-2 py-2 text-center transition-colors sm:px-3", mobileBorder, item.active ? "bg-primary/[0.09]" : "hover:bg-white/[0.035]")}>{content}</button>
           ) : (
-            <div key={item.label} className={cn("min-w-0 px-2 py-3 text-center sm:px-4", mobileBorder)}>{content}</div>
+            <div key={item.label} className={cn("min-w-0 px-2 py-2 text-center sm:px-3", mobileBorder)}>{content}</div>
           );
         })}
       </div>
