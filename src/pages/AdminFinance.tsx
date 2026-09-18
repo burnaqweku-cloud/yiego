@@ -89,12 +89,29 @@ export default function AdminFinance() {
 
   const o = overview; const p = o?.period; 
   const cashTotal = Number(o?.cash.bank ?? 0) + Number(o?.cash.paystack_transit ?? 0);
+  // Master balance: everything we hold, minus everything we owe, is ours.
+  // Compared with what was put in, the difference is what the business has made.
+  const floats = Object.values(o?.cash.supplier_float ?? {}).reduce((a, b) => a + Number(b), 0);
+  const hold = cashTotal + floats;
+  const owe = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0);
+  const ours = hold - owe;
+  const putIn = Number(o?.funding.outside ?? 0) + Number(o?.funding.carried_in ?? 0);
+  const made = ours - putIn;
   const owedTotal = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0);
 
   return (
     <div className="space-y-5">
       <AdminPageHeader title="Finance" description={o ? `Official books since ${new Date(o.start).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}. Balances are live; profit follows the period.` : "Loading the books…"}
         action={<div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={15} /></Button><Button size="sm" onClick={() => setModal("topup")}>Record top-up</Button></div>} />
+
+      <Panel title="Master balance" icon={Landmark} note="what is actually ours">
+        <StatGrid cols={4}>
+          <Stat loading={loading} label="We hold" value={<Money value={hold} />} note={`bank + Paystack + floats ${formatGHS(floats)}`} />
+          <Stat loading={loading} label="We owe" value={<Money value={owe} />} note="wallets + undelivered + refunds" tone="warn" />
+          <Stat loading={loading} label="Ours" value={<Money value={ours} tone={ours >= 0 ? "good" : "bad"} />} note="hold minus owe" tone={ours >= 0 ? "good" : "bad"} />
+          <Stat loading={loading} label="Made since launch" value={<Money value={made} tone={made >= 0 ? "good" : "bad"} />} note={`put in ${formatGHS(putIn)}`} tone={made >= 0 ? "good" : "bad"} />
+        </StatGrid>
+      </Panel>
 
       <Panel title="Where the money is" icon={Landmark} note={`total ${formatGHS(cashTotal)} · supplier floats on the Suppliers page`}>
         <StatGrid>
