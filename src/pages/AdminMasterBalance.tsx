@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Calculator, Landmark, RefreshCw, Store } from "lucide-react";
+import { ArrowLeft, Landmark, RefreshCw, Store } from "lucide-react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
-import { Field, Money, Panel, Row, Rows, Stat, StatGrid, inputCls } from "@/components/admin/ui";
+import { Money, Panel, Row, Rows, Stat, StatGrid } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { RecordPartnerCapitalModal, RecordTopupModal } from "@/components/admin/FinanceForms";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
@@ -29,9 +28,7 @@ export default function AdminMasterBalance() {
   const { user } = useAuth(); const actor = user?.id ?? "";
   const [o, setO] = useState<Overview | null>(null);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [stated, setStated] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
   const [lastConfirmed, setLastConfirmed] = useState<string | null>(null);
   const [pot, setPot] = useState<{ partner_money: number; payouts: number; topups: number; pot: number } | null>(null);
   const [adding, setAdding] = useState(false); const [topping, setTopping] = useState(false);
@@ -47,7 +44,6 @@ export default function AdminMasterBalance() {
     if (actor) { const r = await db().rpc("admin_role", { p_user: actor }); setIsMaster(r.data === "master"); }
     setPot((potRes.data as typeof pot) ?? null);
     setO((ov.data as Overview) ?? null); const list: Supplier[] = su.data ?? []; setSuppliers(list);
-    setStated(Object.fromEntries(list.map((s) => [s.code, s.confirmed_balance == null ? "" : Number(s.confirmed_balance).toFixed(2)])));
     setLastConfirmed(list.reduce<string | null>((a, s) => (s.confirmed_at && (!a || s.confirmed_at < a) ? s.confirmed_at : a), null) ?? last.data?.observed_at ?? null); setLoading(false);
   }, [actor]);
   useEffect(() => { void load(); }, [load]);
@@ -56,25 +52,12 @@ export default function AdminMasterBalance() {
   const owed = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0);
   const booksFloat = (code: string) => Number(o?.cash.supplier_float?.[code] ?? 0);
   const confirmedFloat = (code: string) => Number(suppliers.find((s) => s.code === code)?.confirmed_balance ?? booksFloat(code));
-  const statedFloat = (code: string) => { const n = Number(stated[code]); return Number.isFinite(n) && stated[code] !== "" ? n : null; };
-  const diffs = useMemo(() => suppliers.map((s) => ({ s, books: confirmedFloat(s.code), typed: statedFloat(s.code) })).filter((x) => x.typed != null && Math.abs(x.typed - x.books) >= 0.01), [suppliers, stated, o]); // eslint-disable-line react-hooks/exhaustive-deps
   const suppliersTotal = suppliers.reduce((a, s) => a + confirmedFloat(s.code), 0);
   const staleHours = lastConfirmed ? (Date.now() - +new Date(lastConfirmed)) / 3600000 : Infinity;
   const partnerMoney = Number(pot?.partner_money ?? 0), payouts = Number(pot?.payouts ?? 0), topups = Number(pot?.topups ?? 0);
   const master = Number(pot?.pot ?? 0);
   const netWorth = master + atPaystack + suppliersTotal - owed;
   const made = netWorth - partnerMoney;
-
-  const calculate = async () => {
-    setBusy(true);
-    for (const s of suppliers) {
-      const typed = statedFloat(s.code); if (typed == null) continue;
-      const { error } = await db().rpc("finance_confirm_supplier_balance", { p_actor: actor, p_supplier_code: s.code, p_balance: typed });
-      if (error) { toast.error(`${s.name}: ${error.message}`); setBusy(false); return; }
-    }
-    toast.success("Master balance calculated with your supplier figures.");
-    setBusy(false); void load();
-  };
 
   return (
     <div className="space-y-5">
@@ -97,17 +80,6 @@ export default function AdminMasterBalance() {
         <Stat loading={loading} label="Held by Paystack" value={<Money value={atPaystack} tone="bad" />} note="paid by customers, not yet sent to us" tone="bad" />
         <Stat loading={loading} label="At suppliers" value={<Money value={suppliersTotal} />} note="as the suppliers report it" icon={Store} tone="warn" />
       </StatGrid>
-
-      <Panel title="Override" icon={Calculator} note="only if a supplier's site shows something different">
-        <div className="grid gap-2 sm:grid-cols-3">
-          {suppliers.map((s) => <Field key={s.code} label={`${s.name} · reported ${formatGHS(confirmedFloat(s.code))}${s.confirmed_at ? ` at ${formatAdminDate(s.confirmed_at)}` : ""}`}><input inputMode="decimal" value={stated[s.code] ?? ""} onChange={(e) => setStated((x) => ({ ...x, [s.code]: e.target.value }))} placeholder="0.00" className={inputCls} /></Field>)}
-        </div>
-        {diffs.length > 0 && (
-          <Rows empty="">{diffs.map((d) => <Row key={d.s.code} primary={d.s.name} secondary={`books ${formatGHS(d.books)} → you say ${formatGHS(d.typed ?? 0)}`} right={`${(d.typed ?? 0) - d.books >= 0 ? "+" : "−"}${formatGHS(Math.abs((d.typed ?? 0) - d.books))}`} rightNote="books will move" tone={(d.typed ?? 0) - d.books < 0 ? "bad" : "good"} />)}</Rows>
-        )}
-        <p className="mt-2 text-[11px] text-faint-foreground">DataMartGH and InstantDataGH are read from their balance endpoint every 10 minutes; DataBundlesHub from the receipt of the latest order sent. If a site shows something else, type it and Calculate — your figure wins until the next reading.</p>
-        <div className="mt-3 flex justify-end"><Button onClick={() => void calculate()} disabled={busy || loading}>{busy ? "Calculating…" : "Calculate"}</Button></div>
-      </Panel>
 
       <Panel title="How it's made up">
         <Rows empty="">
