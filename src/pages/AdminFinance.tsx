@@ -97,9 +97,6 @@ export default function AdminFinance() {
       <AdminPageHeader title="Finance" description={o ? `Official books since ${new Date(o.start).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}. Balances are live; profit follows the period.` : "Loading the books…"}
         action={<div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={15} /></Button><Button size="sm" onClick={() => setModal("topup")}>Record top-up</Button></div>} />
 
-        </Panel>
-      )}
-
       <Panel title="Where the money is" icon={Landmark} note={`total ${formatGHS(cashTotal)}`}>
         <StatGrid>
           <Stat loading={loading} label="Bank" value={<Money value={o?.cash.bank} />} note="Paystack payouts received" icon={Banknote} tone="good" />
