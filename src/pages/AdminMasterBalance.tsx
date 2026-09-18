@@ -35,6 +35,7 @@ export default function AdminMasterBalance() {
   const [lastConfirmed, setLastConfirmed] = useState<string | null>(null);
   const [pot, setPot] = useState<{ partner_money: number; payouts: number; topups: number; pot: number } | null>(null);
   const [adding, setAdding] = useState(false); const [topping, setTopping] = useState(false);
+  const [isMaster, setIsMaster] = useState(false);
 
   const load = useCallback(async () => {
     const [ov, su, last, potRes] = await Promise.all([
@@ -43,11 +44,12 @@ export default function AdminMasterBalance() {
       db().from("supplier_balance_readings").select("observed_at").eq("source", "admin").order("observed_at", { ascending: false }).limit(1).maybeSingle(),
       db().rpc("finance_pot", {}),
     ]);
+    if (actor) { const r = await db().rpc("admin_role", { p_user: actor }); setIsMaster(r.data === "master"); }
     setPot((potRes.data as typeof pot) ?? null);
     setO((ov.data as Overview) ?? null); const list: Supplier[] = su.data ?? []; setSuppliers(list);
     setStated(Object.fromEntries(list.map((s) => [s.code, s.confirmed_balance == null ? "" : Number(s.confirmed_balance).toFixed(2)])));
     setLastConfirmed(list.reduce<string | null>((a, s) => (s.confirmed_at && (!a || s.confirmed_at < a) ? s.confirmed_at : a), null) ?? last.data?.observed_at ?? null); setLoading(false);
-  }, []);
+  }, [actor]);
   useEffect(() => { void load(); }, [load]);
 
   const bank = Number(o?.cash.bank ?? 0), atPaystack = Number(o?.cash.paystack_transit ?? 0);
@@ -76,7 +78,7 @@ export default function AdminMasterBalance() {
 
   return (
     <div className="space-y-5">
-      <AdminPageHeader title="Master balance" description="The pot: money partners put in, plus every Paystack payout, minus every top-up. It's the cash in the account." action={<div className="flex gap-2"><Link to="/admin/finance"><Button variant="ghost" size="sm"><ArrowLeft size={14} />Finance</Button></Link><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={14} /></Button><Button variant="soft" size="sm" onClick={() => setAdding(true)}>Partner put in</Button><Button size="sm" onClick={() => setTopping(true)}>Record top-up</Button></div>} />
+      <AdminPageHeader title="Master balance" description="The pot: money partners put in, plus every Paystack payout, minus every top-up. It's the cash in the account." action={<div className="flex gap-2"><Link to="/admin/finance"><Button variant="ghost" size="sm"><ArrowLeft size={14} />Finance</Button></Link><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={14} /></Button>{isMaster && <Button variant="soft" size="sm" onClick={() => setAdding(true)}>Partner put in</Button>}<Button size="sm" onClick={() => setTopping(true)}>Record top-up</Button></div>} />
 
       <Panel title="Master balance" icon={Landmark} note={lastConfirmed ? `suppliers as reported ${formatAdminDate(lastConfirmed)}` : "waiting for supplier readings"}>
         {staleHours > 24 && <p className="mb-2 text-[11.5px] text-amber">One supplier hasn't reported for {Math.floor(staleHours / 24)} day{Math.floor(staleHours / 24) === 1 ? "" : "s"} — check its site and Calculate if it differs.</p>}
