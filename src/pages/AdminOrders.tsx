@@ -6,6 +6,7 @@ import AdminListPagination from "@/components/admin/AdminListPagination";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import AdminRecordModal, { AdminDetailsButton } from "@/components/admin/AdminRecordModal";
 import AdminStatStrip from "@/components/admin/AdminStatStrip";
+import OrdersPulse from "@/components/admin/OrdersPulse";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -232,6 +233,7 @@ export default function AdminOrders() {
 
   return <div className="space-y-7">
     <AdminPageHeader eyebrow="Operations" title="Order management" description="Search, filter and manage every stage of payment, fulfilment, delivery and customer communication." />
+    <OrdersPulse />
     <AdminStatStrip loading={loading} items={[
       { label: "All", value: orders.length, active: lifecycleFilter === "all", onClick: () => setLifecycleFilter("all") },
       { label: "In progress", value: pending, active: lifecycleFilter === "in_progress", onClick: () => setLifecycleFilter("in_progress") },
