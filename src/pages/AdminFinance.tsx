@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, Banknote, Download, Landmark, PiggyBank, Receipt, RefreshCw, Store, Undo2, Wallet } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Banknote, Download, Landmark, PiggyBank, Receipt, RefreshCw, Undo2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { RecordExpenseModal, RecordPayoutModal, RecordTopupModal, ReverseEntryModal } from "@/components/admin/FinanceForms";
@@ -87,9 +87,8 @@ export default function AdminFinance() {
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `datayego-ledger-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
   };
 
-  const o = overview; const p = o?.period; const float = o?.cash.supplier_float ?? {};
-  const floatTotal = Object.values(float).reduce((a, b) => a + Number(b), 0);
-  const cashTotal = Number(o?.cash.bank ?? 0) + Number(o?.cash.paystack_transit ?? 0) + floatTotal;
+  const o = overview; const p = o?.period; 
+  const cashTotal = Number(o?.cash.bank ?? 0) + Number(o?.cash.paystack_transit ?? 0);
   const owedTotal = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0);
 
   return (
@@ -97,14 +96,10 @@ export default function AdminFinance() {
       <AdminPageHeader title="Finance" description={o ? `Official books since ${new Date(o.start).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}. Balances are live; profit follows the period.` : "Loading the books…"}
         action={<div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={15} /></Button><Button size="sm" onClick={() => setModal("topup")}>Record top-up</Button></div>} />
 
-      <Panel title="Where the money is" icon={Landmark} note={`total ${formatGHS(cashTotal)}`}>
+      <Panel title="Where the money is" icon={Landmark} note={`total ${formatGHS(cashTotal)} · supplier floats on the Suppliers page`}>
         <StatGrid>
           <Stat loading={loading} label="Bank" value={<Money value={o?.cash.bank} />} note="Paystack payouts received" icon={Banknote} tone="good" />
           <Stat loading={loading} label="At Paystack" value={<Money value={o?.cash.paystack_transit} />} note="paid by customers, not yet paid out" icon={PiggyBank} />
-          {suppliers.map((s) => (
-            <Stat key={s.code} loading={loading} label={`${s.name} float`} value={<Money value={float[s.code]} />} icon={Store}
-              note={s.balance == null ? "not connected yet" : Math.abs(Number(s.balance) - Number(float[s.code] ?? 0)) < 1 ? `supplier agrees · ${formatAdminDate(s.last_balance_checked_at ?? "")}` : `supplier says ${formatGHS(Number(s.balance))}`} />
-          ))}
         </StatGrid>
       </Panel>
 
