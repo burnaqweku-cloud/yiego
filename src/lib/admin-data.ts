@@ -18,6 +18,7 @@ export interface AdminOrderRow {
   admin_resolution_status: string | null;
   admin_resolution_reason: string | null;
   admin_resolution_updated_at: string | null;
+  paid_at?: string | null;
   created_at: string;
   updated_at: string;
   data_products: { name: string; capacity_gb: number | string } | null;
