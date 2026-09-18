@@ -79,9 +79,9 @@ export default function AdminUndelivered() {
       error = r.data?.detail ?? r.data?.error ?? r.error?.message ?? null;
       if (!error) toast.success(r.data?.method === "wallet" ? "Refunded to their wallet." : "Paystack refund created.");
     } else if (action === "retry") {
-      const r = await supabase.functions.invoke<{ error?: string }>("admin-order-action", { body: { action: "retry", orderReference: order.order_reference } });
+      const r = await supabase.functions.invoke<{ error?: string; result?: { status?: string; skipped?: boolean } }>("admin-order-action", { body: { action: "retry", orderReference: order.order_reference } });
       error = r.data?.error ?? r.error?.message ?? null;
-      if (!error) toast.success("Sent to the supplier again.");
+      if (!error) toast.success(r.data?.result?.status === "failed_needs_review" ? "Sent, but the supplier refused it — see the reason on the row." : "Sent to the supplier again.");
     } else {
       const r = await supabase.functions.invoke<{ error?: string }>("admin-order-action", { body: { action: "set_display_status", displayStatus: "delivered", orderReference: order.order_reference, reason: reason.trim() } });
       error = r.data?.error ?? r.error?.message ?? null;

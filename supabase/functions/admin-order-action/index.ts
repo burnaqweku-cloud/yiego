@@ -154,7 +154,12 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "Only successfully paid orders can be retried" }, { status: 409 });
       }
 
+      // A failed attempt leaves the supplier's reference on the order; clear it
+      // so this is a fresh send. The old attempt stays in the timeline and logs.
+      await supabase.from("orders").update({ supplier_purchase_id: null, supplier_order_reference: null, supplier_transaction_reference: null, supplier_status: null, supplier_retry_after: null, failure_reason: null, updated_at: new Date().toISOString() }).eq("id", order.id);
+      await supabase.from("order_events").insert({ order_id: order.id, event_type: "admin.retry", from_status: order.status, to_status: order.status, message: `Admin retry: previous supplier attempt ${order.supplier_purchase_id ?? order.supplier_order_reference ?? ""} set aside, sending afresh`.trim(), created_by: authData.user.id });
       const result = await fulfillOrderWithDataMartGH(supabase, order.id);
+      if (result.skipped) return jsonResponse({ status: "skipped", action, error: `Not sent: ${String(result.reason).replace(/_/g, " ")}`, result });
       return jsonResponse({ status: "success", action, result });
     }
 
