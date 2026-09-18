@@ -117,14 +117,17 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
   // so asking the database for the best row and taking limit(1) silently
   // returned an arbitrary supplier. Fetch the candidates and rank them here,
   // where the comparison is explicit and testable.
-  let { data: candidates, error: mappingError } = await query;
+  const { data: candidates, error: mappingError } = await query;
   if (mappingError) throw new Error(mappingError.message);
-  // A routed supplier that is disabled or has no active mapping falls back
-  // to whoever can serve the bundle, rather than failing the order.
+  // No silent re-routing. Prices are set per bundle against the supplier the
+  // admin chose; sending the order elsewhere could sell below cost. If the
+  // chosen supplier cannot take it, the order waits for a person.
   if (routedSupplierId && (!candidates || candidates.length === 0)) {
-    const fallback = await supabase.from("supplier_product_mappings").select("*, suppliers!inner(id, code, name, status, display_order)").eq("product_id", order.product_id).eq("is_active", true).eq("suppliers.status", "active");
-    candidates = fallback.data; mappingError = fallback.error;
-    if (mappingError) throw new Error(mappingError.message);
+    const { data: routed } = await supabase.from("suppliers").select("name, status").eq("id", routedSupplierId).maybeSingle();
+    const why = routed ? (routed.status === "active" ? `${routed.name} has no price for this bundle` : `${routed.name} is ${routed.status}`) : "chosen supplier not found";
+    await supabase.from("orders").update({ status: "failed_needs_review", failure_reason: `Not sent: ${why}. Resend after switching the network's supplier, or refund.`, updated_at: new Date().toISOString() }).eq("id", order.id);
+    await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.fulfillment_blocked", from_status: order.status, to_status: "failed_needs_review", message: `Not sent: ${why}`, metadata: { routedSupplierId, reason: "routed_supplier_unavailable" } });
+    return { skipped: true, reason: "routed_supplier_unavailable", orderId: order.id, status: "failed_needs_review" };
   }
 
   const mapping = (candidates ?? [])
