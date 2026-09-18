@@ -27,7 +27,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "disputes", label: "Disputes", to: "/admin/disputes", icon: MessageSquareWarning, keywords: ["complaint", "chargeback"] },
   ] },
   { id: "money", label: "Money", icon: Landmark, pages: [
-    { id: "finance", label: "Finance", to: "/admin/finance", icon: TrendingUp, keywords: ["revenue", "profit", "margin", "sales", "reconciliation"] },
+    { id: "finance", label: "Finance", to: "/admin/finance", icon: TrendingUp, keywords: ["money put in", "top-ups", "funding", "revenue", "profit", "margin", "sales", "reconciliation"] },
     { id: "wallet", label: "Wallet activity", to: "/admin/wallet", icon: WalletCards, keywords: ["deposit", "top up", "balance"] },
     { id: "suppliers", label: "Suppliers", to: "/admin/suppliers", icon: Store, keywords: ["datamart", "databundleshub", "dbh", "float", "supplier balance"] },
   ] },

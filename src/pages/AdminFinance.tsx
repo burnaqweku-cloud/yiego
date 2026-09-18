@@ -108,7 +108,7 @@ export default function AdminFinance() {
           <Stat loading={loading} label="Customer wallets" value={<Money value={o?.owed.customer_wallets} />} note="balances customers hold" to="/admin/wallet" />
           <Stat loading={loading} label="Paid, not delivered" value={<Money value={o?.owed.undelivered} />} note={`${o?.owed.undelivered_count ?? 0} orders`} tone={Number(o?.owed.undelivered_count) > 0 ? "warn" : "default"} to="/admin/orders" />
           <Stat loading={loading} label="Refunds owed" value={<Money value={o?.owed.refunds_due} />} note="refunded orders, money not yet returned" tone={Number(o?.owed.refunds_due) > 0 ? "bad" : "default"} />
-          <Stat loading={loading} label="Money put in" value={<Money value={o?.funding.outside} />} note={`top-ups + charges · ${formatGHS(Number(o?.funding.carried_in ?? 0))} carried in from before launch`} />
+          <Stat loading={loading} label="Money put in" to="/admin/finance/funding" value={<Money value={o?.funding.outside} />} note={`top-ups + charges · ${formatGHS(Number(o?.funding.carried_in ?? 0))} carried in from before launch`} />
         </StatGrid>
       </Panel>
 

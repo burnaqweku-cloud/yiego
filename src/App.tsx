@@ -51,6 +51,7 @@ const AdminSupportInbox = lazy(() => import("./pages/AdminSupportInbox"));
 const AdminContact = lazy(() => import("./pages/AdminContact"));
 const AdminLegal = lazy(() => import("./pages/AdminLegal"));
 const AdminFinance = lazy(() => import("./pages/AdminFinance"));
+const AdminFunding = lazy(() => import("./pages/AdminFunding"));
 
 function ThemedToaster() { const { resolved } = useTheme(); return <Toaster position="top-center" theme={resolved} toastOptions={{ classNames: { toast: "!rounded-2xl !border !border-white/10 !bg-[var(--toast-bg)] !text-[var(--toast-ink)] !shadow-[var(--toast-shadow)]", title: "!text-[13.5px] !font-semibold !tracking-tight", description: "!text-[12.5px] !text-ink-dim" } }} />; }
 /** Shown while a route chunk downloads. */
@@ -63,7 +64,7 @@ const App = () => (
   <BrowserRouter><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
     {/* Focused, chrome-free task pages. */}
     <Route path="/auth" element={<Auth />} /><Route path="/reset-password" element={<ResetPassword />} />
-    <Route path="/admin" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<Admin />} /><Route path="orders" element={<AdminOrders />} /><Route path="disputes" element={<AdminDisputes />} /><Route path="reviews" element={<AdminReviews />} /><Route path="sales/pricing" element={<AdminPricing />} /><Route path="suppliers" element={<AdminSuppliers />} /><Route path="wallet" element={<AdminWallet />} /><Route path="finance" element={<AdminFinance />} /><Route path="users" element={<AdminUsers />} /><Route path="contacts/information" element={<AdminContact />} /><Route path="legal" element={<AdminLegal />} /><Route path="ai-support" element={<AdminAISupport />} /><Route path="ai-knowledge" element={<AdminAIKnowledge />} /><Route path="support-inbox" element={<AdminSupportInbox />} /></Route>
+    <Route path="/admin" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<Admin />} /><Route path="orders" element={<AdminOrders />} /><Route path="disputes" element={<AdminDisputes />} /><Route path="reviews" element={<AdminReviews />} /><Route path="sales/pricing" element={<AdminPricing />} /><Route path="suppliers" element={<AdminSuppliers />} /><Route path="wallet" element={<AdminWallet />} /><Route path="finance" element={<AdminFinance />} /><Route path="finance/funding" element={<AdminFunding />} /><Route path="users" element={<AdminUsers />} /><Route path="contacts/information" element={<AdminContact />} /><Route path="legal" element={<AdminLegal />} /><Route path="ai-support" element={<AdminAISupport />} /><Route path="ai-knowledge" element={<AdminAIKnowledge />} /><Route path="support-inbox" element={<AdminSupportInbox />} /></Route>
     {/* One shell for the whole site: the same header and footer wrap the
         marketing pages, the shop and the account area. */}
     <Route element={<PublicShell />}>
