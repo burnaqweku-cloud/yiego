@@ -155,6 +155,7 @@ export function SelectRow({
   title,
   subtitle,
   trailing,
+  disabled,
 }: {
   selected?: boolean;
   onClick: () => void;
@@ -162,13 +163,16 @@ export function SelectRow({
   title: ReactNode;
   subtitle?: ReactNode;
   trailing?: ReactNode;
+  /** Shown but not tappable — e.g. a bundle the admin has paused. */
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
       aria-pressed={selected}
-      className={`onyx-select ${selected ? "is-on" : ""}`}
+      aria-disabled={disabled || undefined}
+      className={`onyx-select ${selected ? "is-on" : ""} ${disabled ? "cursor-not-allowed opacity-55" : ""}`}
     >
       {leading}
       <div className="min-w-0 flex-1">

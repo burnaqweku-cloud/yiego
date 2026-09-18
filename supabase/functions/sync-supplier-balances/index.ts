@@ -17,6 +17,11 @@ const PROBES: Record<string, { base: string; auth: () => HeadersInit; paths: Pro
       { path: "/api/developer/wallet", pick: (p) => num(p?.data?.balance ?? p?.data?.walletBalance ?? p?.balance) },
     ],
   },
+  instantdatagh: {
+    base: (Deno.env.get("INSTANTDATAGH_BASE_URL") ?? "https://instantdatagh.com/api.php").replace(/\/$/, ""),
+    auth: () => ({ "x-api-key": Deno.env.get("INSTANTDATAGH_API_KEY") ?? "", Accept: "application/json" }),
+    paths: [{ path: "/balance", pick: (p) => num(p?.balance_raw ?? String(p?.balance ?? "").replace(/[^\d.-]/g, "")) }],
+  },
   datamartgh: {
     base: (Deno.env.get("DATAMARTGH_BASE_URL") ?? "https://api.datamartgh.shop/api/developer").replace(/\/$/, ""),
     auth: () => ({ "X-API-Key": Deno.env.get("DATAMARTGH_API_KEY") ?? "", Accept: "application/json" }),

@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { sendOrderConfirmation } from "../_shared/email.ts";
+import { friendlyError } from "../_shared/friendlyErrors.ts";
 import { fulfillOrder } from "../_shared/fulfillment.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
       const supplierRaw = typeof body?.supplierId === "string" ? body.supplierId.trim() : "";
       const supplierId = /^[0-9a-f-]{36}$/i.test(supplierRaw) ? supplierRaw : null;
       const { data, error } = await supabase.rpc("prepare_data_order", { p_user_id: auth.user.id, p_product_code: String(body.productId ?? ""), p_recipient_phone: String(body.recipientPhone ?? ""), p_supplier_id: supplierId });
-      return error ? json({ error: error.message }, 400) : json({ status: "success", data });
+      return error ? json({ error: friendlyError(error.message, "We couldn't create this order. Please try again.") }, 400) : json({ status: "success", data });
     }
     if (action === "list_pending") {
       const { data, error } = await supabase.from("orders").select("id,order_reference,recipient_phone,amount,currency,status,payment_status,payment_arrangement,selected_payment_method,payment_expires_at,created_at,updated_at,data_products(name,capacity_gb),networks(name,code)").eq("user_id", auth.user.id).eq("is_open", true).order("created_at", { ascending: false });

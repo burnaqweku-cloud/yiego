@@ -52,22 +52,22 @@ export default function AdminSidebar({ onNavigate, onClose }: Props) {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col text-[12.5px]">
+    <div className="flex h-full min-h-0 flex-col text-[12px]">
       {/* Brand */}
-      <div className="flex items-center justify-between px-4 pb-3 pt-4">
+      <div className="flex items-center justify-between px-3.5 pb-2.5 pt-3.5">
         <NavLink to="/admin" onClick={onNavigate} aria-label="DataYego admin" className="flex flex-col gap-1">
-          <Wordmark className="h-[18px]" />
+          <Wordmark className="h-[16px]" />
           <span className="text-[10px] text-faint-foreground">Admin</span>
         </NavLink>
         {onClose && <button type="button" onClick={onClose} className="onyx-iconbtn -mr-1" aria-label="Close menu"><X size={18} /></button>}
       </div>
 
       {/* Signed in */}
-      <div className="flex items-center gap-3 border-y border-white/[0.06] px-4 py-2.5">
-        <span className="onyx-avatar h-7 w-7 text-[10px]">{initials}</span>
+      <div className="flex items-center gap-3 border-y border-white/[0.06] px-3.5 py-2">
+        <span className="onyx-avatar h-6 w-6 text-[9px]">{initials}</span>
         <div className="min-w-0">
-          <p className="truncate text-[12.5px] font-semibold text-foreground">{profile.firstName} {profile.lastName}</p>
-          <p className="text-[11px] text-faint-foreground">Administrator</p>
+          <p className="truncate text-[12px] font-semibold text-foreground">{profile.firstName} {profile.lastName}</p>
+          <p className="text-[10px] text-faint-foreground">Administrator</p>
         </div>
       </div>
 
@@ -82,7 +82,7 @@ export default function AdminSidebar({ onNavigate, onClose }: Props) {
             onKeyDown={onSearchKey}
             placeholder="Find a page…"
             aria-label="Find a page"
-            className="h-8 w-full rounded-full border border-white/[0.08] bg-white/[0.035] pl-8 pr-3 text-[12.5px] text-foreground placeholder:text-faint-foreground focus:border-primary/40 focus:outline-none"
+            className="h-7 w-full rounded-full border border-white/[0.08] bg-white/[0.035] pl-7 pr-3 text-[12px] text-foreground placeholder:text-faint-foreground focus:border-primary/40 focus:outline-none"
           />
         </label>
 
@@ -104,7 +104,7 @@ export default function AdminSidebar({ onNavigate, onClose }: Props) {
             {/* Pinned */}
             <SectionLabel icon={Star} label="Pinned" />
             {pinned.length === 0 ? (
-              <p className="mx-2 rounded-xl border border-dashed border-white/[0.1] px-3 py-2.5 text-[11.5px] leading-5 text-faint-foreground">
+              <p className="mx-2 rounded-xl border border-dashed border-white/[0.1] px-3 py-2.5 text-[11px] leading-4 text-faint-foreground">
                 Tap the <Star size={13} className="inline -mt-0.5" /> on any page to keep your daily pages here.
               </p>
             ) : (
@@ -136,7 +136,7 @@ export default function AdminSidebar({ onNavigate, onClose }: Props) {
                     <NavLink key={group.id} to={page.to} end={page.end} onClick={onNavigate} className={({ isActive }) => cn("mx-1 my-0.5 flex items-center gap-2.5 rounded-xl py-1 pl-1.5 pr-2.5", isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground")}>
                       {({ isActive }) => (<>
                         <GroupIcon icon={Icon} active={isActive} />
-                        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{group.label}</span>
+                        <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold">{group.label}</span>
                         {isActive && <span className="h-1.5 w-1.5 rounded-full bg-primary-glow" aria-hidden />}
                       </>)}
                     </NavLink>
@@ -147,7 +147,7 @@ export default function AdminSidebar({ onNavigate, onClose }: Props) {
                   <div key={group.id} className="my-0.5">
                     <button type="button" onClick={() => setOpenGroup(open ? "" : group.id)} aria-expanded={open} className={cn("mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2.5 rounded-xl py-1 pl-1.5 pr-2.5 text-left", open ? "bg-white/[0.04] text-foreground" : "text-muted-foreground hover:text-foreground")}>
                       <GroupIcon icon={Icon} active={holdsActive} />
-                      <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{group.label}</span>
+                      <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold">{group.label}</span>
                       {holdsActive && !open && <span className="h-1.5 w-1.5 rounded-full bg-primary-glow" aria-hidden />}
                       <ChevronDown size={14} className={cn("shrink-0 text-faint-foreground transition-transform", open && "rotate-180")} />
                     </button>
@@ -165,8 +165,8 @@ export default function AdminSidebar({ onNavigate, onClose }: Props) {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-2.5">
-        <NavLink to="/shop" onClick={onNavigate} className="flex items-center gap-2 text-[12.5px] text-muted-foreground hover:text-foreground"><ArrowLeft size={16} />Back to site</NavLink>
+      <div className="flex items-center justify-between border-t border-white/[0.06] px-3.5 py-2">
+        <NavLink to="/shop" onClick={onNavigate} className="flex items-center gap-2 text-[12px] text-muted-foreground hover:text-foreground"><ArrowLeft size={16} />Back to site</NavLink>
         <button type="button" onClick={() => void signOut().then(() => navigate("/", { replace: true }))} className="flex items-center gap-1.5 text-[11.5px] text-faint-foreground hover:text-danger" aria-label="Sign out"><LogOut size={15} />Sign out</button>
       </div>
     </div>
@@ -174,18 +174,18 @@ export default function AdminSidebar({ onNavigate, onClose }: Props) {
 }
 
 function SectionLabel({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
-  return <p className="mt-4 mb-1 flex items-center gap-1.5 px-2.5 text-[10px] font-semibold tracking-[0.12em] text-faint-foreground"><Icon size={11} />{label.toUpperCase()}</p>;
+  return <p className="mt-3 mb-0.5 flex items-center gap-1.5 px-2.5 text-[9.5px] font-semibold tracking-[0.12em] text-faint-foreground"><Icon size={11} />{label.toUpperCase()}</p>;
 }
 
 function GroupIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }) {
-  return <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full", active ? "bg-primary/[0.16] text-primary-glow" : "bg-white/[0.05] text-muted-foreground")}><Icon size={14} /></span>;
+  return <span className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-full", active ? "bg-primary/[0.16] text-primary-glow" : "bg-white/[0.05] text-muted-foreground")}><Icon size={13} /></span>;
 }
 
 function PageRow({ page, pinned, onPin, onNavigate, flush }: { page: AdminPage; pinned: boolean; onPin: () => void; onNavigate?: () => void; flush?: boolean }) {
   return (
     <li className="flex items-center">
-      <NavLink to={page.to} end={page.end} onClick={onNavigate} className={({ isActive }) => cn("flex min-w-0 flex-1 items-center gap-3 rounded-lg py-1.5 text-[12.5px]", flush ? "px-3" : "px-2.5", isActive ? "font-semibold text-foreground" : "text-muted-foreground hover:text-foreground")}>
-        <page.icon size={14} className="shrink-0 opacity-80" />
+      <NavLink to={page.to} end={page.end} onClick={onNavigate} className={({ isActive }) => cn("flex min-w-0 flex-1 items-center gap-3 rounded-md py-1 text-[12px]", flush ? "px-3" : "px-2.5", isActive ? "font-semibold text-foreground" : "text-muted-foreground hover:text-foreground")}>
+        <page.icon size={13} className="shrink-0 opacity-80" />
         <span className="truncate">{page.label}</span>
       </NavLink>
       <button type="button" onClick={onPin} aria-label={pinned ? `Unpin ${page.label}` : `Pin ${page.label}`} aria-pressed={pinned} className={cn("mr-0.5 shrink-0 rounded-md p-1", pinned ? "text-primary-glow" : "text-faint-foreground/60 hover:text-muted-foreground")}>

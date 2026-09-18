@@ -19,6 +19,8 @@ export interface Bundle {
   validity: string;
   price: number;
   tag?: "Popular" | "Best value";
+  /** Set by the admin: the bundle is listed but cannot be bought right now. */
+  unavailable?: string;
 }
 
 export const TOPUP_AMOUNTS = [20, 50, 100, 200, 500];

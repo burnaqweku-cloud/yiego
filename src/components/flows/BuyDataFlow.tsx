@@ -16,6 +16,8 @@ import {
   createGuestDataPayment,
   listPendingOrders,
   loadPhase1Products,
+  loadPhase1Networks,
+  type Phase1NetworkRow,
   orderPaymentAction,
   prepareDataOrder,
   type Phase1Product,
@@ -128,6 +130,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
   const [network, setNetwork] = useState<Network | null>(null);
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [products, setProducts] = useState<Phase1Product[]>([]);
+  const [networkRows, setNetworkRows] = useState<Phase1NetworkRow[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
   const [phone, setPhone] = useState(profile.phone);
@@ -149,6 +152,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
     let mounted = true;
     if (!open) return;
     setProductsLoading(true);
+    void loadPhase1Networks().then((r) => setNetworkRows(r.data));
     void loadPhase1Products().then((result) => {
       if (!mounted) return;
       setProducts(result.data);
@@ -230,6 +234,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
       validity: product.validity ?? "Supplier terms",
       price: Number(product.customer_price),
       tag: Number(product.customer_price) <= 10 ? "Popular" : Number(product.customer_price) >= 40 ? "Best value" : undefined,
+      unavailable: product.is_paused ? (product.pause_reason ?? "Currently unavailable. Please try again later.") : undefined,
     }));
   }
 
@@ -323,12 +328,12 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
     {step === "network" && <><FlowHeader title={suppliers.length > 1 && chosenSupplier ? chosenSupplier.name : "Buy data"} subtitle="Choose what you want to do" onBack={suppliers.length > 1 ? () => setStep("supplier") : undefined} onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">
       {productsLoading && <p className="px-1 pb-2 text-[12px] text-faint-foreground">Loading available bundles...</p>}
       {productsError && <p className="rounded-xl border border-danger/20 bg-danger/[0.08] p-3 text-xs text-ink-rose">{productsError}</p>}
-      {!productsError && NETWORKS.map((n) => <SelectRow key={n.id} onClick={() => { setNetwork(n); setBundle(null); setStep("bundle"); }} leading={<NetLogo network={n} />} title={n.name} subtitle="Data bundles" trailing={<ChevronRight size={18} className="text-faint-foreground" />} />)}
+      {!productsError && NETWORKS.map((n) => { const row = networkRows.find((x) => x.code === n.id); const paused = row?.is_paused ? (row.pause_reason ?? "Currently unavailable. Please try again later.") : null; return <SelectRow key={n.id} disabled={Boolean(paused)} onClick={() => { setNetwork(n); setBundle(null); setStep("bundle"); }} leading={<NetLogo network={n} />} title={n.name} subtitle={paused ?? "Data bundles"} trailing={paused ? <span className="text-[11px] font-semibold text-amber">Unavailable</span> : <ChevronRight size={18} className="text-faint-foreground" />} />; })}
       {isAuthenticated && <><div className="my-3 border-t border-white/[0.06]" /><SelectRow onClick={() => setStep("payOrder")} leading={<span className="onyx-tile-icon"><CreditCard size={18} /></span>} title="Pay for an order" subtitle="Enter an Order ID and complete its payment" trailing={<ChevronRight size={18} className="text-faint-foreground" />} />
       {pendingOrders.length > 0 && <SelectRow onClick={() => setStep("pending")} leading={<span className="onyx-tile-icon"><ListChecks size={18} /></span>} title="Pending orders" subtitle={`${pendingOrders.length} active order${pendingOrders.length === 1 ? "" : "s"} to continue or track`} trailing={<ChevronRight size={18} className="text-faint-foreground" />} />}</>}
     </div></>}
 
-    {step === "bundle" && network && <><FlowHeader title={`${network.name} bundles`} subtitle="Choose a data bundle" onBack={() => setStep("network")} onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">{bundlesFor(network.id).map((b) => <SelectRow key={b.id} onClick={() => { setBundle(b); setStep("phone"); }} leading={<span className="onyx-tile-icon"><Wifi size={18} /></span>} title={<span className="flex items-center gap-2">{b.size}{b.tag && <BundleTag tag={b.tag} />}</span>} subtitle={validityLabel(b.validity)} trailing={<span className="font-display text-[15px] font-semibold text-white">{formatGHS(b.price)}</span>} />)}</div></>}
+    {step === "bundle" && network && <><FlowHeader title={`${network.name} bundles`} subtitle="Choose a data bundle" onBack={() => setStep("network")} onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">{bundlesFor(network.id).map((b) => <SelectRow key={b.id} disabled={Boolean(b.unavailable)} onClick={() => { setBundle(b); setStep("phone"); }} leading={<span className="onyx-tile-icon"><Wifi size={18} /></span>} title={<span className="flex items-center gap-2">{b.size}{b.tag && !b.unavailable && <BundleTag tag={b.tag} />}</span>} subtitle={b.unavailable ?? validityLabel(b.validity)} trailing={b.unavailable ? <span className="text-[11px] font-semibold text-amber">Unavailable</span> : <span className="font-display text-[15px] font-semibold text-white">{formatGHS(b.price)}</span>} />)}</div></>}
 
     {step === "phone" && network && bundle && <><FlowHeader title="Recipient" subtitle={`${network.name} · ${bundle.size}`} onBack={() => setStep("bundle")} onClose={onClose} /><div className="space-y-4 px-5 pb-2 pt-5"><div><label htmlFor="buydata-phone" className="text-[12px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">Phone number</label><input id="buydata-phone" className="onyx-field mt-2 text-[16px] tracking-wide" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="024 000 0000" />{phone.length > 0 && !phoneValid && <p className="mt-1.5 text-[12px] text-danger">Enter a valid 10-digit Ghana number.</p>}</div>{!isAuthenticated && <div><label htmlFor="buydata-email" className="text-[12px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">Email for receipt</label><input id="buydata-email" className="onyx-field mt-2" inputMode="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} /></div>}<div className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5"><div><p className="text-[13.5px] font-semibold">{network.name} · {bundle.size}</p><p className="text-[12px] text-faint-foreground">{validityLabel(bundle.validity)}</p></div><span className="font-display text-[16px] font-semibold">{formatGHS(bundle.price)}</span></div><ImportantNotice compact network={network.id} /></div><FlowFooter><button type="button" className="onyx-btn-primary w-full disabled:opacity-40" disabled={!phoneValid || (!isAuthenticated && !emailValid)} onClick={() => void continueFromPhone()}>Continue</button></FlowFooter></>}
 

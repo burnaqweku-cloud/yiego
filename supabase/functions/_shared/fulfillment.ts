@@ -107,15 +107,25 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
     .eq("is_active", true)
     .eq("suppliers.status", "active");
 
-  // A recorded choice is honoured exactly; otherwise pick by a stable order.
-  if (order.supplier_id) query = query.eq("supplier_id", order.supplier_id);
+  // Routing, in order: the network's preferred supplier (the admin's switch),
+  // then the customer's recorded choice, then a stable priority order.
+  const { data: network } = await supabase.from("networks").select("preferred_supplier_id").eq("id", order.network_id).maybeSingle();
+  const routedSupplierId: string | null = network?.preferred_supplier_id ?? order.supplier_id ?? null;
+  if (routedSupplierId) query = query.eq("supplier_id", routedSupplierId);
 
   // Ordering by a column on an embedded table does not reorder the parent rows,
   // so asking the database for the best row and taking limit(1) silently
   // returned an arbitrary supplier. Fetch the candidates and rank them here,
   // where the comparison is explicit and testable.
-  const { data: candidates, error: mappingError } = await query;
+  let { data: candidates, error: mappingError } = await query;
   if (mappingError) throw new Error(mappingError.message);
+  // A routed supplier that is disabled or has no active mapping falls back
+  // to whoever can serve the bundle, rather than failing the order.
+  if (routedSupplierId && (!candidates || candidates.length === 0)) {
+    const fallback = await supabase.from("supplier_product_mappings").select("*, suppliers!inner(id, code, name, status, display_order)").eq("product_id", order.product_id).eq("is_active", true).eq("suppliers.status", "active");
+    candidates = fallback.data; mappingError = fallback.error;
+    if (mappingError) throw new Error(mappingError.message);
+  }
 
   const mapping = (candidates ?? [])
     .slice()
@@ -143,6 +153,8 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
       status: "processing",
       supplier_id: supplier.id,
       supplier_idempotency_key: idempotencyKey,
+      // The cost is whatever the supplier we actually use charges.
+      ...(mapping.supplier_price != null ? { cost_amount: mapping.supplier_price } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq("id", order.id)

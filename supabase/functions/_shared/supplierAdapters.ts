@@ -1,5 +1,6 @@
 import { callDataMartGH, mapDataMartGHStatusToYieGo } from "./datamartgh.ts";
 import * as hub from "./databundleshub.ts";
+import * as instant from "./instantdatagh.ts";
 
 /* ══════════════════════════════════════════════════════════════
    One shape for every supplier.
@@ -150,9 +151,44 @@ const dataBundlesHub: SupplierAdapter = {
   mapStatus: (supplierStatus) => hub.mapStatus(supplierStatus),
 };
 
+const instantDataGH: SupplierAdapter = {
+  code: "instantdatagh",
+  isConfigured: instant.isConfigured,
+  preflight(context) {
+    const detected = hub.networkFromPrefix(context.recipientPhone);
+    if (!detected) return { ok: false, reason: "unrecognised_number_prefix" };
+    const expected = (context.supplierNetworkCode ?? "").toUpperCase();
+    if (expected && expected !== detected) return { ok: false, reason: `number_prefix_is_${detected.toLowerCase()}_not_${expected.toLowerCase()}` };
+    return { ok: true };
+  },
+  async purchase(context) {
+    // InstantData wants the network spelled its way: MTN / Telecel / AirtelTigo.
+    const network = instant.NETWORK_NAMES[(context.supplierNetworkCode ?? "").toLowerCase()] ?? context.supplierNetworkCode ?? "";
+    const requestPayload = { network, phone_number: context.recipientPhone, data_amount: String(context.supplierCapacity ?? "") };
+    const result = await instant.purchase({ network, phoneNumber: context.recipientPhone, dataAmount: requestPayload.data_amount });
+    const data = result.payload?.data ?? {};
+    const orderId = data.order_id != null ? String(data.order_id) : null;
+    return {
+      ok: result.ok && orderId != null,
+      httpStatus: result.status,
+      durationMs: result.durationMs,
+      endpoint: "/orders",
+      requestPayload,
+      responsePayload: result.payload,
+      supplierReference: orderId,
+      purchaseId: orderId,
+      transactionReference: null,
+      supplierStatus: data.status ?? null,
+      message: result.ok && orderId != null ? null : result.payload?.message ?? result.payload?.error ?? "InstantDataGH purchase failed",
+    };
+  },
+  mapStatus: (supplierStatus) => instant.mapStatus(supplierStatus),
+};
+
 const ADAPTERS: Record<string, SupplierAdapter> = {
   [dataMartGH.code]: dataMartGH,
   [dataBundlesHub.code]: dataBundlesHub,
+  [instantDataGH.code]: instantDataGH,
 };
 
 export function adapterFor(supplierCode: string): SupplierAdapter | null {

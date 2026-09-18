@@ -33,6 +33,9 @@ const RULES: Array<{ match: RegExp; message: string }> = [
 export function friendlyError(raw: unknown, fallback = "Something went wrong. Please try again."): string {
   const text = raw instanceof Error ? raw.message : String(raw ?? "");
   if (!text) return fallback;
+  // The availability guard carries the admin's own message after the code.
+  const unavailable = text.match(/bundle_unavailable:\s*(.+)/);
+  if (unavailable) return unavailable[1].trim();
   for (const rule of RULES) if (rule.match.test(text)) return rule.message;
   // A bare snake_case code is internal; never show it.
   if (/^[a-z0-9_]+$/.test(text.trim())) return fallback;

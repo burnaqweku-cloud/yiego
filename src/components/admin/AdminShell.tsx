@@ -33,12 +33,12 @@ export default function AdminShell() {
     <div className="onyx-canvas admin-dense min-h-dvh">
       <AuroraBackground />
       <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[1600px]">
-        <aside className="sticky top-0 hidden h-dvh w-[236px] shrink-0 border-r border-white/[0.06] bg-black/20 backdrop-blur-xl lg:block">
+        <aside className="sticky top-0 hidden h-dvh w-[216px] shrink-0 border-r border-white/[0.06] bg-black/20 backdrop-blur-xl lg:block">
           <AdminSidebar />
         </aside>
 
         <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 flex h-12 items-center gap-2.5 border-b border-white/[0.06] bg-background/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+          <header className="sticky top-0 z-30 flex h-11 items-center gap-2.5 border-b border-white/[0.06] bg-background/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
             <button type="button" onClick={() => setMenuOpen(true)} className="onyx-iconbtn -ml-1 lg:hidden" aria-label="Open menu"><Menu size={20} /></button>
             <Wordmark className="h-[18px] lg:hidden" />
             <div className="min-w-0 flex items-baseline gap-2 text-[13px]">
@@ -54,7 +54,7 @@ export default function AdminShell() {
       {menuOpen && (
         <div className="fixed inset-0 z-[90] lg:hidden">
           <button className="absolute inset-0 bg-black/60" onClick={() => setMenuOpen(false)} aria-label="Close menu" />
-          <aside ref={panelRef} tabIndex={-1} className="onyx-panel absolute inset-y-0 left-0 w-[min(80vw,300px)] rounded-none p-0">
+          <aside ref={panelRef} tabIndex={-1} className="onyx-panel absolute inset-y-0 left-0 w-[min(78vw,280px)] rounded-none p-0">
             <AdminSidebar onNavigate={() => setMenuOpen(false)} onClose={() => setMenuOpen(false)} />
           </aside>
         </div>

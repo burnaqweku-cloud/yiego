@@ -2424,14 +2424,14 @@
    The admin is a working tool, not a landing page: everything is one
    notch smaller than the public site. Scoped so the shop is untouched. */
 @layer utilities {
-  .admin-dense { font-size: 13px; }
+  .admin-dense { font-size: 12.5px; }
   .admin-dense .onyx-panel { border-radius: 14px; box-shadow: none; }
-  .admin-dense .onyx-panel > .p-5, .admin-dense .onyx-panel > .sm\:p-6 { padding: 12px 14px; }
+  .admin-dense .onyx-panel > .p-5, .admin-dense .onyx-panel > .sm\:p-6 { padding: 10px 12px; }
   .admin-dense .onyx-panel > .pb-0, .admin-dense .onyx-panel > .sm\:pb-0 { padding-bottom: 0; }
-  .admin-dense .font-display.text-\[17px\] { font-size: 14px; }
+  .admin-dense .font-display.text-\[17px\] { font-size: 13.5px; }
   .admin-dense .font-display.text-2xl, .admin-dense .font-display.text-3xl, .admin-dense .font-display.text-4xl, .admin-dense .font-display.text-xl { font-size: 18px; }
-  .admin-dense .text-sm { font-size: 12.5px; line-height: 1.35; }
-  .admin-dense .text-xs { font-size: 11px; }
+  .admin-dense .text-sm { font-size: 12px; line-height: 1.35; }
+  .admin-dense .text-xs { font-size: 10.5px; }
   .admin-dense .text-base { font-size: 13.5px; }
   .admin-dense .rounded-2xl { border-radius: 12px; }
   .admin-dense .rounded-xl { border-radius: 10px; }
@@ -2445,7 +2445,7 @@
   .admin-dense .space-y-7 > :not([hidden]) ~ :not([hidden]) { margin-top: 16px; }
   .admin-dense .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 12px; }
   .admin-dense .onyx-iconbtn { width: 34px; height: 34px; }
-  .admin-dense button, .admin-dense input, .admin-dense select { font-size: 12.5px; }
+  .admin-dense button, .admin-dense input, .admin-dense select { font-size: 12px; }
   .admin-dense table { font-size: 12.5px; }
   .admin-dense th, .admin-dense td { padding-top: 6px; padding-bottom: 6px; }
 }

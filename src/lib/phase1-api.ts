@@ -88,7 +88,11 @@ export interface Phase1Product {
   capacity_gb?: number | string | null;
   customer_price: number;
   network_id?: string;
+  is_paused?: boolean;
+  pause_reason?: string | null;
 }
+
+export interface Phase1NetworkRow { id: string; code: string; name: string; is_paused: boolean; pause_reason: string | null }
 
 interface Phase1ProductQuery {
   select: (columns: string) => Phase1ProductQuery;
@@ -166,7 +170,7 @@ export async function loadPhase1Products() {
   const phase1Client = (supabase as unknown as { schema: (name: string) => Phase1SchemaClient }).schema("phase1");
   const { data, error } = await phase1Client
     .from("data_products")
-    .select("id, app_product_code, name, validity, capacity_gb, customer_price, network_id")
+    .select("id, app_product_code, name, validity, capacity_gb, customer_price, network_id, is_paused, pause_reason")
     .eq("is_active", true)
     .order("display_order", { ascending: true });
 
@@ -174,6 +178,12 @@ export async function loadPhase1Products() {
     data: (data ?? []) as Phase1Product[],
     error: error?.message ?? null,
   };
+}
+
+export async function loadPhase1Networks() {
+  const phase1Client = (supabase as unknown as { schema: (name: string) => { from: (t: string) => { select: (c: string) => PromiseLike<{ data: Phase1NetworkRow[] | null; error: { message: string } | null }> } } }).schema("phase1");
+  const { data, error } = await phase1Client.from("networks").select("id, code, name, is_paused, pause_reason");
+  return { data: data ?? [], error: error?.message ?? null };
 }
 
 /**
