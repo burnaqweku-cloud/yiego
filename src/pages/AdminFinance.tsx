@@ -66,7 +66,7 @@ export default function AdminFinance() {
     const [ov, en, su] = await Promise.all([
       db().rpc("finance_overview", { p_from: periodFrom(period), p_to: null }),
       db().from("finance_entries").select("id, kind, reference, occurred_at, amount, source, note, metadata, supplier_id, reverses, created_at").order("occurred_at", { ascending: false }).limit(400),
-      db().from("suppliers").select("id, code, name, balance, last_balance_checked_at, metadata").order("display_order"),
+      db().from("suppliers").select("id, code, name, balance, last_balance_checked_at, metadata, confirmed_balance, confirmed_at").order("display_order"),
     ]);
     if (ov.error) toast.error(ov.error.message);
     setOverview((ov.data as Overview) ?? null); setEntries(en.data ?? []); setSuppliers(su.data ?? []); setLoading(false);
@@ -91,7 +91,7 @@ export default function AdminFinance() {
   const o = overview; const p = o?.period; 
   const cashTotal = Number(o?.cash.bank ?? 0) + Number(o?.cash.paystack_transit ?? 0);
   const bank = Number(o?.cash.bank ?? 0);
-  const floats = Object.values(o?.cash.supplier_float ?? {}).reduce((a, b) => a + Number(b), 0);
+  const floats = suppliers.reduce((a, s) => a + Number((s as SupplierRow & { confirmed_balance?: number | null }).confirmed_balance ?? o?.cash.supplier_float?.[s.code] ?? 0), 0);
   const owedTotal = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0);
   const master = bank + Number(o?.cash.paystack_transit ?? 0) + floats - owedTotal;
 
@@ -101,7 +101,7 @@ export default function AdminFinance() {
         action={<div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={15} /></Button><Button size="sm" onClick={() => setModal("topup")}>Record top-up</Button></div>} />
 
       <Link to="/admin/finance/master" className="block">
-        <Panel title="Master balance" icon={Landmark} note="everything that's ours · tap for detail">
+        <Panel title="Master balance" icon={Landmark} note={`as of your last calculation · tap to recalculate`}>
           <p className={`text-[28px] font-semibold leading-none tabular-nums ${master >= 0 ? "text-ink-emerald" : "text-ink-rose"}`}>{loading ? "…" : formatGHS(master)}</p>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-[11.5px] tabular-nums"><span className="text-ink-emerald">Withdrawn {formatGHS(bank)}</span><span className="text-faint-foreground">+</span><span className="text-ink-rose">Held by Paystack {formatGHS(Number(o?.cash.paystack_transit ?? 0))}</span><span className="text-faint-foreground">+</span><span className="text-amber">Suppliers {formatGHS(floats)}</span><span className="text-faint-foreground">−</span><span className="text-muted-foreground">Customers' money {formatGHS(owedTotal)}</span></p>
         </Panel>
