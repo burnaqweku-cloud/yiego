@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronDown, Clock3, LogOut, Search, Star, X, type LucideIcon } from "lucide-react";
 import Wordmark from "@/components/brand/Wordmark";
 import { cn } from "@/lib/utils";
-import { ADMIN_GROUPS, ADMIN_PAGES, groupForPath, pageForPath, pushRecent, readPins, readRecent, searchPages, togglePin, type AdminPage } from "@/lib/admin-nav";
+import { ADMIN_GROUPS, ADMIN_PAGES, groupForPath, pageForPath, pushRecent, readPins, readRecent, searchPages, syncPrefsFromAccount, togglePin, type AdminPage } from "@/lib/admin-nav";
 import { useAuth } from "@/store/auth-context";
 import { useProfile } from "@/store/profile";
 
@@ -33,7 +33,7 @@ export default function AdminSidebar({ onNavigate, onClose }: Props) {
   const [openGroup, setOpenGroup] = useState(activeGroup);
 
   useEffect(() => { setOpenGroup(activeGroup); }, [activeGroup]);
-  useEffect(() => { setPins(readPins(userId)); setRecent(readRecent(userId)); }, [userId]);
+  useEffect(() => { setPins(readPins(userId)); setRecent(readRecent(userId)); void syncPrefsFromAccount(userId).then((p) => { if (p) { setPins(p.pins); setRecent(p.recents); } }); }, [userId]);
   useEffect(() => {
     const page = pageForPath(location.pathname);
     if (page) setRecent(pushRecent(userId, page.id));

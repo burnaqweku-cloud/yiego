@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { BookOpen, Bot, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
@@ -75,7 +76,9 @@ export function searchPages(query: string): AdminPage[] {
     .map((r) => r.page);
 }
 
-/* ── Pinned + recent, per admin, in localStorage ─────────────────────────── */
+/* ── Pinned + recent, per admin ───────────────────────────────────────────
+   Kept in localStorage so the sidebar draws instantly, and mirrored to
+   phase1.admin_prefs so they follow the admin onto any device. */
 
 const PIN_KEY = (userId: string) => `yg-admin-pins:${userId}`;
 const RECENT_KEY = (userId: string) => `yg-admin-recent:${userId}`;
@@ -91,6 +94,7 @@ export function togglePin(userId: string, pageId: string): string[] {
   const current = readPins(userId);
   const next = current.includes(pageId) ? current.filter((id) => id !== pageId) : [...current, pageId];
   write(PIN_KEY(userId), next);
+  void savePrefs(userId, { pins: next });
   return next;
 }
 export function readRecent(userId: string) { return read(RECENT_KEY(userId)); }
@@ -98,7 +102,34 @@ export function pushRecent(userId: string, pageId: string): string[] {
   if (pageId === "overview") return readRecent(userId); // the home page isn't "recent"
   const next = [pageId, ...readRecent(userId).filter((id) => id !== pageId)].slice(0, MAX_RECENT);
   write(RECENT_KEY(userId), next);
+  void savePrefs(userId, { recents: next });
   return next;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const prefsTable = () => (supabase as unknown as { schema: (s: string) => { from: (t: string) => any } }).schema("phase1").from("admin_prefs");
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let pending: { pins?: string[]; recents?: string[] } = {};
+async function savePrefs(userId: string, patch: { pins?: string[]; recents?: string[] }) {
+  if (!userId) return;
+  pending = { ...pending, ...patch };
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const body = { user_id: userId, ...pending, updated_at: new Date().toISOString() }; pending = {};
+    try { await prefsTable().upsert(body, { onConflict: "user_id" }); } catch { /* local copy still works */ }
+  }, 600);
+}
+/** Pull the account's saved pins/recents; local copy is replaced if the server has anything. */
+export async function syncPrefsFromAccount(userId: string): Promise<{ pins: string[]; recents: string[] } | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await prefsTable().select("pins, recents").eq("user_id", userId).maybeSingle();
+    if (!data) return null;
+    const pins = Array.isArray(data.pins) ? data.pins.filter((x: unknown) => typeof x === "string") : [];
+    const recents = Array.isArray(data.recents) ? data.recents.filter((x: unknown) => typeof x === "string") : [];
+    write(PIN_KEY(userId), pins); write(RECENT_KEY(userId), recents);
+    return { pins, recents };
+  } catch { return null; }
 }
 
 export const PinIcon = Star;
