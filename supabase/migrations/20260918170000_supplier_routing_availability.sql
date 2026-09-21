@@ -95,3 +95,4 @@ grant select (id, code, name, is_active, is_paused, pause_reason, display_order)
 -- orders raise it too), so top-ups are recorded by hand on the Finance page.
 -- Balance readings are still stored for display. Applied as migration
 -- finance_remove_topup_detection.
+-- service_role grants applied as migration grant_service_role_phase1 (all phase1 tables/functions + default privileges)
