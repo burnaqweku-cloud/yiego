@@ -21,8 +21,8 @@ export async function agentsStatus(): Promise<{ launched: boolean; plan: AgentPl
   cache = { launched, plan, isAdmin, at: Date.now() };
   return cache;
 }
-/** Preview is for admins only: the URL flag alone does nothing for anyone else. */
-export function previewRequested() { try { return (new URLSearchParams(window.location.search).get("preview") === "agents" || sessionStorage.getItem("yg-agents-preview") === "1") && cache?.isAdmin === true; } catch { return false; } }
+/** Before launch, every signed-in admin sees the agent pages, popup and stores. Nobody else does. */
+export function previewRequested() { return cache?.isAdmin === true; }
 export function rememberPreview() { try { if (new URLSearchParams(window.location.search).get("preview") === "agents") sessionStorage.setItem("yg-agents-preview", "1"); } catch { /* ignore */ } }
 export async function planQuote(): Promise<PlanQuote | null> { const { data } = await p1().rpc("agent_plan_quote", {}); return (data as PlanQuote) ?? null; }
 export async function applyAsAgent(input: { fullName: string; phone: string; whatsapp: string; town: string; pitch: string }) {
