@@ -33,6 +33,12 @@ Deno.serve(async (req) => {
       }
       return jsonResponse({ status: "success", data });
     }
+    if (body.action === "test_email") {
+      const { data: adm } = await supabase.from("admin_users").select("user_id").eq("user_id", auth.user.id).eq("is_active", true).maybeSingle();
+      if (!adm) return jsonResponse({ error: "Admin only" }, { status: 403 });
+      const r = await sendEmail({ to: auth.user.email ?? "", subject: "DataYego email test", html: wrap("Email works", "<p>If you're reading this, sending is fine.</p>") });
+      return jsonResponse({ status: "success", resend: r, hasKey: Boolean(Deno.env.get("RESEND_API_KEY")), from: Deno.env.get("EMAIL_FROM") ?? "DataYego <noreply@yiego.shop>" });
+    }
     return jsonResponse({ error: "Unsupported action" }, { status: 400 });
   } catch (e) { return jsonResponse({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 }); }
 });
