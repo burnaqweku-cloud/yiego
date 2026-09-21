@@ -49,7 +49,7 @@ export default function AgentDashboard() {
       const map: Record<string, string> = {}; for (const r of ap.data ?? []) map[r.product_id] = Number(r.price).toFixed(2); setPrices(map);
     }
   }, [user]);
-  useEffect(() => { if (!isAuthenticated) { navigate(`/auth?next=${encodeURIComponent("/agent")}`); return; } void load(); }, [isAuthenticated, load, navigate]);
+  useEffect(() => { if (!isAuthenticated) { navigate(`/auth?next=${encodeURIComponent("/agent")}`); return; } sessionStorage.removeItem("yg-agent-browse"); void load(); }, [isAuthenticated, load, navigate]);
   useEffect(() => { if (params.get("paid") === "1") { toast.success("Payment received. Welcome in!"); setTimeout(() => void load(), 2500); } }, [params, load]);
 
   const storeUrl = agent ? `${window.location.origin}/s/${agent.slug}` : "";
@@ -106,7 +106,10 @@ export default function AgentDashboard() {
       <div className="mx-auto max-w-2xl">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">Agent</p><h1 className="truncate font-display text-[22px] font-semibold text-foreground">{agent.store_name}</h1><p className="text-[12px] text-faint-foreground">Paid until {agent.paid_until}</p></div>
-          <a href={storeUrl} target="_blank" rel="noreferrer" className="onyx-btn-primary shrink-0 px-3 py-2 text-[12.5px]"><ExternalLink size={13} className="mr-1 inline" />My store</a>
+          <div className="flex shrink-0 gap-2">
+            <Link to="/" onClick={() => sessionStorage.setItem("yg-agent-browse", "1")} className="rounded-full border border-white/[0.1] px-3 py-2 text-[12.5px] text-muted-foreground">Browse the site</Link>
+            <a href={storeUrl} target="_blank" rel="noreferrer" className="onyx-btn-primary px-3 py-2 text-[12.5px]"><ExternalLink size={13} className="mr-1 inline" />My store</a>
+          </div>
         </div>
         <div className="mt-4 flex gap-1 overflow-x-auto rounded-full border border-white/[0.08] p-1 text-[12.5px]">
           {([["home", "Home", Wallet], ["orders", "Orders", Package], ["prices", "Prices", Tags], ["payouts", "Payouts", CreditCard], ["store", "Store", Settings]] as [Tab, string, typeof Wallet][]).map(([id, label, Icon]) => <button key={id} type="button" onClick={() => setTab(id)} className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 ${tab === id ? "bg-primary/15 text-primary-glow" : "text-muted-foreground"}`}><Icon size={13} />{label}</button>)}

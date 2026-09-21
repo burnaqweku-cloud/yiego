@@ -6,6 +6,7 @@ import Wordmark from "@/components/brand/Wordmark";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/store/auth-context";
+import { myAgentStatus } from "@/lib/agents";
 
 type Mode = "login" | "signup" | "forgot" | "check-email";
 
@@ -31,6 +32,8 @@ export default function Auth() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const nextPath = useMemo(() => safeNext(searchParams.get("next")), [searchParams]);
+  const explicitNext = Boolean(searchParams.get("next"));
+  const go = async () => { if (!explicitNext) { sessionStorage.removeItem("yg-agent-browse"); const me = await myAgentStatus(); if (me?.is_agent) { navigate("/agent", { replace: true }); return; } } navigate(nextPath, { replace: true }); };
   const requestedMode = searchParams.get("mode") === "signup" ? "signup" : searchParams.get("mode") === "forgot" ? "forgot" : "login";
   const { signIn, signUp, resetPassword, isAuthenticated, loading } = useAuth();
   const [mode, setMode] = useState<Mode>(requestedMode);
@@ -42,8 +45,8 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (!loading && isAuthenticated) navigate(nextPath, { replace: true });
-  }, [isAuthenticated, loading, navigate, nextPath]);
+    if (!loading && isAuthenticated) void go();
+  }, [isAuthenticated, loading, navigate, nextPath]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const phoneValid = /^0\d{9}$/.test(phone);
   const passwordValid = strongEnough(password);
@@ -56,14 +59,14 @@ export default function Auth() {
       if (mode === "login") {
         await signIn(email.trim(), password);
         toast.success("Welcome back to DataYego");
-        navigate(nextPath, { replace: true });
+        void go();
       } else if (mode === "signup") {
         const result = await signUp({ fullName: fullName.trim(), email: email.trim(), phone, password });
         if (result.requiresEmailConfirmation) {
           setMode("check-email");
         } else {
           toast.success("Your DataYego account is ready");
-          navigate(nextPath, { replace: true });
+          void go();
         }
       }
     } catch (error) {

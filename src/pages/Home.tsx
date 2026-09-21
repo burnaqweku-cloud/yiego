@@ -1,4 +1,7 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { agentsStatus, myAgentStatus, previewRequested } from "@/lib/agents";
+import { useAuth } from "@/store/auth-context";
 import Seo from "@/components/seo/Seo";
 import { metaFor } from "@/lib/site";
 import { organizationLd, websiteLd } from "@/lib/structuredData";
@@ -29,6 +32,12 @@ function SectionFallback() {
 }
 
 export default function Home() {
+  const navigate = useNavigate(); const { isAuthenticated } = useAuth();
+  // Agents open on their dashboard; "Browse the site" on the dashboard lets them see it as a customer.
+  useEffect(() => {
+    if (!isAuthenticated || sessionStorage.getItem("yg-agent-browse") === "1") return;
+    void agentsStatus().then(async ({ launched }) => { if (!(launched || previewRequested())) return; const me = await myAgentStatus(); if (me?.is_agent && me.agent_status === "active" && sessionStorage.getItem("yg-agent-browse") !== "1") navigate("/agent", { replace: true }); });
+  }, [isAuthenticated, navigate]);
   return (
     <>
       <Seo {...metaFor("/")} jsonLd={[organizationLd(), websiteLd()]} />
