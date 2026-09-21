@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
     const agentSlug = typeof body?.agentSlug === "string" ? body.agentSlug.trim().toLowerCase() : "";
     let agent: { id: string; slug: string; prices: Record<string, number> } | null = null;
     if (agentSlug) {
-      const { data: store } = await supabase.rpc("agent_store", { p_slug: agentSlug });
+      const { data: store } = await supabase.rpc("agent_store", { p_slug: agentSlug, p_preview: false, p_as_user: authenticatedUser?.id ?? null });
       if (!store) return jsonResponse({ error: "This store isn't open right now." }, { status: 409 });
       agent = store as { id: string; slug: string; prices: Record<string, number> };
     }
