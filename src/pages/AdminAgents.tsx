@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BadgePercent, Rocket, Search, Store, UserCheck } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Field, Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
@@ -17,14 +18,20 @@ interface Application { id: string; user_id: string; full_name: string; phone: s
 interface Agent { id: string; user_id: string; slug: string; store_name: string; status: string; paid_until: string | null; earnings_balance: number; created_at: string }
 interface Promo { id: string; name: string; percent_off: number; starts_at: string; ends_at: string | null; max_uses: number | null; uses: number; is_active: boolean }
 interface Plan { monthly_price: number; payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number; popup_delay_seconds: number }
-type Tab = "applications" | "agents" | "payouts" | "promos" | "launch";
+type Tab = "overview" | "applications" | "agents" | "subscriptions" | "payouts" | "promos" | "launch";
+const TAB_PATH: Record<Tab, string> = { overview: "/admin/agents", applications: "/admin/agents/applications", agents: "/admin/agents/list", subscriptions: "/admin/agents/subscriptions", payouts: "/admin/agents/payouts", promos: "/admin/agents/plan", launch: "/admin/agents/launch" };
+const TAB_TITLE: Record<Tab, string> = { overview: "Agents", applications: "Applications", agents: "All agents", subscriptions: "Subscriptions", payouts: "Payouts", promos: "Plan & promos", launch: "Launch" };
+interface SubPayment { provider_reference: string; amount: number; status: string; verified_at: string | null; created_at: string; user_id: string | null; metadata: { agent_id?: string; percent_off?: number } | null }
 interface Payout { id: string; agent_id: string; amount: number; fee: number; net: number; momo_number: string; momo_name: string | null; status: string; note: string | null; created_at: string; paid_at: string | null; paid_reference: string | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> };
 
 export default function AdminAgents() {
   const { user } = useAuth(); const actor = user?.id ?? "";
-  const [tab, setTab] = useState<Tab>("applications");
+  const location = useLocation(); const navigate = useNavigate();
+  const tab: Tab = (Object.entries(TAB_PATH).find(([, path]) => location.pathname === path)?.[0] as Tab) ?? "overview";
+  const setTab = (t: Tab) => navigate(TAB_PATH[t]);
+  const [subs, setSubs] = useState<SubPayment[]>([]);
   const [apps, setApps] = useState<Application[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [promos, setPromos] = useState<Promo[]>([]);
@@ -43,15 +50,16 @@ export default function AdminAgents() {
   const [emailTest, setEmailTest] = useState<unknown>(null);
 
   const load = useCallback(async () => {
-    const [a, g, p, s, r, po] = await Promise.all([
+    const [a, g, p, s, r, po, sp] = await Promise.all([
       db().from("agent_applications").select("*").order("created_at", { ascending: false }).limit(500),
       db().from("agents").select("id, user_id, slug, store_name, status, paid_until, earnings_balance, created_at").order("created_at", { ascending: false }),
       db().from("agent_promos").select("*").order("created_at", { ascending: false }),
       db().from("site_settings").select("key, value").in("key", ["agents_launched", "agent_plan"]),
       actor ? db().rpc("admin_role", { p_user: actor }) : Promise.resolve({ data: null, error: null }),
       db().from("agent_payouts").select("*").order("created_at", { ascending: false }).limit(300),
+      db().from("payment_intents").select("provider_reference, amount, status, verified_at, created_at, user_id, metadata").eq("purpose", "agent_subscription").order("created_at", { ascending: false }).limit(300),
     ]);
-    setPayouts(po.data ?? []);
+    setPayouts(po.data ?? []); setSubs(sp.data ?? []);
     setApps(a.data ?? []); setAgents(g.data ?? []); setPromos(p.data ?? []);
     for (const row of s.data ?? []) { if (row.key === "agents_launched") setLaunched(Boolean(row.value)); if (row.key === "agent_plan") { setPlan(row.value); setPlanDraft(row.value); } }
     setIsMaster(r.data === "master");
@@ -100,15 +108,26 @@ export default function AdminAgents() {
 
   return (
     <div className="space-y-5">
-      <AdminPageHeader title="Agents" description={launched ? "Live. Customers can see the apply page, popup and stores." : "Not launched. Nothing here is visible to customers yet."} action={<Pill tone={launched ? "good" : "warn"}>{launched ? "live" : "hidden"}</Pill>} />
-      <StatGrid cols={4}>
+      <AdminPageHeader title={TAB_TITLE[tab]} description={launched ? "Live. Customers can see the apply page, popup and stores." : "Not launched. Nothing here is visible to customers yet."} action={<Pill tone={launched ? "good" : "warn"}>{launched ? "live" : "hidden"}</Pill>} />
+      {tab === "overview" && <StatGrid cols={4}>
         <Stat loading={loading} label="Applications waiting" value={String(pending)} tone={pending ? "warn" : "default"} icon={UserCheck} onClick={() => { setTab("applications"); setAppFilter("pending"); }} />
         <Stat loading={loading} label="Agents" value={String(agents.length)} note={`${agents.filter((g) => g.status === "active").length} active · ${agents.filter((g) => g.status === "awaiting_payment").length} not yet paid`} icon={Store} onClick={() => setTab("agents")} />
         <Stat loading={loading} label="Owed to agents" value={<Money value={agents.reduce((a, g) => a + Number(g.earnings_balance), 0)} />} note="earnings not yet paid out" tone="warn" />
         <Stat loading={loading} label="Monthly plan" value={plan ? formatGHS(plan.monthly_price) : "—"} note={promos.find((p) => p.is_active) ? `${promos.find((p) => p.is_active)?.percent_off}% promo running` : "no promo"} icon={BadgePercent} onClick={() => setTab("promos")} />
-      </StatGrid>
+      </StatGrid>}
+      {tab === "overview" && (
+        <Panel title="Where things stand" note="tap a row">
+          <Rows empty="">
+            <Row onClick={() => setTab("applications")} primary="Applications" secondary={pending ? `${pending} waiting for a decision` : "nothing waiting"} right={String(apps.length)} rightNote="total" tone={pending ? "warn" : "default"} />
+            <Row onClick={() => setTab("agents")} primary="Agents" secondary={`${agents.filter((g) => g.status === "active").length} active · ${agents.filter((g) => g.status === "paused").length} paused · ${agents.filter((g) => g.status === "awaiting_payment").length} not yet paid`} right={String(agents.length)} rightNote="total" />
+            <Row onClick={() => setTab("subscriptions")} primary="Subscriptions" secondary={`${subs.filter((x) => x.status === "succeeded").length} payments · ${formatGHS(subs.filter((x) => x.status === "succeeded").reduce((a, x) => a + Number(x.amount), 0))} collected`} right={String(agents.filter((g) => g.paid_until && new Date(g.paid_until) <= new Date(Date.now() + 7 * 86400000)).length)} rightNote="expiring in 7 days" />
+            <Row onClick={() => setTab("payouts")} primary="Payouts" secondary={payoutsWaiting ? `${payoutsWaiting} waiting to be paid` : "nothing waiting"} right={formatGHS(payouts.filter((p) => p.status === "paid").reduce((a, p) => a + Number(p.net), 0))} rightNote="paid out" tone={payoutsWaiting ? "warn" : "default"} />
+            <Row onClick={() => setTab("promos")} primary="Plan & promos" secondary={plan ? `${formatGHS(plan.monthly_price)}/month · payout min ${formatGHS(plan.payout_minimum)} · fee ${(plan.payout_fee_rate * 100).toFixed(0)}%` : "—"} right={promos.find((p) => p.is_active) ? `${promos.find((p) => p.is_active)?.percent_off}% off` : "no promo"} />
+            <Row onClick={() => setTab("launch")} primary="Launch" secondary={launched ? "agents are live" : "hidden from customers; admins can preview"} right={launched ? "live" : "off"} tone={launched ? "good" : "warn"} />
+          </Rows>
+        </Panel>
+      )}
       <div className="flex flex-wrap items-center gap-2">
-        <Segmented<Tab> value={tab} onChange={setTab} options={[{ value: "applications", label: `Applications${pending ? ` (${pending})` : ""}` }, { value: "agents", label: "Agents" }, { value: "payouts", label: `Payouts${payoutsWaiting ? ` (${payoutsWaiting})` : ""}` }, { value: "promos", label: "Plan & promos" }, { value: "launch", label: "Launch" }]} />
         {tab === "applications" && <Segmented<"pending" | "all"> value={appFilter} onChange={setAppFilter} options={[{ value: "pending", label: "Waiting" }, { value: "all", label: "All" }]} />}
         {(tab === "applications" || tab === "agents") && <label className="relative block flex-1 min-w-[200px]"><Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-faint-foreground" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name, phone, email, store" className={`${inputCls} pl-8`} /></label>}
       </div>
@@ -140,6 +159,25 @@ export default function AdminAgents() {
           </Rows>
         </Panel>
       )}
+
+      {tab === "subscriptions" && (<>
+        <StatGrid cols={4}>
+          <Stat loading={loading} label="Active" value={String(agents.filter((g) => g.status === "active").length)} tone="good" />
+          <Stat loading={loading} label="Expiring in 7 days" value={String(agents.filter((g) => g.status === "active" && g.paid_until && new Date(g.paid_until) <= new Date(Date.now() + 7 * 86400000)).length)} note="reminders go out 3 days before and on the day" tone="warn" />
+          <Stat loading={loading} label="Paused (unpaid)" value={String(agents.filter((g) => g.status === "paused").length)} note="store closed until they pay" />
+          <Stat loading={loading} label="Collected" value={<Money value={subs.filter((x) => x.status === "succeeded").reduce((a, x) => a + Number(x.amount), 0)} />} note={`${subs.filter((x) => x.status === "succeeded").length} payments · ${subs.filter((x) => x.status === "succeeded" && Number(x.metadata?.percent_off ?? 0) > 0).length} on promo`} tone="good" />
+        </StatGrid>
+        <Panel title="Who's paid until when" note="active and paused agents">
+          <Rows empty={loading ? "Loading…" : "No agents yet."}>
+            {agents.filter((g) => g.status !== "awaiting_payment").sort((a, b) => (a.paid_until ?? "").localeCompare(b.paid_until ?? "")).map((g) => { const days = g.paid_until ? Math.ceil((+new Date(g.paid_until) - Date.now()) / 86400000) : null; return <Row key={g.id} primary={<>{g.store_name} <Pill tone={g.status === "active" ? "good" : "warn"}>{g.status}</Pill></>} secondary={`${emails.get(g.user_id) ?? "—"} · /s/${g.slug}`} right={g.paid_until ?? "—"} rightNote={days == null ? "" : days < 0 ? `${-days} days overdue` : days === 0 ? "ends today" : `${days} days left`} tone={days != null && days <= 3 ? "warn" : "default"} />; })}
+          </Rows>
+        </Panel>
+        <Panel title="Payments" note="every subscription payment, newest first">
+          <Rows empty={loading ? "Loading…" : "No payments yet."}>
+            {subs.map((x) => <Row key={x.provider_reference} primary={<>{agents.find((g) => g.id === x.metadata?.agent_id)?.store_name ?? emails.get(x.user_id ?? "") ?? "—"} <Pill tone={x.status === "succeeded" ? "good" : x.status === "pending" ? "warn" : "muted"}>{x.status}</Pill></>} secondary={`${formatAdminDate(x.verified_at ?? x.created_at)} · ${x.provider_reference}${Number(x.metadata?.percent_off ?? 0) > 0 ? ` · ${x.metadata?.percent_off}% promo` : ""}`} right={formatGHS(Number(x.amount))} />)}
+          </Rows>
+        </Panel>
+      </>)}
 
       {tab === "payouts" && (
         <Panel title="Payout requests" note="approve, pay by MoMo, then mark paid">

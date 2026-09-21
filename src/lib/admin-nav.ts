@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { BookOpen, Bot, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon } from "lucide-react";
+import { BadgePercent, BookOpen, Bot, CreditCard, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
 export interface AdminPage {
@@ -39,7 +39,13 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "users", label: "All users", to: "/admin/users", icon: Users, keywords: ["customer", "account", "admin", "email"] },
   ] },
   { id: "agents", label: "Agents", icon: Store, pages: [
-    { id: "agents", label: "Agents", to: "/admin/agents", icon: Store, keywords: ["agent", "application", "store", "promo", "launch", "subscription", "payout"] },
+    { id: "agents", label: "Overview", to: "/admin/agents", icon: Store, keywords: ["agent", "agents"] },
+    { id: "agent-applications", label: "Applications", to: "/admin/agents/applications", icon: UserCheck, keywords: ["apply", "approve", "decline", "application"] },
+    { id: "agent-list", label: "All agents", to: "/admin/agents/list", icon: Users, keywords: ["store", "slug", "active", "paused"] },
+    { id: "agent-subscriptions", label: "Subscriptions", to: "/admin/agents/subscriptions", icon: CreditCard, keywords: ["subscription", "paid until", "expiring", "renewal", "monthly"] },
+    { id: "agent-payouts", label: "Payouts", to: "/admin/agents/payouts", icon: WalletCards, keywords: ["payout", "withdraw", "momo", "earnings"] },
+    { id: "agent-plan", label: "Plan & promos", to: "/admin/agents/plan", icon: BadgePercent, keywords: ["promo", "discount", "fee", "price", "plan"] },
+    { id: "agent-launch", label: "Launch", to: "/admin/agents/launch", icon: Rocket, keywords: ["launch", "switch", "go live", "email test"] },
   ] },
   { id: "support", label: "Support", icon: LifeBuoy, pages: [
     { id: "support-inbox", label: "Support inbox", to: "/admin/support-inbox", icon: Inbox, keywords: ["message", "ticket", "whatsapp"] },
