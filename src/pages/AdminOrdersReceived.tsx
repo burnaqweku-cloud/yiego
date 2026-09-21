@@ -47,7 +47,9 @@ export default function AdminOrdersReceived() {
   const inSource = (o: Row) => source === "all" || (source === "agents" ? o.agent_id != null : o.agent_id == null);
   const q = search.trim().toLowerCase();
   const inStage = (o: Row) => bucket !== "waiting" || stage === "all" || stageOf(o) === stage;
-  const list = useMemo(() => rows.filter((o) => inBucket(o) && inSource(o) && inStage(o) && (!q || o.order_reference.toLowerCase().includes(q) || o.recipient_phone.includes(q) || (o.networks?.name ?? "").toLowerCase().includes(q))), [rows, bucket, source, q]); // eslint-disable-line react-hooks/exhaustive-deps
+  const list = useMemo(() => rows.filter((o) => inBucket(o) && inSource(o) && inStage(o) && (!q || o.order_reference.toLowerCase().includes(q) || o.recipient_phone.includes(q) || (o.networks?.name ?? "").toLowerCase().includes(q))), [rows, bucket, source, stage, q]); // eslint-disable-line react-hooks/exhaustive-deps
+  const waitingRows = rows.filter((o) => inSource(o) && !["delivered", "refunded", "cancelled"].includes(o.status));
+  const stageCounts = (["in_progress", "verification", "review", "no_float"] as const).map((st) => ({ st, n: waitingRows.filter((o) => stageOf(o) === st).length }));
   const counts = { all: rows.filter(inSource).length, delivered: rows.filter((o) => inSource(o) && o.status === "delivered").length, waiting: rows.filter((o) => inSource(o) && !["delivered", "refunded", "cancelled"].includes(o.status)).length, refunded: rows.filter((o) => inSource(o) && o.status === "refunded").length };
   const total = list.reduce((a, o) => a + Number(o.amount), 0);
   const reasonOf = (o: Row) => o.admin_resolution_status === "awaiting_verification" ? "MTN verification" : o.status === "failed_needs_review" ? (o.failure_reason ?? "failed at supplier") : o.status === "processing" ? `${o.suppliers?.name ?? "supplier"} says ${o.supplier_status ?? "processing"}` : o.status.replace(/_/g, " ");
