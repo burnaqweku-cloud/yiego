@@ -125,6 +125,7 @@ export default function AdminAgents() {
                     {a.pitch && <p className="mt-0.5 text-[11.5px] text-muted-foreground">“{a.pitch}”</p>}
                     {a.decline_reason && <p className="mt-0.5 text-[11px] text-amber">Declined: {a.decline_reason}</p>}
                   </div>
+                  {a.status === "approved" && <Button size="sm" variant="quiet" onClick={async () => { const { data, error } = await supabase.functions.invoke<{ error?: string; to?: string; resend?: { ok?: boolean; payload?: unknown } }>("agent-admin", { body: { action: "resend_approval", applicationId: a.id } }); const err = data?.error ?? error?.message; if (err) return toast.error(err); toast[data?.resend?.ok ? "success" : "error"](data?.resend?.ok ? `Sent to ${data.to}` : `Resend said: ${JSON.stringify(data?.resend?.payload ?? data?.resend)}`); }}>Resend email</Button>}
                   {a.status === "pending" && <div className="flex gap-1.5"><Button size="sm" onClick={() => void review(a, true)} disabled={busy}>Approve</Button><Button size="sm" variant="quiet" onClick={() => { setDeclining(a); setReason(""); }}>Decline</Button></div>}
                 </div>
               </li>))}

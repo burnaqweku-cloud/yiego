@@ -33,6 +33,15 @@ Deno.serve(async (req) => {
       }
       return jsonResponse({ status: "success", data });
     }
+    if (body.action === "resend_approval") {
+      const { data: g } = await supabase.from("agents").select("id, slug, user_id, application_id").eq("application_id", body.applicationId).maybeSingle();
+      if (!g) return jsonResponse({ error: "Not an approved application" }, { status: 404 });
+      const { data: app } = await supabase.from("agent_applications").select("full_name").eq("id", body.applicationId).maybeSingle();
+      const { data: profile } = await supabase.from("profiles").select("email").eq("id", g.user_id).maybeSingle();
+      if (!profile?.email) return jsonResponse({ error: "No email on this account" }, { status: 409 });
+      const r = await sendEmail({ to: profile.email, subject: "You're approved as a DataYego agent", replyTo: "support@yiego.shop", html: wrap("You're approved 🎉", `<p>Hi ${app?.full_name ?? ""},</p><p>Your DataYego agent application has been approved. Here's what happens next:</p><ol><li>Log in to DataYego with this email.</li><li>Choose your plan and pay the monthly fee — there's a launch discount running now.</li><li>Set up your store: name, prices, and share your link.</li></ol><p>Your store address will be <b>${site()}/s/${g.slug}</b> once you're set up.</p><a href="${site()}/agent" style="display:block;margin:22px 0 6px;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">Get started</a>`) });
+      return jsonResponse({ status: "success", to: profile.email, resend: r });
+    }
     if (body.action === "test_email") {
       const { data: adm } = await supabase.from("admin_users").select("user_id").eq("user_id", auth.user.id).eq("is_active", true).maybeSingle();
       if (!adm) return jsonResponse({ error: "Admin only" }, { status: 403 });
