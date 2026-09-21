@@ -38,7 +38,7 @@ export default function AgentsApply() {
         <p className="mt-2 text-[15px] leading-6 text-muted-foreground">Get your own DataYego store, buy every bundle at agent prices, set your selling prices, and earn on each sale. We handle payments, delivery and support.</p>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          {[{ icon: BadgeCheck, t: "Agent prices", d: "Every bundle at prices below what customers pay." }, { icon: Store, t: "Your own store", d: "A link with your name on it. Share it anywhere." }, { icon: Wallet, t: "Earn per sale", d: "Your markup lands in your earnings. Withdraw to MoMo." }].map(({ icon: Icon, t, d }) => (
+          {[{ icon: BadgeCheck, t: "Cheaper data", d: "Agent prices on every bundle — MTN 1GB 4.00 not 4.15, 10GB 40.00 not 43.44." }, { icon: Store, t: "Your own store", d: "A link with your name on it. Share it anywhere." }, { icon: Wallet, t: "Earn per sale", d: "Your markup lands in your earnings. Withdraw to MoMo." }].map(({ icon: Icon, t, d }) => (
             <div key={t} className="onyx-panel rounded-2xl p-4"><Icon size={18} className="text-primary-glow" /><p className="mt-2 text-[14px] font-semibold text-foreground">{t}</p><p className="mt-0.5 text-[12.5px] leading-5 text-muted-foreground">{d}</p></div>))}
         </div>
 

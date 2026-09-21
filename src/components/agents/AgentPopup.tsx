@@ -24,8 +24,8 @@ export default function AgentPopup() {
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-glow"><Store size={18} /></span>
         <div className="min-w-0">
-          <p className="text-[15px] font-semibold text-foreground">We're accepting agents</p>
-          <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">Sell data at agent prices from your own DataYego store and earn on every bundle.</p>
+          <p className="text-[15px] font-semibold text-foreground">Get data cheaper as an agent</p>
+          <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">Agents buy every bundle below the public price — MTN 1GB from 4.00, 10GB from 40.00 — and sell from their own store. From 3.00 a month, nothing to prepay.</p>
           <div className="mt-3 flex gap-2"><Link to="/agents" onClick={() => setOpen(false)} className="onyx-btn-primary px-4 py-2 text-[13px]">Apply now</Link><button type="button" onClick={() => setOpen(false)} className="px-3 py-2 text-[13px] text-muted-foreground">Not now</button></div>
         </div>
       </div>

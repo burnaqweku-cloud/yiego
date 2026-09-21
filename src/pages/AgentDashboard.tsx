@@ -91,6 +91,9 @@ export default function AgentDashboard() {
         <h1 className="mt-3 text-[20px] font-semibold text-foreground">{agent.status === "paused" ? "Your store is paused" : "One step left"}</h1>
         <p className="mt-1 text-[13px] text-muted-foreground">{agent.status === "paused" ? `Your month ended on ${agent.paid_until}. Pay to reopen your store — everything is exactly as you left it.` : "You're approved. Pay the monthly fee and your store opens straight away."}</p>
         {quote && <div className="mt-4"><p className="text-[28px] font-semibold text-foreground">{formatGHS(quote.pay_now)}<span className="text-[13px] font-normal text-muted-foreground"> / month</span></p>{quote.promo && <p className="text-[12px] text-primary-glow">{quote.promo.percent_off}% off with {quote.promo.name} · normally {formatGHS(quote.monthly)}</p>}</div>}
+        <ul className="mt-4 space-y-2 text-left text-[13px] text-muted-foreground">
+          {[["Agent prices on every bundle", "Buy well below what customers pay — e.g. MTN 1GB at 4.00 instead of 4.15, 10GB at 40.00 instead of 43.44."], ["Your own store link", "Set your prices, share the link, and keep the difference on every sale."], ["Nothing to prepay", "No stock, no deposits. Customers pay through the store; your earnings build up and pay out to MoMo."], ["We do the rest", "Delivery, payments and support are handled by DataYego."]].map(([t, d]) => <li key={t} className="flex gap-2"><span className="mt-0.5 text-primary-glow">✓</span><span><b className="text-foreground">{t}.</b> {d}</span></li>)}
+        </ul>
         <Button className="mt-4 w-full" onClick={() => void pay()} disabled={busy}>{busy ? "Opening Paystack…" : "Pay with Paystack"}</Button>
         <p className="mt-3 text-[11px] text-faint-foreground">Card or mobile money. Your month starts the moment it's confirmed.</p>
       </div>
