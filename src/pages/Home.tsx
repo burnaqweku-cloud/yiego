@@ -4,6 +4,7 @@ import { metaFor } from "@/lib/site";
 import { organizationLd, websiteLd } from "@/lib/structuredData";
 import Hero from "@/components/home/Hero";
 import AgentPopup, { AgentNudge } from "@/components/agents/AgentPopup";
+import BecomeAgent from "@/components/home/BecomeAgent";
 import TrustStrip from "@/components/home/TrustStrip";
 import Categories from "@/components/home/Categories";
 
@@ -36,6 +37,7 @@ export default function Home() {
       <AgentPopup />
       <TrustStrip />
       <Categories />
+      <BecomeAgent />
 
       <Suspense fallback={<SectionFallback />}>
         <div className="mk-wrap">

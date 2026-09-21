@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronDown, LogOut, Menu, Search, ShieldCheck, UserRound, X } from "lucide-react";
+import { ArrowRight, ChevronDown, LogOut, Menu, Search, ShieldCheck, Store, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import Wordmark from "@/components/brand/Wordmark";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useAuth } from "@/store/auth-context";
 import { useProfile } from "@/store/profile";
+import { agentsStatus, myAgentStatus, previewRequested } from "@/lib/agents";
 import { cn } from "@/lib/utils";
 
 /**
@@ -58,7 +59,19 @@ export default function PublicNav() {
   const panelRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const links = isAuthenticated ? MEMBER_LINKS : GUEST_LINKS;
+  // Agents: "Become an agent" for everyone once launched; "My store" for agents.
+  const [agentLink, setAgentLink] = useState<{ label: string; to: string } | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    void agentsStatus().then(async ({ launched }) => {
+      if (!(launched || previewRequested())) { if (mounted) setAgentLink(null); return; }
+      const me = isAuthenticated ? await myAgentStatus() : null;
+      if (!mounted) return;
+      setAgentLink(me?.is_agent ? { label: "My store", to: "/agent" } : { label: "Become an agent", to: "/agents" });
+    });
+    return () => { mounted = false; };
+  }, [isAuthenticated]);
+  const links = [...(isAuthenticated ? MEMBER_LINKS : GUEST_LINKS), ...(agentLink ? [agentLink] : [])];
 
   // Solidify the bar only once the page has actually moved.
   useEffect(() => {
@@ -157,6 +170,7 @@ export default function PublicNav() {
     <>
       <MenuItem to="/account" icon={UserRound} label="Account settings" />
       <MenuItem to="/track-order" icon={Search} label="Track an order" />
+      {agentLink && <MenuItem to={agentLink.to} icon={Store} label={agentLink.label === "My store" ? "Agent dashboard" : agentLink.label} />}
       {isAdmin && <MenuItem to="/admin" icon={ShieldCheck} label="Admin panel" />}
     </>
   );
@@ -325,6 +339,7 @@ export default function PublicNav() {
               <div className="mt-6 flex flex-col gap-1 border-t border-white/[0.07] pt-4">
                 <SheetLink to="/account" icon={UserRound} label="Account settings" onClick={close} />
                 <SheetLink to="/track-order" icon={Search} label="Track an order" onClick={close} />
+                {agentLink && <SheetLink to={agentLink.to} icon={Store} label={agentLink.label === "My store" ? "Agent dashboard" : agentLink.label} onClick={close} />}
                 {isAdmin && <SheetLink to="/admin" icon={ShieldCheck} label="Admin panel" onClick={close} />}
                 <button
                   type="button"
@@ -339,6 +354,7 @@ export default function PublicNav() {
               <>
                 <div className="mt-6 flex flex-col gap-1 border-t border-white/[0.07] pt-4">
                   <SheetLink to="/track-order" icon={Search} label="Track an order" onClick={close} />
+                  {agentLink && <SheetLink to={agentLink.to} icon={Store} label={agentLink.label} onClick={close} />}
                 </div>
                 <div className="mt-6 flex flex-col gap-3" style={{ "--d": "280ms" } as CSSProperties}>
                   <Link to="/shop" onClick={close} className="mk-btn mk-btn-primary group w-full">
