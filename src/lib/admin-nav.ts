@@ -37,7 +37,9 @@ export const ADMIN_GROUPS: AdminGroup[] = [
   ] },
   { id: "users", label: "Users", icon: Users, pages: [
     { id: "users", label: "All users", to: "/admin/users", icon: Users, keywords: ["customer", "account", "admin", "email"] },
-    { id: "agents", label: "Agents", to: "/admin/agents", icon: Store, keywords: ["agent", "application", "store", "promo", "launch", "subscription"] },
+  ] },
+  { id: "agents", label: "Agents", icon: Store, pages: [
+    { id: "agents", label: "Agents", to: "/admin/agents", icon: Store, keywords: ["agent", "application", "store", "promo", "launch", "subscription", "payout"] },
   ] },
   { id: "support", label: "Support", icon: LifeBuoy, pages: [
     { id: "support-inbox", label: "Support inbox", to: "/admin/support-inbox", icon: Inbox, keywords: ["message", "ticket", "whatsapp"] },
