@@ -40,6 +40,7 @@ export default function AdminAgents() {
   const [declining, setDeclining] = useState<Application | null>(null); const [reason, setReason] = useState(""); const [busy, setBusy] = useState(false);
   const [editPromo, setEditPromo] = useState<Partial<Promo> | null>(null);
   const [planDraft, setPlanDraft] = useState<Plan | null>(null);
+  const [emailTest, setEmailTest] = useState<unknown>(null);
 
   const load = useCallback(async () => {
     const [a, g, p, s, r, po] = await Promise.all([
@@ -173,12 +174,16 @@ export default function AdminAgents() {
         </Panel>
       </>)}
 
-      {tab === "launch" && (
+      {tab === "launch" && (<>
+        <Panel title="Email check" note="sends a test to your own address and shows the mail service's reply">
+          <div className="flex items-center justify-between gap-3"><p className="text-[12.5px] text-muted-foreground">Approval, decline and renewal emails all go through this. If it fails here, none of them are arriving.</p><Button size="sm" variant="soft" onClick={async () => { const { data, error } = await supabase.functions.invoke<{ resend?: unknown; hasKey?: boolean; from?: string; error?: string }>("agent-admin", { body: { action: "test_email" } }); setEmailTest(error ? { error: error.message } : data); }}>Send test</Button></div>
+          {emailTest && <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-white/[0.03] p-2 text-[11px] text-muted-foreground">{JSON.stringify(emailTest, null, 2)}</pre>}
+        </Panel>
         <Panel title="Launch switch" icon={Rocket} note={launched ? "agents are live" : "agents are hidden"}>
           <p className="text-[12.5px] text-muted-foreground">Turning this on does three things at once: public prices change to the pending list, the apply page and popup appear, and active agents' stores open. Turning it off hides everything again but leaves prices where they are.</p>
           <div className="mt-3 flex justify-end">{isMaster ? <Button onClick={() => void flip(!launched)} variant={launched ? "quiet" : "primary"}>{launched ? "Switch agents off" : "Launch agents"}</Button> : <p className="text-[12px] text-faint-foreground">Only the master admin can flip this.</p>}</div>
         </Panel>
-      )}
+      </>)}
 
       <Modal open={declining !== null} onClose={() => setDeclining(null)} label="Decline application">
         <div className="w-[min(92vw,400px)] p-5">
