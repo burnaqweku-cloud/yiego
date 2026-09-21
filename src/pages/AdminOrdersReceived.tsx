@@ -11,6 +11,10 @@ import { formatGHS } from "@/lib/format";
    Orders page, for the same day or range. */
 type Bucket = "all" | "delivered" | "waiting" | "refunded";
 type Source = "all" | "platform" | "agents";
+type Stage = "all" | "in_progress" | "verification" | "review" | "no_float";
+const NO_FLOAT = /insufficient (wallet )?balance|insufficient funds|low balance/i;
+const stageOf = (o: Row): Exclude<Stage, "all"> => o.admin_resolution_status === "awaiting_verification" ? "verification" : o.status.startsWith("failed") ? (NO_FLOAT.test(o.failure_reason ?? "") ? "no_float" : "review") : "in_progress";
+const STAGE_LABEL: Record<Stage, string> = { all: "All", in_progress: "In progress", verification: "Verification", review: "Needs review", no_float: "Supplier no money" };
 interface Row { id: string; order_reference: string; recipient_phone: string; amount: number; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { name: string } | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any };
@@ -28,6 +32,7 @@ export default function AdminOrdersReceived() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const stage = (params.get("stage") as Stage) || "all";
   const set = (k: string, v: string) => { const p = new URLSearchParams(params); p.set(k, v); setParams(p, { replace: true }); };
 
   useEffect(() => {
@@ -41,7 +46,8 @@ export default function AdminOrdersReceived() {
   const inBucket = (o: Row) => bucket === "all" || (bucket === "delivered" && o.status === "delivered") || (bucket === "refunded" && o.status === "refunded") || (bucket === "waiting" && !["delivered", "refunded", "cancelled"].includes(o.status));
   const inSource = (o: Row) => source === "all" || (source === "agents" ? o.agent_id != null : o.agent_id == null);
   const q = search.trim().toLowerCase();
-  const list = useMemo(() => rows.filter((o) => inBucket(o) && inSource(o) && (!q || o.order_reference.toLowerCase().includes(q) || o.recipient_phone.includes(q) || (o.networks?.name ?? "").toLowerCase().includes(q))), [rows, bucket, source, q]); // eslint-disable-line react-hooks/exhaustive-deps
+  const inStage = (o: Row) => bucket !== "waiting" || stage === "all" || stageOf(o) === stage;
+  const list = useMemo(() => rows.filter((o) => inBucket(o) && inSource(o) && inStage(o) && (!q || o.order_reference.toLowerCase().includes(q) || o.recipient_phone.includes(q) || (o.networks?.name ?? "").toLowerCase().includes(q))), [rows, bucket, source, q]); // eslint-disable-line react-hooks/exhaustive-deps
   const counts = { all: rows.filter(inSource).length, delivered: rows.filter((o) => inSource(o) && o.status === "delivered").length, waiting: rows.filter((o) => inSource(o) && !["delivered", "refunded", "cancelled"].includes(o.status)).length, refunded: rows.filter((o) => inSource(o) && o.status === "refunded").length };
   const total = list.reduce((a, o) => a + Number(o.amount), 0);
   const reasonOf = (o: Row) => o.admin_resolution_status === "awaiting_verification" ? "MTN verification" : o.status === "failed_needs_review" ? (o.failure_reason ?? "failed at supplier") : o.status === "processing" ? `${o.suppliers?.name ?? "supplier"} says ${o.supplier_status ?? "processing"}` : o.status.replace(/_/g, " ");
@@ -66,6 +72,9 @@ export default function AdminOrdersReceived() {
           <Segmented<Source> value={source} onChange={(v) => set("source", v)} options={[{ value: "all", label: "All" }, { value: "platform", label: "YG" }, { value: "agents", label: "Agents" }]} />
           <div className="flex items-center gap-1.5"><input type="date" value={from} max={to} onChange={(e) => set("from", e.target.value)} className={`${inputCls} w-auto`} /><span className="text-[11px] text-faint-foreground">to</span><input type="date" value={to} min={from} onChange={(e) => set("to", e.target.value)} className={`${inputCls} w-auto`} /></div>
         </div>
+        {bucket === "waiting" && (
+          <div className="mb-2"><Segmented<Stage> value={stage} onChange={(v) => set("stage", v)} options={[{ value: "all", label: `All (${waitingRows.length})` }, ...stageCounts.filter((x) => x.n > 0).map((x) => ({ value: x.st, label: `${STAGE_LABEL[x.st]} (${x.n})` }))]} /></div>
+        )}
         <ul className="divide-y divide-white/[0.06]">
           {!loading && list.length === 0 && <li className="py-5 text-center text-[12px] text-faint-foreground">Nothing here for this filter.</li>}
           {list.map((o) => (
