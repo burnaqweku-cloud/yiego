@@ -116,7 +116,8 @@ async function savePrefs(userId: string, patch: { pins?: string[]; recents?: str
   pending = { ...pending, ...patch };
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    const body = { user_id: userId, ...pending, updated_at: new Date().toISOString() }; pending = {};
+    // Always send both lists so a recents update never wipes the pins (or vice versa).
+    const body = { user_id: userId, pins: readPins(userId), recents: readRecent(userId), ...pending, updated_at: new Date().toISOString() }; pending = {};
     try { await prefsTable().upsert(body, { onConflict: "user_id" }); } catch { /* local copy still works */ }
   }, 600);
 }
@@ -126,9 +127,13 @@ export async function syncPrefsFromAccount(userId: string): Promise<{ pins: stri
   try {
     const { data } = await prefsTable().select("pins, recents").eq("user_id", userId).maybeSingle();
     if (!data) return null;
-    const pins = Array.isArray(data.pins) ? data.pins.filter((x: unknown) => typeof x === "string") : [];
-    const recents = Array.isArray(data.recents) ? data.recents.filter((x: unknown) => typeof x === "string") : [];
+    const serverPins = Array.isArray(data.pins) ? data.pins.filter((x: unknown) => typeof x === "string") : [];
+    const serverRecents = Array.isArray(data.recents) ? data.recents.filter((x: unknown) => typeof x === "string") : [];
+    // The fuller list wins: an empty server list never erases what this device has.
+    const pins = serverPins.length ? serverPins : readPins(userId);
+    const recents = serverRecents.length ? serverRecents : readRecent(userId);
     write(PIN_KEY(userId), pins); write(RECENT_KEY(userId), recents);
+    if (!serverPins.length && pins.length) void savePrefs(userId, { pins });
     return { pins, recents };
   } catch { return null; }
 }
