@@ -14,18 +14,20 @@ import { formatGHS } from "@/lib/format";
    ended in delivered or refunded. Their money is with us; they have no data.
    Grouped by why it's waiting, oldest first, with the fix on each row. */
 
-type Bucket = "all" | "verification" | "in_progress" | "review";
+type Bucket = "all" | "verification" | "in_progress" | "no_float" | "review";
 type SortKey = "oldest" | "newest" | "amount";
 const FINANCE_START = "2026-09-12";
 
+const NO_FLOAT = /insufficient (wallet )?balance|insufficient funds|low balance/i;
 function bucketOf(o: AdminOrderRow): Exclude<Bucket, "all"> {
   if (o.admin_resolution_status === "awaiting_verification") return "verification";
+  if ((o.status === "failed_needs_review" || o.status === "failed") && NO_FLOAT.test(o.failure_reason ?? "")) return "no_float";
   if (o.status === "failed_needs_review" || o.status === "failed") return "review";
   return "in_progress";
 }
-const BUCKET_LABEL: Record<Exclude<Bucket, "all">, string> = { verification: "Held for MTN verification", in_progress: "In progress at supplier", review: "Awaiting your decision" };
-const BUCKET_HINT: Record<Exclude<Bucket, "all">, string> = { verification: "MTN checks numbers receiving a first bundle; DBH refunded these to our float. Resubmit on DBH once verified, or refund.", in_progress: "Sent to the supplier and waiting. Normal for a few minutes; look closer past an hour.", review: "Failed at the supplier. Retry, or refund the customer." };
-const BUCKET_TONE: Record<Exclude<Bucket, "all">, "warn" | "default" | "bad"> = { verification: "warn", in_progress: "default", review: "bad" };
+const BUCKET_LABEL: Record<Exclude<Bucket, "all">, string> = { verification: "Held for MTN verification", in_progress: "In progress at supplier", no_float: "Supplier ran out of money", review: "Awaiting your decision" };
+const BUCKET_HINT: Record<Exclude<Bucket, "all">, string> = { no_float: "The supplier's float was empty when we sent these. Top up the supplier, then refulfil them all in one go.", verification: "MTN checks numbers receiving a first bundle; DBH refunded these to our float. Resubmit on DBH once verified, or refund.", in_progress: "Sent to the supplier and waiting. Normal for a few minutes; look closer past an hour.", review: "Failed at the supplier. Retry, or refund the customer." };
+const BUCKET_TONE: Record<Exclude<Bucket, "all">, "warn" | "default" | "bad"> = { verification: "warn", in_progress: "default", no_float: "bad", review: "bad" };
 
 function age(from: string) {
   const mins = Math.max(0, Math.round((Date.now() - new Date(from).getTime()) / 60000));
@@ -43,6 +45,20 @@ export default function AdminUndelivered() {
   const [acting, setActing] = useState<{ order: AdminOrderRow; action: "retry" | "refund" | "mark_delivered" } | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
+  const refulfilAll = async () => {
+    const targets = orders.filter((o) => bucketOf(o) === "no_float");
+    if (!targets.length) return;
+    if (!window.confirm(`Re-send ${targets.length} order${targets.length === 1 ? "" : "s"} to the supplier now? Make sure the supplier has been topped up first — each one is charged as it goes.`)) return;
+    setBulk({ done: 0, total: targets.length });
+    let ok = 0;
+    for (const o of targets) {
+      const r = await supabase.functions.invoke<{ error?: string; result?: { status?: string } }>("admin-order-action", { body: { action: "retry", orderReference: o.order_reference } });
+      if (!r.error && !r.data?.error && r.data?.result?.status !== "failed_needs_review") ok += 1;
+      setBulk((b) => (b ? { ...b, done: b.done + 1 } : b));
+    }
+    setBulk(null); toast.success(`${ok} of ${targets.length} accepted by the supplier.`); void load();
+  };
 
   const load = useCallback(async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,7 +75,7 @@ export default function AdminUndelivered() {
     const list = orders.filter((o) => (bucket === "all" || bucketOf(o) === bucket) && (!q || o.order_reference.toLowerCase().includes(q) || (o.recipient_phone ?? "").includes(q) || (o.guest_email ?? "").toLowerCase().includes(q) || (o.networks?.name ?? "").toLowerCase().includes(q) || (o.suppliers?.name ?? "").toLowerCase().includes(q)));
     return list.sort((a, b) => sort === "amount" ? Number(b.amount) - Number(a.amount) : sort === "newest" ? +new Date(b.paid_at ?? b.created_at) - +new Date(a.paid_at ?? a.created_at) : +new Date(a.paid_at ?? a.created_at) - +new Date(b.paid_at ?? b.created_at));
   }, [orders, bucket, q, sort]);
-  const byBucket = useMemo(() => (["verification", "in_progress", "review"] as const).map((b) => { const mine = orders.filter((o) => bucketOf(o) === b); return { b, n: mine.length, total: mine.reduce((a, o) => a + Number(o.amount), 0), oldest: mine[0]?.paid_at ?? null }; }), [orders]);
+  const byBucket = useMemo(() => (["verification", "in_progress", "no_float", "review"] as const).map((b) => { const mine = orders.filter((o) => bucketOf(o) === b); return { b, n: mine.length, total: mine.reduce((a, o) => a + Number(o.amount), 0), oldest: mine[0]?.paid_at ?? null }; }), [orders]);
   const total = orders.reduce((a, o) => a + Number(o.amount), 0);
   const oldest = orders[0]?.paid_at ?? null;
 
@@ -101,6 +117,15 @@ export default function AdminUndelivered() {
         <Stat loading={loading} label="Oldest waiting" value={oldest ? age(oldest) : "—"} note={oldest ? `paid ${formatAdminDate(oldest)}` : "nothing waiting"} icon={Clock} tone={oldest && Date.now() - +new Date(oldest) > 86400000 ? "bad" : "default"} />
         <Stat loading={loading} label="Needs you now" value={String(byBucket.find((x) => x.b === "review")?.n ?? 0)} note="failed at supplier" tone={(byBucket.find((x) => x.b === "review")?.n ?? 0) > 0 ? "bad" : "good"} />
       </StatGrid>
+
+      {byBucket.find((x) => x.b === "no_float")?.n ? (
+        <Panel title="Supplier ran out of money" note={`${byBucket.find((x) => x.b === "no_float")?.n} orders · ${formatGHS(byBucket.find((x) => x.b === "no_float")?.total ?? 0)}`}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[12.5px] text-muted-foreground">These failed only because the supplier's float was empty. Once you've topped up, send them all again with one tap.</p>
+            <Button onClick={() => void refulfilAll()} disabled={bulk !== null}>{bulk ? `Sending ${bulk.done}/${bulk.total}…` : "Refulfil all"}</Button>
+          </div>
+        </Panel>
+      ) : null}
 
       <Panel title="Why they're waiting" note="tap to filter">
         <Rows empty="">{byBucket.map(({ b, n, total: t, oldest: o }) => <Row key={b} onClick={() => setBucket(bucket === b ? "all" : b)} primary={<>{BUCKET_LABEL[b]} {bucket === b && <Pill tone="good">filtering</Pill>}</>} secondary={n ? `${n} order${n === 1 ? "" : "s"} · oldest ${o ? age(o) : "—"} · ${BUCKET_HINT[b]}` : BUCKET_HINT[b]} right={formatGHS(t)} rightNote={`${n} orders`} tone={n ? BUCKET_TONE[b] : "default"} />)}</Rows>
