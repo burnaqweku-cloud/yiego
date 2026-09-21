@@ -60,6 +60,7 @@ export default function OrdersPulse() {
   const peakHour = byHour.length ? byHour.indexOf(Math.max(...byHour)) : -1;
   const uniqueBuyers = new Set(rows.map((r) => r.user_id ?? r.guest_email ?? "")).size;
 
+  const drill = (bucket: string) => `/admin/orders/received?bucket=${bucket}&source=${source}&from=${ymd(start)}&to=${ymd(end)}`;
   const exportCsv = () => {
     const lines = [["day", "orders"], ...(byDay.length ? byDay : [[ymd(start), String(n)]]).map(([d, c]) => [d, String(c)])];
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lines.map((r) => r.join(",")).join("\n")], { type: "text/csv" })); a.download = `datayego-orders-${ymd(start)}-to-${ymd(end)}.csv`; a.click();
@@ -74,10 +75,10 @@ export default function OrdersPulse() {
         <Button variant="ghost" size="sm" onClick={exportCsv} aria-label="Export"><Download size={13} /></Button>
       </div>
       <StatGrid cols={4}>
-        <Stat loading={loading} label="Orders" value={String(n)} note={days > 1 ? `${(n / days).toFixed(1)} a day` : `${uniqueBuyers} buyer${uniqueBuyers === 1 ? "" : "s"}`} tone="good" />
-        <Stat loading={loading} label="Sales" value={<Money value={revenue} />} note={source === "agents" ? `${gb} GB · agents earn ${formatGHS(rows.reduce((a, r) => a + Number(r.agent_margin ?? 0), 0))}` : `${gb} GB`} />
-        <Stat loading={loading} label="Delivered" value={String(delivered)} note={n ? `${Math.round((delivered / n) * 100)}%` : "—"} tone="good" />
-        <Stat loading={loading} label="Waiting / refunded" value={`${waiting} / ${refunded}`} note={waiting ? "still to deliver" : "all settled"} tone={waiting ? "warn" : "default"} />
+        <Stat loading={loading} label="Orders" value={String(n)} note={days > 1 ? `${(n / days).toFixed(1)} a day` : `${uniqueBuyers} buyer${uniqueBuyers === 1 ? "" : "s"}`} tone="good" to={drill("all")} />
+        <Stat loading={loading} label="Sales" value={<Money value={revenue} />} note={source === "agents" ? `${gb} GB · agents earn ${formatGHS(rows.reduce((a, r) => a + Number(r.agent_margin ?? 0), 0))}` : `${gb} GB`} to={drill("all")} />
+        <Stat loading={loading} label="Delivered" value={String(delivered)} note={n ? `${Math.round((delivered / n) * 100)}%` : "—"} tone="good" to={drill("delivered")} />
+        <Stat loading={loading} label="Waiting / refunded" value={`${waiting} / ${refunded}`} note={waiting ? "still to deliver" : "all settled"} tone={waiting ? "warn" : "default"} to={drill("waiting")} />
       </StatGrid>
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
         <Rows empty="">{byNetwork.map(([name, v]) => <Row key={name} primary={name} secondary={`${v.n} order${v.n === 1 ? "" : "s"}`} right={formatGHS(v.amt)} />)}</Rows>
