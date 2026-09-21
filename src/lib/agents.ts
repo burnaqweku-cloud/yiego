@@ -24,6 +24,8 @@ export async function agentsStatus(): Promise<{ launched: boolean; plan: AgentPl
 /** Before launch, every signed-in admin sees the agent pages, popup and stores. Nobody else does. */
 export function previewRequested() { return cache?.isAdmin === true; }
 export function rememberPreview() { try { if (new URLSearchParams(window.location.search).get("preview") === "agents") sessionStorage.setItem("yg-agents-preview", "1"); } catch { /* ignore */ } }
+export interface MyAgentStatus { is_agent: boolean; agent_status: string | null; application: { status: "pending" | "approved" | "declined"; created_at: string; reviewed_at: string | null; decline_reason: string | null } | null }
+export async function myAgentStatus(): Promise<MyAgentStatus | null> { const { data: session } = await supabase.auth.getSession(); if (!session?.session) return null; const { data } = await p1().rpc("my_agent_status", {}); return (data as MyAgentStatus) ?? null; }
 export async function planQuote(): Promise<PlanQuote | null> { const { data } = await p1().rpc("agent_plan_quote", {}); return (data as PlanQuote) ?? null; }
 export async function applyAsAgent(input: { fullName: string; phone: string; whatsapp: string; town: string; pitch: string }) {
   return p1().rpc("agent_apply", { p_full_name: input.fullName, p_phone: input.phone, p_whatsapp: input.whatsapp, p_town: input.town, p_pitch: input.pitch }) as Promise<{ data: string | null; error: { message: string } | null }>;

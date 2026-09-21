@@ -21,6 +21,7 @@ interface Plan { monthly_price: number; payout_minimum: number; payout_fee_rate:
 type Tab = "overview" | "applications" | "agents" | "subscriptions" | "payouts" | "promos" | "launch";
 const TAB_PATH: Record<Tab, string> = { overview: "/admin/agents", applications: "/admin/agents/applications", agents: "/admin/agents/list", subscriptions: "/admin/agents/subscriptions", payouts: "/admin/agents/payouts", promos: "/admin/agents/plan", launch: "/admin/agents/launch" };
 const TAB_TITLE: Record<Tab, string> = { overview: "Agents", applications: "Applications", agents: "All agents", subscriptions: "Subscriptions", payouts: "Payouts", promos: "Plan & promos", launch: "Launch" };
+interface Grant { id: string; agent_id: string; months: number; from_date: string; until_date: string; note: string | null; created_at: string }
 interface SubPayment { provider_reference: string; amount: number; status: string; verified_at: string | null; created_at: string; user_id: string | null; metadata: { agent_id?: string; percent_off?: number } | null }
 interface Payout { id: string; agent_id: string; amount: number; fee: number; net: number; momo_number: string; momo_name: string | null; status: string; note: string | null; created_at: string; paid_at: string | null; paid_reference: string | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,6 +33,8 @@ export default function AdminAgents() {
   const tab: Tab = (Object.entries(TAB_PATH).find(([, path]) => location.pathname === path)?.[0] as Tab) ?? "overview";
   const setTab = (t: Tab) => navigate(TAB_PATH[t]);
   const [subs, setSubs] = useState<SubPayment[]>([]);
+  const [grants, setGrants] = useState<Grant[]>([]);
+  const [granting, setGranting] = useState<Agent | null>(null); const [grantMonths, setGrantMonths] = useState("1"); const [grantNote, setGrantNote] = useState("");
   const [apps, setApps] = useState<Application[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [promos, setPromos] = useState<Promo[]>([]);
@@ -50,7 +53,7 @@ export default function AdminAgents() {
   const [emailTest, setEmailTest] = useState<unknown>(null);
 
   const load = useCallback(async () => {
-    const [a, g, p, s, r, po, sp] = await Promise.all([
+    const [a, g, p, s, r, po, sp, gr] = await Promise.all([
       db().from("agent_applications").select("*").order("created_at", { ascending: false }).limit(500),
       db().from("agents").select("id, user_id, slug, store_name, status, paid_until, earnings_balance, created_at").order("created_at", { ascending: false }),
       db().from("agent_promos").select("*").order("created_at", { ascending: false }),
@@ -58,8 +61,9 @@ export default function AdminAgents() {
       actor ? db().rpc("admin_role", { p_user: actor }) : Promise.resolve({ data: null, error: null }),
       db().from("agent_payouts").select("*").order("created_at", { ascending: false }).limit(300),
       db().from("payment_intents").select("provider_reference, amount, status, verified_at, created_at, user_id, metadata").eq("purpose", "agent_subscription").order("created_at", { ascending: false }).limit(300),
+      db().from("agent_subscription_grants").select("*").order("created_at", { ascending: false }).limit(300),
     ]);
-    setPayouts(po.data ?? []); setSubs(sp.data ?? []);
+    setPayouts(po.data ?? []); setSubs(sp.data ?? []); setGrants(gr.data ?? []);
     setApps(a.data ?? []); setAgents(g.data ?? []); setPromos(p.data ?? []);
     for (const row of s.data ?? []) { if (row.key === "agents_launched") setLaunched(Boolean(row.value)); if (row.key === "agent_plan") { setPlan(row.value); setPlanDraft(row.value); } }
     setIsMaster(r.data === "master");
@@ -75,6 +79,12 @@ export default function AdminAgents() {
   const pending = apps.filter((a) => a.status === "pending").length;
   const payoutsWaiting = payouts.filter((p) => p.status === "requested" || p.status === "approved").length;
   const agentName = (id: string) => agents.find((g) => g.id === id)?.store_name ?? "—";
+  const grant = async () => {
+    if (!granting) return;
+    const { data, error } = await db().rpc("admin_grant_subscription", { p_actor: actor, p_agent_id: granting.id, p_months: Number(grantMonths), p_note: grantNote.trim() || null });
+    if (error) return toast.error(error.message.replace(/_/g, " "));
+    toast.success(`${granting.store_name} is covered until ${(data as { paid_until: string }).paid_until}. Not booked as income.`); setGranting(null); setGrantNote(""); void load();
+  };
   const settle = async (p: Payout, action: "approve" | "reject" | "paid", reference?: string) => {
     const { error } = await db().rpc("admin_settle_agent_payout", { p_actor: actor, p_payout_id: p.id, p_action: action, p_reference: reference ?? null, p_note: null });
     if (error) return toast.error(error.message.replace(/_/g, " "));
@@ -155,7 +165,7 @@ export default function AdminAgents() {
       {tab === "agents" && (
         <Panel title="Agents" note={`${visibleAgents.length} shown`}>
           <Rows empty={loading ? "Loading…" : "No agents yet — approve an application to create one."}>
-            {visibleAgents.map((g) => <Row key={g.id} primary={<>{g.store_name} <Pill tone={g.status === "active" ? "good" : g.status === "awaiting_payment" ? "warn" : "muted"}>{g.status.replace(/_/g, " ")}</Pill></>} secondary={`/s/${g.slug} · ${emails.get(g.user_id) ?? "—"} · ${g.paid_until ? `paid until ${g.paid_until}` : "not paid yet"} · joined ${formatAdminDate(g.created_at)}`} right={formatGHS(Number(g.earnings_balance))} rightNote="earnings" />)}
+            {visibleAgents.map((g) => <Row key={g.id} onClick={isMaster ? () => { setGranting(g); setGrantMonths("1"); } : undefined} primary={<>{g.store_name} <Pill tone={g.status === "active" ? "good" : g.status === "awaiting_payment" ? "warn" : "muted"}>{g.status.replace(/_/g, " ")}</Pill>{grants.some((x) => x.agent_id === g.id) && <Pill tone="muted">complimentary</Pill>}</>} secondary={`/s/${g.slug} · ${emails.get(g.user_id) ?? "—"} · ${g.paid_until ? `covered until ${g.paid_until}` : "not paid yet"} · joined ${formatAdminDate(g.created_at)}${isMaster ? " · tap to give months" : ""}`} right={formatGHS(Number(g.earnings_balance))} rightNote="earnings" />)}
           </Rows>
         </Panel>
       )}
@@ -172,6 +182,11 @@ export default function AdminAgents() {
             {agents.filter((g) => g.status !== "awaiting_payment").sort((a, b) => (a.paid_until ?? "").localeCompare(b.paid_until ?? "")).map((g) => { const days = g.paid_until ? Math.ceil((+new Date(g.paid_until) - Date.now()) / 86400000) : null; return <Row key={g.id} primary={<>{g.store_name} <Pill tone={g.status === "active" ? "good" : "warn"}>{g.status}</Pill></>} secondary={`${emails.get(g.user_id) ?? "—"} · /s/${g.slug}`} right={g.paid_until ?? "—"} rightNote={days == null ? "" : days < 0 ? `${-days} days overdue` : days === 0 ? "ends today" : `${days} days left`} tone={days != null && days <= 3 ? "warn" : "default"} />; })}
           </Rows>
         </Panel>
+        {grants.length > 0 && (
+          <Panel title="Complimentary months" note="given by the master admin · not counted as income">
+            <Rows empty="">{grants.map((x) => <Row key={x.id} primary={agents.find((g) => g.id === x.agent_id)?.store_name ?? "—"} secondary={`${x.from_date} → ${x.until_date} · ${formatAdminDate(x.created_at)}${x.note ? ` · ${x.note}` : ""}`} right={`${x.months} month${x.months === 1 ? "" : "s"}`} rightNote="free" tone="muted" />)}</Rows>
+          </Panel>
+        )}
         <Panel title="Payments" note="every subscription payment, newest first">
           <Rows empty={loading ? "Loading…" : "No payments yet."}>
             {subs.map((x) => <Row key={x.provider_reference} primary={<>{agents.find((g) => g.id === x.metadata?.agent_id)?.store_name ?? emails.get(x.user_id ?? "") ?? "—"} <Pill tone={x.status === "succeeded" ? "good" : x.status === "pending" ? "warn" : "muted"}>{x.status}</Pill></>} secondary={`${formatAdminDate(x.verified_at ?? x.created_at)} · ${x.provider_reference}${Number(x.metadata?.percent_off ?? 0) > 0 ? ` · ${x.metadata?.percent_off}% promo` : ""}`} right={formatGHS(Number(x.amount))} />)}
@@ -230,6 +245,17 @@ export default function AdminAgents() {
           <p className="mt-1 text-[12.5px] text-muted-foreground">They get an email. Add a reason if you want them to see one.</p>
           <div className="mt-3"><Field label="Reason (optional)"><input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} /></Field></div>
           <div className="mt-4 flex justify-end gap-2"><Button variant="quiet" onClick={() => setDeclining(null)}>Cancel</Button><Button onClick={() => declining && void review(declining, false)} disabled={busy}>Decline</Button></div>
+        </div>
+      </Modal>
+      <Modal open={granting !== null} onClose={() => setGranting(null)} label="Give months">
+        <div className="w-[min(92vw,400px)] p-5">
+          <h2 className="text-[16px] font-semibold text-foreground">Give {granting?.store_name} free months</h2>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">Extends their plan without a payment. It's recorded as complimentary, not as income, so Finance stays true.{granting?.paid_until ? ` Currently covered until ${granting.paid_until}; months add on from there.` : ""}</p>
+          <div className="mt-3 grid gap-2">
+            <Field label="How long"><select value={grantMonths} onChange={(e) => setGrantMonths(e.target.value)} className={inputCls}><option value="1">1 month</option><option value="2">2 months</option><option value="3">3 months</option><option value="6">6 months</option><option value="12">1 year</option></select></Field>
+            <Field label="Note (optional)"><input value={grantNote} onChange={(e) => setGrantNote(e.target.value)} placeholder="e.g. partner, early supporter" className={inputCls} /></Field>
+          </div>
+          <div className="mt-4 flex justify-end gap-2"><Button variant="quiet" onClick={() => setGranting(null)}>Cancel</Button><Button onClick={() => void grant()}>Give</Button></div>
         </div>
       </Modal>
       <Modal open={paying !== null} onClose={() => setPaying(null)} label="Mark payout paid">

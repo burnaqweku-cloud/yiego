@@ -4,7 +4,7 @@ import { BadgeCheck, CheckCircle2, ChevronRight, Link2, Store, Wallet } from "lu
 import { toast } from "sonner";
 import Seo from "@/components/seo/Seo";
 import { Button } from "@/components/ui/button";
-import { agentsStatus, applyAsAgent, planQuote, previewRequested, rememberPreview, type PlanQuote } from "@/lib/agents";
+import { agentsStatus, applyAsAgent, myAgentStatus, planQuote, previewRequested, rememberPreview, type MyAgentStatus, type PlanQuote } from "@/lib/agents";
 import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
 
@@ -18,7 +18,8 @@ export default function AgentsApply() {
   const [form, setForm] = useState({ fullName: "", phone: "", whatsapp: "", town: "", pitch: "" });
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false); const [done, setDone] = useState(false);
-  useEffect(() => { rememberPreview(); void agentsStatus().then(({ launched }) => setVisible(launched || previewRequested())); void planQuote().then(setQuote); }, []);
+  const [me, setMe] = useState<MyAgentStatus | null>(null);
+  useEffect(() => { rememberPreview(); void agentsStatus().then(({ launched }) => setVisible(launched || previewRequested())); void planQuote().then(setQuote); void myAgentStatus().then(setMe); }, [user]);
   if (visible === null) return null;
   if (!visible) return <div className="mk-wrap py-16 text-center text-muted-foreground">This page isn't available yet.</div>;
 
@@ -84,8 +85,22 @@ export default function AgentsApply() {
           {["Apply below", "We review and email you", "Pay the monthly fee", "Set prices and share your link"].map((s, i) => <li key={s} className="flex items-center gap-2 text-[12.5px] text-muted-foreground"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-[11px] font-semibold text-foreground">{i + 1}</span>{s}{i < 3 && <ChevronRight size={13} className="ml-auto hidden text-faint-foreground sm:block" />}</li>)}
         </ol>
 
-        {/* Form */}
-        {done ? (
+        {/* Form, or where they already are */}
+        {me?.is_agent ? (
+          <div className="onyx-panel mt-8 rounded-2xl p-6 text-center">
+            <CheckCircle2 size={32} className="mx-auto text-primary-glow" />
+            <p className="mt-3 text-[18px] font-semibold text-foreground">You're already an agent</p>
+            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">{me.agent_status === "active" ? "Your store is open. Manage prices, orders and earnings from your dashboard." : me.agent_status === "paused" ? "Your store is paused until this month's fee is paid." : "You're approved — pay the monthly fee to open your store."}</p>
+            <Link to="/agent" className="onyx-btn-primary mt-5 inline-block px-5 py-2.5 text-[13.5px]">{me.agent_status === "active" ? "Open my dashboard" : "Pay and open my store"}</Link>
+          </div>
+        ) : me?.application?.status === "pending" ? (
+          <div className="onyx-panel mt-8 rounded-2xl p-6 text-center">
+            <CheckCircle2 size={32} className="mx-auto text-amber" />
+            <p className="mt-3 text-[18px] font-semibold text-foreground">Your application is being reviewed</p>
+            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">You sent it on {new Date(me.application.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}. We'll email {user?.email} with the decision — usually within a day. One application at a time, so there's nothing more to do for now.</p>
+            <Link to="/shop" className="mt-5 inline-block text-[13px] font-medium text-primary-glow">Back to the shop</Link>
+          </div>
+        ) : done ? (
           <div className="onyx-panel mt-8 rounded-2xl p-6 text-center">
             <CheckCircle2 size={32} className="mx-auto text-primary-glow" />
             <p className="mt-3 text-[18px] font-semibold text-foreground">Application sent</p>
@@ -96,6 +111,7 @@ export default function AgentsApply() {
           <div className="onyx-panel mt-8 rounded-2xl p-5 sm:p-6">
             <h2 className="text-[18px] font-semibold text-foreground">Apply to be an agent</h2>
             <p className="mt-1 text-[12.5px] text-muted-foreground">Takes a minute. {user ? `We'll email ${user.email} with the decision.` : "You'll sign in (or create a free account) to send it."}</p>
+            {me?.application?.status === "declined" && <p className="mt-2 rounded-lg bg-amber/10 px-3 py-2 text-[12px] text-amber">Your earlier application wasn't approved{me.application.decline_reason ? `: ${me.application.decline_reason}` : ""}. You're welcome to apply again.</p>}
             <div className="mt-5 grid gap-4">
               {field("fullName", "Full name", { autoComplete: "name", placeholder: "Kofi Mensah" })}
               <div className="grid gap-4 sm:grid-cols-2">
