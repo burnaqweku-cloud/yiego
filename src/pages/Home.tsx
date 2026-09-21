@@ -3,6 +3,7 @@ import Seo from "@/components/seo/Seo";
 import { metaFor } from "@/lib/site";
 import { organizationLd, websiteLd } from "@/lib/structuredData";
 import Hero from "@/components/home/Hero";
+import AgentPopup from "@/components/agents/AgentPopup";
 import TrustStrip from "@/components/home/TrustStrip";
 import Categories from "@/components/home/Categories";
 
@@ -31,6 +32,7 @@ export default function Home() {
     <>
       <Seo {...metaFor("/")} jsonLd={[organizationLd(), websiteLd()]} />
       <Hero />
+      <AgentPopup />
       <TrustStrip />
       <Categories />
 
