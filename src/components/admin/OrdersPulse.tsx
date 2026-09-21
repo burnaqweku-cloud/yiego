@@ -9,7 +9,8 @@ import { formatGHS } from "@/lib/format";
    Counts paid orders by the moment the customer paid. */
 
 type Preset = "today" | "yesterday" | "7d" | "30d" | "custom";
-interface Row_ { paid_at: string; status: string; amount: number; networks: { name: string } | null; data_products: { capacity_gb: number } | null; guest_email: string | null; user_id: string | null }
+interface Row_ { paid_at: string; status: string; amount: number; agent_id: string | null; agent_margin: number | null; networks: { name: string } | null; data_products: { capacity_gb: number } | null; guest_email: string | null; user_id: string | null }
+type Source = "all" | "platform" | "agents";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any };
 
@@ -32,14 +33,17 @@ export default function OrdersPulse() {
   const [preset, setPreset] = useState<Preset>("today");
   const [from, setFrom] = useState(ymd(new Date()));
   const [to, setTo] = useState(ymd(new Date()));
-  const [rows, setRows] = useState<Row_[]>([]);
+  const [allRows, setAllRows] = useState<Row_[]>([]);
+  const [source, setSource] = useState<Source>("all");
+  const rows = useMemo(() => allRows.filter((r) => source === "all" || (source === "agents" ? r.agent_id != null : r.agent_id == null)), [allRows, source]);
+  const agentOrders = allRows.filter((r) => r.agent_id != null).length;
   const [loading, setLoading] = useState(true);
   const [start, end] = useMemo(() => rangeFor(preset, from, to), [preset, from, to]);
 
   useEffect(() => {
     let mounted = true; setLoading(true);
-    db().from("orders").select("paid_at, status, amount, guest_email, user_id, networks(name), data_products(capacity_gb)").eq("payment_status", "succeeded").gte("paid_at", iso(start)).lte("paid_at", iso(end)).order("paid_at", { ascending: true }).limit(5000)
-      .then((r: { data: Row_[] | null }) => { if (mounted) { setRows(r.data ?? []); setLoading(false); } });
+    db().from("orders").select("paid_at, status, amount, agent_id, agent_margin, guest_email, user_id, networks(name), data_products(capacity_gb)").eq("payment_status", "succeeded").gte("paid_at", iso(start)).lte("paid_at", iso(end)).order("paid_at", { ascending: true }).limit(5000)
+      .then((r: { data: Row_[] | null }) => { if (mounted) { setAllRows(r.data ?? []); setLoading(false); } });
     return () => { mounted = false; };
   }, [start, end]);
 
@@ -65,12 +69,13 @@ export default function OrdersPulse() {
     <Panel title="Orders received" icon={CalendarDays} note={days === 1 ? ymd(start) : `${ymd(start)} → ${ymd(end)} · ${days} days`}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <Segmented<Preset> value={preset} onChange={setPreset} options={[{ value: "today", label: "Today" }, { value: "yesterday", label: "Yesterday" }, { value: "7d", label: "7 days" }, { value: "30d", label: "30 days" }, { value: "custom", label: "Pick dates" }]} />
+        <Segmented<Source> value={source} onChange={setSource} options={[{ value: "all", label: "All" }, { value: "platform", label: "YG" }, { value: "agents", label: `Agents${agentOrders ? ` (${agentOrders})` : ""}` }]} />
         {preset === "custom" && <div className="flex items-center gap-1.5"><input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className={`${inputCls} w-auto`} /><span className="text-[11px] text-faint-foreground">to</span><input type="date" value={to} min={from} max={ymd(new Date())} onChange={(e) => setTo(e.target.value)} className={`${inputCls} w-auto`} /></div>}
         <Button variant="ghost" size="sm" onClick={exportCsv} aria-label="Export"><Download size={13} /></Button>
       </div>
       <StatGrid cols={4}>
         <Stat loading={loading} label="Orders" value={String(n)} note={days > 1 ? `${(n / days).toFixed(1)} a day` : `${uniqueBuyers} buyer${uniqueBuyers === 1 ? "" : "s"}`} tone="good" />
-        <Stat loading={loading} label="Sales" value={<Money value={revenue} />} note={`${gb} GB`} />
+        <Stat loading={loading} label="Sales" value={<Money value={revenue} />} note={source === "agents" ? `${gb} GB · agents earn ${formatGHS(rows.reduce((a, r) => a + Number(r.agent_margin ?? 0), 0))}` : `${gb} GB`} />
         <Stat loading={loading} label="Delivered" value={String(delivered)} note={n ? `${Math.round((delivered / n) * 100)}%` : "—"} tone="good" />
         <Stat loading={loading} label="Waiting / refunded" value={`${waiting} / ${refunded}`} note={waiting ? "still to deliver" : "all settled"} tone={waiting ? "warn" : "default"} />
       </StatGrid>
