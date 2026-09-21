@@ -56,6 +56,8 @@ const AdminUndelivered = lazy(() => import("./pages/AdminUndelivered"));
 const AdminMasterBalance = lazy(() => import("./pages/AdminMasterBalance"));
 const AdminAgents = lazy(() => import("./pages/AdminAgents"));
 const AgentsApply = lazy(() => import("./pages/AgentsApply"));
+const AgentStore = lazy(() => import("./pages/AgentStore"));
+const AgentDashboard = lazy(() => import("./pages/AgentDashboard"));
 
 function ThemedToaster() { const { resolved } = useTheme(); return <Toaster position="top-center" theme={resolved} toastOptions={{ classNames: { toast: "!rounded-2xl !border !border-white/10 !bg-[var(--toast-bg)] !text-[var(--toast-ink)] !shadow-[var(--toast-shadow)]", title: "!text-[13.5px] !font-semibold !tracking-tight", description: "!text-[12.5px] !text-ink-dim" } }} />; }
 /** Shown while a route chunk downloads. */
@@ -73,7 +75,7 @@ const App = () => (
         marketing pages, the shop and the account area. */}
     <Route element={<PublicShell />}>
       {/* Marketing pages lay out their own full-bleed sections. */}
-      <Route path="/" element={<Home />} /><Route path="/agents" element={<AgentsApply />} />
+      <Route path="/" element={<Home />} /><Route path="/agents" element={<AgentsApply />} /><Route path="/s/:slug" element={<AgentStore />} /><Route path="/agent" element={<AgentDashboard />} />
       <Route path="/about" element={<About />} />
       {/* SEO landing pages: live prices per network + the comparison page. */}
       <Route path="/prices" element={<Prices />} />

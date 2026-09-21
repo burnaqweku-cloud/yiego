@@ -116,10 +116,16 @@ function DeliveryStatusPanel({ supplier }: { supplier: SupplierChoice }) {
   );
 }
 
-export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { open: boolean; preselect?: BuyPreselect | null; onClose: () => void; onAddMoney: () => void }) {
+export interface AgentStoreContext { slug: string; name: string; prices: Record<string, number> }
+
+export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agent }: { open: boolean; preselect?: BuyPreselect | null; onClose: () => void; onAddMoney: () => void; agent?: AgentStoreContext | null }) {
   const { balance } = useWallet();
   const { profile } = useProfile();
-  const { isAuthenticated, user } = useAuth();
+  const auth = useAuth();
+  const user = auth.user;
+  // In an agent's store everyone checks out as a guest through Paystack: the
+  // agent's prices apply and wallets don't. Signed-in users still get their email prefilled.
+  const isAuthenticated = auth.isAuthenticated && !agent;
   const [step, setStep] = useState<Step>("supplier");
   const { suppliers, loading: suppliersLoading } = useSupplierChoices();
   const [supplierId, setSupplierId] = useState<string | null>(null);
@@ -232,8 +238,8 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
       id: product.app_product_code ?? product.id,
       size: product.name.replace(/^.*?—\s*/, ""),
       validity: product.validity ?? "Supplier terms",
-      price: Number(product.customer_price),
-      tag: Number(product.customer_price) <= 10 ? "Popular" : Number(product.customer_price) >= 40 ? "Best value" : undefined,
+      price: agent ? Number(agent.prices[product.id] ?? product.customer_price) : Number(product.customer_price),
+      tag: !agent && Number(product.customer_price) <= 10 ? "Popular" : !agent && Number(product.customer_price) >= 40 ? "Best value" : undefined,
       unavailable: product.is_paused ? (product.pause_reason ?? "Currently unavailable. Please try again later.") : undefined,
     }));
   }
@@ -291,7 +297,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney }: { 
   async function startGuestPaystack() {
     if (!bundle || !emailValid) { toast.error("Enter a valid email for your receipt"); return; }
     setStep("processing");
-    const result = await createGuestDataPayment({ productId: bundle.id, recipientPhone: digits, supplierId: chosenSupplier?.id, guestEmail: guestEmail.trim(), guestPhone: digits });
+    const result = await createGuestDataPayment({ productId: bundle.id, recipientPhone: digits, supplierId: chosenSupplier?.id, guestEmail: guestEmail.trim(), guestPhone: digits, agentSlug: agent?.slug });
     if (result.error || !result.data?.data?.authorizationUrl) { toast.error(result.error ?? "Could not start Paystack payment"); setStep("review"); return; }
     window.location.assign(result.data.data.authorizationUrl);
   }

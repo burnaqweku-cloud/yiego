@@ -17,7 +17,8 @@ interface Application { id: string; user_id: string; full_name: string; phone: s
 interface Agent { id: string; user_id: string; slug: string; store_name: string; status: string; paid_until: string | null; earnings_balance: number; created_at: string }
 interface Promo { id: string; name: string; percent_off: number; starts_at: string; ends_at: string | null; max_uses: number | null; uses: number; is_active: boolean }
 interface Plan { monthly_price: number; payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number; popup_delay_seconds: number }
-type Tab = "applications" | "agents" | "promos" | "launch";
+type Tab = "applications" | "agents" | "payouts" | "promos" | "launch";
+interface Payout { id: string; agent_id: string; amount: number; fee: number; net: number; momo_number: string; momo_name: string | null; status: string; note: string | null; created_at: string; paid_at: string | null; paid_reference: string | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> };
 
@@ -27,6 +28,8 @@ export default function AdminAgents() {
   const [apps, setApps] = useState<Application[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [promos, setPromos] = useState<Promo[]>([]);
+  const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [paying, setPaying] = useState<Payout | null>(null); const [payRef, setPayRef] = useState("");
   const [plan, setPlan] = useState<Plan | null>(null);
   const [launched, setLaunched] = useState(false);
   const [isMaster, setIsMaster] = useState(false);
@@ -39,13 +42,15 @@ export default function AdminAgents() {
   const [planDraft, setPlanDraft] = useState<Plan | null>(null);
 
   const load = useCallback(async () => {
-    const [a, g, p, s, r] = await Promise.all([
+    const [a, g, p, s, r, po] = await Promise.all([
       db().from("agent_applications").select("*").order("created_at", { ascending: false }).limit(500),
       db().from("agents").select("id, user_id, slug, store_name, status, paid_until, earnings_balance, created_at").order("created_at", { ascending: false }),
       db().from("agent_promos").select("*").order("created_at", { ascending: false }),
       db().from("site_settings").select("key, value").in("key", ["agents_launched", "agent_plan"]),
       actor ? db().rpc("admin_role", { p_user: actor }) : Promise.resolve({ data: null, error: null }),
+      db().from("agent_payouts").select("*").order("created_at", { ascending: false }).limit(300),
     ]);
+    setPayouts(po.data ?? []);
     setApps(a.data ?? []); setAgents(g.data ?? []); setPromos(p.data ?? []);
     for (const row of s.data ?? []) { if (row.key === "agents_launched") setLaunched(Boolean(row.value)); if (row.key === "agent_plan") { setPlan(row.value); setPlanDraft(row.value); } }
     setIsMaster(r.data === "master");
@@ -59,6 +64,13 @@ export default function AdminAgents() {
   const visibleApps = useMemo(() => apps.filter((a) => (appFilter === "all" || a.status === "pending") && (!q || a.full_name.toLowerCase().includes(q) || a.phone.includes(q) || (emails.get(a.user_id) ?? "").toLowerCase().includes(q))), [apps, appFilter, q, emails]);
   const visibleAgents = useMemo(() => agents.filter((g) => !q || g.store_name.toLowerCase().includes(q) || g.slug.includes(q) || (emails.get(g.user_id) ?? "").toLowerCase().includes(q)), [agents, q, emails]);
   const pending = apps.filter((a) => a.status === "pending").length;
+  const payoutsWaiting = payouts.filter((p) => p.status === "requested" || p.status === "approved").length;
+  const agentName = (id: string) => agents.find((g) => g.id === id)?.store_name ?? "—";
+  const settle = async (p: Payout, action: "approve" | "reject" | "paid", reference?: string) => {
+    const { error } = await db().rpc("admin_settle_agent_payout", { p_actor: actor, p_payout_id: p.id, p_action: action, p_reference: reference ?? null, p_note: null });
+    if (error) return toast.error(error.message.replace(/_/g, " "));
+    toast.success(action === "paid" ? "Marked paid and booked." : action === "reject" ? "Rejected; earnings returned." : "Approved."); setPaying(null); setPayRef(""); void load();
+  };
 
   const review = async (app: Application, approve: boolean) => {
     setBusy(true);
@@ -95,7 +107,7 @@ export default function AdminAgents() {
         <Stat loading={loading} label="Monthly plan" value={plan ? formatGHS(plan.monthly_price) : "—"} note={promos.find((p) => p.is_active) ? `${promos.find((p) => p.is_active)?.percent_off}% promo running` : "no promo"} icon={BadgePercent} onClick={() => setTab("promos")} />
       </StatGrid>
       <div className="flex flex-wrap items-center gap-2">
-        <Segmented<Tab> value={tab} onChange={setTab} options={[{ value: "applications", label: `Applications${pending ? ` (${pending})` : ""}` }, { value: "agents", label: "Agents" }, { value: "promos", label: "Plan & promos" }, { value: "launch", label: "Launch" }]} />
+        <Segmented<Tab> value={tab} onChange={setTab} options={[{ value: "applications", label: `Applications${pending ? ` (${pending})` : ""}` }, { value: "agents", label: "Agents" }, { value: "payouts", label: `Payouts${payoutsWaiting ? ` (${payoutsWaiting})` : ""}` }, { value: "promos", label: "Plan & promos" }, { value: "launch", label: "Launch" }]} />
         {tab === "applications" && <Segmented<"pending" | "all"> value={appFilter} onChange={setAppFilter} options={[{ value: "pending", label: "Waiting" }, { value: "all", label: "All" }]} />}
         {(tab === "applications" || tab === "agents") && <label className="relative block flex-1 min-w-[200px]"><Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-faint-foreground" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name, phone, email, store" className={`${inputCls} pl-8`} /></label>}
       </div>
@@ -123,6 +135,23 @@ export default function AdminAgents() {
         <Panel title="Agents" note={`${visibleAgents.length} shown`}>
           <Rows empty={loading ? "Loading…" : "No agents yet — approve an application to create one."}>
             {visibleAgents.map((g) => <Row key={g.id} primary={<>{g.store_name} <Pill tone={g.status === "active" ? "good" : g.status === "awaiting_payment" ? "warn" : "muted"}>{g.status.replace(/_/g, " ")}</Pill></>} secondary={`/s/${g.slug} · ${emails.get(g.user_id) ?? "—"} · ${g.paid_until ? `paid until ${g.paid_until}` : "not paid yet"} · joined ${formatAdminDate(g.created_at)}`} right={formatGHS(Number(g.earnings_balance))} rightNote="earnings" />)}
+          </Rows>
+        </Panel>
+      )}
+
+      {tab === "payouts" && (
+        <Panel title="Payout requests" note="approve, pay by MoMo, then mark paid">
+          <Rows empty={loading ? "Loading…" : "No payout requests."}>
+            {payouts.map((p) => (
+              <li key={p.id} className="py-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12.5px] font-semibold text-foreground">{agentName(p.agent_id)} <Pill tone={p.status === "paid" ? "good" : p.status === "rejected" ? "muted" : "warn"}>{p.status}</Pill></p>
+                    <p className="text-[11px] text-faint-foreground">{formatGHS(Number(p.amount))} − fee {formatGHS(Number(p.fee))} = <b>send {formatGHS(Number(p.net))}</b> to {p.momo_number}{p.momo_name ? ` (${p.momo_name})` : ""} · {formatAdminDate(p.created_at)}{p.paid_reference ? ` · ref ${p.paid_reference}` : ""}</p>
+                  </div>
+                  {(p.status === "requested" || p.status === "approved") && <div className="flex gap-1.5">{p.status === "requested" && <Button size="sm" variant="soft" onClick={() => void settle(p, "approve")}>Approve</Button>}<Button size="sm" onClick={() => { setPaying(p); setPayRef(""); }}>Mark paid</Button><Button size="sm" variant="quiet" onClick={() => void settle(p, "reject")}>Reject</Button></div>}
+                </div>
+              </li>))}
           </Rows>
         </Panel>
       )}
@@ -157,6 +186,14 @@ export default function AdminAgents() {
           <p className="mt-1 text-[12.5px] text-muted-foreground">They get an email. Add a reason if you want them to see one.</p>
           <div className="mt-3"><Field label="Reason (optional)"><input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} /></Field></div>
           <div className="mt-4 flex justify-end gap-2"><Button variant="quiet" onClick={() => setDeclining(null)}>Cancel</Button><Button onClick={() => declining && void review(declining, false)} disabled={busy}>Decline</Button></div>
+        </div>
+      </Modal>
+      <Modal open={paying !== null} onClose={() => setPaying(null)} label="Mark payout paid">
+        <div className="w-[min(92vw,400px)] p-5">
+          <h2 className="text-[16px] font-semibold text-foreground">Mark paid · {paying ? formatGHS(Number(paying.net)) : ""}</h2>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">Only after you've actually sent {paying ? formatGHS(Number(paying.net)) : ""} to {paying?.momo_number}. This books it and takes it out of the pot.</p>
+          <div className="mt-3"><Field label="MoMo transaction reference (optional)"><input value={payRef} onChange={(e) => setPayRef(e.target.value)} className={inputCls} /></Field></div>
+          <div className="mt-4 flex justify-end gap-2"><Button variant="quiet" onClick={() => setPaying(null)}>Cancel</Button><Button onClick={() => paying && void settle(paying, "paid", payRef.trim() || undefined)}>Mark paid</Button></div>
         </div>
       </Modal>
       <Modal open={editPromo !== null} onClose={() => setEditPromo(null)} label="Promo">

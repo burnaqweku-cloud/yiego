@@ -22,6 +22,9 @@ export interface GuestDataPaymentInput {
   recipientPhone: string;
   guestEmail?: string;
   guestPhone?: string;
+  supplierId?: string;
+  /** Bought through an agent's store: the agent's price applies and the order is theirs. */
+  agentSlug?: string;
 }
 
 export interface WalletDepositInput {
@@ -90,6 +93,7 @@ export interface Phase1Product {
   network_id?: string;
   is_paused?: boolean;
   pause_reason?: string | null;
+  agent_price?: number | null;
 }
 
 export interface Phase1NetworkRow { id: string; code: string; name: string; is_paused: boolean; pause_reason: string | null }
@@ -170,7 +174,7 @@ export async function loadPhase1Products() {
   const phase1Client = (supabase as unknown as { schema: (name: string) => Phase1SchemaClient }).schema("phase1");
   const { data, error } = await phase1Client
     .from("data_products")
-    .select("id, app_product_code, name, validity, capacity_gb, customer_price, network_id, is_paused, pause_reason")
+    .select("id, app_product_code, name, validity, capacity_gb, customer_price, network_id, is_paused, pause_reason, agent_price")
     .eq("is_active", true)
     .order("display_order", { ascending: true });
 

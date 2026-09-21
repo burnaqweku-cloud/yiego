@@ -83,6 +83,13 @@ Deno.serve(async (req) => {
           .eq("provider_reference", providerReference);
       }
 
+      if (paymentIntent?.purpose === "agent_subscription") {
+        const paidAmount = amountFromSubunit(Number(verified.payload.data.amount));
+        if (paidAmount < Number(paymentIntent.amount)) return jsonResponse({ error: "Verified amount is less than payment intent amount" }, { status: 400 });
+        await supabase.from("payment_intents").update({ status: "succeeded", verified_at: new Date().toISOString() }).eq("id", paymentIntent.id);
+        await supabase.rpc("agent_activate_subscription", { p_intent_id: paymentIntent.id });
+        await supabase.from("payment_events").update({ processed_at: new Date().toISOString() }).eq("provider", "paystack").eq("event_type", eventType).eq("provider_reference", providerReference);
+      }
       if (paymentIntent?.purpose === "guest_data_purchase" && paymentIntent.order_id) {
         const paidAmount = amountFromSubunit(Number(verified.payload.data.amount));
 

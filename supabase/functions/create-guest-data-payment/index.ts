@@ -4,8 +4,8 @@ import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
 
-function makeOrderReference() {
-  return `YG-${crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`;
+function makeOrderReference(prefix = "YG") {
+  return `${prefix}-${crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`;
 }
 
 function normalizePhone(value: string) {
@@ -81,6 +81,19 @@ Deno.serve(async (req) => {
         { status: 409 },
       );
     }
+
+    // Bought through an agent's store? Then the agent's price applies and
+    // the order is theirs (AG- reference, margin to their earnings on delivery).
+    const agentSlug = typeof body?.agentSlug === "string" ? body.agentSlug.trim().toLowerCase() : "";
+    let agent: { id: string; slug: string; prices: Record<string, number> } | null = null;
+    if (agentSlug) {
+      const { data: store } = await supabase.rpc("agent_store", { p_slug: agentSlug });
+      if (!store) return jsonResponse({ error: "This store isn't open right now." }, { status: 409 });
+      agent = store as { id: string; slug: string; prices: Record<string, number> };
+    }
+    const sellingPrice = agent ? Number(agent.prices?.[product.id] ?? product.customer_price) : Number(product.customer_price);
+    const agentPrice = agent ? Number(product.agent_price ?? product.customer_price) : null;
+    const agentMargin = agent && agentPrice != null ? Math.max(0, Math.round((sellingPrice - agentPrice) * 100) / 100) : null;
 
     // The supplier the guest chose in the shop, if they chose one.
     const supplierRaw = typeof body?.supplierId === "string" ? body.supplierId.trim() : "";
@@ -174,7 +187,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const orderReference = existingOpen ? existingOpen.order_reference : makeOrderReference();
+    const orderReference = existingOpen ? existingOpen.order_reference : makeOrderReference(agent ? "AG" : "YG");
     const paystackReference = makePaystackReference("YGDATA");
     let order: { id: string; order_reference: string };
 
@@ -203,8 +216,11 @@ Deno.serve(async (req) => {
           network_id: product.network_id,
           product_id: product.id,
           supplier_id: mapping.supplier_id,
-          amount: product.customer_price,
+          amount: sellingPrice,
           cost_amount: product.cost_price,
+          agent_id: agent?.id ?? null,
+          agent_price: agentPrice,
+          agent_margin: agentMargin,
           currency: "GHS",
           status: "awaiting_payment",
           payment_status: "pending",
@@ -247,7 +263,7 @@ Deno.serve(async (req) => {
 
     // Paystack payments carry a 4% fee on top of the bundle price. The order's
     // value stays the bundle price; the customer is charged base + fee.
-    const baseAmount = Number(product.customer_price);
+    const baseAmount = sellingPrice;
     const feeAmount = paystackFee(baseAmount);
     const chargeAmount = paystackTotal(baseAmount);
 
@@ -266,6 +282,7 @@ Deno.serve(async (req) => {
         recipientPhone,
         baseAmount,
         feeAmount,
+        agentId: agent?.id ?? null,
       },
     });
 

@@ -92,7 +92,9 @@ export default function AdminFinance() {
   const cashTotal = Number(o?.cash.bank ?? 0) + Number(o?.cash.paystack_transit ?? 0);
   const bank = Number(o?.cash.bank ?? 0);
   const floats = suppliers.reduce((a, s) => a + Number((s as SupplierRow & { confirmed_balance?: number | null }).confirmed_balance ?? o?.cash.supplier_float?.[s.code] ?? 0), 0);
-  const owedTotal = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0);
+  const [owedToAgents, setOwedToAgents] = useState(0);
+  useEffect(() => { void db().from("finance_balances").select("balance").eq("code", "owed_to_agents").maybeSingle().then((r: { data: { balance: number } | null }) => setOwedToAgents(Number(r.data?.balance ?? 0))); }, [entries]);
+  const owedTotal = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0) + owedToAgents;
   const master = bank; // the pot: partners' money + payouts − top-ups, which is exactly what the ledger's bank holds
   const netWorth = bank + Number(o?.cash.paystack_transit ?? 0) + floats - owedTotal;
 
@@ -118,6 +120,7 @@ export default function AdminFinance() {
       <Panel title="What we owe" icon={Wallet} note={`total ${formatGHS(owedTotal)}`}>
         <StatGrid>
           <Stat loading={loading} label="Customer wallets" value={<Money value={o?.owed.customer_wallets} />} note="balances customers hold" to="/admin/wallet" />
+          <Stat loading={loading} label="Owed to agents" value={<Money value={owedToAgents} />} note="earnings not yet paid out" tone={owedToAgents > 0 ? "warn" : "default"} to="/admin/agents" />
           <Stat loading={loading} label="Paid, not delivered" value={<Money value={o?.owed.undelivered} />} note={`${o?.owed.undelivered_count ?? 0} orders`} tone={Number(o?.owed.undelivered_count) > 0 ? "warn" : "default"} to="/admin/finance/undelivered" />
           <Stat loading={loading} label="Refunds owed" value={<Money value={o?.owed.refunds_due} />} note="refunded orders, money not yet returned" tone={Number(o?.owed.refunds_due) > 0 ? "bad" : "default"} />
           <Stat loading={loading} label="Money put in" to="/admin/finance/funding" value={<Money value={o?.funding.outside} />} note={`top-ups + charges · ${formatGHS(Number(o?.funding.carried_in ?? 0))} carried in from before launch`} />
