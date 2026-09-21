@@ -20,7 +20,7 @@ export default function AgentStore() {
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("agent_store", { p_slug: slug }).then((r: { data: StoreData | null }) => setStore(r.data ?? null));
+    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("agent_store", { p_slug: slug, p_preview: true }).then((r: { data: StoreData | null }) => setStore(r.data ?? null));
     void loadPhase1Products().then((r) => setProducts(r.data ?? []));
   }, [slug]);
 

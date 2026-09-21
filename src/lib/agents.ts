@@ -9,16 +9,20 @@ export interface PlanQuote { monthly: number; promo: { id: string; name: string;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const p1 = () => (supabase as unknown as { schema: (s: string) => any }).schema("phase1");
 
-let cache: { launched: boolean; plan: AgentPlan | null; at: number } | null = null;
-export async function agentsStatus(): Promise<{ launched: boolean; plan: AgentPlan | null }> {
+let cache: { launched: boolean; plan: AgentPlan | null; isAdmin: boolean; at: number } | null = null;
+export async function agentsStatus(): Promise<{ launched: boolean; plan: AgentPlan | null; isAdmin: boolean }> {
   if (cache && Date.now() - cache.at < 60_000) return cache;
-  const { data } = await p1().from("site_settings").select("key, value").in("key", ["agents_launched", "agent_plan"]);
+  const [{ data }, { data: session }] = await Promise.all([p1().from("site_settings").select("key, value").in("key", ["agents_launched", "agent_plan"]), supabase.auth.getSession()]);
   const launched = Boolean((data ?? []).find((r: { key: string }) => r.key === "agents_launched")?.value);
   const plan = ((data ?? []).find((r: { key: string }) => r.key === "agent_plan")?.value as AgentPlan | undefined) ?? null;
-  cache = { launched, plan, at: Date.now() };
+  let isAdmin = false;
+  const uid = session?.session?.user?.id;
+  if (uid) { const { data: adm } = await p1().rpc("is_active_admin", { p_user: uid }); isAdmin = Boolean(adm); }
+  cache = { launched, plan, isAdmin, at: Date.now() };
   return cache;
 }
-export function previewRequested() { try { return new URLSearchParams(window.location.search).get("preview") === "agents" || sessionStorage.getItem("yg-agents-preview") === "1"; } catch { return false; } }
+/** Preview is for admins only: the URL flag alone does nothing for anyone else. */
+export function previewRequested() { try { return (new URLSearchParams(window.location.search).get("preview") === "agents" || sessionStorage.getItem("yg-agents-preview") === "1") && cache?.isAdmin === true; } catch { return false; } }
 export function rememberPreview() { try { if (new URLSearchParams(window.location.search).get("preview") === "agents") sessionStorage.setItem("yg-agents-preview", "1"); } catch { /* ignore */ } }
 export async function planQuote(): Promise<PlanQuote | null> { const { data } = await p1().rpc("agent_plan_quote", {}); return (data as PlanQuote) ?? null; }
 export async function applyAsAgent(input: { fullName: string; phone: string; whatsapp: string; town: string; pitch: string }) {
