@@ -6,6 +6,7 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Field, Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
+import AdminRecordModal from "@/components/admin/AdminRecordModal";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
@@ -27,7 +28,7 @@ export default function AdminAgentDetail() {
   const [a, setA] = useState<Agent | null | undefined>(undefined); const [email, setEmail] = useState("");
   const [orders, setOrders] = useState<Ord[]>([]); const [payouts, setPayouts] = useState<Payout[]>([]); const [grants, setGrants] = useState<Grant[]>([]); const [ledger, setLedger] = useState<Ledger[]>([]);
   const [range, setRange] = useState<Range>("30d"); const [source, setSource] = useState<Source>("all"); const [isMaster, setIsMaster] = useState(false);
-  const [granting, setGranting] = useState(false); const [months, setMonths] = useState("1"); const [note, setNote] = useState("");
+  const [granting, setGranting] = useState(false); const [viewing, setViewing] = useState<Ord | null>(null); const [months, setMonths] = useState("1"); const [note, setNote] = useState("");
   const load = useCallback(async () => {
     const { data: g } = await db().from("agents").select("*").eq("id", id).maybeSingle();
     if (!g) { setA(null); return; } setA(g);
@@ -88,12 +89,13 @@ export default function AdminAgentDetail() {
         <ul className="divide-y divide-white/[0.06]">
           {shown.length === 0 && <li className="py-5 text-center text-[12px] text-faint-foreground">Nothing in this period.</li>}
           {shown.slice(0, 200).map((o) => { const self = isSelf(o); const st = stage(o); return (
-            <li key={o.id} className="flex items-start gap-2.5 py-2">
+            <li key={o.id} className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-white/[0.02]" onClick={() => setViewing(o)}>
               <div className="min-w-0 flex-1">
-                <p className="text-[12.5px] font-semibold text-foreground"><Link to={`/admin/orders?q=${o.order_reference}`} className="font-mono">{o.order_reference}</Link> <Pill tone={self ? "muted" : "good"}>{self ? "own purchase" : "store sale"}</Pill> <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
-                <p className="text-[11px] text-faint-foreground">{formatAdminDate(o.paid_at)}{!self && o.guest_email ? ` · buyer ${o.guest_email}` : ""}{self ? ` · paid agent price ${formatGHS(Number(o.agent_price ?? o.amount))}` : ` · sold ${formatGHS(Number(o.amount))} · agent price ${formatGHS(Number(o.agent_price ?? 0))} · agent's share ${formatGHS(Number(o.agent_margin ?? 0))}`}</p>
+                <p className="truncate text-[12.5px] text-foreground"><span className="font-mono font-semibold">{o.order_reference}</span> <span className="text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB · {o.recipient_phone}</span></p>
+                <p className="truncate text-[11px] text-faint-foreground">{formatAdminDate(o.paid_at)} · {self ? "own purchase" : `share ${formatGHS(Number(o.agent_margin ?? 0))}`}</p>
               </div>
-              <div className="text-right"><p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</p><Pill tone={st === "delivered" ? "good" : st === "refunded" || st === "review" ? "bad" : "warn"}>{st}</Pill></div>
+              <span className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</span>
+              <Pill tone={st === "delivered" ? "good" : st === "refunded" || st === "review" ? "bad" : "warn"}>{st}</Pill>
             </li>); })}
         </ul>
       </Panel>
@@ -111,6 +113,13 @@ export default function AdminAgentDetail() {
         </div>
       </div>
 
+      <AdminRecordModal open={viewing !== null} onClose={() => setViewing(null)} title={viewing?.order_reference ?? "Order"} subtitle={viewing ? `${isSelf(viewing) ? "Own purchase at agent price" : "Store sale"} · ${stage(viewing)}` : ""} fields={viewing ? [
+        { label: "Bundle", value: `${viewing.networks?.name ?? ""} ${viewing.data_products?.capacity_gb ?? ""}GB` }, { label: "Recipient", value: viewing.recipient_phone }, { label: "Paid at", value: formatAdminDate(viewing.paid_at) },
+        ...(isSelf(viewing) ? [{ label: "Paid (agent price)", value: formatGHS(Number(viewing.amount)) }] : [{ label: "Buyer", value: viewing.guest_email ?? "signed-in customer" }, { label: "Sold for", value: formatGHS(Number(viewing.amount)) }, { label: "Agent price", value: formatGHS(Number(viewing.agent_price ?? 0)) }, { label: "Agent's share", value: formatGHS(Number(viewing.agent_margin ?? 0)) }]),
+        { label: "Supplier says", value: viewing.supplier_status ?? "—" }, { label: "Order status", value: viewing.status.replace(/_/g, " ") },
+      ] : []}>
+        {viewing && <div className="flex justify-end"><Link to={`/admin/orders?q=${viewing.order_reference}`}><Button size="sm" variant="soft">Open in Orders</Button></Link></div>}
+      </AdminRecordModal>
       <Modal open={granting} onClose={() => setGranting(false)} label="Give months">
         <div className="w-[min(92vw,400px)] p-5">
           <h2 className="text-[16px] font-semibold text-foreground">Give {a.store_name} free months</h2>
