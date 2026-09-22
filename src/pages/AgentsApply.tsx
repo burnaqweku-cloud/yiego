@@ -53,15 +53,56 @@ export default function AgentsApply() {
     <div className="mk-wrap py-8 sm:py-14">
       <Seo path="/agents" title="Become a DataYego agent" description="Buy data at agent prices, sell from your own store, keep the difference." />
       <div className="mx-auto max-w-2xl">
-        {/* Pitch */}
         <div className="text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11.5px] font-semibold uppercase tracking-[0.12em] text-primary-glow"><Store size={12} />Agents</span>
-          <h1 className="mt-4 font-display text-[30px] font-semibold leading-[1.1] tracking-tight text-foreground sm:text-[40px]">Start your own<br />data business.</h1>
-          <p className="mx-auto mt-3 max-w-lg text-[15px] leading-6 text-muted-foreground">Buy data cheaper than everyone else, get a free online store with your name on it, set your own prices and keep the profit. No deposit needed. We handle payment, delivery and support.</p>
+          <h1 className="mt-3 font-display text-[28px] font-semibold leading-[1.1] tracking-tight text-foreground sm:text-[36px]">Start your own<br />data business.</h1>
+          <p className="mx-auto mt-2 max-w-md text-[14px] leading-6 text-muted-foreground">Buy data cheaper, get a free online store, set your prices, keep the profit. No deposit needed.</p>
         </div>
-
+        {/* Form, or where they already are */}
+        {me?.is_agent ? (
+          <div className="onyx-panel mt-6 rounded-2xl p-6 text-center">
+            <CheckCircle2 size={32} className="mx-auto text-primary-glow" />
+            <p className="mt-3 text-[18px] font-semibold text-foreground">You're already an agent</p>
+            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">{me.agent_status === "active" ? "Your store is open. Manage prices, orders and earnings from your dashboard." : me.agent_status === "paused" ? "Your store is paused until this month's fee is paid." : "You're approved — pay the monthly fee to open your store."}</p>
+            <Link to="/agent" className="onyx-btn-primary mt-5 inline-block px-5 py-2.5 text-[13.5px]">{me.agent_status === "active" ? "Open my dashboard" : "Pay and open my store"}</Link>
+          </div>
+        ) : me?.application?.status === "pending" ? (
+          <div className="onyx-panel mt-6 rounded-2xl p-6 text-center">
+            <CheckCircle2 size={32} className="mx-auto text-amber" />
+            <p className="mt-3 text-[18px] font-semibold text-foreground">Your application is being reviewed</p>
+            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">You sent it on {new Date(me.application.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}. We'll email {user?.email} with the decision — usually within a day. One application at a time, so there's nothing more to do for now.</p>
+            <Link to="/shop" className="mt-5 inline-block text-[13px] font-medium text-primary-glow">Back to the shop</Link>
+          </div>
+        ) : done ? (
+          <div className="onyx-panel mt-6 rounded-2xl p-6 text-center">
+            <CheckCircle2 size={32} className="mx-auto text-primary-glow" />
+            <p className="mt-3 text-[18px] font-semibold text-foreground">Application sent</p>
+            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">We read every one. You'll get an email as soon as it's reviewed — usually within a day. Nothing to pay until then.</p>
+            <Link to="/shop" className="mt-5 inline-block text-[13px] font-medium text-primary-glow">Back to the shop</Link>
+          </div>
+        ) : (
+          <div className="onyx-panel mt-6 rounded-2xl p-5 sm:p-6">
+            <h2 className="text-[18px] font-semibold text-foreground">Apply to be an agent</h2>
+            <p className="mt-1 text-[12.5px] text-muted-foreground">Takes a minute. {user ? `We'll email ${user.email} with the decision.` : "You'll sign in (or create a free account) to send it."}</p>
+            {me?.application?.status === "declined" && <p className="mt-2 rounded-lg bg-amber/10 px-3 py-2 text-[12px] text-amber">Your earlier application wasn't approved{me.application.decline_reason ? `: ${me.application.decline_reason}` : ""}. You're welcome to apply again.</p>}
+            <div className="mt-5 grid gap-4">
+              {field("fullName", "Full name", { autoComplete: "name", placeholder: "Kofi Mensah" })}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {field("phone", "Phone number", { inputMode: "tel", autoComplete: "tel", placeholder: "0241234567" })}
+                {field("whatsapp", "WhatsApp number", { inputMode: "tel", placeholder: "Same as phone" }, "optional")}
+              </div>
+              {field("town", "Town / area", { placeholder: "Kumasi, Adum" })}
+              {field("pitch", "How will you sell?", { placeholder: "WhatsApp groups at my school, my shop's customers…" }, "one line")}
+            </div>
+            <div className="mt-5 flex items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
+              <p className="flex items-center gap-1.5 text-[11.5px] text-faint-foreground"><Link2 size={12} />Your store link is created when you're approved.</p>
+              <Button onClick={() => void submit()} disabled={busy}>{busy ? "Sending…" : user ? "Send application" : "Sign in & apply"}</Button>
+            </div>
+          </div>
+        )}
         {/* Benefits */}
-        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+        <h2 className="mt-10 text-center text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">What you get</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {[
             { icon: BadgeCheck, t: "Buy data cheaper", d: "MTN 1GB at 4.00, not 4.15. 10GB at 40.00, not 43.44. Every bundle, every network — for you or to sell." },
             { icon: Store, t: "Free online store", d: "datayego.com/s/yourname. You set the prices. Share the link on WhatsApp, anywhere." },
@@ -85,48 +126,6 @@ export default function AgentsApply() {
           {["Apply below", "We review and email you", "Pay the monthly fee", "Set prices and share your link"].map((s, i) => <li key={s} className="flex items-center gap-2 text-[12.5px] text-muted-foreground"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-[11px] font-semibold text-foreground">{i + 1}</span>{s}{i < 3 && <ChevronRight size={13} className="ml-auto hidden text-faint-foreground sm:block" />}</li>)}
         </ol>
 
-        {/* Form, or where they already are */}
-        {me?.is_agent ? (
-          <div className="onyx-panel mt-8 rounded-2xl p-6 text-center">
-            <CheckCircle2 size={32} className="mx-auto text-primary-glow" />
-            <p className="mt-3 text-[18px] font-semibold text-foreground">You're already an agent</p>
-            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">{me.agent_status === "active" ? "Your store is open. Manage prices, orders and earnings from your dashboard." : me.agent_status === "paused" ? "Your store is paused until this month's fee is paid." : "You're approved — pay the monthly fee to open your store."}</p>
-            <Link to="/agent" className="onyx-btn-primary mt-5 inline-block px-5 py-2.5 text-[13.5px]">{me.agent_status === "active" ? "Open my dashboard" : "Pay and open my store"}</Link>
-          </div>
-        ) : me?.application?.status === "pending" ? (
-          <div className="onyx-panel mt-8 rounded-2xl p-6 text-center">
-            <CheckCircle2 size={32} className="mx-auto text-amber" />
-            <p className="mt-3 text-[18px] font-semibold text-foreground">Your application is being reviewed</p>
-            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">You sent it on {new Date(me.application.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}. We'll email {user?.email} with the decision — usually within a day. One application at a time, so there's nothing more to do for now.</p>
-            <Link to="/shop" className="mt-5 inline-block text-[13px] font-medium text-primary-glow">Back to the shop</Link>
-          </div>
-        ) : done ? (
-          <div className="onyx-panel mt-8 rounded-2xl p-6 text-center">
-            <CheckCircle2 size={32} className="mx-auto text-primary-glow" />
-            <p className="mt-3 text-[18px] font-semibold text-foreground">Application sent</p>
-            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">We read every one. You'll get an email as soon as it's reviewed — usually within a day. Nothing to pay until then.</p>
-            <Link to="/shop" className="mt-5 inline-block text-[13px] font-medium text-primary-glow">Back to the shop</Link>
-          </div>
-        ) : (
-          <div className="onyx-panel mt-8 rounded-2xl p-5 sm:p-6">
-            <h2 className="text-[18px] font-semibold text-foreground">Apply to be an agent</h2>
-            <p className="mt-1 text-[12.5px] text-muted-foreground">Takes a minute. {user ? `We'll email ${user.email} with the decision.` : "You'll sign in (or create a free account) to send it."}</p>
-            {me?.application?.status === "declined" && <p className="mt-2 rounded-lg bg-amber/10 px-3 py-2 text-[12px] text-amber">Your earlier application wasn't approved{me.application.decline_reason ? `: ${me.application.decline_reason}` : ""}. You're welcome to apply again.</p>}
-            <div className="mt-5 grid gap-4">
-              {field("fullName", "Full name", { autoComplete: "name", placeholder: "Kofi Mensah" })}
-              <div className="grid gap-4 sm:grid-cols-2">
-                {field("phone", "Phone number", { inputMode: "tel", autoComplete: "tel", placeholder: "0241234567" })}
-                {field("whatsapp", "WhatsApp number", { inputMode: "tel", placeholder: "Same as phone" }, "optional")}
-              </div>
-              {field("town", "Town / area", { placeholder: "Kumasi, Adum" })}
-              {field("pitch", "How will you sell?", { placeholder: "WhatsApp groups at my school, my shop's customers…" }, "one line")}
-            </div>
-            <div className="mt-5 flex items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
-              <p className="flex items-center gap-1.5 text-[11.5px] text-faint-foreground"><Link2 size={12} />Your store link is created when you're approved.</p>
-              <Button onClick={() => void submit()} disabled={busy}>{busy ? "Sending…" : user ? "Send application" : "Sign in & apply"}</Button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
