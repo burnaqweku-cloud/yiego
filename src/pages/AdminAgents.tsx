@@ -85,7 +85,23 @@ export default function AdminAgents() {
 
   const q = search.trim().toLowerCase();
   const visibleApps = useMemo(() => apps.filter((a) => (appFilter === "all" || a.status === "pending") && (!q || a.full_name.toLowerCase().includes(q) || a.phone.includes(q) || (emails.get(a.user_id) ?? "").toLowerCase().includes(q))), [apps, appFilter, q, emails]);
-  const visibleAgents = useMemo(() => agents.filter((g) => !q || g.store_name.toLowerCase().includes(q) || g.slug.includes(q) || (emails.get(g.user_id) ?? "").toLowerCase().includes(q)), [agents, q, emails]);
+  type AgentFilter = "subscribed" | "sold" | "lapsed" | "unpaid" | "expiring" | "all";
+  const [agentFilter, setAgentFilter] = useState<AgentFilter>("subscribed");
+  const [agentSort, setAgentSort] = useState<"sales" | "recent" | "balance">("sales");
+  const daysLeft = (g: Agent) => g.paid_until ? Math.ceil((+new Date(g.paid_until) - Date.now()) / 86400000) : null;
+  const matchesFilter = (g: Agent) => {
+    const st = agentStats[g.id]; const dl = daysLeft(g);
+    switch (agentFilter) {
+      case "subscribed": return g.status === "active";
+      case "sold": return (st?.orders ?? 0) > 0;
+      case "lapsed": return g.status !== "active" && (st?.orders ?? 0) > 0;
+      case "unpaid": return g.status === "awaiting_payment";
+      case "expiring": return g.status === "active" && dl != null && dl <= 7;
+      default: return true;
+    }
+  };
+  const counts = { subscribed: agents.filter((g) => g.status === "active").length, sold: agents.filter((g) => (agentStats[g.id]?.orders ?? 0) > 0).length, lapsed: agents.filter((g) => g.status !== "active" && (agentStats[g.id]?.orders ?? 0) > 0).length, unpaid: agents.filter((g) => g.status === "awaiting_payment").length, expiring: agents.filter((g) => { const d = daysLeft(g); return g.status === "active" && d != null && d <= 7; }).length, all: agents.length };
+  const visibleAgents = useMemo(() => agents.filter((g) => matchesFilter(g) && (!q || g.store_name.toLowerCase().includes(q) || g.slug.includes(q) || (emails.get(g.user_id) ?? "").toLowerCase().includes(q))).sort((a, b) => agentSort === "sales" ? ((agentStats[b.id]?.sales ?? 0) + (agentStats[b.id]?.own ?? 0)) - ((agentStats[a.id]?.sales ?? 0) + (agentStats[a.id]?.own ?? 0)) : agentSort === "balance" ? Number(b.earnings_balance) - Number(a.earnings_balance) : b.created_at.localeCompare(a.created_at)), [agents, q, emails, agentFilter, agentSort, agentStats]); // eslint-disable-line react-hooks/exhaustive-deps
   const pending = apps.filter((a) => a.status === "pending").length;
   const payoutsWaiting = payouts.filter((p) => p.status === "requested" || p.status === "approved").length;
   const agentName = (id: string) => agents.find((g) => g.id === id)?.store_name ?? "—";
@@ -177,11 +193,32 @@ export default function AdminAgents() {
       )}
 
       {tab === "agents" && (
+        <>
+        <div className="flex flex-wrap gap-2">
+          <Segmented<AgentFilter> value={agentFilter} onChange={setAgentFilter} options={[{ value: "subscribed", label: `On subscription (${counts.subscribed})` }, { value: "sold", label: `Have sold (${counts.sold})` }, { value: "expiring", label: `Expiring ≤7d (${counts.expiring})` }, { value: "unpaid", label: `Approved, unpaid (${counts.unpaid})` }, { value: "lapsed", label: `Lapsed, sold before (${counts.lapsed})` }, { value: "all", label: `All (${counts.all})` }]} />
+          <Segmented<"sales" | "recent" | "balance"> value={agentSort} onChange={setAgentSort} options={[{ value: "sales", label: "Top sales" }, { value: "balance", label: "Balance" }, { value: "recent", label: "Newest" }]} />
+        </div>
         <Panel title="Agents" note={`${visibleAgents.length} shown`} action={isMaster ? <Button size="sm" variant="soft" onClick={() => setMaking(true)}>Make someone an agent</Button> : undefined}>
           <Rows empty={loading ? "Loading…" : "No agents yet — approve an application to create one."}>
-            {visibleAgents.map((g) => { const st = agentStats[g.id]; return <Row key={g.id} onClick={() => navigate(`/admin/agents/${g.id}`)} primary={<>{g.store_name} <Pill tone={g.status === "active" ? "good" : g.status === "awaiting_payment" ? "warn" : "muted"}>{g.status.replace(/_/g, " ")}</Pill>{grants.some((x) => x.agent_id === g.id) && <Pill tone="muted">complimentary</Pill>}</>} secondary={`${st ? `${st.orders} order${st.orders === 1 ? "" : "s"} · store sales ${formatGHS(st.sales)} · own purchases ${formatGHS(st.own)} · earned ${formatGHS(st.earned)}` : "no orders yet"} · ${emails.get(g.user_id) ?? "—"} · ${g.paid_until ? `covered until ${g.paid_until}` : "not paid yet"}`} right={formatGHS(Number(g.earnings_balance))} rightNote="balance" />; })}
+            {visibleAgents.map((g) => { const st = agentStats[g.id]; const dl = daysLeft(g); return (
+              <li key={g.id} className="cursor-pointer py-2 hover:bg-white/[0.02]" onClick={() => navigate(`/admin/agents/${g.id}`)}>
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[12.5px] font-semibold text-foreground">{g.store_name} <span className="font-normal text-faint-foreground">· {emails.get(g.user_id) ?? "—"}</span></p>
+                    <p className="truncate text-[11px] text-faint-foreground">{g.status === "active" ? (dl != null ? (dl < 0 ? `${-dl}d overdue` : dl === 0 ? "ends today" : `${dl}d left`) : "active") : g.status === "awaiting_payment" ? "approved, not paid" : g.status}{grants.some((x) => x.agent_id === g.id) ? " · free months" : ""} · joined {formatAdminDate(g.created_at)}</p>
+                  </div>
+                  <Pill tone={g.status === "active" ? (dl != null && dl <= 7 ? "warn" : "good") : g.status === "awaiting_payment" ? "warn" : "muted"}>{g.status === "active" ? "on plan" : g.status === "awaiting_payment" ? "unpaid" : g.status}</Pill>
+                </div>
+                <div className="mt-1.5 grid grid-cols-4 gap-2 text-[11px]">
+                  <div><p className="text-faint-foreground">Orders</p><p className="font-semibold tabular-nums text-foreground">{st?.orders ?? 0}</p></div>
+                  <div><p className="text-faint-foreground">Store sales</p><p className="font-semibold tabular-nums text-foreground">{formatGHS(st?.sales ?? 0)}</p></div>
+                  <div><p className="text-faint-foreground">Own buys</p><p className="font-semibold tabular-nums text-foreground">{formatGHS(st?.own ?? 0)}</p></div>
+                  <div><p className="text-faint-foreground">Balance</p><p className={`font-semibold tabular-nums ${Number(g.earnings_balance) > 0 ? "text-primary-glow" : "text-foreground"}`}>{formatGHS(Number(g.earnings_balance))}</p></div>
+                </div>
+              </li>); })}
           </Rows>
         </Panel>
+        </>
       )}
 
       {tab === "subscriptions" && (<>
