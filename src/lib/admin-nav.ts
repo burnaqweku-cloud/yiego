@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { BadgePercent, BookOpen, Bot, CreditCard, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon } from "lucide-react";
+import { BadgePercent, BookOpen, Bot, CreditCard, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
 export interface AdminPage {
@@ -53,6 +53,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "ai-knowledge", label: "Knowledge base", to: "/admin/ai-knowledge", icon: BookOpen, keywords: ["faq", "articles", "help"] },
   ] },
   { id: "site", label: "Site", icon: FileText, pages: [
+    { id: "announcements", label: "Announcements", to: "/admin/announcements", icon: Megaphone, keywords: ["notification", "announce", "update", "notice", "bell", "broadcast"] },
     { id: "contact", label: "Contact information", to: "/admin/contacts/information", icon: Contact, keywords: ["phone", "email", "address", "whatsapp"] },
     { id: "legal", label: "Legal documents", to: "/admin/legal", icon: FileText, keywords: ["terms", "privacy", "policy"] },
   ] },

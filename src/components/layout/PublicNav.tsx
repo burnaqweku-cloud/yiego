@@ -7,6 +7,7 @@ import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useAuth } from "@/store/auth-context";
 import { useProfile } from "@/store/profile";
 import { agentsStatus, myAgentStatus, previewRequested } from "@/lib/agents";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { cn } from "@/lib/utils";
 
 /**
@@ -197,6 +198,7 @@ export default function PublicNav() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2.5">
+            {isAuthenticated && <NotificationBell />}
             {isAuthenticated ? (
               <div className="relative hidden sm:block" ref={menuRef}>
                 <button

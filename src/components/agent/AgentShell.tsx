@@ -7,6 +7,7 @@ import { formatGHS } from "@/lib/format";
 import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
 import { planQuote, type PlanQuote } from "@/lib/agents";
 import { useAuth } from "@/store/auth-context";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 /* The agent app. Its own header, its own navigation (bottom bar on phones,
    sidebar on desktop), no public site chrome. Pages read shared data from
@@ -65,8 +66,7 @@ export default function AgentShell() {
         <div className="mx-auto flex max-w-5xl">
           {/* Desktop sidebar */}
           <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-white/[0.06] p-4 sm:flex">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p>
-            <p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p>
+            <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div><NotificationBell /></div>
             <nav className="mt-6 flex flex-col gap-1">{NAV.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:bg-white/[0.04]"}`}><n.icon size={16} />{n.label}</NavLink>)}</nav>
             <div className="mt-auto space-y-1 text-[12.5px]">
               <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><ExternalLink size={14} />View my store</a>
@@ -78,7 +78,7 @@ export default function AgentShell() {
             {/* Mobile header */}
             <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[0.06] bg-background/85 px-4 py-3 backdrop-blur sm:hidden">
               <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div>
-              <div className="flex items-center gap-2"><span className="rounded-full bg-primary/12 px-2.5 py-1 text-[12px] font-semibold text-primary-glow">{formatGHS(Number(agent.earnings_balance))}</span><a href={storeUrl} target="_blank" rel="noreferrer" aria-label="View store" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><ExternalLink size={14} /></a></div>
+              <div className="flex items-center gap-2"><span className="rounded-full bg-primary/12 px-2.5 py-1 text-[12px] font-semibold text-primary-glow">{formatGHS(Number(agent.earnings_balance))}</span><NotificationBell /><a href={storeUrl} target="_blank" rel="noreferrer" aria-label="View store" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><ExternalLink size={14} /></a></div>
             </header>
             <main className="px-4 pb-24 pt-4 sm:px-8 sm:pb-10 sm:pt-8"><Outlet /></main>
           </div>
