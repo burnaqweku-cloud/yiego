@@ -266,7 +266,9 @@ Deno.serve(async (req) => {
     // Store buyers come back to the store's own success page; everyone else to ours.
     const callbackUrl = appUrl
       ? (agent
-        ? `${appUrl.replace(/\/$/, "")}/s/${agent.slug}/success?reference=${encodeURIComponent(orderReference)}`
+        ? (agentSelf
+          ? `${appUrl.replace(/\/$/, "")}/agent/orders`
+          : `${appUrl.replace(/\/$/, "")}/s/${agent.slug}/success?reference=${encodeURIComponent(orderReference)}`)
         : `${appUrl.replace(/\/$/, "")}/payment/success?reference=${encodeURIComponent(orderReference)}&type=order`)
       : undefined;
 
