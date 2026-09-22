@@ -12,6 +12,8 @@ export default function AgentHome() {
   const today = useMemo(() => orders.filter((o) => o.paid_at && new Date(o.paid_at).toDateString() === new Date().toDateString()), [orders]);
   const week = useMemo(() => orders.filter((o) => o.paid_at && Date.now() - +new Date(o.paid_at) < 7 * 86400000), [orders]);
   const earned = (list: typeof orders) => list.filter((o) => o.status === "delivered").reduce((a, o) => a + Number(o.agent_margin ?? 0), 0);
+  const pendingOrders = useMemo(() => orders.filter((o) => !["delivered", "refunded", "cancelled"].includes(o.status)), [orders]);
+  const pending = pendingOrders.reduce((a, o) => a + Number(o.agent_margin ?? 0), 0);
   const priceList = () => { const list = products.filter((p) => !p.is_paused).map((p) => `${p.name}: GH₵ ${Number(prices[p.id] ?? p.store_default_price ?? p.customer_price).toFixed(2)}`).join("\n"); return `${agent.store_name} — price list\n\n${list}\n\nOrder here: ${storeUrl}`; };
   const share = async () => { const text = `Buy MTN, Telecel and AirtelTigo data from my store: ${storeUrl}`; if (navigator.share) { try { await navigator.share({ title: agent.store_name, text, url: storeUrl }); return; } catch { /* cancelled */ } } await navigator.clipboard.writeText(text); toast.success("Link copied."); };
 
@@ -21,7 +23,8 @@ export default function AgentHome() {
       <div className="rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/25 via-primary/10 to-transparent p-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Earnings balance</p>
         <p className="mt-1 text-[34px] font-semibold leading-none text-foreground">{formatGHS(Number(agent.earnings_balance))}</p>
-        <p className="mt-1.5 text-[11.5px] text-muted-foreground">Profit from your store sales · withdraw from {formatGHS(plan?.payout_minimum ?? 20)} to MoMo</p>
+        <p className="mt-1.5 text-[11.5px] text-muted-foreground">Available now · withdraw from {formatGHS(plan?.payout_minimum ?? 20)} to MoMo</p>
+        {pending > 0 && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber/12 px-2.5 py-1 text-[11.5px] text-amber"><span className="h-1.5 w-1.5 rounded-full bg-amber" />{formatGHS(pending)} pending on {pendingOrders.length} order{pendingOrders.length === 1 ? "" : "s"} · released when delivered</p>}
         <div className="mt-4 flex gap-2"><Link to="/agent/earnings" className="onyx-btn-primary px-5 py-2.5 text-center text-[13px]">Withdraw</Link><button type="button" onClick={() => void share()} className="flex items-center gap-1.5 rounded-full border border-white/[0.14] px-4 py-2.5 text-[13px] text-foreground"><Share2 size={14} />Share store</button></div>
       </div>
       <Link to="/agent/buy" className="onyx-panel flex items-center gap-3 rounded-2xl p-4 hover:border-primary/40">

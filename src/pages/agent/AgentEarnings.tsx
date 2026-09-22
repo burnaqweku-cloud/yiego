@@ -5,7 +5,9 @@ import { formatGHS } from "@/lib/format";
 import { fmt, p1, useAgent } from "@/components/agent/AgentShell";
 
 export default function AgentEarnings() {
-  const { agent, payouts, plan, reload } = useAgent();
+  const { agent, orders, payouts, plan, reload } = useAgent();
+  const pendingOrders = orders.filter((o) => !["delivered", "refunded", "cancelled"].includes(o.status));
+  const pending = pendingOrders.reduce((a, o) => a + Number(o.agent_margin ?? 0), 0);
   const [amount, setAmount] = useState(""); const [busy, setBusy] = useState(false);
   const fee = (v: number) => plan ? Math.max(v * plan.payout_fee_rate, plan.payout_fee_minimum) : 0;
   const request = async () => {
@@ -17,7 +19,8 @@ export default function AgentEarnings() {
   return (
     <div className="space-y-3">
       <h1 className="font-display text-[22px] font-semibold text-foreground">Earnings</h1>
-      <div className="rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/25 via-primary/10 to-transparent p-5"><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Available to withdraw</p><p className="mt-1 text-[34px] font-semibold leading-none text-foreground">{formatGHS(Number(agent.earnings_balance))}</p></div>
+      <div className="rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/25 via-primary/10 to-transparent p-5"><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Available to withdraw</p><p className="mt-1 text-[34px] font-semibold leading-none text-foreground">{formatGHS(Number(agent.earnings_balance))}</p>
+        <div className="mt-3 flex items-start gap-2 rounded-xl bg-background/60 px-3 py-2 text-[12px]"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-amber" /><span className="text-muted-foreground"><b className="text-foreground">{formatGHS(pending)} pending</b>{pendingOrders.length ? ` on ${pendingOrders.length} order${pendingOrders.length === 1 ? "" : "s"} still being delivered` : ""}. Your customer has paid; it's released to Available the moment the data lands.</span></div></div>
       <div className="onyx-panel rounded-2xl p-4">
         <p className="text-[13.5px] font-semibold text-foreground">Withdraw to MoMo</p>
         <p className="mt-0.5 text-[12px] text-muted-foreground">Minimum {formatGHS(plan?.payout_minimum ?? 20)} · fee {((plan?.payout_fee_rate ?? 0.01) * 100).toFixed(0)}% (at least {formatGHS(plan?.payout_fee_minimum ?? 0.5)}) · to {agent.momo_number ?? "— add your MoMo number in Store"}</p>
