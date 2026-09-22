@@ -34,6 +34,7 @@ export default function AdminAgents() {
   const setTab = (t: Tab) => navigate(TAB_PATH[t]);
   const [subs, setSubs] = useState<SubPayment[]>([]);
   const [grants, setGrants] = useState<Grant[]>([]);
+  const [making, setMaking] = useState(false); const [makeEmail, setMakeEmail] = useState(""); const [makeMonths, setMakeMonths] = useState("1"); const [makeNote, setMakeNote] = useState("");
   const [granting, setGranting] = useState<Agent | null>(null); const [grantMonths, setGrantMonths] = useState("1"); const [grantNote, setGrantNote] = useState("");
   const [apps, setApps] = useState<Application[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -79,6 +80,13 @@ export default function AdminAgents() {
   const pending = apps.filter((a) => a.status === "pending").length;
   const payoutsWaiting = payouts.filter((p) => p.status === "requested" || p.status === "approved").length;
   const agentName = (id: string) => agents.find((g) => g.id === id)?.store_name ?? "—";
+  const makeAgent = async () => {
+    if (!makeEmail.trim()) return toast.error("Enter the account's email.");
+    const { data, error } = await db().rpc("admin_make_agent", { p_actor: actor, p_email: makeEmail.trim(), p_months: Number(makeMonths), p_note: makeNote.trim() || null });
+    if (error) return toast.error(error.message.includes("no_account") ? "No DataYego account with that email. They need to sign up first." : error.message.replace(/_/g, " "));
+    const d = data as { slug: string; paid_until: string };
+    toast.success(`Done. Store /s/${d.slug}, covered until ${d.paid_until}. Not booked as income.`); setMaking(false); setMakeEmail(""); setMakeNote(""); void load();
+  };
   const grant = async () => {
     if (!granting) return;
     const { data, error } = await db().rpc("admin_grant_subscription", { p_actor: actor, p_agent_id: granting.id, p_months: Number(grantMonths), p_note: grantNote.trim() || null });
@@ -163,7 +171,7 @@ export default function AdminAgents() {
       )}
 
       {tab === "agents" && (
-        <Panel title="Agents" note={`${visibleAgents.length} shown`}>
+        <Panel title="Agents" note={`${visibleAgents.length} shown`} action={isMaster ? <Button size="sm" variant="soft" onClick={() => setMaking(true)}>Make someone an agent</Button> : undefined}>
           <Rows empty={loading ? "Loading…" : "No agents yet — approve an application to create one."}>
             {visibleAgents.map((g) => <Row key={g.id} onClick={isMaster ? () => { setGranting(g); setGrantMonths("1"); } : undefined} primary={<>{g.store_name} <Pill tone={g.status === "active" ? "good" : g.status === "awaiting_payment" ? "warn" : "muted"}>{g.status.replace(/_/g, " ")}</Pill>{grants.some((x) => x.agent_id === g.id) && <Pill tone="muted">complimentary</Pill>}</>} secondary={`/s/${g.slug} · ${emails.get(g.user_id) ?? "—"} · ${g.paid_until ? `covered until ${g.paid_until}` : "not paid yet"} · joined ${formatAdminDate(g.created_at)}${isMaster ? " · tap to give months" : ""}`} right={formatGHS(Number(g.earnings_balance))} rightNote="earnings" />)}
           </Rows>
@@ -245,6 +253,18 @@ export default function AdminAgents() {
           <p className="mt-1 text-[12.5px] text-muted-foreground">They get an email. Add a reason if you want them to see one.</p>
           <div className="mt-3"><Field label="Reason (optional)"><input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} /></Field></div>
           <div className="mt-4 flex justify-end gap-2"><Button variant="quiet" onClick={() => setDeclining(null)}>Cancel</Button><Button onClick={() => declining && void review(declining, false)} disabled={busy}>Decline</Button></div>
+        </div>
+      </Modal>
+      <Modal open={making} onClose={() => setMaking(false)} label="Make someone an agent">
+        <div className="w-[min(92vw,400px)] p-5">
+          <h2 className="text-[16px] font-semibold text-foreground">Make someone an agent</h2>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">Any DataYego account. They skip the application and get free months — recorded as complimentary, not as income. Their store opens straight away.</p>
+          <div className="mt-3 grid gap-2">
+            <Field label="Account email"><input inputMode="email" value={makeEmail} onChange={(e) => setMakeEmail(e.target.value)} placeholder="name@gmail.com" className={inputCls} /></Field>
+            <Field label="Free months"><select value={makeMonths} onChange={(e) => setMakeMonths(e.target.value)} className={inputCls}><option value="1">1 month</option><option value="2">2 months</option><option value="3">3 months</option><option value="6">6 months</option><option value="12">1 year</option></select></Field>
+            <Field label="Note (optional)"><input value={makeNote} onChange={(e) => setMakeNote(e.target.value)} placeholder="e.g. partner, test account" className={inputCls} /></Field>
+          </div>
+          <div className="mt-4 flex justify-end gap-2"><Button variant="quiet" onClick={() => setMaking(false)}>Cancel</Button><Button onClick={() => void makeAgent()}>Make agent</Button></div>
         </div>
       </Modal>
       <Modal open={granting !== null} onClose={() => setGranting(null)} label="Give months">
