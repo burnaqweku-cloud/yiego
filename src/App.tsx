@@ -57,7 +57,9 @@ const AdminMasterBalance = lazy(() => import("./pages/AdminMasterBalance"));
 const AdminAgents = lazy(() => import("./pages/AdminAgents"));
 const AdminOrdersReceived = lazy(() => import("./pages/AdminOrdersReceived"));
 const AgentsApply = lazy(() => import("./pages/AgentsApply"));
-const AgentStore = lazy(() => import("./pages/AgentStore"));
+const StoreShell = lazy(() => import("./components/store/StoreShell"));
+const StoreHome = lazy(() => import("./pages/store/StoreHome"));
+const StoreOrder = lazy(() => import("./pages/store/StoreOrder"));
 const AgentShell = lazy(() => import("./components/agent/AgentShell"));
 const AgentHome = lazy(() => import("./pages/agent/AgentHome"));
 const AgentOrdersPage = lazy(() => import("./pages/agent/AgentOrders"));
@@ -79,7 +81,7 @@ const App = () => (
     <Route path="/admin" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<Admin />} /><Route path="orders" element={<AdminOrders />} /><Route path="disputes" element={<AdminDisputes />} /><Route path="reviews" element={<AdminReviews />} /><Route path="sales/pricing" element={<AdminPricing />} /><Route path="suppliers" element={<AdminSuppliers />} /><Route path="wallet" element={<AdminWallet />} /><Route path="finance" element={<AdminFinance />} /><Route path="finance/funding" element={<AdminFunding />} /><Route path="finance/undelivered" element={<AdminUndelivered />} /><Route path="finance/master" element={<AdminMasterBalance />} /><Route path="agents" element={<AdminAgents />} /><Route path="agents/applications" element={<AdminAgents />} /><Route path="agents/list" element={<AdminAgents />} /><Route path="agents/subscriptions" element={<AdminAgents />} /><Route path="agents/payouts" element={<AdminAgents />} /><Route path="agents/plan" element={<AdminAgents />} /><Route path="agents/launch" element={<AdminAgents />} /><Route path="orders/received" element={<AdminOrdersReceived />} /><Route path="finance/master" element={<AdminMasterBalance />} /><Route path="agents" element={<AdminAgents />} /><Route path="agents/applications" element={<AdminAgents />} /><Route path="agents/list" element={<AdminAgents />} /><Route path="agents/subscriptions" element={<AdminAgents />} /><Route path="agents/payouts" element={<AdminAgents />} /><Route path="agents/plan" element={<AdminAgents />} /><Route path="agents/launch" element={<AdminAgents />} /><Route path="orders/received" element={<AdminOrdersReceived />} /><Route path="users" element={<AdminUsers />} /><Route path="contacts/information" element={<AdminContact />} /><Route path="legal" element={<AdminLegal />} /><Route path="ai-support" element={<AdminAISupport />} /><Route path="ai-knowledge" element={<AdminAIKnowledge />} /><Route path="support-inbox" element={<AdminSupportInbox />} /></Route>
     {/* One shell for the whole site: the same header and footer wrap the
         marketing pages, the shop and the account area. */}
-    <Route path="/s/:slug" element={<AgentStore />} />
+    <Route path="/s/:slug" element={<StoreShell />}><Route index element={<StoreHome />} /><Route path="track" element={<StoreOrder />} /><Route path="success" element={<StoreOrder />} /></Route>
     <Route path="/agent" element={<AgentShell />}><Route index element={<AgentHome />} /><Route path="orders" element={<AgentOrdersPage />} /><Route path="prices" element={<AgentPrices />} /><Route path="earnings" element={<AgentEarnings />} /><Route path="store" element={<AgentStoreSettings />} /></Route>
     <Route element={<PublicShell />}>
       {/* Marketing pages lay out their own full-bleed sections. */}
