@@ -95,6 +95,7 @@ export interface Phase1Product {
   is_paused?: boolean;
   pause_reason?: string | null;
   agent_price?: number | null;
+  store_default_price?: number | null;
 }
 
 export interface Phase1NetworkRow { id: string; code: string; name: string; is_paused: boolean; pause_reason: string | null }
@@ -175,7 +176,7 @@ export async function loadPhase1Products() {
   const phase1Client = (supabase as unknown as { schema: (name: string) => Phase1SchemaClient }).schema("phase1");
   const { data, error } = await phase1Client
     .from("data_products")
-    .select("id, app_product_code, name, validity, capacity_gb, customer_price, network_id, is_paused, pause_reason, agent_price")
+    .select("id, app_product_code, name, validity, capacity_gb, customer_price, network_id, is_paused, pause_reason, agent_price, store_default_price")
     .eq("is_active", true)
     .order("display_order", { ascending: true });
 

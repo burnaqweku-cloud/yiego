@@ -12,7 +12,7 @@ export default function AgentHome() {
   const today = useMemo(() => orders.filter((o) => o.paid_at && new Date(o.paid_at).toDateString() === new Date().toDateString()), [orders]);
   const week = useMemo(() => orders.filter((o) => o.paid_at && Date.now() - +new Date(o.paid_at) < 7 * 86400000), [orders]);
   const earned = (list: typeof orders) => list.filter((o) => o.status === "delivered").reduce((a, o) => a + Number(o.agent_margin ?? 0), 0);
-  const priceList = () => { const list = products.filter((p) => !p.is_paused).map((p) => `${p.name}: GH₵ ${Number(prices[p.id] ?? p.customer_price).toFixed(2)}`).join("\n"); return `${agent.store_name} — price list\n\n${list}\n\nOrder here: ${storeUrl}`; };
+  const priceList = () => { const list = products.filter((p) => !p.is_paused).map((p) => `${p.name}: GH₵ ${Number(prices[p.id] ?? p.store_default_price ?? p.customer_price).toFixed(2)}`).join("\n"); return `${agent.store_name} — price list\n\n${list}\n\nOrder here: ${storeUrl}`; };
   const share = async () => { const text = `Buy MTN, Telecel and AirtelTigo data from my store: ${storeUrl}`; if (navigator.share) { try { await navigator.share({ title: agent.store_name, text, url: storeUrl }); return; } catch { /* cancelled */ } } await navigator.clipboard.writeText(text); toast.success("Link copied."); };
 
   return (
