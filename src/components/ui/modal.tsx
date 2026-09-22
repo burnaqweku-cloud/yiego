@@ -22,6 +22,11 @@ export default function Modal({
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // Keep the latest onClose without making it a dependency: parents pass a new
+  // arrow function on every render, and re-running the setup effect on each
+  // keystroke would pull focus out of whatever the person is typing in.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const [visible, setVisible] = useState(open);
   const [closing, setClosing] = useState(false);
 
@@ -65,7 +70,7 @@ export default function Modal({
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab") return;
@@ -104,7 +109,7 @@ export default function Modal({
       // Return focus to whatever opened the modal.
       prevActive?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!visible) return null;
 
@@ -112,7 +117,7 @@ export default function Modal({
     <div role="dialog" aria-modal="true" aria-label={label}>
       <div
         className={`onyx-modal-backdrop ${closing ? "is-closing" : ""}`}
-        onClick={closing ? undefined : onClose}
+        onClick={closing ? undefined : () => onCloseRef.current()}
         aria-hidden="true"
       />
       <div className="onyx-modal-dock">
