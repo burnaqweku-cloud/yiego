@@ -22,18 +22,21 @@ Deno.serve(async (req) => {
     const days = Math.min(Math.max(Number(body?.days ?? 45), 1), 365);
     const from = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 
+    // Read the main account and the business subaccount: older sales settle to
+    // the first, everything since the switch to the second.
     const settlements: Settlement[] = [];
-    for (let page = 1; page <= 10; page += 1) {
-      const sub = paystackSubaccount();
-      const res = await fetch(`https://api.paystack.co/settlement?perPage=50&page=${page}&from=${from}${sub ? `&subaccount=${encodeURIComponent(sub)}` : ""}`, { headers: { Authorization: `Bearer ${getPaystackSecretKey()}` } });
-      const payload = await res.json().catch(() => null);
-      if (!res.ok || !payload?.status) return jsonResponse({ error: payload?.message ?? `Paystack returned ${res.status}` }, { status: 502 });
-      const list: Settlement[] = payload.data ?? [];
-      settlements.push(...list);
-      const total = Number(payload.meta?.total ?? list.length);
-      if (list.length < 50 || settlements.length >= total) break;
+    const sub = paystackSubaccount();
+    for (const account of [null, sub].filter((x, i, a) => a.indexOf(x) === i)) {
+      for (let page = 1; page <= 10; page += 1) {
+        const res = await fetch(`https://api.paystack.co/settlement?perPage=50&page=${page}&from=${from}${account ? `&subaccount=${encodeURIComponent(account)}` : ""}`, { headers: { Authorization: `Bearer ${getPaystackSecretKey()}` } });
+        const payload = await res.json().catch(() => null);
+        if (!res.ok || !payload?.status) return jsonResponse({ error: payload?.message ?? `Paystack returned ${res.status}` }, { status: 502 });
+        const list: Settlement[] = payload.data ?? [];
+        for (const item of list) if (!settlements.some((x) => x.id === item.id)) settlements.push(item);
+        const total = Number(payload.meta?.total ?? list.length);
+        if (list.length < 50 || list.length === 0 || page * 50 >= total) break;
+      }
     }
-
     const supabase = createSupabaseAdmin();
     const results: unknown[] = [];
     for (const s of settlements) {
