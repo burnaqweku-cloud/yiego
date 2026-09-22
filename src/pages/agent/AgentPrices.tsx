@@ -1,25 +1,55 @@
+import { useState } from "react";
+import { Info } from "lucide-react";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/format";
 import { p1, useAgent } from "@/components/agent/AgentShell";
 
+/* Set selling prices, one network at a time. Every row says what the agent
+   pays, what they're charging, and what they keep. */
 export default function AgentPrices() {
-  const { products, prices, setPrices } = useAgent();
-  const save = async (productId: string) => {
-    const v = Number(prices[productId]); if (!(v > 0)) return;
-    const { error } = await p1().rpc("agent_set_price", { p_product_id: productId, p_price: v });
-    if (error) { const m = String(error.message); toast.error(m.startsWith("below_agent_price") ? `Can't go below ${formatGHS(Number(m.split(":")[1]))}` : m); return; }
-    toast.success("Price saved.");
+  const { products, prices, setPrices, reload } = useAgent();
+  const [network, setNetwork] = useState<"MTN" | "Telecel" | "AirtelTigo">("MTN");
+  const [busy, setBusy] = useState(false);
+  const items = products.filter((p) => !p.is_paused && p.name.startsWith(network));
+  const floorOf = (p: typeof items[number]) => Number(p.agent_price ?? p.customer_price);
+  const currentOf = (p: typeof items[number]) => Number(prices[p.id] || p.customer_price);
+
+  const save = async (productId: string, value: number) => {
+    const { error } = await p1().rpc("agent_set_price", { p_product_id: productId, p_price: value });
+    if (error) { const m = String(error.message); toast.error(m.startsWith("below_agent_price") ? `Can't go below ${formatGHS(Number(m.split(":")[1]))} — that's what you pay.` : m); return false; }
+    return true;
   };
-  const groups = ["MTN", "Telecel", "AirtelTigo"].map((n) => ({ n, items: products.filter((p) => !p.is_paused && p.name.startsWith(n)) }));
+  const onBlur = async (p: typeof items[number]) => {
+    const raw = prices[p.id]; if (raw === undefined || raw === "") return;
+    const v = Number(raw); if (!(v > 0)) return;
+    if (await save(p.id, v)) toast.success(`${p.name.replace(/^.*?—\s*/, "")} saved · profit ${formatGHS(v - floorOf(p))}`);
+    else setPrices({ ...prices, [p.id]: floorOf(p).toFixed(2) });
+  };
+  const applyAll = async (mode: "public" | "plus") => {
+    setBusy(true); const next = { ...prices }; let n = 0;
+    for (const p of items) { const v = mode === "public" ? Number(p.customer_price) : Math.round((floorOf(p) + (Number(p.capacity_gb) >= 10 ? 1 : 0.5)) * 100) / 100; if (await save(p.id, v)) { next[p.id] = v.toFixed(2); n += 1; } }
+    setPrices(next); setBusy(false); toast.success(`${n} ${network} prices updated.`); void reload();
+  };
+
   return (
     <div className="space-y-3">
-      <h1 className="font-display text-[22px] font-semibold text-foreground">Prices</h1>
-      <p className="text-[12.5px] text-muted-foreground">You buy at the agent price. Set what your customers pay — never below it. Leave blank to sell at the public price. Saves when you tap away.</p>
-      {groups.map(({ n, items }) => items.length > 0 && (
-        <div key={n} className="onyx-panel rounded-2xl p-3">
-          <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{n}</p>
-          <ul className="mt-1 divide-y divide-white/[0.06]">{items.map((p) => { const floor = Number(p.agent_price ?? p.customer_price); const current = Number(prices[p.id] ?? p.customer_price); return <li key={p.id} className="flex items-center gap-2 py-2"><div className="min-w-0 flex-1"><p className="text-[13.5px] font-medium text-foreground">{p.name.replace(/^.*?—\s*/, "")}</p><p className="text-[11px] text-faint-foreground">you pay {formatGHS(floor)} · public {formatGHS(Number(p.customer_price))} · <span className="text-primary-glow">profit {formatGHS(Math.max(0, current - floor))}</span></p></div><input inputMode="decimal" value={prices[p.id] ?? ""} placeholder={Number(p.customer_price).toFixed(2)} onChange={(e) => setPrices({ ...prices, [p.id]: e.target.value })} onBlur={() => void save(p.id)} className="onyx-field w-24 text-right text-[13px]" /></li>; })}</ul>
-        </div>))}
+      <h1 className="font-display text-[22px] font-semibold text-foreground">Your selling prices</h1>
+      <div className="flex gap-2">{(["MTN", "Telecel", "AirtelTigo"] as const).map((n) => <button key={n} type="button" onClick={() => setNetwork(n)} className={`rounded-full px-4 py-1.5 text-[13px] font-medium ${network === n ? "bg-primary/15 text-primary-glow" : "border border-white/[0.08] text-muted-foreground"}`}>{n}</button>)}</div>
+      <div className="flex items-start gap-2 rounded-2xl bg-primary/8 px-3.5 py-3 text-[12.5px] leading-5 text-muted-foreground"><Info size={15} className="mt-0.5 shrink-0 text-primary-glow" /><span><b className="text-foreground">You pay</b> the agent price. Type what your customers pay in <b className="text-foreground">Your price</b> — the difference is your profit on every sale. You can't go below what you pay.</span></div>
+      <div className="flex flex-wrap gap-2 text-[12px]"><button type="button" disabled={busy} onClick={() => void applyAll("plus")} className="rounded-full border border-white/[0.1] px-3 py-1.5 text-muted-foreground">Set all: what I pay + 0.50 (1.00 from 10GB)</button><button type="button" disabled={busy} onClick={() => void applyAll("public")} className="rounded-full border border-white/[0.1] px-3 py-1.5 text-muted-foreground">Set all to public price</button></div>
+      <div className="onyx-panel rounded-2xl p-2">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-faint-foreground"><span>Bundle</span><span className="text-right">You pay</span><span className="text-center">Your price</span><span className="text-right">Profit</span></div>
+        <ul className="divide-y divide-white/[0.06]">
+          {items.map((p) => { const floor = floorOf(p); const cur = currentOf(p); const profit = Math.max(0, cur - floor); return (
+            <li key={p.id} className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-2 py-2.5">
+              <div><p className="text-[14px] font-semibold text-foreground">{p.name.replace(/^.*?—\s*/, "")}</p><p className="text-[10.5px] text-faint-foreground">public {formatGHS(Number(p.customer_price))}</p></div>
+              <p className="text-right text-[13px] tabular-nums text-muted-foreground">{floor.toFixed(2)}</p>
+              <input inputMode="decimal" aria-label={`Your price for ${p.name}`} value={prices[p.id] ?? ""} placeholder={Number(p.customer_price).toFixed(2)} onChange={(e) => setPrices({ ...prices, [p.id]: e.target.value })} onBlur={() => void onBlur(p)} className="onyx-field w-[76px] px-2 py-1.5 text-center text-[13.5px] font-semibold tabular-nums" />
+              <p className={`text-right text-[13px] font-semibold tabular-nums ${profit > 0 ? "text-primary-glow" : "text-faint-foreground"}`}>+{profit.toFixed(2)}</p>
+            </li>); })}
+        </ul>
+      </div>
+      <p className="text-[11.5px] text-faint-foreground">Prices save when you tap away from the box. Your customers also pay a small checkout fee to Paystack on top; that doesn't affect your profit.</p>
     </div>
   );
 }
