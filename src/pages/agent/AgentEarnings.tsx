@@ -17,7 +17,7 @@ export default function AgentEarnings() {
   return (
     <div className="space-y-3">
       <h1 className="font-display text-[22px] font-semibold text-foreground">Earnings</h1>
-      <div className="rounded-3xl bg-gradient-to-br from-[#0f2a22] to-[#0b1512] p-5 text-white"><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">Available</p><p className="mt-1 text-[34px] font-semibold leading-none">{formatGHS(Number(agent.earnings_balance))}</p></div>
+      <div className="rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/25 via-primary/10 to-transparent p-5"><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Available to withdraw</p><p className="mt-1 text-[34px] font-semibold leading-none text-foreground">{formatGHS(Number(agent.earnings_balance))}</p></div>
       <div className="onyx-panel rounded-2xl p-4">
         <p className="text-[13.5px] font-semibold text-foreground">Withdraw to MoMo</p>
         <p className="mt-0.5 text-[12px] text-muted-foreground">Minimum {formatGHS(plan?.payout_minimum ?? 20)} · fee {((plan?.payout_fee_rate ?? 0.01) * 100).toFixed(0)}% (at least {formatGHS(plan?.payout_fee_minimum ?? 0.5)}) · to {agent.momo_number ?? "— add your MoMo number in Store"}</p>

@@ -25,7 +25,7 @@ export const fmt = (d: string) => new Date(d).toLocaleString("en-GB", { day: "nu
 
 const NAV = [
   { to: "/agent", label: "Home", icon: Home, end: true },
-  { to: "/agent/buy", label: "Buy", icon: ShoppingBag },
+  { to: "/agent/buy", label: "Buy data", icon: ShoppingBag },
   { to: "/agent/orders", label: "Orders", icon: Package },
   { to: "/agent/prices", label: "Prices", icon: Tags },
   { to: "/agent/earnings", label: "Earnings", icon: Wallet },

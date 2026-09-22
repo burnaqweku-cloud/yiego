@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Copy, Share2 } from "lucide-react";
+import { ArrowRight, Copy, Share2, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/format";
 import { fmt, useAgent } from "@/components/agent/AgentShell";
@@ -18,12 +18,17 @@ export default function AgentHome() {
   return (
     <div className="space-y-4">
       <div><p className="text-[12px] text-muted-foreground">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</p><h1 className="font-display text-[24px] font-semibold text-foreground">Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}</h1></div>
-      <div className="rounded-3xl bg-gradient-to-br from-[#0f2a22] to-[#0b1512] p-5 text-white shadow-lg">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">Earnings balance</p>
-        <p className="mt-1 text-[34px] font-semibold leading-none">{formatGHS(Number(agent.earnings_balance))}</p>
-        <div className="mt-4 flex gap-2"><Link to="/agent/buy" className="onyx-btn-primary flex-1 py-2.5 text-center text-[13px]">Buy data</Link><Link to="/agent/earnings" className="flex items-center rounded-full border border-white/20 px-4 py-2.5 text-[13px] text-white">Withdraw</Link><button type="button" onClick={() => void share()} className="flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2.5 text-[13px] text-white"><Share2 size={14} />Share store</button></div>
-        <p className="mt-3 text-[11px] text-white/50">Withdraw from {formatGHS(plan?.payout_minimum ?? 20)} · paid to MoMo</p>
+      <div className="rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/25 via-primary/10 to-transparent p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Earnings balance</p>
+        <p className="mt-1 text-[34px] font-semibold leading-none text-foreground">{formatGHS(Number(agent.earnings_balance))}</p>
+        <p className="mt-1.5 text-[11.5px] text-muted-foreground">Profit from your store sales · withdraw from {formatGHS(plan?.payout_minimum ?? 20)} to MoMo</p>
+        <div className="mt-4 flex gap-2"><Link to="/agent/earnings" className="onyx-btn-primary px-5 py-2.5 text-center text-[13px]">Withdraw</Link><button type="button" onClick={() => void share()} className="flex items-center gap-1.5 rounded-full border border-white/[0.14] px-4 py-2.5 text-[13px] text-foreground"><Share2 size={14} />Share store</button></div>
       </div>
+      <Link to="/agent/buy" className="onyx-panel flex items-center gap-3 rounded-2xl p-4 hover:border-primary/40">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-glow"><ShoppingBag size={20} /></span>
+        <span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">Buy data at your agent price</span><span className="block text-[12px] text-muted-foreground">For yourself or anyone. Pay with MoMo or card.</span></span>
+        <ArrowRight size={16} className="text-primary-glow" />
+      </Link>
       <div className="grid grid-cols-3 gap-2">
         {[["Today", today.length, earned(today)], ["7 days", week.length, earned(week)], ["All time", orders.length, earned(orders)]].map(([l, n, e]) => <div key={String(l)} className="onyx-panel rounded-2xl p-3"><p className="text-[11px] text-faint-foreground">{String(l)}</p><p className="text-[20px] font-semibold text-foreground">{String(n)}</p><p className="text-[11px] text-primary-glow">+{formatGHS(Number(e))}</p></div>)}
       </div>
