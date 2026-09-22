@@ -1,6 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { getPaystackSecretKey } from "../_shared/paystack.ts";
+import { getPaystackSecretKey, paystackSubaccount } from "../_shared/paystack.ts";
 
 /* Pulls Paystack settlements (payouts to the bank) and books each successful
    one in the finance ledger with its gross / net / fee split. Paystack sends
@@ -24,7 +24,8 @@ Deno.serve(async (req) => {
 
     const settlements: Settlement[] = [];
     for (let page = 1; page <= 10; page += 1) {
-      const res = await fetch(`https://api.paystack.co/settlement?perPage=50&page=${page}&from=${from}`, { headers: { Authorization: `Bearer ${getPaystackSecretKey()}` } });
+      const sub = paystackSubaccount();
+      const res = await fetch(`https://api.paystack.co/settlement?perPage=50&page=${page}&from=${from}${sub ? `&subaccount=${encodeURIComponent(sub)}` : ""}`, { headers: { Authorization: `Bearer ${getPaystackSecretKey()}` } });
       const payload = await res.json().catch(() => null);
       if (!res.ok || !payload?.status) return jsonResponse({ error: payload?.message ?? `Paystack returned ${res.status}` }, { status: 502 });
       const list: Settlement[] = payload.data ?? [];

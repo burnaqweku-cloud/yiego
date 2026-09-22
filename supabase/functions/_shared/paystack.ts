@@ -23,6 +23,9 @@ export function makePaystackReference(prefix: string) {
   return `${safePrefix}-${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
 }
 
+/** Business subaccount: when set, every charge settles there (it bears Paystack's fee). */
+export function paystackSubaccount() { return Deno.env.get("PAYSTACK_SUBACCOUNT")?.trim() || null; }
+
 export async function initializePaystackTransaction(input: {
   email: string;
   amount: number;
@@ -31,6 +34,7 @@ export async function initializePaystackTransaction(input: {
   callbackUrl?: string;
   metadata?: Record<string, unknown>;
 }) {
+  const sub = paystackSubaccount();
   const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
     method: "POST",
     headers: {
@@ -45,6 +49,7 @@ export async function initializePaystackTransaction(input: {
       channels: ["card", "mobile_money"],
       ...(input.callbackUrl ? { callback_url: input.callbackUrl } : {}),
       ...(input.metadata ? { metadata: input.metadata } : {}),
+      ...(sub ? { subaccount: sub, bearer: "subaccount" } : {}),
     }),
   });
 
