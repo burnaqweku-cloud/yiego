@@ -118,7 +118,7 @@ export default function AgentsApply() {
             {quote ? (quote.promo ? <p className="mt-0.5 text-[26px] font-semibold leading-none text-foreground">{formatGHS(quote.pay_now)}<span className="ml-2 text-[14px] font-normal text-faint-foreground line-through">{formatGHS(quote.monthly)}</span></p> : <p className="mt-0.5 text-[26px] font-semibold leading-none text-foreground">{formatGHS(quote.monthly)}</p>) : <p className="mt-0.5 text-[26px] font-semibold leading-none text-foreground">…</p>}
           </div>
           {quote?.promo && <span className="rounded-full bg-primary/12 px-3 py-1 text-[11.5px] font-semibold text-primary-glow">{quote.promo.percent_off}% off · {quote.promo.name}</span>}
-          <p className="w-full text-[12px] text-faint-foreground">Only after you're approved. If a month isn't paid your store pauses until you pay — your money and earnings stay safe.</p>
+          <p className="w-full text-[12px] text-faint-foreground">Plus the usual 4% checkout fee. Only after you're approved. If a month isn't paid your store pauses until you pay — your money and earnings stay safe.</p>
         </div>
 
         {/* How it works */}
