@@ -1,0 +1,41 @@
+import { useEffect, useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Copy, Share2 } from "lucide-react";
+import { toast } from "sonner";
+import { formatGHS } from "@/lib/format";
+import { fmt, useAgent } from "@/components/agent/AgentShell";
+
+export default function AgentHome() {
+  const { agent, orders, products, prices, storeUrl, plan, reload } = useAgent();
+  const [params] = useSearchParams();
+  useEffect(() => { if (params.get("paid") === "1") { toast.success("Payment received. Welcome in!"); setTimeout(() => void reload(), 2500); } }, [params, reload]);
+  const today = useMemo(() => orders.filter((o) => o.paid_at && new Date(o.paid_at).toDateString() === new Date().toDateString()), [orders]);
+  const week = useMemo(() => orders.filter((o) => o.paid_at && Date.now() - +new Date(o.paid_at) < 7 * 86400000), [orders]);
+  const earned = (list: typeof orders) => list.filter((o) => o.status === "delivered").reduce((a, o) => a + Number(o.agent_margin ?? 0), 0);
+  const priceList = () => { const list = products.filter((p) => !p.is_paused).map((p) => `${p.name}: GH₵ ${Number(prices[p.id] ?? p.customer_price).toFixed(2)}`).join("\n"); return `${agent.store_name} — price list\n\n${list}\n\nOrder here: ${storeUrl}`; };
+  const share = async () => { const text = `Buy MTN, Telecel and AirtelTigo data from my store: ${storeUrl}`; if (navigator.share) { try { await navigator.share({ title: agent.store_name, text, url: storeUrl }); return; } catch { /* cancelled */ } } await navigator.clipboard.writeText(text); toast.success("Link copied."); };
+
+  return (
+    <div className="space-y-4">
+      <div><p className="text-[12px] text-muted-foreground">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</p><h1 className="font-display text-[24px] font-semibold text-foreground">Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}</h1></div>
+      <div className="rounded-3xl bg-gradient-to-br from-[#0f2a22] to-[#0b1512] p-5 text-white shadow-lg">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">Earnings balance</p>
+        <p className="mt-1 text-[34px] font-semibold leading-none">{formatGHS(Number(agent.earnings_balance))}</p>
+        <div className="mt-4 flex gap-2"><Link to="/agent/earnings" className="onyx-btn-primary flex-1 py-2.5 text-center text-[13px]">Withdraw</Link><button type="button" onClick={() => void share()} className="flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2.5 text-[13px] text-white"><Share2 size={14} />Share store</button></div>
+        <p className="mt-3 text-[11px] text-white/50">Withdraw from {formatGHS(plan?.payout_minimum ?? 20)} · paid to MoMo</p>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {[["Today", today.length, earned(today)], ["7 days", week.length, earned(week)], ["All time", orders.length, earned(orders)]].map(([l, n, e]) => <div key={String(l)} className="onyx-panel rounded-2xl p-3"><p className="text-[11px] text-faint-foreground">{String(l)}</p><p className="text-[20px] font-semibold text-foreground">{String(n)}</p><p className="text-[11px] text-primary-glow">+{formatGHS(Number(e))}</p></div>)}
+      </div>
+      <div className="onyx-panel rounded-2xl p-4">
+        <p className="text-[13px] font-semibold text-foreground">Your store link</p>
+        <div className="mt-2 flex items-center gap-2"><input readOnly value={storeUrl} className="onyx-field flex-1 text-[12.5px]" /><button type="button" onClick={() => { void navigator.clipboard.writeText(storeUrl); toast.success("Link copied."); }} className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.1] text-muted-foreground"><Copy size={15} /></button></div>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px]"><a className="text-primary-glow" href={`https://wa.me/?text=${encodeURIComponent(`Buy MTN, Telecel and AirtelTigo data from my store: ${storeUrl}`)}`} target="_blank" rel="noreferrer">Share on WhatsApp</a><button type="button" className="text-primary-glow" onClick={() => { void navigator.clipboard.writeText(priceList()); toast.success("Price list copied. Paste it anywhere."); }}>Copy price list</button></div>
+      </div>
+      <div className="onyx-panel rounded-2xl p-3">
+        <div className="flex items-center justify-between px-1"><p className="text-[13px] font-semibold text-foreground">Latest orders</p><Link to="/agent/orders" className="text-[12px] text-primary-glow">All orders</Link></div>
+        <ul className="mt-1 divide-y divide-white/[0.06]">{orders.length === 0 && <li className="py-6 text-center text-[13px] text-muted-foreground">No orders yet. Share your link.</li>}{orders.slice(0, 5).map((o) => <li key={o.order_reference} className="flex items-center justify-between py-2"><div><p className="text-[13px] font-medium text-foreground">{o.networks?.name} {o.data_products?.name?.replace(/^.*?—\s*/, "")} → {o.recipient_phone}</p><p className="text-[11px] text-faint-foreground">{fmt(o.paid_at ?? o.created_at)} · <span className={o.status === "delivered" ? "text-primary-glow" : "text-amber"}>{o.status.replace(/_/g, " ")}</span></p></div><p className="text-[12.5px] font-semibold text-primary-glow">+{formatGHS(Number(o.agent_margin ?? 0))}</p></li>)}</ul>
+      </div>
+    </div>
+  );
+}
