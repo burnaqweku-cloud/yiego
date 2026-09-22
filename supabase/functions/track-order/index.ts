@@ -16,19 +16,19 @@ function customerDeliveryStatus(orderStatus: string, paymentStatus: string, admi
   }
 }
 
-function customerMessage(orderStatus: string, paymentStatus: string, adminStatus: string | null, paidAt: string | null, updatedAt: string) {
+function customerMessage(orderStatus: string, paymentStatus: string, adminStatus: string | null, paidAt: string | null, updatedAt: string, who = "DataYego support") {
   if (paymentStatus !== "succeeded") return "Complete payment to continue this order.";
   if (adminStatus === AWAITING_VERIFICATION) return AWAITING_VERIFICATION_CUSTOMER_MESSAGE;
   if (orderStatus === "delivered") return "Your data order has been completed.";
   if (orderStatus === "refunded") return "Your payment has been refunded.";
   if (orderStatus === "cancelled") return "This order has been cancelled.";
-  if (orderStatus === "failed") return "We could not complete this order. Please contact DataYego support.";
+  if (orderStatus === "failed") return `We could not complete this order. Please contact ${who}.`;
 
   const started = new Date(paidAt ?? updatedAt).getTime();
   const ageHours = Number.isFinite(started) ? Math.max(0, (Date.now() - started) / 3_600_000) : 0;
   if (ageHours < 24) return "Your payment was successful. Your order is in progress.";
   if (ageHours < 48) return "Your order is still in progress. We will update this page when delivery is completed.";
-  return "Your order is under review. Please contact DataYego support if you need assistance.";
+  return `Your order is under review. Please contact ${who} if you need assistance.`;
 }
 
 Deno.serve(async (req) => {
@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
         orderStatus: deliveryStatus,
         paymentStatus: order.payment_status,
         deliveryStatus,
-        statusMessage: customerMessage(order.status, order.payment_status, order.admin_resolution_status ?? null, order.paid_at, order.updated_at),
+        statusMessage: customerMessage(order.status, order.payment_status, order.admin_resolution_status ?? null, order.paid_at, order.updated_at, order.agents ? order.agents.store_name : "DataYego support"),
         createdAt: order.created_at,
         updatedAt: order.updated_at,
         store: order.agents ? { slug: order.agents.slug, name: order.agents.store_name } : null,
