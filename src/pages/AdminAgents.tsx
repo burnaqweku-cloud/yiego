@@ -18,6 +18,7 @@ import { useAuth } from "@/store/auth-context";
 
 interface Application { id: string; user_id: string; full_name: string; phone: string; whatsapp: string | null; town: string | null; pitch: string | null; status: "pending" | "approved" | "declined"; decline_reason: string | null; created_at: string; reviewed_at: string | null }
 interface Agent { id: string; user_id: string; slug: string; store_name: string; status: string; paid_until: string | null; earnings_balance: number; created_at: string }
+interface AgentStats { orders: number; sales: number; own: number; earned: number }
 interface Promo { id: string; name: string; percent_off: number; starts_at: string; ends_at: string | null; max_uses: number | null; uses: number; is_active: boolean }
 interface Plan { monthly_price: number; payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number; popup_delay_seconds: number }
 type Tab = "overview" | "applications" | "agents" | "subscriptions" | "payouts" | "promos" | "launch";
@@ -36,6 +37,7 @@ export default function AdminAgents() {
   const setTab = (t: Tab) => navigate(TAB_PATH[t]);
   const [subs, setSubs] = useState<SubPayment[]>([]);
   const [grants, setGrants] = useState<Grant[]>([]);
+  const [agentStats, setAgentStats] = useState<Record<string, AgentStats>>({});
   const [making, setMaking] = useState(false); const [makeEmail, setMakeEmail] = useState(""); const [makeMonths, setMakeMonths] = useState("1"); const [makeNote, setMakeNote] = useState("");
   const [granting, setGranting] = useState<Agent | null>(null); const [grantMonths, setGrantMonths] = useState("1"); const [grantNote, setGrantNote] = useState("");
   const [apps, setApps] = useState<Application[]>([]);
@@ -68,6 +70,10 @@ export default function AdminAgents() {
       db().from("agent_subscription_grants").select("*").order("created_at", { ascending: false }).limit(300),
     ]);
     setPayouts(po.data ?? []); setSubs(sp.data ?? []); setGrants(gr.data ?? []);
+    const { data: ao } = await db().from("orders").select("agent_id, amount, agent_margin, status, user_id").not("agent_id", "is", null).eq("payment_status", "succeeded").limit(5000);
+    const st: Record<string, AgentStats> = {}; const owner = new Map<string, string>((g.data ?? []).map((x: Agent) => [x.id, x.user_id]));
+    for (const o of ao ?? []) { const k = o.agent_id as string; const self = o.user_id === owner.get(k) && Number(o.agent_margin ?? 0) === 0; st[k] ??= { orders: 0, sales: 0, own: 0, earned: 0 }; st[k].orders += 1; if (self) st[k].own += Number(o.amount); else { st[k].sales += Number(o.amount); if (o.status === "delivered") st[k].earned += Number(o.agent_margin ?? 0); } }
+    setAgentStats(st);
     setApps(a.data ?? []); setAgents(g.data ?? []); setPromos(p.data ?? []);
     for (const row of s.data ?? []) { if (row.key === "agents_launched") setLaunched(Boolean(row.value)); if (row.key === "agent_plan") { setPlan(row.value); setPlanDraft(row.value); } }
     setIsMaster(r.data === "master");
@@ -173,7 +179,7 @@ export default function AdminAgents() {
       {tab === "agents" && (
         <Panel title="Agents" note={`${visibleAgents.length} shown`} action={isMaster ? <Button size="sm" variant="soft" onClick={() => setMaking(true)}>Make someone an agent</Button> : undefined}>
           <Rows empty={loading ? "Loading…" : "No agents yet — approve an application to create one."}>
-            {visibleAgents.map((g) => <Row key={g.id} onClick={isMaster ? () => { setGranting(g); setGrantMonths("1"); } : undefined} primary={<>{g.store_name} <Pill tone={g.status === "active" ? "good" : g.status === "awaiting_payment" ? "warn" : "muted"}>{g.status.replace(/_/g, " ")}</Pill>{grants.some((x) => x.agent_id === g.id) && <Pill tone="muted">complimentary</Pill>}</>} secondary={`/s/${g.slug} · ${emails.get(g.user_id) ?? "—"} · ${g.paid_until ? `covered until ${g.paid_until}` : "not paid yet"} · joined ${formatAdminDate(g.created_at)}${isMaster ? " · tap to give months" : ""}`} right={formatGHS(Number(g.earnings_balance))} rightNote="earnings" />)}
+            {visibleAgents.map((g) => { const st = agentStats[g.id]; return <Row key={g.id} onClick={() => navigate(`/admin/agents/${g.id}`)} primary={<>{g.store_name} <Pill tone={g.status === "active" ? "good" : g.status === "awaiting_payment" ? "warn" : "muted"}>{g.status.replace(/_/g, " ")}</Pill>{grants.some((x) => x.agent_id === g.id) && <Pill tone="muted">complimentary</Pill>}</>} secondary={`${st ? `${st.orders} order${st.orders === 1 ? "" : "s"} · store sales ${formatGHS(st.sales)} · own purchases ${formatGHS(st.own)} · earned ${formatGHS(st.earned)}` : "no orders yet"} · ${emails.get(g.user_id) ?? "—"} · ${g.paid_until ? `covered until ${g.paid_until}` : "not paid yet"}`} right={formatGHS(Number(g.earnings_balance))} rightNote="balance" />; })}
           </Rows>
         </Panel>
       )}
