@@ -39,13 +39,15 @@ export default function AgentPopup() {
         <div className="bg-gradient-to-br from-primary/30 via-primary/10 to-transparent px-6 pb-6 pt-10 text-center">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/20 text-primary-glow"><Store size={26} /></span>
           <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Become an agent</p>
-          <h2 className="mt-1.5 font-display text-[24px] font-semibold leading-tight text-foreground">Get data cheaper.<br />Keep the difference.</h2>
+          <h2 className="mt-1.5 font-display text-[24px] font-semibold leading-tight text-foreground">Start your own<br />data business.</h2>
         </div>
         <div className="px-6 pb-6">
           <ul className="space-y-2.5 text-[13px] leading-5 text-muted-foreground">
-            <li className="flex gap-2"><span className="text-primary-glow">✓</span><span><b className="text-foreground">Agent prices</b> on every bundle — MTN 1GB 4.00, 10GB 40.00 — for yourself or to sell.</span></li>
-            <li className="flex gap-2"><span className="text-primary-glow">✓</span><span><b className="text-foreground">Your own store link</b> with your prices.</span></li>
-            <li className="flex gap-2"><span className="text-primary-glow">✓</span><span><b className="text-foreground">Nothing to prepay.</b> From 3.00 a month.</span></li>
+            <li className="flex gap-2"><span className="text-primary-glow">✓</span><span><b className="text-foreground">Buy data cheaper.</b> MTN 1GB at 4.00, 10GB at 40.00 — for yourself or to sell.</span></li>
+            <li className="flex gap-2"><span className="text-primary-glow">✓</span><span><b className="text-foreground">Free online store.</b> Your own link. You set your prices.</span></li>
+            <li className="flex gap-2"><span className="text-primary-glow">✓</span><span><b className="text-foreground">No deposit needed.</b> Your customers pay, you keep the profit.</span></li>
+            <li className="flex gap-2"><span className="text-primary-glow">✓</span><span><b className="text-foreground">Withdraw to MoMo</b> any time from 20.00.</span></li>
+            <li className="flex gap-2"><span className="text-primary-glow">✓</span><span><b className="text-foreground">Only 3.00 a month</b> — 40% off for now.</span></li>
           </ul>
           <Link to="/agents" onClick={() => setOpen(false)} className="onyx-btn-primary mt-5 block w-full py-3 text-center text-[14px]">Apply now</Link>
           <button type="button" onClick={close} className="mt-2 w-full py-2 text-[12.5px] text-muted-foreground">Maybe later</button>

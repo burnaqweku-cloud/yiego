@@ -56,16 +56,16 @@ export default function AgentsApply() {
         {/* Pitch */}
         <div className="text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11.5px] font-semibold uppercase tracking-[0.12em] text-primary-glow"><Store size={12} />Agents</span>
-          <h1 className="mt-4 font-display text-[30px] font-semibold leading-[1.1] tracking-tight text-foreground sm:text-[40px]">Buy data cheaper.<br />Sell it your way.</h1>
-          <p className="mx-auto mt-3 max-w-lg text-[15px] leading-6 text-muted-foreground">Agents get every bundle below the public price, a store with their name on it, and earnings on each sale. We handle payments, delivery and support.</p>
+          <h1 className="mt-4 font-display text-[30px] font-semibold leading-[1.1] tracking-tight text-foreground sm:text-[40px]">Start your own<br />data business.</h1>
+          <p className="mx-auto mt-3 max-w-lg text-[15px] leading-6 text-muted-foreground">Buy data cheaper than everyone else, get a free online store with your name on it, set your own prices and keep the profit. No deposit needed. We handle payment, delivery and support.</p>
         </div>
 
         {/* Benefits */}
         <div className="mt-8 grid gap-3 sm:grid-cols-3">
           {[
-            { icon: BadgeCheck, t: "Cheaper data", d: "MTN 1GB at 4.00, not 4.15. 10GB at 40.00, not 43.44. Every bundle, every network." },
-            { icon: Store, t: "Your own store", d: "datayego.com/s/yourname. Set your prices, share the link anywhere." },
-            { icon: Wallet, t: "Nothing to prepay", d: "No stock, no deposits. Your markup lands in earnings; withdraw to MoMo." },
+            { icon: BadgeCheck, t: "Buy data cheaper", d: "MTN 1GB at 4.00, not 4.15. 10GB at 40.00, not 43.44. Every bundle, every network — for you or to sell." },
+            { icon: Store, t: "Free online store", d: "datayego.com/s/yourname. You set the prices. Share the link on WhatsApp, anywhere." },
+            { icon: Wallet, t: "No deposit needed", d: "Your customers pay, your profit is saved for you. Withdraw to MoMo any time from 20.00." },
           ].map(({ icon: Icon, t, d }) => (
             <div key={t} className="onyx-panel rounded-2xl p-4"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/12 text-primary-glow"><Icon size={17} /></span><p className="mt-3 text-[14.5px] font-semibold text-foreground">{t}</p><p className="mt-1 text-[12.5px] leading-5 text-muted-foreground">{d}</p></div>))}
         </div>
@@ -77,7 +77,7 @@ export default function AgentsApply() {
             {quote ? (quote.promo ? <p className="mt-0.5 text-[26px] font-semibold leading-none text-foreground">{formatGHS(quote.pay_now)}<span className="ml-2 text-[14px] font-normal text-faint-foreground line-through">{formatGHS(quote.monthly)}</span></p> : <p className="mt-0.5 text-[26px] font-semibold leading-none text-foreground">{formatGHS(quote.monthly)}</p>) : <p className="mt-0.5 text-[26px] font-semibold leading-none text-foreground">…</p>}
           </div>
           {quote?.promo && <span className="rounded-full bg-primary/12 px-3 py-1 text-[11.5px] font-semibold text-primary-glow">{quote.promo.percent_off}% off · {quote.promo.name}</span>}
-          <p className="w-full text-[12px] text-faint-foreground">Paid after you're approved. Miss a month and your store pauses until you pay — nothing is lost.</p>
+          <p className="w-full text-[12px] text-faint-foreground">Only after you're approved. If a month isn't paid your store pauses until you pay — your money and earnings stay safe.</p>
         </div>
 
         {/* How it works */}
