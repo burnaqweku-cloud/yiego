@@ -184,7 +184,7 @@ async function current() {
   const { data: supplier } = await supabase
     .from("suppliers")
     .select("id, delivery_estimate_manual, delivery_slow_threshold_minutes, delivery_panel")
-    .eq("code", "databundleshub").maybeSingle();
+    .eq("code", "datamartgh").maybeSingle();  // where the admin's wording lives
   const { data: speed } = await supabase.rpc("delivery_speed");
   const lag: number | null = speed?.median_minutes == null ? null : Number(speed.median_minutes);
   const threshold = Number(supplier?.delivery_slow_threshold_minutes ?? 45);
