@@ -20,7 +20,7 @@ function rememberRecent(ref: string) {
 }
 
 type Phase = "loading" | "success" | "pending" | "error";
-interface OrderInfo { reference: string; recipient?: string; product?: string; network?: string; amount?: number; }
+interface OrderInfo { reference: string; recipient?: string; product?: string; network?: string; amount?: number; store?: { slug: string; name: string } | null }
 interface DepositInfo { amount: number; balance: number }
 
 export default function PaymentSuccess() {
@@ -71,7 +71,7 @@ export default function PaymentSuccess() {
         if (cancelled) return;
         if (res.ok && payload?.data) {
           const d = payload.data;
-          setOrder({ reference: d.reference, recipient: d.recipient, product: d.product, network: d.network, amount: Number(d.amount) });
+          setOrder({ reference: d.reference, recipient: d.recipient, product: d.product, network: d.network, amount: Number(d.amount), store: d.store ?? null });
           rememberRecent(reference);
           if (d.paymentStatus === "succeeded") {
             setPhase("success");
@@ -133,7 +133,7 @@ export default function PaymentSuccess() {
 
               <div className="mx-auto mt-6 grid max-w-sm gap-2 sm:grid-cols-2">
                 <Button asChild><Link to={`/track-order?reference=${encodeURIComponent(order?.reference ?? "")}`}><Search size={16} />Track this order</Link></Button>
-                <Button asChild variant="soft"><Link to="/shop"><ShoppingBag size={16} />Buy more data</Link></Button>
+                <Button asChild variant="soft"><Link to={order?.store ? `/s/${order.store.slug}` : "/shop"}><ShoppingBag size={16} />{order?.store ? `Back to ${order.store.name}` : "Buy more data"}</Link></Button>
               </div>
             </div>
           )}

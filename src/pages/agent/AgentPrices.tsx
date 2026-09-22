@@ -16,7 +16,7 @@ export default function AgentPrices() {
 
   const save = async (productId: string, value: number) => {
     const { error } = await p1().rpc("agent_set_price", { p_product_id: productId, p_price: value });
-    if (error) { const m = String(error.message); toast.error(m.startsWith("below_agent_price") ? `Can't go below ${formatGHS(Number(m.split(":")[1]))} — that's what you pay.` : m); return false; }
+    if (error) { const m = String(error.message); toast.error(m.startsWith("below_agent_price") ? `Can't go below the agent price of ${formatGHS(Number(m.split(":")[1]))}.` : m); return false; }
     return true;
   };
   const onBlur = async (p: typeof items[number]) => {
@@ -35,10 +35,10 @@ export default function AgentPrices() {
     <div className="space-y-3">
       <h1 className="font-display text-[22px] font-semibold text-foreground">Your selling prices</h1>
       <div className="flex gap-2">{(["MTN", "Telecel", "AirtelTigo"] as const).map((n) => <button key={n} type="button" onClick={() => setNetwork(n)} className={`rounded-full px-4 py-1.5 text-[13px] font-medium ${network === n ? "bg-primary/15 text-primary-glow" : "border border-white/[0.08] text-muted-foreground"}`}>{n}</button>)}</div>
-      <div className="flex items-start gap-2 rounded-2xl bg-primary/8 px-3.5 py-3 text-[12.5px] leading-5 text-muted-foreground"><Info size={15} className="mt-0.5 shrink-0 text-primary-glow" /><span><b className="text-foreground">You pay</b> the agent price. Type what your customers pay in <b className="text-foreground">Your price</b> — the difference is your profit on every sale. You can't go below what you pay.</span></div>
-      <div className="flex flex-wrap gap-2 text-[12px]"><button type="button" disabled={busy} onClick={() => void applyAll("plus")} className="rounded-full border border-white/[0.1] px-3 py-1.5 text-muted-foreground">Set all: what I pay + 0.50 (1.00 from 10GB)</button><button type="button" disabled={busy} onClick={() => void applyAll("public")} className="rounded-full border border-white/[0.1] px-3 py-1.5 text-muted-foreground">Set all to public price</button></div>
+      <div className="flex items-start gap-2 rounded-2xl bg-primary/8 px-3.5 py-3 text-[12.5px] leading-5 text-muted-foreground"><Info size={15} className="mt-0.5 shrink-0 text-primary-glow" /><span>The <b className="text-foreground">agent price</b> is your special price. Type what your customers pay under <b className="text-foreground">Your price</b> — the difference is your profit on every sale. Your price can't be lower than the agent price.</span></div>
+      <div className="flex flex-wrap gap-2 text-[12px]"><button type="button" disabled={busy} onClick={() => void applyAll("plus")} className="rounded-full border border-white/[0.1] px-3 py-1.5 text-muted-foreground">Set all: agent price + 0.50 (1.00 from 10GB)</button><button type="button" disabled={busy} onClick={() => void applyAll("public")} className="rounded-full border border-white/[0.1] px-3 py-1.5 text-muted-foreground">Set all to public price</button></div>
       <div className="onyx-panel rounded-2xl p-2">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-faint-foreground"><span>Bundle</span><span className="text-right">You pay</span><span className="text-center">Your price</span><span className="text-right">Profit</span></div>
+        <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-faint-foreground"><span>Bundle</span><span className="text-right">Agent price</span><span className="text-center">Your price</span><span className="text-right">Profit</span></div>
         <ul className="divide-y divide-white/[0.06]">
           {items.map((p) => { const floor = floorOf(p); const cur = currentOf(p); const profit = Math.max(0, cur - floor); return (
             <li key={p.id} className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-2 py-2.5">
