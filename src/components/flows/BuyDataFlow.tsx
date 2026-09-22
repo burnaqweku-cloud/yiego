@@ -116,7 +116,7 @@ function DeliveryStatusPanel({ supplier }: { supplier: SupplierChoice }) {
   );
 }
 
-export interface AgentStoreContext { slug: string; name: string; prices: Record<string, number> }
+export interface AgentStoreContext { slug: string; name: string; prices: Record<string, number>; /** The agent buying for themselves: charged the agent price, no earnings. */ self?: boolean }
 
 export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agent }: { open: boolean; preselect?: BuyPreselect | null; onClose: () => void; onAddMoney: () => void; agent?: AgentStoreContext | null }) {
   const { balance } = useWallet();
@@ -297,7 +297,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   async function startGuestPaystack() {
     if (!bundle || !emailValid) { toast.error("Enter a valid email for your receipt"); return; }
     setStep("processing");
-    const result = await createGuestDataPayment({ productId: bundle.id, recipientPhone: digits, supplierId: chosenSupplier?.id, guestEmail: guestEmail.trim(), guestPhone: digits, agentSlug: agent?.slug });
+    const result = await createGuestDataPayment({ productId: bundle.id, recipientPhone: digits, supplierId: chosenSupplier?.id, guestEmail: guestEmail.trim(), guestPhone: digits, agentSlug: agent?.slug, agentSelf: agent?.self ? true : undefined });
     if (result.error || !result.data?.data?.authorizationUrl) { toast.error(result.error ?? "Could not start Paystack payment"); setStep("review"); return; }
     window.location.assign(result.data.data.authorizationUrl);
   }

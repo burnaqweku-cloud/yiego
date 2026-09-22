@@ -91,9 +91,15 @@ Deno.serve(async (req) => {
       if (!store) return jsonResponse({ error: "This store isn't open right now." }, { status: 409 });
       agent = store as { id: string; slug: string; prices: Record<string, number> };
     }
-    const sellingPrice = agent ? Number(agent.prices?.[product.id] ?? product.customer_price) : Number(product.customer_price);
+    // The agent buying for themselves pays the agent price outright; nothing goes to earnings.
+    let agentSelf = false;
+    if (agent && body?.agentSelf === true && authenticatedUser) {
+      const { data: own } = await supabase.from("agents").select("id").eq("id", agent.id).eq("user_id", authenticatedUser.id).maybeSingle();
+      agentSelf = Boolean(own);
+    }
     const agentPrice = agent ? Number(product.agent_price ?? product.customer_price) : null;
-    const agentMargin = agent && agentPrice != null ? Math.max(0, Math.round((sellingPrice - agentPrice) * 100) / 100) : null;
+    const sellingPrice = agent ? (agentSelf ? Number(agentPrice) : Number(agent.prices?.[product.id] ?? product.customer_price)) : Number(product.customer_price);
+    const agentMargin = agent && agentPrice != null ? (agentSelf ? 0 : Math.max(0, Math.round((sellingPrice - agentPrice) * 100) / 100)) : null;
 
     // The supplier the guest chose in the shop, if they chose one.
     const supplierRaw = typeof body?.supplierId === "string" ? body.supplierId.trim() : "";

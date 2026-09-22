@@ -12,7 +12,7 @@ export default function AgentBuy() {
   const [open, setOpen] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null);
   const [network, setNetwork] = useState<"mtn" | "telecel" | "at">("mtn");
   // Price map at the agent price: the store checkout then charges exactly that.
-  const ctx: AgentStoreContext = useMemo(() => ({ slug: agent.slug, name: agent.store_name, prices: Object.fromEntries(products.map((p) => [p.id, Number(p.agent_price ?? p.customer_price)])) }), [agent, products]);
+  const ctx: AgentStoreContext = useMemo(() => ({ slug: agent.slug, name: agent.store_name, prices: Object.fromEntries(products.map((p) => [p.id, Number(p.agent_price ?? p.customer_price)])), self: true }), [agent, products]);
   const n = NETWORKS.find((x) => x.id === network)!;
   const prefix = network === "mtn" ? "mtn" : network === "telecel" ? "tel" : "at";
   const items = products.filter((p) => p.app_product_code?.startsWith(prefix) && !p.is_paused);

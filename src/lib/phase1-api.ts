@@ -25,6 +25,7 @@ export interface GuestDataPaymentInput {
   supplierId?: string;
   /** Bought through an agent's store: the agent's price applies and the order is theirs. */
   agentSlug?: string;
+  agentSelf?: boolean;
 }
 
 export interface WalletDepositInput {
