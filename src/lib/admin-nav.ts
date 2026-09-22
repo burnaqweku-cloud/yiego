@@ -47,13 +47,15 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "agent-plan", label: "Plan & promos", to: "/admin/agents/plan", icon: BadgePercent, keywords: ["promo", "discount", "fee", "price", "plan"] },
     { id: "agent-launch", label: "Launch", to: "/admin/agents/launch", icon: Rocket, keywords: ["launch", "switch", "go live", "email test"] },
   ] },
+  { id: "announcements", label: "Announcements", icon: Megaphone, pages: [
+    { id: "announcements", label: "Announcements", to: "/admin/announcements", icon: Megaphone, keywords: ["notification", "announce", "update", "notice", "bell", "broadcast"] },
+  ] },
   { id: "support", label: "Support", icon: LifeBuoy, pages: [
     { id: "support-inbox", label: "Support inbox", to: "/admin/support-inbox", icon: Inbox, keywords: ["message", "ticket", "whatsapp"] },
     { id: "ai-support", label: "AI assistant", to: "/admin/ai-support", icon: Bot, keywords: ["chatbot", "assistant"] },
     { id: "ai-knowledge", label: "Knowledge base", to: "/admin/ai-knowledge", icon: BookOpen, keywords: ["faq", "articles", "help"] },
   ] },
   { id: "site", label: "Site", icon: FileText, pages: [
-    { id: "announcements", label: "Announcements", to: "/admin/announcements", icon: Megaphone, keywords: ["notification", "announce", "update", "notice", "bell", "broadcast"] },
     { id: "contact", label: "Contact information", to: "/admin/contacts/information", icon: Contact, keywords: ["phone", "email", "address", "whatsapp"] },
     { id: "legal", label: "Legal documents", to: "/admin/legal", icon: FileText, keywords: ["terms", "privacy", "policy"] },
   ] },
