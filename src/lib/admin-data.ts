@@ -22,6 +22,10 @@ export interface AdminOrderRow {
   created_at: string;
   updated_at: string;
   data_products: { name: string; capacity_gb: number | string } | null;
+  agent_id?: string | null;
+  agent_price?: number | string | null;
+  agent_margin?: number | string | null;
+  agents?: { slug: string; store_name: string } | null;
   networks: { name: string; code: string } | null;
   /** Which supplier the order was routed to. public_name is what customers
    *  would see; the admin sees both that and the real one. */

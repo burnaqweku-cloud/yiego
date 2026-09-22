@@ -6,6 +6,8 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Field, Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
+import AdminRecordModal from "@/components/admin/AdminRecordModal";
+import { Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
@@ -49,6 +51,7 @@ export default function AdminAgents() {
   const [search, setSearch] = useState("");
   const [appFilter, setAppFilter] = useState<"pending" | "all">("pending");
   const [declining, setDeclining] = useState<Application | null>(null); const [reason, setReason] = useState(""); const [busy, setBusy] = useState(false);
+  const [viewing, setViewing] = useState<Application | null>(null);
   const [editPromo, setEditPromo] = useState<Partial<Promo> | null>(null);
   const [planDraft, setPlanDraft] = useState<Plan | null>(null);
   const [emailTest, setEmailTest] = useState<unknown>(null);
@@ -154,17 +157,14 @@ export default function AdminAgents() {
         <Panel title="Applications" note={appFilter === "pending" ? "waiting for review" : "all applications"}>
           <Rows empty={loading ? "Loading…" : appFilter === "pending" ? "No applications waiting." : "No applications yet."}>
             {visibleApps.map((a) => (
-              <li key={a.id} className="py-2">
-                <div className="flex items-start gap-2.5">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12.5px] font-semibold text-foreground">{a.full_name} <Pill tone={a.status === "pending" ? "warn" : a.status === "approved" ? "good" : "muted"}>{a.status}</Pill></p>
-                    <p className="text-[11px] text-faint-foreground">{a.phone}{a.whatsapp && a.whatsapp !== a.phone ? ` · WhatsApp ${a.whatsapp}` : ""}{a.town ? ` · ${a.town}` : ""} · {emails.get(a.user_id) ?? "—"} · applied {formatAdminDate(a.created_at)}</p>
-                    {a.pitch && <p className="mt-0.5 text-[11.5px] text-muted-foreground">“{a.pitch}”</p>}
-                    {a.decline_reason && <p className="mt-0.5 text-[11px] text-amber">Declined: {a.decline_reason}</p>}
-                  </div>
-                  {a.status === "approved" && <Button size="sm" variant="quiet" onClick={async () => { const { data, error } = await supabase.functions.invoke<{ error?: string; to?: string; resend?: { ok?: boolean; payload?: unknown } }>("agent-admin", { body: { action: "resend_approval", applicationId: a.id } }); const err = data?.error ?? error?.message; if (err) return toast.error(err); toast[data?.resend?.ok ? "success" : "error"](data?.resend?.ok ? `Sent to ${data.to}` : `Resend said: ${JSON.stringify(data?.resend?.payload ?? data?.resend)}`); }}>Resend email</Button>}
-                  {a.status === "pending" && <div className="flex gap-1.5"><Button size="sm" onClick={() => void review(a, true)} disabled={busy}>Approve</Button><Button size="sm" variant="quiet" onClick={() => { setDeclining(a); setReason(""); }}>Decline</Button></div>}
+              <li key={a.id} className="flex items-center gap-2 py-1.5">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[12.5px] font-semibold text-foreground">{a.full_name} <span className="font-normal text-faint-foreground">· {a.phone}{a.town ? ` · ${a.town}` : ""}</span></p>
+                  <p className="truncate text-[11px] text-faint-foreground">{emails.get(a.user_id) ?? "—"} · {formatAdminDate(a.created_at)}</p>
                 </div>
+                <Pill tone={a.status === "pending" ? "warn" : a.status === "approved" ? "good" : "muted"}>{a.status}</Pill>
+                <button type="button" aria-label="View" onClick={() => setViewing(a)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] text-muted-foreground hover:bg-white/[0.04]"><Eye size={14} /></button>
+                {a.status === "pending" && <><Button size="sm" onClick={() => void review(a, true)} disabled={busy}>Approve</Button><Button size="sm" variant="quiet" onClick={() => { setDeclining(a); setReason(""); }}>Decline</Button></>}
               </li>))}
           </Rows>
         </Panel>
@@ -247,6 +247,12 @@ export default function AdminAgents() {
         </Panel>
       </>)}
 
+      <AdminRecordModal open={viewing !== null} onClose={() => setViewing(null)} title={viewing?.full_name ?? "Application"} subtitle={viewing ? `${viewing.status} · applied ${formatAdminDate(viewing.created_at)}` : ""} fields={viewing ? [
+        { label: "Phone", value: viewing.phone }, { label: "WhatsApp", value: viewing.whatsapp ?? "Same as phone" }, { label: "Email", value: emails.get(viewing.user_id) ?? "—" }, { label: "Town / area", value: viewing.town ?? "—" }, { label: "How they'll sell", value: viewing.pitch ?? "—" },
+        ...(viewing.reviewed_at ? [{ label: "Reviewed", value: formatAdminDate(viewing.reviewed_at) }] : []), ...(viewing.decline_reason ? [{ label: "Decline reason", value: viewing.decline_reason }] : []),
+      ] : []}>
+        {viewing?.status === "pending" && <div className="flex justify-end gap-2"><Button variant="quiet" onClick={() => { setDeclining(viewing); setReason(""); setViewing(null); }}>Decline</Button><Button onClick={() => { void review(viewing, true); setViewing(null); }} disabled={busy}>Approve</Button></div>}
+      </AdminRecordModal>
       <Modal open={declining !== null} onClose={() => setDeclining(null)} label="Decline application">
         <div className="w-[min(92vw,400px)] p-5">
           <h2 className="text-[16px] font-semibold text-foreground">Decline {declining?.full_name}</h2>

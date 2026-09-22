@@ -32,7 +32,7 @@ interface Overview {
   cash: { bank: number; paystack_transit: number; supplier_float: Record<string, number> };
   owed: { customer_wallets: number; undelivered: number; undelivered_count: number; refunds_due: number };
   funding: { outside: number; carried_in: number };
-  period: { revenue: number; fee_income: number; cost_of_bundles: number; paystack_fees: number; topup_fees: number; other_expenses: number; gross_profit: number; net: number; net_excluding_fee_passthrough: number };
+  period: { revenue: number; fee_income: number; cost_of_bundles: number; paystack_fees: number; topup_fees: number; other_expenses: number; agent_margin?: number; agent_subscriptions?: number; agent_payout_fees?: number; gross_profit: number; net: number; net_excluding_fee_passthrough: number };
   all_time: { cash_in: number; payouts_received: number; supplier_topups: number; delivered_revenue: number };
 }
 interface Entry { id: string; kind: string; reference: string | null; occurred_at: string; amount: number; source: string; note: string | null; metadata: Record<string, unknown>; supplier_id: string | null; reverses: string | null; created_at: string }
@@ -92,8 +92,7 @@ export default function AdminFinance() {
   const cashTotal = Number(o?.cash.bank ?? 0) + Number(o?.cash.paystack_transit ?? 0);
   const bank = Number(o?.cash.bank ?? 0);
   const floats = suppliers.reduce((a, s) => a + Number((s as SupplierRow & { confirmed_balance?: number | null }).confirmed_balance ?? o?.cash.supplier_float?.[s.code] ?? 0), 0);
-  const [owedToAgents, setOwedToAgents] = useState(0);
-  useEffect(() => { void db().from("finance_balances").select("balance").eq("code", "owed_to_agents").maybeSingle().then((r: { data: { balance: number } | null }) => setOwedToAgents(Number(r.data?.balance ?? 0))); }, [entries]);
+  const owedToAgents = Number((o?.owed as { agents?: number } | undefined)?.agents ?? 0);
   const owedTotal = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0) + owedToAgents;
   const master = bank; // the pot: partners' money + payouts − top-ups, which is exactly what the ledger's bank holds
   const netWorth = bank + Number(o?.cash.paystack_transit ?? 0) + floats - owedTotal;
@@ -120,7 +119,7 @@ export default function AdminFinance() {
       <Panel title="What we owe" icon={Wallet} note={`total ${formatGHS(owedTotal)}`}>
         <StatGrid>
           <Stat loading={loading} label="Customer wallets" value={<Money value={o?.owed.customer_wallets} />} note="balances customers hold" to="/admin/wallet" />
-          <Stat loading={loading} label="Owed to agents" value={<Money value={owedToAgents} />} note="earnings not yet paid out" tone={owedToAgents > 0 ? "warn" : "default"} to="/admin/agents" />
+          <Stat loading={loading} label="Owed to agents" value={<Money value={owedToAgents} />} note="earnings not yet paid out" tone={owedToAgents > 0 ? "warn" : "default"} to="/admin/agents/payouts" />
           <Stat loading={loading} label="Paid, not delivered" value={<Money value={o?.owed.undelivered} />} note={`${o?.owed.undelivered_count ?? 0} orders`} tone={Number(o?.owed.undelivered_count) > 0 ? "warn" : "default"} to="/admin/finance/undelivered" />
           <Stat loading={loading} label="Refunds owed" value={<Money value={o?.owed.refunds_due} />} note="refunded orders, money not yet returned" tone={Number(o?.owed.refunds_due) > 0 ? "bad" : "default"} />
           <Stat loading={loading} label="Money put in" to="/admin/finance/funding" value={<Money value={o?.funding.outside} />} note={`top-ups + charges · ${formatGHS(Number(o?.funding.carried_in ?? 0))} carried in from before launch`} />
@@ -131,10 +130,13 @@ export default function AdminFinance() {
         <StatGrid>
           <Stat loading={loading} label="Bundles sold (delivered)" value={<Money value={p?.revenue} />} />
           <Stat loading={loading} label="Bundle cost" value={<Money value={p?.cost_of_bundles} />} />
-          <Stat loading={loading} label="Margin on bundles" value={<Money value={p?.gross_profit} tone={Number(p?.gross_profit) < 0 ? "bad" : "default"} />} note="sales minus supplier cost" />
+          <Stat loading={loading} label="Paid to agents" value={<Money value={p?.agent_margin ?? 0} />} note="their share on store sales" tone="muted" />
+          <Stat loading={loading} label="Margin on bundles" value={<Money value={p?.gross_profit} tone={Number(p?.gross_profit) < 0 ? "bad" : "default"} />} note="sales minus supplier cost and agents' share" />
           <Stat loading={loading} label="4% checkout fee collected" value={<Money value={p?.fee_income} />} note="charged on top of the price" tone="good" />
           <Stat loading={loading} label="Paystack fees" value={<Money value={p?.paystack_fees} />} tone="muted" />
           <Stat loading={loading} label="Top-up charges + expenses" value={<Money value={Number(p?.topup_fees ?? 0) + Number(p?.other_expenses ?? 0)} />} tone="muted" />
+          <Stat loading={loading} label="Agent subscriptions" value={<Money value={p?.agent_subscriptions ?? 0} />} note="monthly fees" tone="good" to="/admin/agents/subscriptions" />
+          <Stat loading={loading} label="Agent payout fees" value={<Money value={p?.agent_payout_fees ?? 0} />} note="1% on withdrawals" tone="good" to="/admin/agents/payouts" />
         </StatGrid>
         <div className="mt-3 grid grid-cols-2 gap-2.5">
           <Stat loading={loading} label="Net profit" value={<Money value={p?.net} tone={Number(p?.net) < 0 ? "bad" : "good"} />} note="everything in, everything out" tone={Number(p?.net) < 0 ? "bad" : "good"} />
