@@ -23,7 +23,7 @@ interface Promo { id: string; name: string; percent_off: number; starts_at: stri
 interface Plan { monthly_price: number; payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number; popup_delay_seconds: number }
 type Tab = "overview" | "applications" | "agents" | "subscriptions" | "payouts" | "promos" | "launch";
 const TAB_PATH: Record<Tab, string> = { overview: "/admin/agents", applications: "/admin/agents/applications", agents: "/admin/agents/list", subscriptions: "/admin/agents/subscriptions", payouts: "/admin/agents/payouts", promos: "/admin/agents/plan", launch: "/admin/agents/launch" };
-const TAB_TITLE: Record<Tab, string> = { overview: "Agents", applications: "Applications", agents: "All agents", subscriptions: "Subscriptions", payouts: "Payouts", promos: "Plan & promos", launch: "Launch" };
+const TAB_TITLE: Record<Tab, string> = { overview: "Agents", applications: "Applications", agents: "All agents", subscriptions: "Subscriptions", payouts: "Payments", promos: "Plan & promos", launch: "Launch" };
 interface Grant { id: string; agent_id: string; months: number; from_date: string; until_date: string; note: string | null; created_at: string }
 interface SubPayment { provider_reference: string; amount: number; status: string; verified_at: string | null; created_at: string; user_id: string | null; metadata: { agent_id?: string; percent_off?: number } | null }
 interface Payout { id: string; agent_id: string; amount: number; fee: number; net: number; momo_number: string; momo_name: string | null; status: string; note: string | null; created_at: string; paid_at: string | null; paid_reference: string | null }
@@ -118,11 +118,16 @@ export default function AdminAgents() {
     if (error) return toast.error(error.message.replace(/_/g, " "));
     toast.success(`${granting.store_name} is covered until ${(data as { paid_until: string }).paid_until}. Not booked as income.`); setGranting(null); setGrantNote(""); void load();
   };
-  const settle = async (p: Payout, action: "approve" | "reject" | "paid", reference?: string) => {
-    const { error } = await db().rpc("admin_settle_agent_payout", { p_actor: actor, p_payout_id: p.id, p_action: action, p_reference: reference ?? null, p_note: null });
-    if (error) return toast.error(error.message.replace(/_/g, " "));
-    toast.success(action === "paid" ? "Marked paid and booked." : action === "reject" ? "Rejected; earnings returned." : "Approved."); setPaying(null); setPayRef(""); void load();
+  const [payFilter, setPayFilter] = useState<"waiting" | "paid" | "rejected" | "all">("waiting");
+  const [rejecting, setRejecting] = useState<Payout | null>(null); const [rejectNote, setRejectNote] = useState("");
+  const settle = async (p: Payout, action: "approve" | "reject" | "paid", reference?: string, note?: string) => {
+    const { data, error } = await supabase.functions.invoke<{ error?: string }>("agent-admin", { body: { action: "settle_payout", payoutId: p.id, settle: action, reference: reference ?? null, note: note ?? null } });
+    const err = data?.error ?? error?.message; if (err) return toast.error(err.replace(/_/g, " "));
+    toast.success(action === "paid" ? "Marked paid, booked, and the agent has been emailed." : action === "reject" ? "Rejected; earnings returned and the agent emailed." : "Approved."); setPaying(null); setPayRef(""); setRejecting(null); setRejectNote(""); void load();
   };
+  const agentOf = (id: string) => agents.find((g) => g.id === id);
+  const visiblePayouts = payouts.filter((p) => payFilter === "all" || (payFilter === "waiting" ? p.status === "requested" || p.status === "approved" : p.status === payFilter));
+  const payTotals = { waiting: payouts.filter((p) => p.status === "requested" || p.status === "approved").reduce((a, p) => a + Number(p.net), 0), paid: payouts.filter((p) => p.status === "paid").reduce((a, p) => a + Number(p.net), 0), fees: payouts.filter((p) => p.status === "paid").reduce((a, p) => a + Number(p.fee), 0) };
 
   const review = async (app: Application, approve: boolean) => {
     setBusy(true);
@@ -245,22 +250,34 @@ export default function AdminAgents() {
         </Panel>
       </>)}
 
-      {tab === "payouts" && (
-        <Panel title="Payout requests" note="approve, pay by MoMo, then mark paid">
-          <Rows empty={loading ? "Loading…" : "No payout requests."}>
-            {payouts.map((p) => (
+      {tab === "payouts" && (<>
+        <StatGrid cols={3}>
+          <Stat loading={loading} label="Waiting to be paid" value={<Money value={payTotals.waiting} />} note={`${payoutsWaiting} request${payoutsWaiting === 1 ? "" : "s"} · send by MoMo, then mark paid`} tone={payoutsWaiting ? "warn" : "default"} />
+          <Stat loading={loading} label="Paid out (all time)" value={<Money value={payTotals.paid} />} note={`${payouts.filter((p) => p.status === "paid").length} payments`} tone="good" />
+          <Stat loading={loading} label="Fees earned" value={<Money value={payTotals.fees} />} note="1% on each payout" tone="good" />
+        </StatGrid>
+        <Segmented<"waiting" | "paid" | "rejected" | "all"> value={payFilter} onChange={setPayFilter} options={[{ value: "waiting", label: `Waiting (${payoutsWaiting})` }, { value: "paid", label: "Paid" }, { value: "rejected", label: "Rejected" }, { value: "all", label: "All" }]} />
+        <Panel title="Payment requests" note="tap a request for the agent's details">
+          <Rows empty={loading ? "Loading…" : payFilter === "waiting" ? "Nothing waiting. Agents' withdrawal requests appear here." : "No payments here."}>
+            {visiblePayouts.map((p) => { const g = agentOf(p.agent_id); return (
               <li key={p.id} className="py-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12.5px] font-semibold text-foreground">{agentName(p.agent_id)} <Pill tone={p.status === "paid" ? "good" : p.status === "rejected" ? "muted" : "warn"}>{p.status}</Pill></p>
-                    <p className="text-[11px] text-faint-foreground">{formatGHS(Number(p.amount))} − fee {formatGHS(Number(p.fee))} = <b>send {formatGHS(Number(p.net))}</b> to {p.momo_number}{p.momo_name ? ` (${p.momo_name})` : ""} · {formatAdminDate(p.created_at)}{p.paid_reference ? ` · ref ${p.paid_reference}` : ""}</p>
+                <div className="flex flex-wrap items-start gap-2">
+                  <div className="min-w-0 flex-1 cursor-pointer" onClick={() => g && navigate(`/admin/agents/${g.id}`)}>
+                    <p className="text-[12.5px] font-semibold text-foreground">{g?.store_name ?? "—"} <Pill tone={p.status === "paid" ? "good" : p.status === "rejected" ? "muted" : "warn"}>{p.status === "requested" ? "waiting" : p.status}</Pill></p>
+                    <p className="text-[11px] text-faint-foreground">{emails.get(g?.user_id ?? "") ?? "—"} · requested {formatAdminDate(p.created_at)}{p.paid_at ? ` · paid ${formatAdminDate(p.paid_at)}` : ""}{p.paid_reference ? ` · ref ${p.paid_reference}` : ""}{p.note ? ` · ${p.note}` : ""}</p>
+                    <div className="mt-1.5 grid grid-cols-4 gap-2 text-[11px]">
+                      <div><p className="text-faint-foreground">Requested</p><p className="font-semibold tabular-nums text-foreground">{formatGHS(Number(p.amount))}</p></div>
+                      <div><p className="text-faint-foreground">Fee</p><p className="font-semibold tabular-nums text-foreground">{formatGHS(Number(p.fee))}</p></div>
+                      <div><p className="text-faint-foreground">Send</p><p className="font-semibold tabular-nums text-primary-glow">{formatGHS(Number(p.net))}</p></div>
+                      <div><p className="text-faint-foreground">To MoMo</p><p className="font-semibold tabular-nums text-foreground">{p.momo_number}</p><p className="truncate text-faint-foreground">{p.momo_name ?? ""}</p></div>
+                    </div>
                   </div>
-                  {(p.status === "requested" || p.status === "approved") && <div className="flex gap-1.5">{p.status === "requested" && <Button size="sm" variant="soft" onClick={() => void settle(p, "approve")}>Approve</Button>}<Button size="sm" onClick={() => { setPaying(p); setPayRef(""); }}>Mark paid</Button><Button size="sm" variant="quiet" onClick={() => void settle(p, "reject")}>Reject</Button></div>}
+                  {(p.status === "requested" || p.status === "approved") && <div className="flex shrink-0 gap-1.5"><Button size="sm" onClick={() => { setPaying(p); setPayRef(""); }}>Mark paid</Button><Button size="sm" variant="quiet" onClick={() => { setRejecting(p); setRejectNote(""); }}>Reject</Button></div>}
                 </div>
-              </li>))}
+              </li>); })}
           </Rows>
         </Panel>
-      )}
+      </>)}
 
       {tab === "promos" && (<>
         <Panel title="Monthly plan" icon={BadgePercent} note="what agents pay and how payouts work">
@@ -327,10 +344,18 @@ export default function AdminAgents() {
           <div className="mt-4 flex justify-end gap-2"><Button variant="quiet" onClick={() => setGranting(null)}>Cancel</Button><Button onClick={() => void grant()}>Give</Button></div>
         </div>
       </Modal>
+      <Modal open={rejecting !== null} onClose={() => setRejecting(null)} label="Reject payment">
+        <div className="w-[min(92vw,400px)] p-5">
+          <h2 className="text-[16px] font-semibold text-foreground">Reject · {rejecting ? formatGHS(Number(rejecting.amount)) : ""}</h2>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">The money goes back to their earnings and they get an email. Say why so they can fix it.</p>
+          <div className="mt-3"><Field label="Reason"><input value={rejectNote} onChange={(e) => setRejectNote(e.target.value)} placeholder="e.g. MoMo number doesn't match the name" className={inputCls} /></Field></div>
+          <div className="mt-4 flex justify-end gap-2"><Button variant="quiet" onClick={() => setRejecting(null)}>Cancel</Button><Button onClick={() => rejecting && void settle(rejecting, "reject", undefined, rejectNote.trim() || undefined)}>Reject</Button></div>
+        </div>
+      </Modal>
       <Modal open={paying !== null} onClose={() => setPaying(null)} label="Mark payout paid">
         <div className="w-[min(92vw,400px)] p-5">
           <h2 className="text-[16px] font-semibold text-foreground">Mark paid · {paying ? formatGHS(Number(paying.net)) : ""}</h2>
-          <p className="mt-1 text-[12.5px] text-muted-foreground">Only after you've actually sent {paying ? formatGHS(Number(paying.net)) : ""} to {paying?.momo_number}. This books it and takes it out of the pot.</p>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">Only after you've actually sent <b className="text-foreground">{paying ? formatGHS(Number(paying.net)) : ""}</b> to <b className="text-foreground">{paying?.momo_number}</b>{paying?.momo_name ? ` (${paying.momo_name})` : ""}. This books it, takes it out of the pot, and emails the agent a receipt.</p>
           <div className="mt-3"><Field label="MoMo transaction reference (optional)"><input value={payRef} onChange={(e) => setPayRef(e.target.value)} className={inputCls} /></Field></div>
           <div className="mt-4 flex justify-end gap-2"><Button variant="quiet" onClick={() => setPaying(null)}>Cancel</Button><Button onClick={() => paying && void settle(paying, "paid", payRef.trim() || undefined)}>Mark paid</Button></div>
         </div>

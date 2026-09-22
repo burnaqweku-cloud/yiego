@@ -43,7 +43,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "agent-applications", label: "Applications", to: "/admin/agents/applications", icon: UserCheck, keywords: ["apply", "approve", "decline", "application"] },
     { id: "agent-list", label: "All agents", to: "/admin/agents/list", icon: Users, keywords: ["store", "slug", "active", "paused"] },
     { id: "agent-subscriptions", label: "Subscriptions", to: "/admin/agents/subscriptions", icon: CreditCard, keywords: ["subscription", "paid until", "expiring", "renewal", "monthly"] },
-    { id: "agent-payouts", label: "Payouts", to: "/admin/agents/payouts", icon: WalletCards, keywords: ["payout", "withdraw", "momo", "earnings"] },
+    { id: "agent-payouts", label: "Payments", to: "/admin/agents/payouts", icon: WalletCards, keywords: ["payout", "payment", "withdraw", "momo", "earnings", "pay agent"] },
     { id: "agent-plan", label: "Plan & promos", to: "/admin/agents/plan", icon: BadgePercent, keywords: ["promo", "discount", "fee", "price", "plan"] },
     { id: "agent-launch", label: "Launch", to: "/admin/agents/launch", icon: Rocket, keywords: ["launch", "switch", "go live", "email test"] },
   ] },
