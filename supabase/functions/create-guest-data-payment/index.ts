@@ -257,8 +257,11 @@ Deno.serve(async (req) => {
     }
 
     const appUrl = Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL");
+    // Store buyers come back to the store's own success page; everyone else to ours.
     const callbackUrl = appUrl
-      ? `${appUrl.replace(/\/$/, "")}/payment/success?reference=${encodeURIComponent(orderReference)}&type=order`
+      ? (agent
+        ? `${appUrl.replace(/\/$/, "")}/s/${agent.slug}/success?reference=${encodeURIComponent(orderReference)}`
+        : `${appUrl.replace(/\/$/, "")}/payment/success?reference=${encodeURIComponent(orderReference)}&type=order`)
       : undefined;
 
     // Paystack payments carry a 4% fee on top of the bundle price. The order's
