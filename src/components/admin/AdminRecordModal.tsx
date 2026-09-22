@@ -1,3 +1,4 @@
+import CopyRef from "@/components/admin/CopyRef";
 import type { ReactNode } from "react";
 import { Eye, X } from "lucide-react";
 import Modal from "@/components/ui/modal";
@@ -43,7 +44,7 @@ export default function AdminRecordModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Full details</p>
-            <h2 className="mt-1 font-display text-2xl font-semibold text-white">{title}</h2>
+            <h2 className="mt-1 font-display text-2xl font-semibold text-white">{/^(YG|AG)-[A-Z0-9]{10}$/.test(title) ? <CopyRef value={title} className="text-inherit" /> : title}</h2>
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
           </div>
           <Button variant="quiet" size="icon" onClick={onClose} aria-label="Close details"><X /></Button>

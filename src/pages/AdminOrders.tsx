@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import AdminListPagination from "@/components/admin/AdminListPagination";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import AdminRecordModal, { AdminDetailsButton } from "@/components/admin/AdminRecordModal";
+import CopyRef from "@/components/admin/CopyRef";
 import AdminStatStrip from "@/components/admin/AdminStatStrip";
 import OrdersPulse from "@/components/admin/OrdersPulse";
 import { Badge } from "@/components/ui/badge";
@@ -258,7 +259,7 @@ export default function AdminOrders() {
         {queueShown.map((order) => <li key={order.id} className="flex items-center gap-3 py-2">
           <button type="button" onClick={() => openDetails(order)} className="min-w-0 flex-1 text-left" title={`View order ${order.order_reference}`}>
             <span className="flex items-baseline gap-2"><span className="font-mono text-sm font-semibold text-white">{order.recipient_phone}</span><span className="truncate text-xs text-muted-foreground">{(order.data_products?.name ?? "").replace(/^MTN Data — /, "") || "—"}</span></span>
-            <span className="block truncate text-[11px] text-faint-foreground">{order.order_reference} · {formatAdminDate(order.admin_resolution_updated_at ?? order.created_at)}</span>
+            <span className="block truncate text-[11px] text-faint-foreground"><CopyRef value={order.order_reference} /> · {formatAdminDate(order.admin_resolution_updated_at ?? order.created_at)}</span>
           </button>
           <AdminDetailsButton label={`View order ${order.order_reference}`} onClick={() => openDetails(order)} />
         </li>)}

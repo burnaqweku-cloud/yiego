@@ -4,6 +4,7 @@ import { ArrowLeft, Download, Search } from "lucide-react";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Money, Panel, Pill, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
+import CopyRef from "@/components/admin/CopyRef";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 
@@ -82,7 +83,7 @@ export default function AdminOrdersReceived() {
           {list.map((o) => (
             <li key={o.id} className="flex items-start gap-2.5 py-2">
               <div className="min-w-0 flex-1">
-                <p className="text-[12.5px] font-semibold text-foreground"><Link to={`/admin/orders?q=${o.order_reference}`} className="font-mono">{o.order_reference}</Link> <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
+                <p className="text-[12.5px] font-semibold text-foreground"><CopyRef value={o.order_reference} /> <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
                 <p className="text-[11px] text-faint-foreground">paid {formatAdminDate(o.paid_at)} · {age(o.paid_at)} ago · {reasonOf(o)}</p>
               </div>
               <div className="text-right"><p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</p><Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status === "refunded" ? "refunded" : o.admin_resolution_status === "awaiting_verification" ? "verification" : o.status.startsWith("failed") ? "review" : "in progress"}</Pill></div>

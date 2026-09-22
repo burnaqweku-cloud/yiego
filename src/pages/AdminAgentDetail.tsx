@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Field, Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
+import CopyRef from "@/components/admin/CopyRef";
 import Modal from "@/components/ui/modal";
 import AdminRecordModal from "@/components/admin/AdminRecordModal";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
@@ -91,7 +92,7 @@ export default function AdminAgentDetail() {
           {shown.slice(0, 200).map((o) => { const self = isSelf(o); const st = stage(o); return (
             <li key={o.id} className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-white/[0.02]" onClick={() => setViewing(o)}>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[12.5px] text-foreground"><span className="font-mono font-semibold">{o.order_reference}</span> <span className="text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB · {o.recipient_phone}</span></p>
+                <p className="truncate text-[12.5px] text-foreground"><CopyRef value={o.order_reference} className="font-semibold" /> <span className="text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB · {o.recipient_phone}</span></p>
                 <p className="truncate text-[11px] text-faint-foreground">{formatAdminDate(o.paid_at)} · {self ? "own purchase" : `share ${formatGHS(Number(o.agent_margin ?? 0))}`}</p>
               </div>
               <span className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</span>

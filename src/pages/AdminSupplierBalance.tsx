@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
+import CopyRef from "@/components/admin/CopyRef";
 import { RecordTopupModal } from "@/components/admin/FinanceForms";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
@@ -85,7 +86,7 @@ export default function AdminSupplierBalance() {
       <Panel title="Orders through this supplier" note={`${orders.length} in period`}>
         <ul className="divide-y divide-white/[0.06]">
           {!loading && orders.length === 0 && <li className="py-5 text-center text-[12px] text-faint-foreground">No orders in this period.</li>}
-          {orders.slice(0, 150).map((o) => <li key={o.order_reference} className="flex items-center justify-between gap-2 py-2"><div className="min-w-0"><p className="text-[12.5px] font-semibold text-foreground"><Link to={`/admin/orders?q=${o.order_reference}`} className="font-mono">{o.order_reference}</Link> <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p><p className="text-[11px] text-faint-foreground">{formatAdminDate(o.paid_at)}{o.supplier_status ? ` · supplier says ${o.supplier_status}` : ""}</p></div><div className="text-right"><p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.cost_amount ?? 0))}</p><Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" || o.status.startsWith("failed") ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status.startsWith("failed") ? "failed" : o.status.replace(/_/g, " ")}</Pill></div></li>)}
+          {orders.slice(0, 150).map((o) => <li key={o.order_reference} className="flex items-center justify-between gap-2 py-2"><div className="min-w-0"><p className="text-[12.5px] font-semibold text-foreground"><CopyRef value={o.order_reference} /> <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p><p className="text-[11px] text-faint-foreground">{formatAdminDate(o.paid_at)}{o.supplier_status ? ` · supplier says ${o.supplier_status}` : ""}</p></div><div className="text-right"><p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.cost_amount ?? 0))}</p><Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" || o.status.startsWith("failed") ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status.startsWith("failed") ? "failed" : o.status.replace(/_/g, " ")}</Pill></div></li>)}
           {orders.length > 150 && <li className="py-2 text-center text-[11px] text-faint-foreground">Showing 150 of {orders.length} — use CSV for all.</li>}
         </ul>
       </Panel>
