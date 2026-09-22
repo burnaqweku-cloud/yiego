@@ -21,7 +21,7 @@ export default function AgentHome() {
       <div className="rounded-3xl bg-gradient-to-br from-[#0f2a22] to-[#0b1512] p-5 text-white shadow-lg">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">Earnings balance</p>
         <p className="mt-1 text-[34px] font-semibold leading-none">{formatGHS(Number(agent.earnings_balance))}</p>
-        <div className="mt-4 flex gap-2"><Link to="/agent/earnings" className="onyx-btn-primary flex-1 py-2.5 text-center text-[13px]">Withdraw</Link><button type="button" onClick={() => void share()} className="flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2.5 text-[13px] text-white"><Share2 size={14} />Share store</button></div>
+        <div className="mt-4 flex gap-2"><Link to="/agent/buy" className="onyx-btn-primary flex-1 py-2.5 text-center text-[13px]">Buy data</Link><Link to="/agent/earnings" className="flex items-center rounded-full border border-white/20 px-4 py-2.5 text-[13px] text-white">Withdraw</Link><button type="button" onClick={() => void share()} className="flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2.5 text-[13px] text-white"><Share2 size={14} />Share store</button></div>
         <p className="mt-3 text-[11px] text-white/50">Withdraw from {formatGHS(plan?.payout_minimum ?? 20)} · paid to MoMo</p>
       </div>
       <div className="grid grid-cols-3 gap-2">

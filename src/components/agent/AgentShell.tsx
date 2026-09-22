@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { CreditCard, ExternalLink, Home, LogOut, Package, Settings, Tags, Wallet } from "lucide-react";
+import { CreditCard, ExternalLink, Home, LogOut, Package, Settings, ShoppingBag, Tags, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
@@ -25,6 +25,7 @@ export const fmt = (d: string) => new Date(d).toLocaleString("en-GB", { day: "nu
 
 const NAV = [
   { to: "/agent", label: "Home", icon: Home, end: true },
+  { to: "/agent/buy", label: "Buy", icon: ShoppingBag },
   { to: "/agent/orders", label: "Orders", icon: Package },
   { to: "/agent/prices", label: "Prices", icon: Tags },
   { to: "/agent/earnings", label: "Earnings", icon: Wallet },
@@ -84,7 +85,7 @@ export default function AgentShell() {
           </div>
         </div>
         {/* Mobile bottom nav */}
-        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-white/[0.08] bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-white/[0.08] bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
           {NAV.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[10.5px] ${isActive ? "text-primary-glow" : "text-muted-foreground"}`}><n.icon size={19} />{n.label}</NavLink>)}
         </nav>
       </div>
