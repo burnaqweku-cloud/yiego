@@ -114,6 +114,10 @@ export default function AdminFinance() {
           <Stat loading={loading} label="Bank" value={<Money value={o?.cash.bank} />} note="Paystack payouts received" icon={Banknote} tone="good" />
           <Stat loading={loading} label="At Paystack" value={<Money value={o?.cash.paystack_transit} />} note="paid by customers, not yet paid out" icon={PiggyBank} />
         </StatGrid>
+        <p className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-faint-foreground">At suppliers · {formatGHS(floats)}</p>
+        <StatGrid cols={3}>
+          {suppliers.map((sup) => { const bal = Number((sup as SupplierRow & { confirmed_balance?: number | null; confirmed_at?: string | null }).confirmed_balance ?? 0); const at = (sup as SupplierRow & { confirmed_at?: string | null }).confirmed_at; return <Stat key={sup.code} loading={loading} label={sup.name} value={<Money value={bal} tone={bal < 30 ? "bad" : bal < 80 ? "warn" : "default"} />} note={at ? `reported ${formatAdminDate(at)}` : "not reported"} tone={bal < 30 ? "bad" : bal < 80 ? "warn" : "default"} to={`/admin/finance/suppliers/${sup.code}`} />; })}
+        </StatGrid>
       </Panel>
 
       <Panel title="What we owe" icon={Wallet} note={`total ${formatGHS(owedTotal)}`}>
