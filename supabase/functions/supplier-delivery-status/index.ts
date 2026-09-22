@@ -176,15 +176,28 @@ async function buildPanel(supabase: ReturnType<typeof admin>, supplier: Record<s
   };
 }
 
-/** The existing single-supplier panel, kept for the pages already using it. */
+/** The site-wide Delivery Progress panel. Measured from our own orders
+ *  (median paid→delivered, last 2h or 24h), not from any one supplier's
+ *  tracker. An admin-written banner still wins. */
 async function current() {
   const supabase = admin();
   const { data: supplier } = await supabase
     .from("suppliers")
     .select("id, delivery_estimate_manual, delivery_slow_threshold_minutes, delivery_panel")
-    .eq("code", "datamartgh").maybeSingle();
-  if (!supplier) return json({ status: "success", banner: null, rows: [] });
-  return json({ status: "success", ...(await buildPanel(supabase, supplier)) });
+    .eq("code", "databundleshub").maybeSingle();
+  const { data: speed } = await supabase.rpc("delivery_speed");
+  const lag: number | null = speed?.median_minutes == null ? null : Number(speed.median_minutes);
+  const threshold = Number(supplier?.delivery_slow_threshold_minutes ?? 45);
+  const slow = lag !== null && lag > threshold;
+  const panel = (supplier?.delivery_panel ?? {}) as { banner?: string; rows?: Array<{ label?: string; value?: string; detail?: string; tone?: string }> };
+  const bannerText = (panel.banner ?? "").trim() || (supplier?.delivery_estimate_manual ?? "").trim();
+  const banner = bannerText
+    ? { text: bannerText, tone: slow ? "slow" : "ok" }
+    : lag === null ? null
+      : slow ? { text: `Deliveries are slower than usual — orders are taking about ${humanise(lag)}. Every order still gets delivered.`, tone: "slow" }
+      : { text: `Deliveries are running normally — most orders land in about ${humanise(lag)}.`, tone: "ok" };
+  const rows = (panel.rows ?? []).filter((r) => (r?.label ?? "").toString().trim() && (r?.value ?? "").toString().trim()).map((r) => ({ label: String(r.label).trim(), value: String(r.value).trim(), detail: (r.detail ?? "").toString().trim() || null, tone: r.tone === "fast" ? "fast" : "queue", source: "manual" }));
+  return json({ status: "success", banner, rows, slow, measured_minutes: lag, sample: speed?.sample ?? 0, window: speed?.window ?? null, checked_at: new Date().toISOString() });
 }
 
 /** What the shop offers the customer to choose between. Returns only the name
