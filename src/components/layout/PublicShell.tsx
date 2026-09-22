@@ -1,3 +1,4 @@
+import AgentPopup from "@/components/agents/AgentPopup";
 import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import AuroraBackground from "@/components/fx/AuroraBackground";
@@ -23,6 +24,7 @@ export default function PublicShell() {
         <PublicNav />
         <main className="flex-1">
           <Outlet />
+          <AgentPopup />
         </main>
         <PublicFooter />
       </div>

@@ -1,5 +1,6 @@
 import { ArrowRight, CreditCard } from "lucide-react";
 import Seo from "@/components/seo/Seo";
+import AgentShopCard from "@/components/agents/AgentShopCard";
 import { metaFor } from "@/lib/site";
 import BalanceCard from "@/components/dashboard/BalanceCard";
 import RecentActivity from "@/components/dashboard/RecentActivity";
@@ -72,6 +73,8 @@ export default function Shop() {
             Pay for someone&rsquo;s order
             <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
           </button>
+
+          <AgentShopCard />
         </>
       ) : (
         <header data-reveal>
