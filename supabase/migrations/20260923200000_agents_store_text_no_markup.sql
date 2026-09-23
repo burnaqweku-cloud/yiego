@@ -1,0 +1,3 @@
+-- Applied live 23 Sep 2026 (migration agents_store_text_no_markup).
+-- phase1.strip_markup(text) + BEFORE INSERT/UPDATE trigger agents_clean_text_trg on phase1.agents:
+-- store_name and tagline can never contain HTML, whichever path saves them. Existing rows cleaned.
