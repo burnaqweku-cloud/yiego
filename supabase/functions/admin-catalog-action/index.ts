@@ -1,6 +1,9 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
+// Admin sessions must have passed two-factor (aal2). The database applies the same rule.
+const sessionHasMfa = (token: string) => { try { return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")))?.aal === "aal2"; } catch { return false; } };
+
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
@@ -31,6 +34,7 @@ Deno.serve(async (req) => {
     if (!admin) {
       return jsonResponse({ error: "Admin access required" }, { status: 403 });
     }
+    if (!sessionHasMfa(token)) return jsonResponse({ error: "Two-factor verification required. Sign in to the admin panel again." }, { status: 403 });
 
     const body = await req.json();
     const productId = String(body.productId ?? "");

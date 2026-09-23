@@ -6,6 +6,9 @@ import { sendEmail } from "../_shared/email.ts";
 const site = () => (Deno.env.get("SITE_URL") ?? "https://datayego.com").replace(/\/$/, "");
 const wrap = (title: string, body: string) => `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:480px;background:#fff;border-radius:18px;overflow:hidden;"><tr><td style="background:#0b1512;padding:18px 28px;color:#7cf0b4;font-size:20px;font-weight:700;">DataYego</td></tr><tr><td style="padding:28px;font-size:14px;line-height:1.6;color:#3c4a46;"><h1 style="margin:0 0 14px;font-size:20px;color:#101e1c;">${title}</h1>${body}</td></tr></table></td></tr></table></body></html>`;
 
+// Admin sessions must have passed two-factor (aal2). The database applies the same rule.
+const sessionHasMfa = (token: string) => { try { return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")))?.aal === "aal2"; } catch { return false; } };
+
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
@@ -16,6 +19,7 @@ Deno.serve(async (req) => {
     const supabase = createSupabaseAdmin();
     const { data: auth } = await supabase.auth.getUser(token);
     if (!auth?.user) return jsonResponse({ error: "Invalid session" }, { status: 401 });
+    if (!sessionHasMfa(token)) return jsonResponse({ error: "Two-factor verification required. Sign in to the admin panel again." }, { status: 403 });
     const body = await req.json();
     if (body.action === "review_application") {
       const { data, error } = await supabase.rpc("admin_review_application", { p_actor: auth.user.id, p_application_id: body.applicationId, p_approve: Boolean(body.approve), p_reason: body.reason ?? null });

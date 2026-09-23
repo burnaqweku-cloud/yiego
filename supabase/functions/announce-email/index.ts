@@ -8,6 +8,9 @@ const site = () => (Deno.env.get("SITE_URL") ?? "https://datayego.com").replace(
 const wrap = (title: string, body: string, link?: { url: string; label: string } | null) => `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:480px;background:#fff;border-radius:18px;overflow:hidden;"><tr><td style="background:#0b1512;padding:18px 28px;color:#7cf0b4;font-size:20px;font-weight:700;">DataYego</td></tr><tr><td style="padding:28px;font-size:14px;line-height:1.6;color:#3c4a46;"><h1 style="margin:0 0 14px;font-size:20px;color:#101e1c;">${title}</h1><p style="white-space:pre-line;margin:0;">${body}</p>${link ? `<a href="${link.url}" style="display:block;margin:22px 0 6px;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">${link.label}</a>` : ""}<p style="margin:18px 0 0;font-size:11px;color:#8a968f;">You're receiving this because you use DataYego. <a href="${site()}" style="color:#8a968f;">datayego.com</a></p></td></tr></table></td></tr></table></body></html>`;
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+// Admin sessions must have passed two-factor (aal2). The database applies the same rule.
+const sessionHasMfa = (token: string) => { try { return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")))?.aal === "aal2"; } catch { return false; } };
+
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
@@ -20,12 +23,13 @@ Deno.serve(async (req) => {
     if (!auth?.user) return jsonResponse({ error: "Invalid session" }, { status: 401 });
     const { data: adm } = await supabase.from("admin_users").select("user_id").eq("user_id", auth.user.id).eq("is_active", true).maybeSingle();
     if (!adm) return jsonResponse({ error: "Admin only" }, { status: 403 });
+    if (!sessionHasMfa(token)) return jsonResponse({ error: "Two-factor verification required. Sign in to the admin panel again." }, { status: 403 });
     const { announcementId } = await req.json();
     const { data: a } = await supabase.from("announcements").select("*").eq("id", announcementId).maybeSingle();
     if (!a) return jsonResponse({ error: "Announcement not found" }, { status: 404 });
     let emails: string[] = [];
     if (a.audience === "agents") {
-      const { data } = await supabase.from("agents").select("user_id").in("status", ["active", "paused", "awaiting_payment"]);
+      const { data } = await supabase.from("agents").select("user_id").in("status", ["active", "lapsed", "paused", "awaiting_payment"]);
       const ids = (data ?? []).map((r: { user_id: string }) => r.user_id);
       if (ids.length) { const { data: p } = await supabase.from("profiles").select("email").in("id", ids); emails = (p ?? []).map((r: { email: string }) => r.email).filter(Boolean); }
     } else if (a.audience === "customers" || a.audience === "everyone") {
