@@ -13,7 +13,7 @@ import NotificationBell from "@/components/notifications/NotificationBell";
    sidebar on desktop), no public site chrome. Pages read shared data from
    AgentContext so each one stays small. */
 export interface Agent { id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number }
-export interface AgentOrder { order_reference: string; recipient_phone: string; amount: number; agent_margin: number | null; status: string; paid_at: string | null; created_at: string; data_products: { name: string } | null; networks: { name: string } | null }
+export interface AgentOrder { order_reference: string; recipient_phone: string; amount: number; agent_margin: number | null; status: string; admin_resolution_status: string | null; paid_at: string | null; created_at: string; data_products: { name: string } | null; networks: { name: string } | null }
 export interface AgentPayout { id: string; amount: number; fee: number; net: number; status: string; created_at: string; paid_at: string | null; note: string | null }
 export interface Plan { payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number }
 interface Ctx { agent: Agent; orders: AgentOrder[]; payouts: AgentPayout[]; products: Phase1Product[]; prices: Record<string, string>; setPrices: (p: Record<string, string>) => void; plan: Plan | null; quote: PlanQuote | null; storeUrl: string; reload: () => Promise<void> }
@@ -45,7 +45,7 @@ export default function AgentShell() {
     const g = (a.data as Agent | null) ?? null; setAgent(g); setProducts(pr.data ?? []); setQuote(q); setPlan(s.data?.value ?? null);
     if (g) {
       const [o, py, ap] = await Promise.all([
-        p1().from("orders").select("order_reference, recipient_phone, amount, agent_margin, status, paid_at, created_at, data_products(name), networks(name)").eq("agent_id", g.id).eq("payment_status", "succeeded").order("paid_at", { ascending: false }).limit(300),
+        p1().from("orders").select("order_reference, recipient_phone, amount, agent_margin, status, admin_resolution_status, paid_at, created_at, data_products(name), networks(name)").eq("agent_id", g.id).eq("payment_status", "succeeded").order("paid_at", { ascending: false }).limit(300),
         p1().from("agent_payouts").select("*").eq("agent_id", g.id).order("created_at", { ascending: false }),
         p1().from("agent_prices").select("product_id, price").eq("agent_id", g.id),
       ]);

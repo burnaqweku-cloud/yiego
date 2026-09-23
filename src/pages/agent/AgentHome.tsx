@@ -4,6 +4,7 @@ import { ArrowRight, Copy, Share2, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/format";
 import { fmt, useAgent } from "@/components/agent/AgentShell";
+import { stageOf, toneClass } from "@/components/agent/orderStage";
 
 export default function AgentHome() {
   const { agent, orders, products, prices, storeUrl, plan, reload } = useAgent();
@@ -42,7 +43,7 @@ export default function AgentHome() {
       </div>
       <div className="onyx-panel rounded-2xl p-3">
         <div className="flex items-center justify-between px-1"><p className="text-[13px] font-semibold text-foreground">Latest orders</p><Link to="/agent/orders" className="text-[12px] text-primary-glow">All orders</Link></div>
-        <ul className="mt-1 divide-y divide-white/[0.06]">{orders.length === 0 && <li className="py-6 text-center text-[13px] text-muted-foreground">No orders yet. Share your link.</li>}{orders.slice(0, 5).map((o) => <li key={o.order_reference} className="flex items-center justify-between py-2"><div><p className="text-[13px] font-medium text-foreground">{o.networks?.name} {o.data_products?.name?.replace(/^.*?—\s*/, "")} → {o.recipient_phone}</p><p className="text-[11px] text-faint-foreground">{fmt(o.paid_at ?? o.created_at)} · <span className={o.status === "delivered" ? "text-primary-glow" : "text-amber"}>{o.status.replace(/_/g, " ")}</span></p></div><p className="text-[12.5px] font-semibold text-primary-glow">+{formatGHS(Number(o.agent_margin ?? 0))}</p></li>)}</ul>
+        <ul className="mt-1 divide-y divide-white/[0.06]">{orders.length === 0 && <li className="py-6 text-center text-[13px] text-muted-foreground">No orders yet. Share your link.</li>}{orders.slice(0, 5).map((o) => <li key={o.order_reference} className="flex items-center justify-between py-2"><div><p className="text-[13px] font-medium text-foreground">{o.networks?.name} {o.data_products?.name?.replace(/^.*?—\s*/, "")} → {o.recipient_phone}</p><p className="text-[11px] text-faint-foreground">{fmt(o.paid_at ?? o.created_at)} · <span className={toneClass(stageOf(o).tone)}>{stageOf(o).label}</span></p></div><p className="text-[12.5px] font-semibold text-primary-glow">+{formatGHS(Number(o.agent_margin ?? 0))}</p></li>)}</ul>
       </div>
     </div>
   );
