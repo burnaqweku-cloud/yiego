@@ -1,0 +1,7 @@
+-- Agents choose their own store link. Applied live via the Supabase connector on
+-- 23 Sep 2026 as migrations agent_custom_store_links + agent_slug_block_network_prefixes.
+-- Summary: agents.slug_changed_at; agent_slug_history (old links redirect and stay
+-- reserved 90 days); slug_normalize / slug_reserved / slug_problem / new_agent_slug;
+-- agent_slug_check, agent_change_slug (once per 30 days), admin_set_agent_slug (aal2 admins);
+-- agent_store follows old links; admin_review_application + admin_make_agent use new_agent_slug.
+-- Full SQL: see the Supabase migration history for this project.

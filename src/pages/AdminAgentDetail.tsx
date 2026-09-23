@@ -44,6 +44,12 @@ export default function AdminAgentDetail() {
     setEmail(p.data?.email ?? "—"); setOrders(o.data ?? []); setPayouts(py.data ?? []); setGrants(gr.data ?? []); setLedger(lg.data ?? []); setIsMaster(r.data === "master");
   }, [id, range, actor]);
   useEffect(() => { void load(); }, [load]);
+  const changeLink = async () => {
+    if (!a) return; const next = window.prompt("New store link for this agent (letters, numbers, dashes)", a.slug); if (!next || next === a.slug) return;
+    const { data, error } = await db().rpc("admin_set_agent_slug", { p_agent: a.id, p_slug: next });
+    if (error) return toast.error(error.message.includes("taken") ? "That link is taken." : error.message.includes("reserved") ? "That name is reserved." : error.message.includes("too_") ? "Use 3 to 30 letters or numbers." : error.message.replace(/_/g, " "));
+    toast.success(`Now /s/${(data as { slug: string }).slug}. The old link still works for 90 days.`); void load();
+  };
 
   const isSelf = (o: Ord) => a != null && o.user_id === a.user_id && Number(o.agent_margin ?? 0) === 0;
   const shown = useMemo(() => orders.filter((o) => source === "all" || (source === "self" ? isSelf(o) : !isSelf(o))), [orders, source, a]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -69,7 +75,7 @@ export default function AdminAgentDetail() {
   if (a === null) return <div className="text-[13px] text-muted-foreground">No such agent.</div>;
   return (
     <div className="space-y-5">
-      <AdminPageHeader title={a.store_name} description={`${email} · /s/${a.slug} · joined ${formatAdminDate(a.created_at)}`} action={<div className="flex flex-wrap gap-2"><Link to="/admin/agents/list"><Button variant="ghost" size="sm"><ArrowLeft size={14} />Agents</Button></Link><a href={`/s/${a.slug}`} target="_blank" rel="noreferrer"><Button variant="ghost" size="sm"><ExternalLink size={14} />Store</Button></a>{isMaster && <Button size="sm" variant="soft" onClick={() => setGranting(true)}><Gift size={14} />Give months</Button>}</div>} />
+      <AdminPageHeader title={a.store_name} description={`${email} · /s/${a.slug} · joined ${formatAdminDate(a.created_at)}`} action={<div className="flex flex-wrap gap-2"><Link to="/admin/agents/list"><Button variant="ghost" size="sm"><ArrowLeft size={14} />Agents</Button></Link><a href={`/s/${a.slug}`} target="_blank" rel="noreferrer"><Button variant="ghost" size="sm"><ExternalLink size={14} />Store</Button></a><Button variant="ghost" size="sm" onClick={() => void changeLink()}>Change link</Button>{isMaster && <Button size="sm" variant="soft" onClick={() => setGranting(true)}><Gift size={14} />Give months</Button>}</div>} />
 
       <StatGrid cols={4}>
         <Stat label="Plan" value={<Pill tone={a.status === "active" ? "good" : a.status === "awaiting_payment" ? "warn" : "muted"}>{a.status.replace(/_/g, " ")}</Pill>} note={a.paid_until ? `covered until ${a.paid_until}${grants.length ? " · has free months" : ""}` : "not paid yet"} icon={Store} />

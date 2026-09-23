@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link, Outlet, useParams } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { MessageCircle, ShieldCheck, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,6 +13,11 @@ export const waLink = (s: StoreData) => s.whatsapp ? `https://wa.me/233${s.whats
 export default function StoreShell({ children }: { children?: ReactNode }) {
   const { slug = "" } = useParams();
   const [store, setStore] = useState<StoreData | null | undefined>(undefined);
+  const navigate = useNavigate(); const location = useLocation();
+  // An agent who changed their link: send visitors on the old one to the new one.
+  useEffect(() => {
+    if (store && store.slug !== slug) navigate(location.pathname.replace(`/s/${slug}`, `/s/${store.slug}`) + location.search, { replace: true });
+  }, [store, slug, navigate, location.pathname, location.search]);
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("agent_store", { p_slug: slug, p_preview: true }).then((r: { data: StoreData | null }) => setStore(r.data ?? null));
