@@ -44,7 +44,9 @@ export default function AdminFunding() {
 
   const reversedIds = useMemo(() => new Set(entries.filter((e) => e.reverses).map((e) => e.reverses as string)), [entries]);
   const supplierById = useMemo(() => new Map(suppliers.map((s) => [s.id, s])), [suppliers]);
-  const live = useMemo(() => entries.filter((e) => e.kind !== "reversal" && !reversedIds.has(e.id) && e.postings.some((p) => p.account === "outside_funding" || p.account === "opening_balance")), [entries, reversedIds]);
+  const live = useMemo(() => entries.filter((e) => e.kind !== "reversal" && !reversedIds.has(e.id) && (e.kind === "supplier_topup" || e.postings.some((p) => p.account === "outside_funding" || p.account === "opening_balance"))), [entries, reversedIds]);
+  // Paid from the business account (Paystack payouts + partner money) vs from outside.
+  const fromBusiness = (e: Entry) => e.kind === "supplier_topup" && !e.postings.some((p) => p.account === "outside_funding" || p.account === "opening_balance");
 
   const filtered = useMemo(() => {
     const from = periodFrom(period); const q = search.trim().toLowerCase();
@@ -56,24 +58,24 @@ export default function AdminFunding() {
   const feeOf = (e: Entry) => Number(e.postings.find((p) => p.account === "supplier_topup_fees")?.amount ?? 0);
   const intoOf = (e: Entry) => Number(e.postings.find((p) => p.account.startsWith("float_") || ["bank", "customer_wallets"].includes(p.account))?.amount ?? e.amount);
   const totals = useMemo(() => {
-    const t = { topups: 0, fees: 0, carried: 0 };
-    for (const e of filtered) { if (e.kind === "opening_balance") t.carried += Number(e.amount); else { t.topups += intoOf(e); t.fees += feeOf(e); } }
+    const t = { topups: 0, fees: 0, carried: 0, business: 0 };
+    for (const e of filtered) { if (e.kind === "opening_balance") t.carried += Number(e.amount); else { t.topups += intoOf(e); t.fees += feeOf(e); if (fromBusiness(e)) t.business += intoOf(e); } }
     return t;
   }, [filtered]);
   const bySupplier = useMemo(() => suppliers.map((s) => { const mine = filtered.filter((e) => e.supplier_id === s.id); return { s, topups: mine.filter((e) => e.kind !== "opening_balance").reduce((a, e) => a + intoOf(e), 0), fees: mine.reduce((a, e) => a + feeOf(e), 0), carried: mine.filter((e) => e.kind === "opening_balance").reduce((a, e) => a + Number(e.amount), 0), n: mine.length }; }).filter((x) => x.n > 0), [filtered, suppliers]);
 
   const exportCsv = () => {
-    const rows = [["date", "type", "supplier", "amount", "fee", "total paid", "note"], ...filtered.map((e) => [e.occurred_at, e.kind === "opening_balance" ? "carried in" : "top-up", supplierById.get(e.supplier_id ?? "")?.name ?? "", intoOf(e).toFixed(2), feeOf(e).toFixed(2), (intoOf(e) + feeOf(e)).toFixed(2), (e.note ?? "").replace(/"/g, "'")])];
+    const rows = [["date", "type", "paid from", "supplier", "amount", "fee", "total paid", "note"], ...filtered.map((e) => [e.occurred_at, e.kind === "opening_balance" ? "carried in" : "top-up", e.kind === "opening_balance" ? "" : fromBusiness(e) ? "business account" : "outside", supplierById.get(e.supplier_id ?? "")?.name ?? "", intoOf(e).toFixed(2), feeOf(e).toFixed(2), (intoOf(e) + feeOf(e)).toFixed(2), (e.note ?? "").replace(/"/g, "'")])];
     const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `datayego-money-put-in-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
   };
 
   return (
     <div className="space-y-5">
-      <AdminPageHeader title="Money put in" description="Your own money into the business: supplier top-ups and what was already there at launch. Not customer money." action={<div className="flex gap-2"><Link to="/admin/finance"><Button variant="ghost" size="sm"><ArrowLeft size={14} />Finance</Button></Link><Button variant="ghost" size="sm" onClick={exportCsv}><Download size={14} />CSV</Button><Button size="sm" onClick={() => setRecording(true)}>Record top-up</Button></div>} />
+      <AdminPageHeader title="Money put in" description="Every supplier top-up, whether paid from the business account or from outside, plus what was already there at launch." action={<div className="flex gap-2"><Link to="/admin/finance"><Button variant="ghost" size="sm"><ArrowLeft size={14} />Finance</Button></Link><Button variant="ghost" size="sm" onClick={exportCsv}><Download size={14} />CSV</Button><Button size="sm" onClick={() => setRecording(true)}>Record top-up</Button></div>} />
 
       <StatGrid cols={3}>
-        <Stat loading={loading} label="Top-ups" value={<Money value={totals.topups} />} note="into supplier floats" icon={PiggyBank} tone="good" />
+        <Stat loading={loading} label="Top-ups" value={<Money value={totals.topups} />} note={totals.business ? `${formatGHS(totals.business)} of it from the business account` : "into supplier floats"} icon={PiggyBank} tone="good" />
         <Stat loading={loading} label="Charges on top-ups" value={<Money value={totals.fees} />} note="supplier fees, counted as a cost" />
         <Stat loading={loading} label="Carried in at launch" value={<Money value={totals.carried} />} note="already there on 12 Sept" tone="muted" />
       </StatGrid>
@@ -92,7 +94,7 @@ export default function AdminFunding() {
         </div>
         <Rows empty={loading ? "Loading…" : "Nothing recorded for this filter."}>
           {filtered.map((e) => { const s = supplierById.get(e.supplier_id ?? ""); const fee = feeOf(e); const into = intoOf(e); const carried = e.kind === "opening_balance"; return (
-            <Row key={e.id} primary={<>{s?.name ?? e.postings.find((p) => p.account !== "opening_balance" && p.account !== "outside_funding")?.account.replace(/_/g, " ") ?? "—"} <Pill tone={carried ? "muted" : "good"}>{carried ? "carried in" : "top-up"}</Pill></>}
+            <Row key={e.id} primary={<>{s?.name ?? e.postings.find((p) => p.account !== "opening_balance" && p.account !== "outside_funding")?.account.replace(/_/g, " ") ?? "—"} <Pill tone={carried ? "muted" : "good"}>{carried ? "carried in" : "top-up"}</Pill>{fromBusiness(e) && <Pill tone="muted">business account</Pill>}</>}
               secondary={`${formatAdminDate(e.occurred_at)}${e.created_by ? ` · by ${admins[e.created_by] ?? "admin"}` : ""}${e.note ? ` · ${e.note}` : ""}`}
               right={formatGHS(into)} rightNote={fee ? `+ ${formatGHS(fee)} charge` : carried ? "at launch" : "no charge"} tone={carried ? "default" : "good"} />); })}
         </Rows>
