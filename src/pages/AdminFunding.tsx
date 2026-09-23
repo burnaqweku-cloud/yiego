@@ -12,7 +12,7 @@ import { useAuth } from "@/store/auth-context";
 /* Money put in — every cedi that came from you rather than from customers:
    supplier top-ups (with their charges) and balances carried in at launch. */
 
-interface Entry { id: string; kind: string; reference: string | null; occurred_at: string; amount: number; note: string | null; metadata: Record<string, unknown>; supplier_id: string | null; reverses: string | null; postings: { account: string; amount: number }[] }
+interface Entry { id: string; created_by: string | null; kind: string; reference: string | null; occurred_at: string; amount: number; note: string | null; metadata: Record<string, unknown>; supplier_id: string | null; reverses: string | null; postings: { account: string; amount: number }[] }
 interface Supplier { id: string; code: string; name: string; metadata: Record<string, unknown> | null }
 type Period = "all" | "7d" | "30d" | "month";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,12 +29,15 @@ export default function AdminFunding() {
   const [period, setPeriod] = useState<Period>("all");
   const [search, setSearch] = useState("");
   const [recording, setRecording] = useState(false);
+  const [admins, setAdmins] = useState<Record<string, string>>({});
 
   const load = async () => {
-    const [en, su] = await Promise.all([
-      db().from("finance_entries").select("id, kind, reference, occurred_at, amount, note, metadata, supplier_id, reverses, postings:finance_postings(account, amount)").in("kind", ["supplier_topup", "opening_balance", "reversal"]).order("occurred_at", { ascending: false }).limit(500),
+    const [en, su, who] = await Promise.all([
+      db().from("finance_entries").select("id, created_by, kind, reference, occurred_at, amount, note, metadata, supplier_id, reverses, postings:finance_postings(account, amount)").in("kind", ["supplier_topup", "opening_balance", "reversal"]).order("occurred_at", { ascending: false }).limit(500),
       db().from("suppliers").select("id, code, name, metadata").order("display_order"),
+      db().rpc("admin_user_labels", {}),
     ]);
+    const labels: Record<string, string> = {}; for (const r of (who.data ?? []) as Array<{ user_id: string; label: string }>) labels[r.user_id] = r.label; setAdmins(labels);
     setEntries(en.data ?? []); setSuppliers(su.data ?? []); setLoading(false);
   };
   useEffect(() => { void load(); }, []);
@@ -90,7 +93,7 @@ export default function AdminFunding() {
         <Rows empty={loading ? "Loading…" : "Nothing recorded for this filter."}>
           {filtered.map((e) => { const s = supplierById.get(e.supplier_id ?? ""); const fee = feeOf(e); const into = intoOf(e); const carried = e.kind === "opening_balance"; return (
             <Row key={e.id} primary={<>{s?.name ?? e.postings.find((p) => p.account !== "opening_balance" && p.account !== "outside_funding")?.account.replace(/_/g, " ") ?? "—"} <Pill tone={carried ? "muted" : "good"}>{carried ? "carried in" : "top-up"}</Pill></>}
-              secondary={`${formatAdminDate(e.occurred_at)}${e.note ? ` · ${e.note}` : ""}`}
+              secondary={`${formatAdminDate(e.occurred_at)}${e.created_by ? ` · by ${admins[e.created_by] ?? "admin"}` : ""}${e.note ? ` · ${e.note}` : ""}`}
               right={formatGHS(into)} rightNote={fee ? `+ ${formatGHS(fee)} charge` : carried ? "at launch" : "no charge"} tone={carried ? "default" : "good"} />); })}
         </Rows>
       </Panel>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import Modal from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,8 @@ const PaidFrom = ({ value, onChange }: { value: string; onChange: (v: string) =>
 
 export function RecordTopupModal({ open, onClose, actorId, suppliers, onDone }: { open: boolean; onClose: () => void; actorId: string; suppliers: Supplier[]; onDone: () => void }) {
   const [supplier, setSupplier] = useState(suppliers[0]?.code ?? "");
+  // Suppliers arrive after the modal mounts; the dropdown shows the first one, so the state must match it.
+  useEffect(() => { if (!supplier && suppliers[0]) setSupplier(suppliers[0].code); }, [suppliers, supplier]);
   const [amount, setAmount] = useState(""); const [when, setWhen] = useState(nowLocal()); const paidFrom = "bank"; const [note, setNote] = useState(""); const [busy, setBusy] = useState(false);
   const rate = suppliers.find((s) => s.code === supplier)?.fee_rate ?? 0;
   const fee = Math.round(Number(amount || 0) * rate * 100) / 100;

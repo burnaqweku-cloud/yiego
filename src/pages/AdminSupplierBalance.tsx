@@ -14,7 +14,7 @@ import { useAuth } from "@/store/auth-context";
 /* One supplier's money: what they report, what our books say, where it went. */
 interface Supplier { id: string; code: string; name: string; status: string; confirmed_balance: number | null; confirmed_at: string | null }
 interface Reading { balance: number; observed_at: string; source: string }
-interface Topup { id: string; amount: number; occurred_at: string; note: string | null; metadata: { fee?: number } | null }
+interface Topup { id: string; created_by: string | null; amount: number; occurred_at: string; note: string | null; metadata: { fee?: number } | null }
 interface Ord { order_reference: string; recipient_phone: string; cost_amount: number | null; amount: number; status: string; supplier_status: string | null; paid_at: string; data_products: { capacity_gb: number } | null; networks: { name: string } | null }
 type Range = "today" | "7d" | "30d" | "all";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,19 +23,21 @@ const since = (r: Range) => r === "all" ? "2026-09-12" : new Date(Date.now() - (
 
 export default function AdminSupplierBalance() {
   const { code = "" } = useParams(); const { user } = useAuth();
-  const [s, setS] = useState<Supplier | null>(null); const [readings, setReadings] = useState<Reading[]>([]); const [topups, setTopups] = useState<Topup[]>([]); const [orders, setOrders] = useState<Ord[]>([]);
+  const [s, setS] = useState<Supplier | null>(null); const [readings, setReadings] = useState<Reading[]>([]); const [topups, setTopups] = useState<Topup[]>([]); const [admins, setAdmins] = useState<Record<string, string>>({}); const [orders, setOrders] = useState<Ord[]>([]);
   const [float, setFloat] = useState(0); const [range, setRange] = useState<Range>("7d"); const [loading, setLoading] = useState(true); const [topping, setTopping] = useState(false);
   const load = useCallback(async () => {
     setLoading(true);
     const { data: sup } = await db().from("suppliers").select("id, code, name, status, confirmed_balance, confirmed_at").eq("code", code).maybeSingle();
     if (!sup) { setS(null); setLoading(false); return; }
     setS(sup);
-    const [r, t, o, f] = await Promise.all([
+    const [r, t, o, f, who] = await Promise.all([
       db().from("supplier_balance_readings").select("balance, observed_at, source").eq("supplier_id", sup.id).order("observed_at", { ascending: false }).limit(60),
-      db().from("finance_entries").select("id, amount, occurred_at, note, metadata").eq("supplier_id", sup.id).eq("kind", "supplier_topup").order("occurred_at", { ascending: false }),
+      db().from("finance_entries").select("id, created_by, amount, occurred_at, note, metadata").eq("supplier_id", sup.id).eq("kind", "supplier_topup").order("occurred_at", { ascending: false }),
       db().from("orders").select("order_reference, recipient_phone, cost_amount, amount, status, supplier_status, paid_at, data_products(capacity_gb), networks(name)").eq("supplier_id", sup.id).eq("payment_status", "succeeded").gte("paid_at", `${since(range)}T00:00:00`).order("paid_at", { ascending: false }).limit(2000),
       db().from("finance_balances").select("balance").eq("code", `float_${code}`).maybeSingle(),
+      db().rpc("admin_user_labels", {}),
     ]);
+    const labels: Record<string, string> = {}; for (const x of (who.data ?? []) as Array<{ user_id: string; label: string }>) labels[x.user_id] = x.label; setAdmins(labels);
     setReadings(r.data ?? []); setTopups(t.data ?? []); setOrders(o.data ?? []); setFloat(Number(f.data?.balance ?? 0)); setLoading(false);
   }, [code, range]);
   useEffect(() => { void load(); }, [load]);
@@ -79,7 +81,7 @@ export default function AdminSupplierBalance() {
           <Rows empty={loading ? "Loading…" : "No readings yet."}>{readings.slice(0, 20).map((r, i) => { const prev = readings[i + 1]; const delta = prev ? Number(r.balance) - Number(prev.balance) : null; return <Row key={r.observed_at} primary={formatGHS(Number(r.balance))} secondary={`${formatAdminDate(r.observed_at)} · ${r.source}`} right={delta == null ? "" : `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}`} tone={delta == null ? "default" : delta >= 0 ? "good" : "muted"} />; })}</Rows>
         </Panel>
         <Panel title="Top-ups" note="money sent to this supplier">
-          <Rows empty={loading ? "Loading…" : "No top-ups recorded."}>{topups.map((t) => <Row key={t.id} primary={formatGHS(Number(t.amount))} secondary={`${formatAdminDate(t.occurred_at)}${t.note ? ` · ${t.note}` : ""}`} right={t.metadata?.fee ? `+ ${formatGHS(Number(t.metadata.fee))} charge` : ""} tone="good" />)}</Rows>
+          <Rows empty={loading ? "Loading…" : "No top-ups recorded."}>{topups.map((t) => <Row key={t.id} primary={formatGHS(Number(t.amount))} secondary={`${formatAdminDate(t.occurred_at)}${t.created_by ? ` · by ${admins[t.created_by] ?? "admin"}` : ""}${t.note ? ` · ${t.note}` : ""}`} right={t.metadata?.fee ? `+ ${formatGHS(Number(t.metadata.fee))} charge` : ""} tone="good" />)}</Rows>
         </Panel>
       </div>
 
