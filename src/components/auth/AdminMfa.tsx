@@ -23,12 +23,19 @@ export default function AdminMfa({ hasFactor, onDone }: { hasFactor: boolean; on
         if (!cancelled && f) setFactorId(f.id);
         return;
       }
-      // Clean up any half-finished enrolment, then start a fresh one.
+      // Switching to the authenticator app and back reloads the page on most
+      // phones. Keep the in-progress enrolment so the key they scanned stays valid.
       const { data: existing } = await supabase.auth.mfa.listFactors();
+      const saved = (() => { try { return JSON.parse(sessionStorage.getItem("yg-mfa-enrol") ?? "null") as { id: string; qr: string; secret: string } | null; } catch { return null; } })();
+      if (saved && existing?.all?.some((f) => f.id === saved.id && f.status !== "verified")) {
+        if (!cancelled) { setFactorId(saved.id); setQr(saved.qr); setSecret(saved.secret); }
+        return;
+      }
       for (const f of existing?.all ?? []) if (f.status !== "verified") await supabase.auth.mfa.unenroll({ factorId: f.id });
       const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: `DataYego admin ${new Date().toISOString().slice(0, 16).replace("T", " ")}` });
       if (cancelled) return;
       if (error || !data) { setError(error?.message ?? "Couldn't start two-factor setup."); return; }
+      sessionStorage.setItem("yg-mfa-enrol", JSON.stringify({ id: data.id, qr: data.totp.qr_code, secret: data.totp.secret }));
       setFactorId(data.id); setQr(data.totp.qr_code); setSecret(data.totp.secret);
     })();
     return () => { cancelled = true; };
@@ -42,6 +49,7 @@ export default function AdminMfa({ hasFactor, onDone }: { hasFactor: boolean; on
     const { error: vErr } = await supabase.auth.mfa.verify({ factorId, challengeId: ch.id, code: code.replace(/\D/g, "") });
     setBusy(false);
     if (vErr) { setError("That code didn't match. Codes change every 30 seconds — try the current one."); setCode(""); return; }
+    sessionStorage.removeItem("yg-mfa-enrol");
     toast.success(hasFactor ? "Verified." : "Two-factor is on for your admin account.");
     onDone();
   };
