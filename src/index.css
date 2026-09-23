@@ -2449,3 +2449,14 @@
   .admin-dense table { font-size: 12.5px; }
   .admin-dense th, .admin-dense td { padding-top: 6px; padding-bottom: 6px; }
 }
+
+/* Help Center article body (react-markdown output). */
+.help-prose p { margin: 0 0 0.85em; }
+.help-prose strong { color: hsl(var(--foreground)); font-weight: 600; }
+.help-prose ul, .help-prose ol { margin: 0 0 0.9em; padding-left: 1.25em; }
+.help-prose li { margin: 0.3em 0; }
+.help-prose blockquote { margin: 0.6em 0 1em; padding: 0.7em 0.9em; border-left: 3px solid hsl(var(--primary)); background: hsl(var(--primary) / 0.08); border-radius: 0 12px 12px 0; font-style: italic; }
+.help-prose table { width: 100%; border-collapse: collapse; margin: 0.4em 0 1em; font-size: 13px; }
+.help-prose th, .help-prose td { padding: 0.5em 0.6em; border-bottom: 1px solid hsl(var(--foreground) / 0.1); text-align: left; }
+.help-prose th { font-weight: 600; color: hsl(var(--foreground)); }
+.help-prose code { font-size: 0.9em; background: hsl(var(--foreground) / 0.06); padding: 0.1em 0.35em; border-radius: 6px; }
