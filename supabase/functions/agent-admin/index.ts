@@ -20,6 +20,9 @@ Deno.serve(async (req) => {
     const { data: auth } = await supabase.auth.getUser(token);
     if (!auth?.user) return jsonResponse({ error: "Invalid session" }, { status: 401 });
     if (!sessionHasMfa(token)) return jsonResponse({ error: "Two-factor verification required. Sign in to the admin panel again." }, { status: 403 });
+    // Every action here is admin-only: 2FA alone is not enough, any user can switch that on.
+    const { data: isAdmin } = await supabase.from("admin_users").select("user_id").eq("user_id", auth.user.id).eq("is_active", true).maybeSingle();
+    if (!isAdmin) return jsonResponse({ error: "Admin only" }, { status: 403 });
     const body = await req.json();
     if (body.action === "review_application") {
       const { data, error } = await supabase.rpc("admin_review_application", { p_actor: auth.user.id, p_application_id: body.applicationId, p_approve: Boolean(body.approve), p_reason: body.reason ?? null });
