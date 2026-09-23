@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { requireCronSecret } from "../_shared/internal.ts";
 import { checkOrderStatus, listTransactions } from "../_shared/databundleshub.ts";
 import { AWAITING_VERIFICATION, isSilentMtnRefund, markAwaitingVerification } from "../_shared/verification.ts";
 import { fulfillOrder } from "../_shared/fulfillment.ts";
@@ -80,6 +81,7 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createSupabaseAdmin();
+    const denied = await requireCronSecret(req, supabase); if (denied) return denied;
     const { data: supplier } = await supabase
       .from("suppliers").select("id").eq("code", "databundleshub").maybeSingle();
     if (!supplier) return jsonResponse({ error: "supplier_not_found" }, { status: 404 });

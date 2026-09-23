@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { requireCronSecret } from "../_shared/internal.ts";
 import { sendEmail } from "../_shared/email.ts";
 
 /* Daily at 08:00: email agents whose plan ends in 3 days, on the day, and on the last grace day. */
@@ -11,6 +12,7 @@ Deno.serve(async (req) => {
   if (options) return options;
   try {
     const supabase = createSupabaseAdmin();
+    const denied = await requireCronSecret(req, supabase); if (denied) return denied;
     const { data: due } = await supabase.rpc("agents_due_for_reminder");
     const results: unknown[] = [];
     for (const a of (due ?? []) as Array<{ agent_id: string; user_id: string; store_name: string; paid_until: string; kind: string }>) {

@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { requireCronSecret } from "../_shared/internal.ts";
 import { getPaystackSecretKey, paystackSubaccount } from "../_shared/paystack.ts";
 
 /* Pulls Paystack settlements (payouts to the bank) and books each successful
@@ -18,6 +19,7 @@ Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
   try {
+    const denied = await requireCronSecret(req, createSupabaseAdmin()); if (denied) return denied;
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const days = Math.min(Math.max(Number(body?.days ?? 45), 1), 365);
     const from = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);

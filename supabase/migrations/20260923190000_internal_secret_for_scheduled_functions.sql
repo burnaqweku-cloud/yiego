@@ -1,0 +1,5 @@
+-- Applied live on 23 Sep 2026 (migration internal_secret_for_scheduled_functions).
+-- phase1.internal_secrets (key 'cron'): random secret readable only by service_role.
+-- The pg_cron jobs for sync-dbh-order-status, sync-supplier-balances, sync-instantdata-order-status,
+-- agents-renewal-reminders, sync-paystack-settlements and sync-datamart-order-status now send it as
+-- the x-yiego-internal-secret header; the functions refuse calls without it (_shared/internal.ts).

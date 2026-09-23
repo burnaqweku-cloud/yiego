@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { requireCronSecret } from "../_shared/internal.ts";
 import { checkOrderStatus, mapStatus } from "../_shared/instantdatagh.ts";
 
 /* InstantDataGH order status — polled per order (no webhooks, no batch
@@ -12,6 +13,7 @@ Deno.serve(async (req) => {
   if (options) return options;
   try {
     const supabase = createSupabaseAdmin();
+    const denied = await requireCronSecret(req, supabase); if (denied) return denied;
     const { data: supplier } = await supabase.from("suppliers").select("id").eq("code", "instantdatagh").maybeSingle();
     if (!supplier) return jsonResponse({ error: "supplier_not_found" }, { status: 404 });
     const { data: orders } = await supabase.from("orders").select("id, order_reference, status, supplier_status, supplier_purchase_id")

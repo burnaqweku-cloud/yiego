@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { requireCronSecret } from "../_shared/internal.ts";
 
 /* Polls each supplier's wallet balance and records it as a reading, so a
    top-up is detected even when no order goes out. Each supplier's balance
@@ -37,6 +38,7 @@ Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
   const supabase = createSupabaseAdmin();
+  const denied = await requireCronSecret(req, supabase); if (denied) return denied;
   const results: Record<string, unknown> = {};
   const { data: suppliers } = await supabase.from("suppliers").select("id, code, metadata").in("code", Object.keys(PROBES));
 
