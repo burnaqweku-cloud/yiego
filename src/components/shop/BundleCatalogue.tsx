@@ -88,7 +88,7 @@ function toRow(offer: SupplierBundle): Row | null {
  *  rather than on every card. */
 function statedValidity(validity: string | null): string | null {
   if (!validity || validity.toLowerCase() === "supplier terms") return null;
-  return `Valid ${validity}`;
+  return /no expiry|non.?expiry/i.test(validity) ? "No expiry" : `Valid ${validity}`;
 }
 
 /* ── Card ────────────────────────────────────────────────────────── */

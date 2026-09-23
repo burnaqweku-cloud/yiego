@@ -34,7 +34,7 @@ export default function StoreHome() {
               {items.map(({ p, price }) => (
                 <button key={p.id} type="button" onClick={() => { setPreselect({ kind: "bundle", networkId: n.id, productCode: p.app_product_code ?? p.id }); setOpen(true); }} className="onyx-panel group rounded-2xl p-3 text-left transition-colors hover:border-primary/40">
                   <p className="text-[18px] font-semibold text-foreground">{p.name.replace(/^.*?—\s*/, "")}</p>
-                  <p className="text-[11px] text-faint-foreground">{p.validity ?? "No expiry"}</p>
+                  <p className="text-[11px] text-faint-foreground">{p.validity ?? "Validity set by the network"}</p>
                   <p className="mt-2 flex items-center justify-between"><span className="text-[14px] font-semibold text-foreground">{formatGHS(price)}</span><span className="rounded-full bg-primary/15 px-2.5 py-1 text-[11px] font-semibold text-primary-glow group-hover:bg-primary/25">Buy</span></p>
                 </button>))}
             </div>

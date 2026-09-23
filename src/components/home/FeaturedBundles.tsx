@@ -69,7 +69,7 @@ function pickSpread(list: Phase1Product[], count: number): Phase1Product[] {
 
 function validityLine(validity: string | null): string {
   if (!validity || validity.toLowerCase() === "supplier terms") return "Validity set by the network";
-  return `Valid ${validity}`;
+  return /no expiry|non.?expiry/i.test(validity) ? "No expiry" : `Valid ${validity}`;
 }
 
 /* ── States ──────────────────────────────────────────────────────── */

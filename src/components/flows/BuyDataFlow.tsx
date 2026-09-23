@@ -65,7 +65,8 @@ function BundleTag({ tag }: { tag: NonNullable<Bundle["tag"]> }) {
 /** The catalogue stores "Supplier terms" when the network sets the window
  *  itself — say that in words a customer understands. Display only. */
 function validityLabel(validity: string): string {
-  return /supplier terms/i.test(validity) ? "Validity set by the network" : `Valid ${validity}`;
+  if (/supplier terms/i.test(validity)) return "Validity set by the network";
+  return /no expiry|non.?expiry/i.test(validity) ? "No expiry" : `Valid ${validity}`;
 }
 
 function expiryLabel(value: string | null) {
