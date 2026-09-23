@@ -13,7 +13,7 @@ type Period = "today" | "7d" | "30d" | "all";
 const PERIODS = [{ value: "today" as const, label: "Today" }, { value: "7d" as const, label: "7 days" }, { value: "30d" as const, label: "30 days" }, { value: "all" as const, label: "Since launch" }];
 const since = (p: Period) => { if (p === "all") return "2026-09-12T00:00:00Z"; const d = new Date(); if (p === "today") d.setHours(0, 0, 0, 0); else d.setDate(d.getDate() - (p === "7d" ? 7 : 30)); return d.toISOString(); };
 
-interface OrderRow { order_reference: string; recipient_phone: string; amount: number; status: string; admin_resolution_status: string | null; supplier_retry_after: string | null; created_at: string; networks: { name: string } | null; data_products: { name: string } | null }
+interface OrderRow { order_reference: string; recipient_phone: string; amount: number; status: string; payment_status: string; admin_resolution_status: string | null; supplier_retry_after: string | null; created_at: string; networks: { name: string } | null; data_products: { name: string } | null }
 interface Overview { period: { revenue: number; net: number; fee_income: number }; owed: { undelivered: number; undelivered_count: number }; cash: { supplier_float: Record<string, number> } }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown }> };
@@ -29,7 +29,7 @@ export default function Admin() {
 
   const load = useCallback(async () => {
     const [o, ov, su] = await Promise.all([
-      db().from("orders").select("order_reference, recipient_phone, amount, status, admin_resolution_status, supplier_retry_after, created_at, networks(name), data_products(name)").gte("created_at", since(period)).order("created_at", { ascending: false }).limit(500),
+      db().from("orders").select("order_reference, recipient_phone, amount, status, payment_status, admin_resolution_status, supplier_retry_after, created_at, networks(name), data_products(name)").gte("created_at", since(period)).order("created_at", { ascending: false }).limit(500),
       db().rpc("finance_overview", { p_from: since(period), p_to: null }),
       db().from("suppliers").select("code, name, balance").neq("status", "disabled").order("display_order"),
     ]);
@@ -37,7 +37,7 @@ export default function Admin() {
   }, [period]);
   useEffect(() => { void load(); }, [load]);
 
-  const paid = orders.filter((x) => !["awaiting_payment", "cancelled"].includes(x.status));
+  const paid = orders.filter((x) => x.payment_status === "succeeded");
   const delivered = paid.filter((x) => x.status === "delivered").length;
   const inFlight = paid.filter((x) => ["processing", "pending_supplier", "paid"].includes(x.status));
   const cooldown = inFlight.filter((x) => x.supplier_retry_after).length;

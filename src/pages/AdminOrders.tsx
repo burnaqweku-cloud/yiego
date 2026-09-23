@@ -62,7 +62,7 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
-  const [lifecycleFilter, setLifecycleFilter] = useState("all");
+  const [lifecycleFilter, setLifecycleFilter] = useState(() => ({ failed: "failed_group", pending: "in_progress", payment_failed: "payment_failed" } as Record<string, string>)[searchParams.get("status") ?? ""] ?? "all");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [supplierFilter, setSupplierFilter] = useState("all");
   const [routeFilter, setRouteFilter] = useState("all");
