@@ -167,7 +167,7 @@ export default function AdminAgents() {
         <Panel title="Where things stand" note="tap a row">
           <Rows empty="">
             <Row onClick={() => setTab("applications")} primary="Applications" secondary={pending ? `${pending} waiting for a decision` : "nothing waiting"} right={String(apps.length)} rightNote="total" tone={pending ? "warn" : "default"} />
-            <Row onClick={() => setTab("agents")} primary="Agents" secondary={`${agents.filter((g) => g.status === "active").length} active · ${agents.filter((g) => g.status === "paused").length} paused · ${agents.filter((g) => g.status === "awaiting_payment").length} not yet paid`} right={String(agents.length)} rightNote="total" />
+            <Row onClick={() => setTab("agents")} primary="Agents" secondary={`${agents.filter((g) => g.status === "active").length} active · ${agents.filter((g) => g.status === "lapsed" || g.status === "paused").length} lapsed · ${agents.filter((g) => g.status === "awaiting_payment").length} not yet paid`} right={String(agents.length)} rightNote="total" />
             <Row onClick={() => setTab("subscriptions")} primary="Subscriptions" secondary={`${subs.filter((x) => x.status === "succeeded").length} payments · ${formatGHS(subs.filter((x) => x.status === "succeeded").reduce((a, x) => a + Number(x.amount), 0))} collected`} right={String(agents.filter((g) => g.paid_until && new Date(g.paid_until) <= new Date(Date.now() + 7 * 86400000)).length)} rightNote="expiring in 7 days" />
             <Row onClick={() => setTab("payouts")} primary="Payouts" secondary={payoutsWaiting ? `${payoutsWaiting} waiting to be paid` : "nothing waiting"} right={formatGHS(payouts.filter((p) => p.status === "paid").reduce((a, p) => a + Number(p.net), 0))} rightNote="paid out" tone={payoutsWaiting ? "warn" : "default"} />
             <Row onClick={() => setTab("promos")} primary="Plan & promos" secondary={plan ? `${formatGHS(plan.monthly_price)}/month · payout min ${formatGHS(plan.payout_minimum)} · fee ${(plan.payout_fee_rate * 100).toFixed(0)}%` : "—"} right={promos.find((p) => p.is_active) ? `${promos.find((p) => p.is_active)?.percent_off}% off` : "no promo"} />
@@ -230,10 +230,10 @@ export default function AdminAgents() {
         <StatGrid cols={4}>
           <Stat loading={loading} label="Active" value={String(agents.filter((g) => g.status === "active").length)} tone="good" />
           <Stat loading={loading} label="Expiring in 7 days" value={String(agents.filter((g) => g.status === "active" && g.paid_until && new Date(g.paid_until) <= new Date(Date.now() + 7 * 86400000)).length)} note="reminders go out 3 days before and on the day" tone="warn" />
-          <Stat loading={loading} label="Paused (unpaid)" value={String(agents.filter((g) => g.status === "paused").length)} note="store closed until they pay" />
+          <Stat loading={loading} label="Lapsed" value={String(agents.filter((g) => g.status === "lapsed" || g.status === "paused").length)} note="store closed until they renew" />
           <Stat loading={loading} label="Collected" value={<Money value={subs.filter((x) => x.status === "succeeded").reduce((a, x) => a + Number(x.amount), 0)} />} note={`${subs.filter((x) => x.status === "succeeded").length} payments · ${subs.filter((x) => x.status === "succeeded" && Number(x.metadata?.percent_off ?? 0) > 0).length} on promo`} tone="good" />
         </StatGrid>
-        <Panel title="Who's paid until when" note="active and paused agents">
+        <Panel title="Who's paid until when" note="active and lapsed agents">
           <Rows empty={loading ? "Loading…" : "No agents yet."}>
             {agents.filter((g) => g.status !== "awaiting_payment").sort((a, b) => (a.paid_until ?? "").localeCompare(b.paid_until ?? "")).map((g) => { const days = g.paid_until ? Math.ceil((+new Date(g.paid_until) - Date.now()) / 86400000) : null; return <Row key={g.id} primary={<>{g.store_name} <Pill tone={g.status === "active" ? "good" : "warn"}>{g.status}</Pill></>} secondary={`${emails.get(g.user_id) ?? "—"} · /s/${g.slug}`} right={g.paid_until ?? "—"} rightNote={days == null ? "" : days < 0 ? `${-days} days overdue` : days === 0 ? "ends today" : `${days} days left`} tone={days != null && days <= 3 ? "warn" : "default"} />; })}
           </Rows>
