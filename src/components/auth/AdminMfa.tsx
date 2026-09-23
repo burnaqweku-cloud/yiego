@@ -25,8 +25,8 @@ export default function AdminMfa({ hasFactor, onDone }: { hasFactor: boolean; on
       }
       // Clean up any half-finished enrolment, then start a fresh one.
       const { data: existing } = await supabase.auth.mfa.listFactors();
-      for (const f of existing?.totp ?? []) if (f.status !== "verified") await supabase.auth.mfa.unenroll({ factorId: f.id });
-      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "DataYego admin" });
+      for (const f of existing?.all ?? []) if (f.status !== "verified") await supabase.auth.mfa.unenroll({ factorId: f.id });
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: `DataYego admin ${new Date().toISOString().slice(0, 16).replace("T", " ")}` });
       if (cancelled) return;
       if (error || !data) { setError(error?.message ?? "Couldn't start two-factor setup."); return; }
       setFactorId(data.id); setQr(data.totp.qr_code); setSecret(data.totp.secret);
