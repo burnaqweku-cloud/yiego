@@ -105,6 +105,11 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
+      // The app no longer registers a service worker, but phones that installed
+      // an early build still run one that serves stale files after publishes.
+      // Self-destroying: this sw.js clears its caches, unregisters itself and
+      // reloads open pages, so every device ends up on the live build.
+      selfDestroying: true,
       registerType: "autoUpdate",
       injectRegister: false, // We register manually in main.tsx for update control
       workbox: {
