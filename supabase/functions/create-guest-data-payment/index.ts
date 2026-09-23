@@ -146,9 +146,8 @@ Deno.serve(async (req) => {
       // payment link for it would let the recipient be charged twice.
       return jsonResponse(
         {
-          error: `Order ${existingOpen.order_reference} for this number is already paid and on its way. Track it instead of paying again.`,
+          error: "An order for this number is already paid and on its way. Track it with the reference from your confirmation instead of paying again.",
           code: "phone_has_paid_open_order",
-          data: { orderReference: existingOpen.order_reference },
         },
         { status: 409 },
       );
@@ -157,9 +156,8 @@ Deno.serve(async (req) => {
     if (existingOpen && existingOpen.product_id !== product.id) {
       return jsonResponse(
         {
-          error: `This number already has an open order (${existingOpen.order_reference}) for a different bundle. Pay or track that order, or try again after it expires.`,
+          error: "This number already has an open order for a different bundle. Pay or track that order using its reference, or try again after it expires.",
           code: "phone_has_open_order",
-          data: { orderReference: existingOpen.order_reference },
         },
         { status: 409 },
       );
@@ -238,19 +236,11 @@ Deno.serve(async (req) => {
       if (orderError) {
         // A concurrent checkout for the same phone won the unique index race.
         if (orderError.code === "23505") {
-          const { data: raced } = await supabase
-            .from("orders")
-            .select("order_reference")
-            .eq("recipient_phone_normalized", recipientPhone)
-            .eq("is_open", true)
-            .limit(1)
-            .maybeSingle();
 
           return jsonResponse(
             {
-              error: `This number already has an open order${raced ? ` (${raced.order_reference})` : ""} awaiting payment. Track it, or try again shortly.`,
+              error: "This number already has an open order awaiting payment. Track it with its reference, or try again shortly.",
               code: "phone_has_open_order",
-              data: { orderReference: raced?.order_reference ?? null },
             },
             { status: 409 },
           );
