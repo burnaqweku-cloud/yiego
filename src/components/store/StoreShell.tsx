@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /* The agent's storefront frame: their header, their footer, nothing of ours
    beyond "payments secured by DataYego". Pages inside read the store via useStore(). */
-export interface StoreData { id: string; slug: string; store_name: string; tagline: string | null; logo_url: string | null; whatsapp: string | null; prices: Record<string, number> }
+export interface StoreData { id: string; slug: string; store_name: string; tagline: string | null; logo_url: string | null; whatsapp: string | null; status: "active" | "closed"; prices: Record<string, number> }
 const StoreContext = createContext<StoreData | null>(null);
 export const useStore = () => { const c = useContext(StoreContext); if (!c) throw new Error("useStore outside StoreShell"); return c; };
 export const waLink = (s: StoreData) => s.whatsapp ? `https://wa.me/233${s.whatsapp.replace(/\D/g, "").replace(/^0/, "")}` : null;
@@ -21,6 +21,15 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
   if (store === undefined) return <div className="min-h-dvh bg-[#0b1512]" />;
   if (store === null) return <div className="flex min-h-dvh items-center justify-center bg-[#0b1512] px-6 text-center"><div><Store size={30} className="mx-auto text-white/40" /><p className="mt-3 text-[17px] font-semibold text-white">This store isn't open</p><p className="mt-1 text-[13px] text-white/60">It may be paused, or the link may be wrong.</p></div></div>;
   const wa = waLink(store);
+  if (store.status === "closed") return (
+    <div className="onyx-canvas flex min-h-dvh flex-col items-center justify-center px-6 text-center">
+      {store.logo_url ? <img src={store.logo_url} alt="" className="h-16 w-16 rounded-full object-cover" /> : <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/20 text-[24px] font-bold text-primary-glow">{initial}</span>}
+      <h1 className="mt-4 text-[20px] font-semibold text-foreground">{store.store_name}</h1>
+      <p className="mt-2 max-w-xs text-[13.5px] text-muted-foreground">Data plans aren't available right now. {wa ? `Message ${store.store_name} on WhatsApp and they'll help you out.` : "Please check back soon."}</p>
+      {wa && <a href={wa} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-[13.5px] font-semibold text-[#062b16]"><MessageCircle size={16} />WhatsApp {store.store_name}</a>}
+      <p className="mt-8 flex items-center gap-1 text-[11px] text-faint-foreground"><ShieldCheck size={11} />Payments secured by DataYego</p>
+    </div>
+  );
   return (
     <StoreContext.Provider value={store}>
       <div className="onyx-canvas flex min-h-dvh flex-col">

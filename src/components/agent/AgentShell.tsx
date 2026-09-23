@@ -8,6 +8,9 @@ import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
 import { planQuote, type PlanQuote } from "@/lib/agents";
 import { useAuth } from "@/store/auth-context";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import PlanPicker from "@/components/agent/PlanPicker";
+import { longDate, subscriptionOf, type SubInfo } from "@/components/agent/subscription";
+import { X } from "lucide-react";
 
 /* The agent app. Its own header, its own navigation (bottom bar on phones,
    sidebar on desktop), no public site chrome. Pages read shared data from
@@ -16,7 +19,7 @@ export interface Agent { id: string; slug: string; store_name: string; tagline: 
 export interface AgentOrder { order_reference: string; recipient_phone: string; amount: number; agent_margin: number | null; status: string; admin_resolution_status: string | null; paid_at: string | null; created_at: string; data_products: { name: string } | null; networks: { name: string } | null }
 export interface AgentPayout { id: string; amount: number; fee: number; net: number; status: string; created_at: string; paid_at: string | null; note: string | null }
 export interface Plan { payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number }
-interface Ctx { agent: Agent; orders: AgentOrder[]; payouts: AgentPayout[]; products: Phase1Product[]; prices: Record<string, string>; setPrices: (p: Record<string, string>) => void; plan: Plan | null; quote: PlanQuote | null; storeUrl: string; reload: () => Promise<void> }
+interface Ctx { agent: Agent; orders: AgentOrder[]; payouts: AgentPayout[]; products: Phase1Product[]; prices: Record<string, string>; setPrices: (p: Record<string, string>) => void; plan: Plan | null; quote: PlanQuote | null; storeUrl: string; reload: () => Promise<void>; sub: SubInfo; openRenew: () => void }
 const AgentContext = createContext<Ctx | null>(null);
 export const useAgent = () => { const c = useContext(AgentContext); if (!c) throw new Error("useAgent outside AgentShell"); return c; };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,6 +38,7 @@ const NAV = [
 export default function AgentShell() {
   const { user, isAuthenticated, signOut } = useAuth(); const navigate = useNavigate();
   const [agent, setAgent] = useState<Agent | null | undefined>(undefined);
+  const [renew, setRenew] = useState(false);
   const [orders, setOrders] = useState<AgentOrder[]>([]); const [payouts, setPayouts] = useState<AgentPayout[]>([]);
   const [products, setProducts] = useState<Phase1Product[]>([]); const [prices, setPrices] = useState<Record<string, string>>({});
   const [plan, setPlan] = useState<Plan | null>(null); const [quote, setQuote] = useState<PlanQuote | null>(null);
@@ -59,10 +63,11 @@ export default function AgentShell() {
   if (agent === null) return <div className="mk-wrap py-16 text-center"><p className="text-[16px] font-semibold text-foreground">You're not an agent yet</p><Link to="/agents" className="mt-4 inline-block text-[13px] text-primary-glow">Apply to be an agent</Link></div>;
   const storeUrl = `${window.location.origin}/s/${agent.slug}`;
 
-  if (agent.status !== "active") return <PayScreen agent={agent} quote={quote} />;
+  const sub = subscriptionOf(agent, quote?.grace_days ?? 1);
+  if (sub.state === "unpaid" || sub.state === "suspended") return <PayScreen agent={agent} quote={quote} />;
 
   return (
-    <AgentContext.Provider value={{ agent, orders, payouts, products, prices, setPrices, plan, quote, storeUrl, reload }}>
+    <AgentContext.Provider value={{ agent, orders, payouts, products, prices, setPrices, plan, quote, storeUrl, reload, sub, openRenew: () => setRenew(true) }}>
       <div className="onyx-canvas min-h-dvh">
         <div className="mx-auto flex max-w-5xl">
           {/* Desktop sidebar */}
@@ -81,9 +86,21 @@ export default function AgentShell() {
               <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div>
               <div className="flex items-center gap-2"><span className="rounded-full bg-primary/12 px-2.5 py-1 text-[12px] font-semibold text-primary-glow">{formatGHS(Number(agent.earnings_balance))}</span><NotificationBell /><a href={storeUrl} target="_blank" rel="noreferrer" aria-label="View store" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><ExternalLink size={14} /></a></div>
             </header>
-            <main className="px-4 pb-24 pt-4 sm:px-8 sm:pb-10 sm:pt-8"><Outlet /></main>
+            <main className="px-4 pb-24 pt-4 sm:px-8 sm:pb-10 sm:pt-8">
+              {sub.state === "grace" && <div className="mb-4 rounded-2xl border border-amber/40 bg-amber/10 p-3.5 text-[12.5px] text-foreground"><p className="font-semibold">Your plan ended on {longDate(sub.paidUntil)}.</p><p className="mt-0.5 text-muted-foreground">Renew by tonight ({longDate(sub.closesOn)}) to keep your store open. Nothing changes until then.</p><button type="button" onClick={() => setRenew(true)} className="onyx-btn-primary mt-2.5 px-4 py-2 text-[12.5px]">Renew now</button></div>}
+              {sub.state === "lapsed" && <div className="mb-4 rounded-2xl border border-danger/40 bg-danger/10 p-3.5 text-[12.5px] text-foreground"><p className="font-semibold">Your store is closed.</p><p className="mt-0.5 text-muted-foreground">Customers can't order and agent prices are locked. Your balance and orders are safe — you can still withdraw. Renew to reopen instantly.</p><button type="button" onClick={() => setRenew(true)} className="onyx-btn-primary mt-2.5 px-4 py-2 text-[12.5px]">Renew now</button></div>}
+              <Outlet />
+            </main>
           </div>
         </div>
+        {renew && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={() => setRenew(false)}>
+            <div className="onyx-panel w-full max-w-md rounded-t-3xl p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between"><div><h2 className="text-[17px] font-semibold text-foreground">{sub.state === "active" ? "Extend your plan" : "Renew your plan"}</h2><p className="mt-0.5 text-[12px] text-muted-foreground">{sub.state === "active" ? `Paid until ${longDate(sub.paidUntil)} · ${sub.daysLeft} day${sub.daysLeft === 1 ? "" : "s"} left. Whatever you buy is added on.` : "Everything reopens the moment payment is confirmed."}</p></div><button type="button" onClick={() => setRenew(false)} aria-label="Close" className="text-muted-foreground"><X size={18} /></button></div>
+              <div className="mt-4"><PlanPicker quote={quote} verb={sub.state === "active" ? "Extend" : "Renew"} extending={sub.state === "active"} /></div>
+            </div>
+          </div>
+        )}
         {/* Mobile bottom nav */}
         <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-white/[0.08] bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
           {NAV.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[10.5px] ${isActive ? "text-primary-glow" : "text-muted-foreground"}`}><n.icon size={19} />{n.label}</NavLink>)}
@@ -94,27 +111,20 @@ export default function AgentShell() {
 }
 
 function PayScreen({ agent, quote }: { agent: Agent; quote: PlanQuote | null }) {
-  const [busy, setBusy] = useState(false);
-  const pay = async () => {
-    setBusy(true);
-    const { data, error } = await supabase.functions.invoke<{ error?: string; data?: { authorizationUrl: string } }>("agent-subscribe", { body: {} });
-    setBusy(false);
-    const err = data?.error ?? error?.message; if (err) return toast.error(err);
-    if (data?.data?.authorizationUrl) window.location.href = data.data.authorizationUrl;
-  };
+  const suspended = agent.status === "suspended";
   return (
-    <div className="onyx-canvas flex min-h-dvh items-center justify-center px-5">
-      <div className="onyx-panel w-full max-w-md rounded-3xl p-6 text-center">
-        <CreditCard size={28} className="mx-auto text-primary-glow" />
-        <h1 className="mt-3 text-[20px] font-semibold text-foreground">{agent.status === "paused" ? "Your store is paused" : "One step left"}</h1>
-        <p className="mt-1 text-[13px] text-muted-foreground">{agent.status === "paused" ? `Your month ended on ${agent.paid_until}. Pay to reopen your store — everything is exactly as you left it.` : "You're approved. Pay the monthly fee and your store opens straight away."}</p>
-        {quote && <div className="mt-4"><p className="text-[28px] font-semibold text-foreground">{formatGHS(quote.pay_now)}<span className="text-[13px] font-normal text-muted-foreground"> / month</span></p>{quote.promo && <p className="text-[12px] text-primary-glow">{quote.promo.percent_off}% off with {quote.promo.name} · normally {formatGHS(quote.monthly)}</p>}<p className="mt-1 text-[11.5px] text-faint-foreground">+ {formatGHS(Math.round(quote.pay_now * 4) / 100)} checkout fee · you pay {formatGHS(Math.round(quote.pay_now * 104) / 100)}</p></div>}
-        <ul className="mt-4 space-y-2 text-left text-[13px] text-muted-foreground">
-          {[["Buy data cheaper", "MTN 1GB at 4.00 instead of 4.15, 10GB at 40.00 instead of 43.44 — for yourself or to sell."], ["Free online store", "Your own link. You set the prices and keep the profit on every sale."], ["No deposit needed", "Your customers pay through your store; your profit is saved for you and paid to MoMo from 20.00."], ["We do the rest", "Delivery, payment and support are handled by DataYego."]].map(([t, d]) => <li key={t} className="flex gap-2"><span className="mt-0.5 text-primary-glow">✓</span><span><b className="text-foreground">{t}.</b> {d}</span></li>)}
+    <div className="onyx-canvas flex min-h-dvh items-center justify-center px-5 py-8">
+      <div className="onyx-panel w-full max-w-md rounded-3xl p-6">
+        <div className="text-center">
+          <CreditCard size={28} className="mx-auto text-primary-glow" />
+          <h1 className="mt-3 text-[20px] font-semibold text-foreground">{suspended ? "This account is suspended" : "One step left"}</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground">{suspended ? "Contact DataYego support to sort this out." : "You're approved. Pick a plan and your store opens straight away."}</p>
+        </div>
+        {!suspended && <div className="mt-5"><PlanPicker quote={quote} /></div>}
+        <ul className="mt-5 space-y-2 text-left text-[13px] text-muted-foreground">
+          {[["Buy data cheaper", "MTN 2GB at 8.50 instead of 8.72, 10GB at 41.00 instead of 41.47 — for yourself or to sell."], ["Free online store", "Your own link. You set the prices and keep the profit on every sale."], ["No deposit needed", "Your customers pay through your store; your profit is saved for you and paid to MoMo from 20.00."], ["We do the rest", "Delivery, payment and support are handled by DataYego."]].map(([t, d]) => <li key={t} className="flex gap-2"><span className="mt-0.5 text-primary-glow">✓</span><span><b className="text-foreground">{t}.</b> {d}</span></li>)}
         </ul>
-        <button type="button" className="onyx-btn-primary mt-5 w-full py-3 text-[14px]" onClick={() => void pay()} disabled={busy}>{busy ? "Opening Paystack…" : `Pay ${quote ? formatGHS(Math.round(quote.pay_now * 104) / 100) : ""} with Paystack`}</button>
-        <p className="mt-3 text-[11px] text-faint-foreground">Card or mobile money. Your month starts the moment it's confirmed.</p>
-        <Link to="/" className="mt-3 inline-block text-[12px] text-muted-foreground">Back to DataYego</Link>
+        <Link to="/" className="mt-4 block text-center text-[12px] text-muted-foreground">Back to DataYego</Link>
       </div>
     </div>
   );

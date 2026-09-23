@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ShoppingBag } from "lucide-react";
+import { Lock, ShoppingBag } from "lucide-react";
 import BuyDataFlow, { type AgentStoreContext, type BuyPreselect } from "@/components/flows/BuyDataFlow";
 import { NETWORKS } from "@/data/bundles";
 import { formatGHS } from "@/lib/format";
@@ -8,7 +8,7 @@ import { useAgent } from "@/components/agent/AgentShell";
 /* The agent buys for themselves at the agent price — no markup, nothing
    goes to earnings, delivered like any order. */
 export default function AgentBuy() {
-  const { agent, products } = useAgent();
+  const { agent, products, sub, openRenew } = useAgent();
   const [open, setOpen] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null);
   const [network, setNetwork] = useState<"mtn" | "telecel" | "at">("mtn");
   // Price map at the agent price: the store checkout then charges exactly that.
@@ -16,6 +16,17 @@ export default function AgentBuy() {
   const n = NETWORKS.find((x) => x.id === network)!;
   const prefix = network === "mtn" ? "mtn" : network === "telecel" ? "tel" : "at";
   const items = products.filter((p) => p.app_product_code?.startsWith(prefix) && !p.is_paused);
+  if (sub.state === "lapsed") return (
+    <div className="space-y-3">
+      <h1 className="font-display text-[22px] font-semibold text-foreground">Buy data</h1>
+      <div className="onyx-panel rounded-3xl p-6 text-center">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.06] text-muted-foreground"><Lock size={20} /></span>
+        <p className="mt-3 text-[16px] font-semibold text-foreground">Agent prices are part of your plan</p>
+        <p className="mt-1 text-[13px] text-muted-foreground">Your plan has ended, so buying at agent price is paused. Renew and it's back instantly — along with your store.</p>
+        <button type="button" onClick={openRenew} className="onyx-btn-primary mt-4 px-6 py-2.5 text-[13.5px]">Renew plan</button>
+      </div>
+    </div>
+  );
   return (
     <div className="space-y-3">
       <h1 className="font-display text-[22px] font-semibold text-foreground">Buy data</h1>

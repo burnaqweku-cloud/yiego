@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
    admins can preview any page with ?preview=agents. */
 
 export interface AgentPlan { monthly_price: number; payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number; popup_delay_seconds: number }
-export interface PlanQuote { monthly: number; promo: { id: string; name: string; percent_off: number; ends_at: string | null } | null; pay_now: number }
+export interface PlanOption { months: 1 | 3 | 12; list_price: number; pay_now: number; promo_id: string | null; per_month: number; saving_pct: number; fee: number; total: number }
+export interface PlanQuote { monthly: number; grace_days: number; promo: { id: string; name: string; percent_off: number; ends_at: string | null; plan_months: number[] } | null; pay_now: number; plans: PlanOption[] }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const p1 = () => (supabase as unknown as { schema: (s: string) => any }).schema("phase1");

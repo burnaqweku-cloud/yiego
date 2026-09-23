@@ -1,15 +1,16 @@
 import { useEffect, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowRight, Copy, Share2, ShoppingBag } from "lucide-react";
+import { ArrowRight, CalendarCheck, Copy, Lock, Share2, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/format";
 import { fmt, useAgent } from "@/components/agent/AgentShell";
 import { stageOf, toneClass } from "@/components/agent/orderStage";
+import { longDate } from "@/components/agent/subscription";
 
 export default function AgentHome() {
-  const { agent, orders, products, prices, storeUrl, plan, reload } = useAgent();
+  const { agent, orders, products, prices, storeUrl, plan, reload, sub, openRenew } = useAgent();
   const [params] = useSearchParams();
-  useEffect(() => { if (params.get("paid") === "1") { toast.success("Payment received. Welcome in!"); setTimeout(() => void reload(), 2500); } }, [params, reload]);
+  useEffect(() => { if (params.get("paid") === "1") { toast.success("Payment received. You're all set!"); setTimeout(() => void reload(), 2500); } }, [params, reload]);
   const today = useMemo(() => orders.filter((o) => o.paid_at && new Date(o.paid_at).toDateString() === new Date().toDateString()), [orders]);
   const week = useMemo(() => orders.filter((o) => o.paid_at && Date.now() - +new Date(o.paid_at) < 7 * 86400000), [orders]);
   const earned = (list: typeof orders) => list.filter((o) => o.status === "delivered").reduce((a, o) => a + Number(o.agent_margin ?? 0), 0);
@@ -28,11 +29,17 @@ export default function AgentHome() {
         {pending > 0 && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber/12 px-2.5 py-1 text-[11.5px] text-amber"><span className="h-1.5 w-1.5 rounded-full bg-amber" />{formatGHS(pending)} pending on {pendingOrders.length} order{pendingOrders.length === 1 ? "" : "s"} · released when delivered</p>}
         <div className="mt-4 flex gap-2"><Link to="/agent/earnings" className="onyx-btn-primary px-5 py-2.5 text-center text-[13px]">Withdraw</Link><button type="button" onClick={() => void share()} className="flex items-center gap-1.5 rounded-full border border-white/[0.14] px-4 py-2.5 text-[13px] text-foreground"><Share2 size={14} />Share store</button></div>
       </div>
-      <Link to="/agent/buy" className="onyx-panel flex items-center gap-3 rounded-2xl p-4 hover:border-primary/40">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-glow"><ShoppingBag size={20} /></span>
-        <span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">Buy data at your agent price</span><span className="block text-[12px] text-muted-foreground">For yourself or anyone. Pay with MoMo or card.</span></span>
-        <ArrowRight size={16} className="text-primary-glow" />
-      </Link>
+      {sub.state === "lapsed"
+        ? <Link to="/agent/buy" className="onyx-panel flex items-center gap-3 rounded-2xl p-4 opacity-80"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-muted-foreground"><Lock size={18} /></span><span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">Agent prices locked</span><span className="block text-[12px] text-muted-foreground">Renew your plan to buy at agent price again.</span></span><ArrowRight size={16} className="text-muted-foreground" /></Link>
+        : <Link to="/agent/buy" className="onyx-panel flex items-center gap-3 rounded-2xl p-4 hover:border-primary/40"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-glow"><ShoppingBag size={20} /></span><span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">Buy data at your agent price</span><span className="block text-[12px] text-muted-foreground">For yourself or anyone. Pay with MoMo or card.</span></span><ArrowRight size={16} className="text-primary-glow" /></Link>}
+      <button type="button" onClick={openRenew} className="onyx-panel flex w-full items-center gap-3 rounded-2xl p-4 text-left hover:border-primary/40">
+        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${sub.state === "active" ? "bg-primary/15 text-primary-glow" : "bg-amber/15 text-amber"}`}><CalendarCheck size={19} /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[14.5px] font-semibold text-foreground">{sub.state === "active" ? `Plan active · ${sub.daysLeft} day${sub.daysLeft === 1 ? "" : "s"} left` : sub.state === "grace" ? "Plan ended · renew today" : "Plan ended"}</span>
+          <span className="block text-[12px] text-muted-foreground">{sub.state === "active" ? `Paid until ${longDate(sub.paidUntil)}. Extend any time — 3 and 12-month plans cost less per month.` : "Tap to renew. Everything reopens the moment you pay."}</span>
+        </span>
+        <span className="text-[12.5px] font-semibold text-primary-glow">{sub.state === "active" ? "Extend" : "Renew"}</span>
+      </button>
       <div className="grid grid-cols-3 gap-2">
         {[["Today", today.length, earned(today)], ["7 days", week.length, earned(week)], ["All time", orders.length, earned(orders)]].map(([l, n, e]) => <div key={String(l)} className="onyx-panel rounded-2xl p-3"><p className="text-[11px] text-faint-foreground">{String(l)}</p><p className="text-[20px] font-semibold text-foreground">{String(n)}</p><p className="text-[11px] text-primary-glow">+{formatGHS(Number(e))}</p></div>)}
       </div>
