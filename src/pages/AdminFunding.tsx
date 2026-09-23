@@ -16,7 +16,7 @@ interface Entry { id: string; created_by: string | null; kind: string; reference
 interface Supplier { id: string; code: string; name: string; metadata: Record<string, unknown> | null }
 type Period = "all" | "7d" | "30d" | "month";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = () => adminDatabase() as unknown as { from: (t: string) => any };
+const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a?: Record<string, unknown>) => any };
 
 const periodFrom = (p: Period) => { const d = new Date(); if (p === "7d") d.setDate(d.getDate() - 7); else if (p === "30d") d.setDate(d.getDate() - 30); else if (p === "month") d.setDate(1); else return null; d.setHours(0, 0, 0, 0); return d; };
 

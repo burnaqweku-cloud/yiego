@@ -18,7 +18,7 @@ interface Topup { id: string; created_by: string | null; amount: number; occurre
 interface Ord { order_reference: string; recipient_phone: string; cost_amount: number | null; amount: number; status: string; supplier_status: string | null; paid_at: string; data_products: { capacity_gb: number } | null; networks: { name: string } | null }
 type Range = "today" | "7d" | "30d" | "all";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = () => adminDatabase() as unknown as { from: (t: string) => any };
+const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a?: Record<string, unknown>) => any };
 const since = (r: Range) => r === "all" ? "2026-09-12" : new Date(Date.now() - (r === "today" ? 0 : r === "7d" ? 6 : 29) * 86400000).toISOString().slice(0, 10);
 
 export default function AdminSupplierBalance() {
