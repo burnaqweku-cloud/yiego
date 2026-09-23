@@ -72,10 +72,10 @@ export default function AdminFunding() {
 
   return (
     <div className="space-y-5">
-      <AdminPageHeader title="Money put in" description="Every supplier top-up, whether paid from the business account or from outside, plus what was already there at launch." action={<div className="flex gap-2"><Link to="/admin/finance"><Button variant="ghost" size="sm"><ArrowLeft size={14} />Finance</Button></Link><Button variant="ghost" size="sm" onClick={exportCsv}><Download size={14} />CSV</Button><Button size="sm" onClick={() => setRecording(true)}>Record top-up</Button></div>} />
+      <AdminPageHeader title="Money put in" description="Your own money into the business: supplier top-ups and what was already there at launch. Not customer money." action={<div className="flex gap-2"><Link to="/admin/finance"><Button variant="ghost" size="sm"><ArrowLeft size={14} />Finance</Button></Link><Button variant="ghost" size="sm" onClick={exportCsv}><Download size={14} />CSV</Button><Button size="sm" onClick={() => setRecording(true)}>Record top-up</Button></div>} />
 
       <StatGrid cols={3}>
-        <Stat loading={loading} label="Top-ups" value={<Money value={totals.topups} />} note={totals.business ? `${formatGHS(totals.business)} of it from the business account` : "into supplier floats"} icon={PiggyBank} tone="good" />
+        <Stat loading={loading} label="Top-ups" value={<Money value={totals.topups} />} note="into supplier floats" icon={PiggyBank} tone="good" />
         <Stat loading={loading} label="Charges on top-ups" value={<Money value={totals.fees} />} note="supplier fees, counted as a cost" />
         <Stat loading={loading} label="Carried in at launch" value={<Money value={totals.carried} />} note="already there on 12 Sept" tone="muted" />
       </StatGrid>
