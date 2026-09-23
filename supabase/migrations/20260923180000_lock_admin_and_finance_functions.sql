@@ -1,0 +1,10 @@
+-- Applied live via the Supabase connector on 23 Sep 2026 (migration lock_admin_and_finance_functions).
+-- phase1.caller_is_admin(p_actor, p_master): true for internal calls / service key, otherwise the
+--   caller must BE p_actor, be an active admin (master if required), and have a 2FA (aal2) session.
+-- finance_assert_admin / finance_assert_master now also require caller_is_admin -> covers all 23
+--   admin_* / finance_* actions that take p_actor.
+-- finance_post, finance_post_order, finance_post_deposit, finance_apply_paystack_settlement,
+--   finance_clear_paystack_refund, finance_note_supplier_balance: service_role only.
+-- finance_orders_trigger / finance_deposits_trigger: now SECURITY DEFINER.
+-- finance_overview / finance_pot: wrapped with an admin check (originals renamed *_unchecked, no public access).
+-- admin_role: answers only for yourself or for admins.
