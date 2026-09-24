@@ -18,7 +18,7 @@ import { useAuth } from "@/store/auth-context";
 
 interface Application { id: string; user_id: string; full_name: string; phone: string; whatsapp: string | null; town: string | null; pitch: string | null; status: "pending" | "approved" | "declined"; decline_reason: string | null; created_at: string; reviewed_at: string | null }
 interface Agent { id: string; user_id: string; slug: string; store_name: string; status: string; paid_until: string | null; earnings_balance: number; created_at: string }
-interface AgentStats { orders: number; sales: number; own: number; earned: number }
+interface AgentStats { orders: number; sales: number; salesCount: number; own: number; ownCount: number; earned: number }
 interface Promo { id: string; name: string; percent_off: number; starts_at: string; ends_at: string | null; max_uses: number | null; uses: number; is_active: boolean }
 interface Plan { monthly_price: number; payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number; popup_delay_seconds: number }
 type Tab = "overview" | "applications" | "agents" | "subscriptions" | "payouts" | "promos" | "launch";
@@ -72,7 +72,7 @@ export default function AdminAgents() {
     setPayouts(po.data ?? []); setSubs(sp.data ?? []); setGrants(gr.data ?? []);
     const { data: ao } = await db().from("orders").select("agent_id, amount, agent_margin, status, user_id").not("agent_id", "is", null).eq("payment_status", "succeeded").limit(5000);
     const st: Record<string, AgentStats> = {}; const owner = new Map<string, string>((g.data ?? []).map((x: Agent) => [x.id, x.user_id]));
-    for (const o of ao ?? []) { const k = o.agent_id as string; const self = o.user_id === owner.get(k) && Number(o.agent_margin ?? 0) === 0; st[k] ??= { orders: 0, sales: 0, own: 0, earned: 0 }; st[k].orders += 1; if (self) st[k].own += Number(o.amount); else { st[k].sales += Number(o.amount); if (o.status === "delivered") st[k].earned += Number(o.agent_margin ?? 0); } }
+    for (const o of ao ?? []) { const k = o.agent_id as string; const self = o.user_id === owner.get(k) && Number(o.agent_margin ?? 0) === 0; st[k] ??= { orders: 0, sales: 0, salesCount: 0, own: 0, ownCount: 0, earned: 0 }; st[k].orders += 1; if (self) { st[k].own += Number(o.amount); st[k].ownCount += 1; } else { st[k].salesCount += 1; st[k].sales += Number(o.amount); if (o.status === "delivered") st[k].earned += Number(o.agent_margin ?? 0); } }
     setAgentStats(st);
     setApps(a.data ?? []); setAgents(g.data ?? []); setPromos(p.data ?? []);
     for (const row of s.data ?? []) { if (row.key === "agents_launched") setLaunched(Boolean(row.value)); if (row.key === "agent_plan") { setPlan(row.value); setPlanDraft(row.value); } }
@@ -216,8 +216,8 @@ export default function AdminAgents() {
                 </div>
                 <div className="mt-1.5 grid grid-cols-4 gap-2 text-[11px]">
                   <div><p className="text-faint-foreground">Orders</p><p className="font-semibold tabular-nums text-foreground">{st?.orders ?? 0}</p></div>
-                  <div><p className="text-faint-foreground">Store sales</p><p className="font-semibold tabular-nums text-foreground">{formatGHS(st?.sales ?? 0)}</p></div>
-                  <div><p className="text-faint-foreground">Own buys</p><p className="font-semibold tabular-nums text-foreground">{formatGHS(st?.own ?? 0)}</p></div>
+                  <div><p className="text-faint-foreground">Store sales</p><p className="font-semibold tabular-nums text-foreground">{formatGHS(st?.sales ?? 0)}</p><p className="text-[11px] text-faint-foreground">{st?.salesCount ?? 0} {(st?.salesCount ?? 0) === 1 ? "order" : "orders"}</p></div>
+                  <div><p className="text-faint-foreground">Own buys</p><p className="font-semibold tabular-nums text-foreground">{formatGHS(st?.own ?? 0)}</p><p className="text-[11px] text-faint-foreground">{st?.ownCount ?? 0} {(st?.ownCount ?? 0) === 1 ? "order" : "orders"}</p></div>
                   <div><p className="text-faint-foreground">Balance</p><p className={`font-semibold tabular-nums ${Number(g.earnings_balance) > 0 ? "text-primary-glow" : "text-foreground"}`}>{formatGHS(Number(g.earnings_balance))}</p></div>
                 </div>
               </li>); })}
