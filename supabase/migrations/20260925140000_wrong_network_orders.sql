@@ -1,0 +1,7 @@
+-- Applied live 25 Sep 2026 (migration wrong_network_orders).
+-- admin_resolution_status gains 'wrong_network'. Trigger zz_orders_wrong_network_trg tags any paid order
+-- our pre-send check stops for a network/prefix mismatch. phase1.network_for_prefix(phone).
+-- phase1.order_fix_recipient(reference, phone, email) (anon/authenticated): customer supplies the correct
+-- number. Requires the checkout email (guest) or the signed-in owner (account); only for paid wrong_network
+-- orders never sent to a supplier; new number must be on the bundle's network; 5 tries/day; resend is
+-- automatic via the DBH resend loop. No customer refund path.

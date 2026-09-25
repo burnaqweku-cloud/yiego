@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Clock, CreditCard, Loader2, Search, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Clock, CreditCard, Loader2, Search, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 import Seo from "@/components/seo/Seo";
 import DeliveryProgress from "@/components/shop/DeliveryProgress";
 import { metaFor } from "@/lib/site";
@@ -25,6 +26,7 @@ interface PublicOrderStatus {
   deliveryStatus: string;
   createdAt: string;
   updatedAt: string;
+  fix?: { enteredNetwork: string | null; wantedNetwork: string | null; identity: "account" | "email" } | null;
 }
 
 // Order references the guest has looked up on THIS device. Lets someone who
@@ -57,6 +59,7 @@ function statusLabel(status?: string) {
     case "pending_supplier":
     case "in_progress": return "In progress";
     case "awaiting_verification": return "Awaiting verification";
+    case "wrong_network": return "Wrong network";
     case "waiting_for_payment":
     case "awaiting_payment":
     case "pending": return "Waiting for payment";
@@ -71,6 +74,24 @@ function statusLabel(status?: string) {
 
 export default function TrackOrder() {
   const { isAuthenticated } = useAuth();
+  const [fixPhone, setFixPhone] = useState(""); const [fixEmail, setFixEmail] = useState(""); const [fixing, setFixing] = useState(false);
+  const FIX_ERRORS: Record<string, string> = {
+    not_allowed: "We couldn't confirm this order is yours. Use the email you paid with.",
+    still_wrong_network: "That number isn't on the right network either. Check the first three digits.",
+    invalid_phone: "Enter a valid 10-digit number starting with 0.",
+    same_number: "That's the same number. Enter the correct one.",
+    number_has_open_order: "That number already has an order in progress. Wait for it to finish first.",
+    too_many_attempts: "Too many tries. Please contact support with your order reference.",
+    not_fixable: "This order can no longer be changed here.",
+  };
+  const submitFix = async (order: PublicOrderStatus) => {
+    setFixing(true);
+    const { error } = await (supabase as unknown as { schema: (s: string) => { rpc: (f: string, a: Record<string, unknown>) => Promise<{ error: { message: string } | null }> } }).schema("phase1").rpc("order_fix_recipient", { p_reference: order.reference, p_phone: fixPhone, p_email: order.fix?.identity === "email" ? fixEmail : null });
+    setFixing(false);
+    if (error) { const key = Object.keys(FIX_ERRORS).find((k) => error.message.includes(k)); return toast.error(key ? FIX_ERRORS[key] : "Couldn't update the number. Please try again."); }
+    toast.success("Number updated. Your bundle is being sent now.");
+    setFixPhone(""); void lookup(order.reference);
+  };
   const [searchParams] = useSearchParams();
   const [reference, setReference] = useState(searchParams.get("reference") ?? "");
   const [loading, setLoading] = useState(false);
@@ -184,7 +205,20 @@ export default function TrackOrder() {
             {order && <div className="mt-6 rounded-[22px] border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[12px] text-faint-foreground">Order reference</p><p className="font-display text-xl font-semibold text-white">{order.reference}</p></div><Badge variant={order.orderStatus === "completed" ? "success" : order.orderStatus === "awaiting_verification" ? "mint" : "amber"}>{order.orderStatus === "awaiting_verification" ? <Clock size={12} /> : <ShieldCheck size={12} />}{statusLabel(order.orderStatus)}</Badge></div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">{[["Network", order.network ?? "—"],["Bundle", order.product ?? "—"],["Recipient", order.recipient],["Payment", statusLabel(order.paymentStatus)],["Amount", formatGHS(Number(order.amount))],["Delivery", statusLabel(order.deliveryStatus)]].map(([label, value]) => <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">{label}</p><p className="mt-1 text-sm font-semibold capitalize text-foreground">{value}</p></div>)}</div>
-              {order.orderStatus === "awaiting_verification" ? (
+              {order.orderStatus === "wrong_network" && order.fix ? (
+                <div className="mt-4 rounded-2xl border border-amber/30 bg-amber/[0.08] p-4">
+                  <div className="flex items-center gap-2"><AlertTriangle size={14} className="text-amber" /><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber">Wrong network</p></div>
+                  <p className="mt-2 text-sm font-semibold text-white">This number isn't on {order.fix.wantedNetwork ?? "the network you chose"}.</p>
+                  <p className="mt-2 text-sm leading-6 text-foreground">You bought {order.product ?? "this bundle"}, but the number ending {order.recipient.slice(-3)} is {order.fix.enteredNetwork ? `a ${order.fix.enteredNetwork} line` : "not on that network"}, so it can't be delivered there. Enter the correct {order.fix.wantedNetwork ?? ""} number and we'll send it straight away.</p>
+                  <div className="mt-3 space-y-2">
+                    <input value={fixPhone} onChange={(e) => setFixPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" placeholder={`Correct ${order.fix.wantedNetwork ?? ""} number`} className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-faint-foreground" />
+                    {order.fix.identity === "email" && <input value={fixEmail} onChange={(e) => setFixEmail(e.target.value)} type="email" autoCapitalize="none" placeholder="Email you paid with" className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-faint-foreground" />}
+                    {order.fix.identity === "account" && !isAuthenticated && <p className="text-[12px] text-muted-foreground">Sign in to the account you ordered with to change the number.</p>}
+                    <Button className="w-full" disabled={fixing || fixPhone.length !== 10 || (order.fix.identity === "email" && !fixEmail) || (order.fix.identity === "account" && !isAuthenticated)} onClick={() => void submitFix(order)}>{fixing ? "Sending…" : "Send to this number"}</Button>
+                  </div>
+                  <p className="mt-3 text-[12px] leading-5 text-muted-foreground">Bundles can only go to a number on the network you selected. Please check it carefully: once a bundle is delivered it can't be reversed or refunded.</p>
+                </div>
+              ) : order.orderStatus === "awaiting_verification" ? (
                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                   <div className="flex items-center gap-2"><Clock size={14} className="text-primary-glow" /><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-glow">MTN number verification</p></div>
                   <p className="mt-2 text-sm font-semibold text-white">Your order hasn't failed — it's on hold while MTN verifies the number.</p>

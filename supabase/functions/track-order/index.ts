@@ -2,11 +2,19 @@ import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { AWAITING_VERIFICATION, AWAITING_VERIFICATION_CUSTOMER_MESSAGE } from "../_shared/verification.ts";
 
+const PREFIXES: Record<string, string[]> = { MTN: ["024","025","053","054","055","059"], Telecel: ["020","050"], AirtelTigo: ["026","027","056","057"] };
+function networkForPrefix(phone: string | null) {
+  const d = (phone ?? "").replace(/\D/g, ""); const local = d.startsWith("233") ? `0${d.slice(3)}` : d;
+  for (const [n, list] of Object.entries(PREFIXES)) if (list.includes(local.slice(0, 3))) return n;
+  return null;
+}
+
 function customerDeliveryStatus(orderStatus: string, paymentStatus: string, adminStatus: string | null) {
   if (paymentStatus !== "succeeded") return "waiting_for_payment";
   // An MTN number under first-time verification is held, not failed — this
   // outranks whatever the lifecycle status says.
   if (adminStatus === AWAITING_VERIFICATION) return AWAITING_VERIFICATION;
+  if (adminStatus === "wrong_network") return "wrong_network";
   switch (orderStatus) {
     case "delivered": return "completed";
     case "refunded": return "refunded";
@@ -19,6 +27,7 @@ function customerDeliveryStatus(orderStatus: string, paymentStatus: string, admi
 function customerMessage(orderStatus: string, paymentStatus: string, adminStatus: string | null, paidAt: string | null, updatedAt: string, who = "DataYego support") {
   if (paymentStatus !== "succeeded") return "Complete payment to continue this order.";
   if (adminStatus === AWAITING_VERIFICATION) return AWAITING_VERIFICATION_CUSTOMER_MESSAGE;
+  if (adminStatus === "wrong_network") return "The number you entered is not on the network you chose, so this bundle can't be delivered to it. Enter the correct number below and we'll send it straight away.";
   if (orderStatus === "delivered") return "Your data order has been completed.";
   if (orderStatus === "refunded") return "Your payment has been refunded.";
   if (orderStatus === "cancelled") return "This order has been cancelled.";
@@ -49,7 +58,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("order_reference, recipient_phone, amount, currency, status, payment_status, admin_resolution_status, paid_at, created_at, updated_at, data_products(name, capacity_gb), networks(name), agents(slug, store_name)")
+      .select("order_reference, recipient_phone, amount, currency, status, payment_status, admin_resolution_status, paid_at, created_at, updated_at, user_id, data_products(name, capacity_gb), networks(name), agents(slug, store_name)")
       .eq("order_reference", reference)
       .limit(1)
       .maybeSingle();
@@ -78,6 +87,8 @@ Deno.serve(async (req) => {
         createdAt: order.created_at,
         updatedAt: order.updated_at,
         store: order.agents ? { slug: order.agents.slug, name: order.agents.store_name } : null,
+        // Wrong-network orders: the customer can correct the number. Guests prove it with the checkout email; accounts by being signed in.
+        fix: deliveryStatus === "wrong_network" ? { enteredNetwork: networkForPrefix(order.recipient_phone), wantedNetwork: order.networks?.name ?? null, identity: order.user_id ? "account" : "email" } : null,
       },
     });
   } catch (error) {
