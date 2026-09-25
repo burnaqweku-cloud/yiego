@@ -27,12 +27,12 @@ export default function PlanPicker({ quote, verb = "Pay", extending = false }: {
         {plans.map((p: PlanOption) => {
           const on = p.months === months; const promo = p.promo_id && quote.promo;
           return (
-            <button key={p.months} type="button" onClick={() => setMonths(p.months)} className={`relative rounded-2xl border p-3 text-left transition ${on ? "border-primary bg-primary/12" : "border-white/[0.1] bg-white/[0.02]"}`}>
+            <button key={p.months} type="button" onClick={() => setMonths(p.months)} className={`relative min-w-0 rounded-2xl border p-2.5 pt-3.5 text-left transition sm:p-3 ${on ? "border-primary bg-primary/12" : "border-white/[0.1] bg-white/[0.02]"}`}>
               {p.saving_pct > 0 && <span className="absolute -top-2 right-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-[#04120c]">Save {p.saving_pct}%</span>}
               {promo && <span className="absolute -top-2 right-2 rounded-full bg-amber px-2 py-0.5 text-[10px] font-bold text-[#1a1200]">{quote.promo!.percent_off}% off</span>}
-              <p className="text-[12px] text-muted-foreground">{p.months === 1 ? "1 month" : `${p.months} months`}</p>
-              <p className="mt-1 text-[18px] font-semibold leading-tight text-foreground">{formatGHS(p.pay_now)}</p>
-              <p className="text-[10.5px] text-faint-foreground">{p.months === 1 ? (promo ? `normally ${formatGHS(p.list_price)}` : "per month") : `${formatGHS(p.per_month)} / month`}</p>
+              <p className="whitespace-nowrap text-[12px] text-muted-foreground">{p.months === 1 ? "1 month" : `${p.months} months`}</p>
+              <p className="mt-1 whitespace-nowrap font-semibold leading-tight tabular-nums text-foreground"><span className="text-[10.5px] font-medium text-muted-foreground">GHS </span><span className="text-[17px] sm:text-[19px]">{Number(p.pay_now).toFixed(2)}</span></p>
+              <p className="whitespace-nowrap text-[10.5px] tabular-nums text-faint-foreground">{p.months === 1 ? (promo ? `was ${Number(p.list_price).toFixed(2)}` : "per month") : `${Number(p.per_month).toFixed(2)}/mo`}</p>
             </button>
           );
         })}
