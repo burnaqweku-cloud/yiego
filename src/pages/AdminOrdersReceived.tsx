@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Download, Search } from "lucide-react";
+import { ArrowLeft, Download, RotateCcw, Search } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Money, Panel, Pill, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
@@ -36,13 +38,24 @@ export default function AdminOrdersReceived() {
   const stage = (params.get("stage") as Stage) || "all";
   const set = (k: string, v: string) => { const p = new URLSearchParams(params); p.set(k, v); setParams(p, { replace: true }); };
 
+  const [tick, setTick] = useState(0);
+  const [retrying, setRetrying] = useState<string | null>(null);
+  // Same retry as the order page: re-sends a failed paid order to the supplier.
+  const retry = async (o: Row) => {
+    setRetrying(o.id);
+    const r = await supabase.functions.invoke<{ error?: string; result?: { status?: string; reason?: string } }>("admin-order-action", { body: { action: "retry", orderReference: o.order_reference } });
+    setRetrying(null);
+    if (r.error || r.data?.error) return toast.error(r.data?.error ?? r.error?.message ?? "Retry failed.");
+    if (r.data?.result?.status === "failed_needs_review") return toast.error(`Not sent: ${(r.data.result.reason ?? "supplier refused").replace(/_/g, " ")}`);
+    toast.success(`${o.order_reference} sent to the supplier.`); setTick((t) => t + 1);
+  };
   useEffect(() => {
     let mounted = true; setLoading(true);
     db().from("orders").select("id, order_reference, recipient_phone, amount, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(name)")
       .eq("payment_status", "succeeded").gte("paid_at", startOfDay(new Date(from)).toISOString()).lte("paid_at", endOfDay(new Date(to)).toISOString()).order("paid_at", { ascending: false }).limit(5000)
       .then((r: { data: Row[] | null }) => { if (mounted) { setRows(r.data ?? []); setLoading(false); } });
     return () => { mounted = false; };
-  }, [from, to]);
+  }, [from, to, tick]);
 
   const inBucket = (o: Row) => bucket === "all" || (bucket === "delivered" && o.status === "delivered") || (bucket === "refunded" && o.status === "refunded") || (bucket === "waiting" && !["delivered", "refunded", "cancelled"].includes(o.status));
   const inSource = (o: Row) => source === "all" || (source === "agents" ? o.agent_id != null : o.agent_id == null);
@@ -86,7 +99,7 @@ export default function AdminOrdersReceived() {
                 <p className="text-[12.5px] font-semibold text-foreground"><CopyRef value={o.order_reference} /> <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
                 <p className="text-[11px] text-faint-foreground">paid {formatAdminDate(o.paid_at)} · {age(o.paid_at)} ago · {reasonOf(o)}</p>
               </div>
-              <div className="text-right"><p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</p><Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status === "refunded" ? "refunded" : o.admin_resolution_status === "awaiting_verification" ? "verification" : o.status.startsWith("failed") ? "review" : "in progress"}</Pill></div>
+              <div className="flex flex-col items-end gap-1.5 text-right"><p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</p><Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status === "refunded" ? "refunded" : o.admin_resolution_status === "awaiting_verification" ? "verification" : o.admin_resolution_status === "wrong_network" ? "wrong network" : o.status.startsWith("failed") ? "review" : "in progress"}</Pill>{o.status.startsWith("failed") && o.admin_resolution_status !== "wrong_network" && <button type="button" disabled={retrying === o.id} onClick={() => void retry(o)} className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-[11.5px] font-medium text-foreground disabled:opacity-50"><RotateCcw size={11} />{retrying === o.id ? "Sending…" : "Retry"}</button>}</div>
             </li>))}
         </ul>
       </Panel>
