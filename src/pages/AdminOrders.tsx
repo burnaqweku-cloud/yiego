@@ -149,7 +149,7 @@ export default function AdminOrders() {
     return orders.filter((order) => {
       const customerStatus = displayedStatus(order);
       const supplierStatus = normalizedSupplierStatus(order);
-      const matchesLifecycle = lifecycleFilter === "all" || (lifecycleFilter === "in_progress" && PENDING_STATUSES.includes(order.status)) || (lifecycleFilter === "failed_group" && FAILED_STATUSES.includes(order.status) && order.admin_resolution_status !== WRONG_NETWORK) || (lifecycleFilter === "payment_failed" && isPaymentFailed(order)) || (lifecycleFilter === "agent_orders" && order.order_reference.startsWith("AG-")) || (order.status === lifecycleFilter && !(lifecycleFilter === "failed" && isPaymentFailed(order)));
+      const matchesLifecycle = lifecycleFilter === "all" || (lifecycleFilter === "in_progress" && PENDING_STATUSES.includes(order.status)) || (lifecycleFilter === "failed_group" && FAILED_STATUSES.includes(order.status) && (customerFilter === WRONG_NETWORK || order.admin_resolution_status !== WRONG_NETWORK)) || (lifecycleFilter === "payment_failed" && isPaymentFailed(order)) || (lifecycleFilter === "agent_orders" && order.order_reference.startsWith("AG-")) || (order.status === lifecycleFilter && !(lifecycleFilter === "failed" && isPaymentFailed(order)));
       const matchesPayment = paymentFilter === "all" || order.payment_status === paymentFilter;
       const matchesSupplier = supplierFilter === "all" || supplierStatus === supplierFilter;
       const matchesRoute = routeFilter === "all" || routeLabel(order) === routeFilter;
@@ -241,11 +241,11 @@ export default function AdminOrders() {
     <AdminPageHeader eyebrow="Operations" title="Order management" description="Search, filter and manage every stage of payment, fulfilment, delivery and customer communication." />
     <OrdersPulse />
     <AdminStatStrip loading={loading} items={[
-      { label: "All", value: orders.length, active: lifecycleFilter === "all", onClick: () => setLifecycleFilter("all") },
-      { label: "In progress", value: pending, active: lifecycleFilter === "in_progress", onClick: () => setLifecycleFilter("in_progress") },
-      { label: "Delivered", value: delivered, tone: "success", active: lifecycleFilter === "delivered", onClick: () => setLifecycleFilter("delivered") },
-      { label: "Failed delivery", value: failed, tone: failed ? "warning" : "default", active: lifecycleFilter === "failed_group", onClick: () => setLifecycleFilter("failed_group") },
-      { label: "Payment failed", value: paymentFailed, active: lifecycleFilter === "payment_failed", onClick: () => setLifecycleFilter("payment_failed") },
+      { label: "All", value: orders.length, active: lifecycleFilter === "all", onClick: () => { setLifecycleFilter("all"); setCustomerFilter("all"); } },
+      { label: "In progress", value: pending, active: lifecycleFilter === "in_progress", onClick: () => { setLifecycleFilter("in_progress"); setCustomerFilter("all"); } },
+      { label: "Delivered", value: delivered, tone: "success", active: lifecycleFilter === "delivered", onClick: () => { setLifecycleFilter("delivered"); setCustomerFilter("all"); } },
+      { label: "Failed delivery", value: failed, tone: failed ? "warning" : "default", active: lifecycleFilter === "failed_group", onClick: () => { setLifecycleFilter("failed_group"); setCustomerFilter("all"); } },
+      { label: "Payment failed", value: paymentFailed, active: lifecycleFilter === "payment_failed", onClick: () => { setLifecycleFilter("payment_failed"); setCustomerFilter("all"); } },
       { label: "Wrong network", value: wrongNetwork, tone: wrongNetwork ? "warning" : "default", active: customerFilter === WRONG_NETWORK, onClick: () => { setLifecycleFilter("all"); setCustomerFilter(customerFilter === WRONG_NETWORK ? "all" : WRONG_NETWORK); } },
       { label: "Awaiting verification", value: verificationQueue.length, active: customerFilter === AWAITING_VERIFICATION, onClick: () => { setLifecycleFilter("all"); setCustomerFilter(customerFilter === AWAITING_VERIFICATION ? "all" : AWAITING_VERIFICATION); } },
     ]} />
