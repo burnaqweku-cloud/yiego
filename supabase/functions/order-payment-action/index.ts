@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
+import { paystackSubaccount } from "../_shared/paystack.ts";
 import { sendOrderConfirmation } from "../_shared/email.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
 import { fulfillOrder } from "../_shared/fulfillment.ts";
@@ -80,7 +81,7 @@ Deno.serve(async (req) => {
       const baseAmount = Number(order.amount);
       const feeAmount = paystackFee(baseAmount);
       const chargeAmount = paystackTotal(baseAmount);
-      const response = await fetch("https://api.paystack.co/transaction/initialize", { method: "POST", headers: { Authorization: `Bearer ${Deno.env.get("PAYSTACK_SECRET_KEY")}`, "Content-Type": "application/json" }, body: JSON.stringify({ email: auth.user.email, amount: Math.round(chargeAmount * 100), currency: "GHS", reference, callback_url: `${(Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL") ?? "").replace(/\/$/, "")}/payment/success?reference=${encodeURIComponent(orderReference)}&type=order`, metadata: { purpose: "guest_data_purchase", checkoutType: "prepared_order", orderId: order.id, orderReference, payerUserId: auth.user.id, recipientPhone: order.recipient_phone, baseAmount, feeAmount } }) });
+      const response = await fetch("https://api.paystack.co/transaction/initialize", { method: "POST", headers: { Authorization: `Bearer ${Deno.env.get("PAYSTACK_SECRET_KEY")}`, "Content-Type": "application/json" }, body: JSON.stringify({ email: auth.user.email, amount: Math.round(chargeAmount * 100), currency: "GHS", reference, ...(paystackSubaccount() ? { subaccount: paystackSubaccount(), bearer: "subaccount" } : {}), callback_url: `${(Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL") ?? "").replace(/\/$/, "")}/payment/success?reference=${encodeURIComponent(orderReference)}&type=order`, metadata: { purpose: "guest_data_purchase", checkoutType: "prepared_order", orderId: order.id, orderReference, payerUserId: auth.user.id, recipientPhone: order.recipient_phone, baseAmount, feeAmount } }) });
       const payload = await response.json();
       if (!response.ok || !payload?.status) return json({ error: payload?.message ?? "Could not initialize Paystack transaction" }, response.status || 502);
       const { error } = await supabase.from("payment_intents").insert({ provider: "paystack", purpose: "guest_data_purchase", status: "pending", user_id: auth.user.id, order_id: order.id, amount: chargeAmount, currency: "GHS", provider_reference: reference, authorization_url: payload.data.authorization_url, metadata: { accessCode: payload.data.access_code, orderReference, checkoutType: "prepared_order", payerUserId: auth.user.id, baseAmount, feeAmount } });
