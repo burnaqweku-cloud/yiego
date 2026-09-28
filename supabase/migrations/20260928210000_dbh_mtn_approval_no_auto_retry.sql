@@ -1,0 +1,4 @@
+-- Applied live 28 Sep 2026 (migration dbh_mtn_approval_no_auto_retry).
+-- Replaces the auto-retry: DBH "not approved, saved for approval" refusals go to processing +
+-- awaiting_verification (MTN verification queue) with no scheduled re-send, exactly like the
+-- silent-refund verification orders. Handled from the queue as before.
