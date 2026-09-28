@@ -1,0 +1,6 @@
+-- Applied live 28 Sep 2026 (migration dbh_mtn_approval_auto_retry).
+-- Trigger zz_orders_dbh_mtn_approval_trg: when DBH refuses with "<number> is not approved and has been
+-- automatically saved for approval", the order goes to processing + awaiting_verification (MTN queue)
+-- and supplier_retry_after = now()+3h so the DBH resend loop re-sends it. Max 24 tries (3 days), then
+-- back to Needs review. When a re-send finally gets a supplier purchase id, the verification flag clears
+-- so normal status sync tracks it to delivered.
