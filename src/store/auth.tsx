@@ -6,6 +6,8 @@ import {
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { deviceHash } from "@/lib/device";
+import { clearInvite, pendingInvite, recordDevice } from "@/lib/referrals";
 import { AuthContext, type AuthValue } from "@/store/auth-context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -22,6 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (nextSession && (_event === "SIGNED_IN" || _event === "INITIAL_SESSION")) void recordDevice();
       setSession(nextSession);
       setLoading(false);
     });
@@ -55,11 +58,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             data: {
               full_name: input.fullName,
               phone: input.phone,
+              ref: pendingInvite() ?? undefined,
+              device: await deviceHash().catch(() => undefined),
             },
           },
         });
 
         if (error) throw error;
+        clearInvite();
         // Fire a welcome email (best-effort). Only possible when signup returns
         // a session (auto-confirm on); it never blocks or fails the signup.
         if (data.session) {

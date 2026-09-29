@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { pendingInvite } from "@/lib/referrals";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle2, Eye, EyeOff, Loader2, Lock, Mail, Phone, UserRound } from "lucide-react";
 import { toast } from "sonner";
@@ -127,6 +128,7 @@ export default function Auth() {
                 <h2 className="mt-1 font-display text-2xl font-semibold text-white">{mode === "login" ? "Sign in" : "Join DataYego"}</h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{mode === "login" ? "Use your email and password to continue." : "Create an account to activate your wallet and order history."}</p>
                 <form className="mt-7 space-y-4" onSubmit={submit}>
+                  {mode === "signup" && pendingInvite() && <div className="rounded-xl border border-primary-glow/25 bg-primary/[0.08] px-3.5 py-2.5 text-[12.5px] leading-5 text-foreground"><b>You've been invited.</b> Sign up and your first data bundle is at agent price.</div>}
                   {mode === "signup" && <>
                     <AuthField icon={UserRound} label="Full name"><input className="h-12 min-w-0 flex-1 bg-transparent text-sm text-white outline-none" value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Your name" autoComplete="name" required /></AuthField>
                     <AuthField icon={Phone} label="Ghana phone number"><input className="h-12 min-w-0 flex-1 bg-transparent text-sm text-white outline-none" value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="0244001122" inputMode="tel" autoComplete="tel" required /></AuthField>

@@ -10,6 +10,7 @@ import DeliveryProgress from "@/components/shop/DeliveryProgress";
 import { useWallet } from "@/store/wallet";
 import { useProfile } from "@/store/profile";
 import { useAuth } from "@/store/auth-context";
+import { friendPriceEligible, recordDevice } from "@/lib/referrals";
 import { formatGHS } from "@/lib/format";
 import { paystackFee } from "@/lib/fees";
 import {
@@ -137,6 +138,8 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   const [network, setNetwork] = useState<Network | null>(null);
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [products, setProducts] = useState<Phase1Product[]>([]);
+  // Referred customer, first order: agent price ("friend price"). Decided by the server; this only affects what is displayed.
+  const [friendPrice, setFriendPrice] = useState(false);
   const [networkRows, setNetworkRows] = useState<Phase1NetworkRow[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
@@ -153,7 +156,8 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     setStep("supplier"); setNetwork(null); setBundle(null); setPhone(profile.phone);
     setGuestEmail(user?.email ?? profile.email); setPaymentMethod("wallet");
     setActiveOrder(null); setHighlightOrder(null); setLookupReference(""); setReceiptRef(null);
-  }, [open, profile.email, profile.phone, user?.email]);
+    if (open && auth.isAuthenticated && !agent) { void friendPriceEligible().then(setFriendPrice); void recordDevice(); } else setFriendPrice(false);
+  }, [open, profile.email, profile.phone, user?.email, auth.isAuthenticated, agent]);
 
   useEffect(() => {
     let mounted = true;
@@ -239,7 +243,8 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       id: product.app_product_code ?? product.id,
       size: product.name.replace(/^.*?—\s*/, ""),
       validity: product.validity ?? "Supplier terms",
-      price: agent ? Number(agent.prices[product.id] ?? product.customer_price) : Number(product.customer_price),
+      price: agent ? Number(agent.prices[product.id] ?? product.customer_price) : friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price),
+      wasPrice: !agent && friendPrice && product.agent_price != null && Number(product.agent_price) < Number(product.customer_price) ? Number(product.customer_price) : undefined,
       tag: !agent && Number(product.customer_price) <= 10 ? "Popular" : !agent && Number(product.customer_price) >= 40 ? "Best value" : undefined,
       unavailable: product.is_paused ? (product.pause_reason ?? "Currently unavailable. Please try again later.") : undefined,
     }));
@@ -340,7 +345,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       {pendingOrders.length > 0 && <SelectRow onClick={() => setStep("pending")} leading={<span className="onyx-tile-icon"><ListChecks size={18} /></span>} title="Pending orders" subtitle={`${pendingOrders.length} active order${pendingOrders.length === 1 ? "" : "s"} to continue or track`} trailing={<ChevronRight size={18} className="text-faint-foreground" />} />}</>}
     </div></>}
 
-    {step === "bundle" && network && <><FlowHeader title={`${network.name} bundles`} subtitle="Choose a data bundle" onBack={() => setStep("network")} onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">{bundlesFor(network.id).map((b) => <SelectRow key={b.id} disabled={Boolean(b.unavailable)} onClick={() => { setBundle(b); setStep("phone"); }} leading={<span className="onyx-tile-icon"><Wifi size={18} /></span>} title={<span className="flex items-center gap-2">{b.size}{b.tag && !b.unavailable && <BundleTag tag={b.tag} />}</span>} subtitle={b.unavailable ?? validityLabel(b.validity)} trailing={b.unavailable ? <span className="text-[11px] font-semibold text-amber">Unavailable</span> : <span className="font-display text-[15px] font-semibold text-white">{formatGHS(b.price)}</span>} />)}</div></>}
+    {step === "bundle" && network && <><FlowHeader title={`${network.name} bundles`} subtitle="Choose a data bundle" onBack={() => setStep("network")} onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">{friendPrice && <div className="rounded-xl border border-primary-glow/25 bg-primary/[0.08] px-3.5 py-2.5 text-[12.5px] leading-5 text-foreground"><b>Friend price on your first order.</b> You were invited, so every bundle below is at agent price this once.</div>}{bundlesFor(network.id).map((b) => <SelectRow key={b.id} disabled={Boolean(b.unavailable)} onClick={() => { setBundle(b); setStep("phone"); }} leading={<span className="onyx-tile-icon"><Wifi size={18} /></span>} title={<span className="flex items-center gap-2">{b.size}{b.tag && !b.unavailable && <BundleTag tag={b.tag} />}</span>} subtitle={b.unavailable ?? validityLabel(b.validity)} trailing={b.unavailable ? <span className="text-[11px] font-semibold text-amber">Unavailable</span> : <span className="text-right"><span className="font-display text-[15px] font-semibold text-white">{formatGHS(b.price)}</span>{b.wasPrice != null && <span className="block text-[10.5px] text-faint-foreground line-through">{formatGHS(b.wasPrice)}</span>}</span>} />)}</div></>}
 
     {step === "phone" && network && bundle && <><FlowHeader title="Recipient" subtitle={`${network.name} · ${bundle.size}`} onBack={() => setStep("bundle")} onClose={onClose} /><div className="space-y-4 px-5 pb-2 pt-5"><div><label htmlFor="buydata-phone" className="text-[12px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">Phone number</label><input id="buydata-phone" className="onyx-field mt-2 text-[16px] tracking-wide" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="024 000 0000" />{phone.length > 0 && !phoneValid && <p className="mt-1.5 text-[12px] text-danger">Enter a valid 10-digit Ghana number.</p>}<p className="mt-2 text-[12px] leading-5 text-muted-foreground">Check this number carefully. It must be on {network.name}. A bundle sent to the wrong number can't be reversed or refunded.</p></div>{!isAuthenticated && <div><label htmlFor="buydata-email" className="text-[12px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">Email for receipt</label><input id="buydata-email" className="onyx-field mt-2" inputMode="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} /></div>}<div className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5"><div><p className="text-[13.5px] font-semibold">{network.name} · {bundle.size}</p><p className="text-[12px] text-faint-foreground">{validityLabel(bundle.validity)}</p></div><span className="font-display text-[16px] font-semibold">{formatGHS(bundle.price)}</span></div><ImportantNotice compact network={network.id} /></div><FlowFooter><button type="button" className="onyx-btn-primary w-full disabled:opacity-40" disabled={!phoneValid || (!isAuthenticated && !emailValid)} onClick={() => void continueFromPhone()}>Continue</button></FlowFooter></>}
 

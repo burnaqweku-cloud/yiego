@@ -9,6 +9,7 @@ import { useTheme } from "@/store/theme";
 import ProfileSheet from "@/components/sheets/ProfileSheet";
 import AppearanceSheet from "@/components/sheets/AppearanceSheet";
 import SignOutSheet from "@/components/sheets/SignOutSheet";
+import InviteCard from "@/components/account/InviteCard";
 
 type Sheet = "profile" | "appearance" | "signout" | null;
 
@@ -35,6 +36,7 @@ export default function Account() {
           <Button variant="soft" size="sm" onClick={() => setSheet("profile")}><Pencil size={15} /> Edit</Button>
         </div>
       </section>
+      <InviteCard />
 
       <section className="onyx-panel divide-y divide-white/5 overflow-hidden rounded-[24px] px-3">
         <button type="button" onClick={() => setSheet("profile")} className="flex w-full items-center gap-3 py-4 text-left">

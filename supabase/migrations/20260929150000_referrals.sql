@@ -1,0 +1,9 @@
+-- Applied live 29 Sep 2026 (migrations referrals_core, referrals_reward_engine).
+-- profiles.referral_code (unique, 6 chars), referred_by, referred_at. Tables user_devices, referrals
+-- (pending/rewarded/flagged/void/reversed, checks jsonb). handle_new_auth_user reads raw_user_meta_data
+-- ref + device and fixes the referrer at sign-up. record_device(hash). friend_price_eligible(user) /
+-- price_for_user(user, product): referred user's first paid order at agent_price, used by
+-- create_wallet_data_order, prepare_data_order and create-guest-data-payment. orders trigger
+-- zz_orders_referral_trg: on first delivered order run device / recipient / payer checks -> referral_pay
+-- (wallet credit 1.00 via ledger type referral_reward + finance other_expenses/customer_wallets) or flag;
+-- on refund -> referral_reverse. my_referrals(), my_friend_price(), admin_referral_action(id, action, note).

@@ -98,7 +98,10 @@ Deno.serve(async (req) => {
       agentSelf = Boolean(own);
     }
     const agentPrice = agent ? Number(product.agent_price ?? product.customer_price) : null;
-    const sellingPrice = agent ? (agentSelf ? Number(agentPrice) : Number(agent.prices?.[product.id] ?? product.customer_price)) : Number(product.customer_price);
+    // Referred customers: first purchase at agent price (decided in the database).
+    let friendPrice = false;
+    if (!agent && authenticatedUser) { const { data: fp } = await supabase.rpc("friend_price_eligible", { p_user: authenticatedUser.id }); friendPrice = fp === true; }
+    const sellingPrice = agent ? (agentSelf ? Number(agentPrice) : Number(agent.prices?.[product.id] ?? product.customer_price)) : (friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price));
     const agentMargin = agent && agentPrice != null ? (agentSelf ? 0 : Math.max(0, Math.round((sellingPrice - agentPrice) * 100) / 100)) : null;
 
     // The supplier the guest chose in the shop, if they chose one.
@@ -284,6 +287,7 @@ Deno.serve(async (req) => {
         baseAmount,
         feeAmount,
         agentId: agent?.id ?? null,
+        friendPrice,
       },
     });
 

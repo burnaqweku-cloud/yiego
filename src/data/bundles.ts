@@ -21,6 +21,8 @@ export interface Bundle {
   tag?: "Popular" | "Best value";
   /** Set by the admin: the bundle is listed but cannot be bought right now. */
   unavailable?: string;
+  /** Referred customer, first order: the normal price they are saving against. */
+  wasPrice?: number;
 }
 
 export const TOPUP_AMOUNTS = [20, 50, 100, 200, 500];
