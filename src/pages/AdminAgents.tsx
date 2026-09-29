@@ -260,20 +260,26 @@ export default function AdminAgents() {
         <Panel title="Payment requests" note="tap a request for the agent's details">
           <Rows empty={loading ? "Loading…" : payFilter === "waiting" ? "Nothing waiting. Agents' withdrawal requests appear here." : "No payments here."}>
             {visiblePayouts.map((p) => { const g = agentOf(p.agent_id); return (
-              <li key={p.id} className="py-2">
-                <div className="flex flex-wrap items-start gap-2">
-                  <div className="min-w-0 flex-1 cursor-pointer" onClick={() => g && navigate(`/admin/agents/${g.id}`)}>
-                    <p className="text-[12.5px] font-semibold text-foreground">{g?.store_name ?? "—"} <Pill tone={p.status === "paid" ? "good" : p.status === "rejected" ? "muted" : "warn"}>{p.status === "requested" ? "waiting" : p.status}</Pill></p>
-                    <p className="text-[11px] text-faint-foreground">{emails.get(g?.user_id ?? "") ?? "—"} · requested {formatAdminDate(p.created_at)}{p.paid_at ? ` · paid ${formatAdminDate(p.paid_at)}` : ""}{p.paid_reference ? ` · ref ${p.paid_reference}` : ""}{p.note ? ` · ${p.note}` : ""}</p>
-                    <div className="mt-1.5 grid grid-cols-4 gap-2 text-[11px]">
-                      <div><p className="text-faint-foreground">Requested</p><p className="font-semibold tabular-nums text-foreground">{formatGHS(Number(p.amount))}</p></div>
-                      <div><p className="text-faint-foreground">Fee</p><p className="font-semibold tabular-nums text-foreground">{formatGHS(Number(p.fee))}</p></div>
-                      <div><p className="text-faint-foreground">Send</p><p className="font-semibold tabular-nums text-primary-glow">{formatGHS(Number(p.net))}</p></div>
-                      <div><p className="text-faint-foreground">To MoMo</p><p className="font-semibold tabular-nums text-foreground">{p.momo_number}</p><p className="truncate text-faint-foreground">{p.momo_name ?? ""}</p></div>
-                    </div>
+              <li key={p.id} className="py-3">
+                <div className="cursor-pointer" onClick={() => g && navigate(`/admin/agents/${g.id}`)}>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="min-w-0 text-[13px] font-semibold leading-snug text-foreground">{g?.store_name ?? "—"}</p>
+                    <Pill tone={p.status === "paid" ? "good" : p.status === "rejected" ? "muted" : "warn"}>{p.status === "requested" ? "waiting" : p.status}</Pill>
                   </div>
-                  {(p.status === "requested" || p.status === "approved") && <div className="flex shrink-0 gap-1.5"><Button size="sm" onClick={() => { setPaying(p); setPayRef(""); }}>Mark paid</Button><Button size="sm" variant="quiet" onClick={() => { setRejecting(p); setRejectNote(""); }}>Reject</Button></div>}
+                  <p className="mt-0.5 break-words text-[11px] leading-snug text-faint-foreground">{emails.get(g?.user_id ?? "") ?? "—"}</p>
+                  <p className="text-[11px] leading-snug text-faint-foreground">Requested {formatAdminDate(p.created_at)}{p.paid_at ? ` · paid ${formatAdminDate(p.paid_at)}` : ""}{p.paid_reference ? ` · ref ${p.paid_reference}` : ""}</p>
+                  {p.note && <p className="text-[11px] leading-snug text-faint-foreground">{p.note}</p>}
+                  <div className="mt-2.5 grid grid-cols-3 gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5">
+                    <div className="min-w-0"><p className="text-[10.5px] text-faint-foreground">Requested</p><p className="truncate text-[12.5px] font-semibold tabular-nums text-foreground">{formatGHS(Number(p.amount))}</p></div>
+                    <div className="min-w-0"><p className="text-[10.5px] text-faint-foreground">Fee</p><p className="truncate text-[12.5px] font-semibold tabular-nums text-foreground">{formatGHS(Number(p.fee))}</p></div>
+                    <div className="min-w-0"><p className="text-[10.5px] text-faint-foreground">Send</p><p className="truncate text-[12.5px] font-semibold tabular-nums text-primary-glow">{formatGHS(Number(p.net))}</p></div>
+                  </div>
+                  <div className="mt-2 flex items-baseline justify-between gap-3 text-[12px]">
+                    <span className="shrink-0 text-faint-foreground">To MoMo</span>
+                    <span className="min-w-0 truncate text-right"><span className="font-semibold tabular-nums text-foreground">{p.momo_number}</span>{p.momo_name ? <span className="text-faint-foreground"> · {p.momo_name}</span> : null}</span>
+                  </div>
                 </div>
+                {(p.status === "requested" || p.status === "approved") && <div className="mt-3 flex gap-2"><Button size="sm" className="flex-1" onClick={() => { setPaying(p); setPayRef(""); }}>Mark paid</Button><Button size="sm" variant="quiet" onClick={() => { setRejecting(p); setRejectNote(""); }}>Reject</Button></div>}
               </li>); })}
           </Rows>
         </Panel>
