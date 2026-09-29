@@ -1,4 +1,6 @@
-import { ArrowRight, CreditCard } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, CreditCard, Gift } from "lucide-react";
+import InviteSheet from "@/components/referrals/InviteSheet";
 import Seo from "@/components/seo/Seo";
 import AgentShopCard from "@/components/agents/AgentShopCard";
 import { metaFor } from "@/lib/site";
@@ -37,6 +39,7 @@ function greeting(): string {
 }
 
 export default function Shop() {
+  const [inviteOpen, setInviteOpen] = useState(false);
   const ref = useReveal<HTMLDivElement>();
   const { profile } = useProfile();
   const { isAuthenticated } = useAuth();
@@ -73,6 +76,16 @@ export default function Shop() {
             Pay for someone&rsquo;s order
             <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
           </button>
+          <button
+            type="button"
+            onClick={() => setInviteOpen(true)}
+            className="group inline-flex items-center gap-2 text-[13.5px] font-semibold text-primary-glow"
+          >
+            <Gift size={15} aria-hidden="true" />
+            Invite &amp; earn
+            <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
+          </button>
+          <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />
 
           <AgentShopCard />
         </>

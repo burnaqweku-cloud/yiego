@@ -1,6 +1,7 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight, Gift, ShieldCheck } from "lucide-react";
+import InviteSheet from "@/components/referrals/InviteSheet";
 import { useReveal } from "@/hooks/useReveal";
 
 /**
@@ -17,6 +18,7 @@ import { useReveal } from "@/hooks/useReveal";
 const delay = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
 export default function Hero() {
+  const [inviteOpen, setInviteOpen] = useState(false);
   const ref = useReveal<HTMLElement>();
 
   return (
@@ -53,6 +55,13 @@ export default function Hero() {
             Choose a bundle for MTN, Telecel or AirtelTigo, enter the number, and pay how you like.
             Every order carries a reference you can track.
           </p>
+
+          <button type="button" onClick={() => setInviteOpen(true)} className="group mt-5 inline-flex items-center gap-2 rounded-full border border-primary-glow/25 bg-primary/[0.08] px-4 py-2 text-[13.5px] font-semibold text-primary-glow" data-reveal style={delay(190)}>
+            <Gift size={15} aria-hidden="true" />
+            Invite &amp; earn GHS 1.00 in data
+            <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
+          </button>
+          <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />
 
           <div
             className="mt-11 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row"
