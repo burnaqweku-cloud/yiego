@@ -1,0 +1,5 @@
+-- Applied live 29 Sep 2026 (migrations agent_fee_50_and_first_month_promo, agent_plan_quote_prospect_default).
+-- site_settings.agent_plan: monthly 50; plans 1m 50, 3m 135, 12m 480.
+-- agent_plan_quote(p_user uuid default auth.uid()): the launch promo applies only if p_user has no succeeded
+--   agent_subscription payment (first paid month). Null p_user = prospect view (promo shown).
+-- agent-subscribe and agent-reminders pass the agent's user id. help_articles.plan-and-pricing updated.

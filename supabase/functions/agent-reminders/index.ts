@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     for (const a of (due ?? []) as Array<{ agent_id: string; user_id: string; store_name: string; paid_until: string; kind: string }>) {
       const { data: profile } = await supabase.from("profiles").select("email, full_name").eq("id", a.user_id).maybeSingle();
       if (!profile?.email) { results.push({ agent: a.agent_id, skipped: "no_email" }); continue; }
-      const { data: quote } = await supabase.rpc("agent_plan_quote");
+      const { data: quote } = await supabase.rpc("agent_plan_quote", { p_user: a.user_id });
       const price = Number(quote?.pay_now ?? 0).toFixed(2);
       const when = new Date(a.paid_until).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
       const html = a.kind === "grace"

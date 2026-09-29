@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     if (agent.status === "suspended") return jsonResponse({ error: "This agent account is suspended." }, { status: 403 });
     const body = await req.json().catch(() => ({}));
     const months = [1, 3, 12].includes(Number(body?.months)) ? Number(body.months) : 1;
-    const { data: quote } = await supabase.rpc("agent_plan_quote");
+    const { data: quote } = await supabase.rpc("agent_plan_quote", { p_user: auth.user.id });
     const plan = (quote?.plans as Array<{ months: number; pay_now: number; promo_id: string | null }> | undefined)?.find((p) => p.months === months);
     const amount = Number(plan?.pay_now ?? 0);
     const promoId = plan?.promo_id ?? null;

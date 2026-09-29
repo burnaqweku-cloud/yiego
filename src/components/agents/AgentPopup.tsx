@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Store, X } from "lucide-react";
 import { agentsStatus, myAgentStatus, previewRequested, rememberPreview } from "@/lib/agents";
+import { fee2, useAgentFee } from "@/hooks/useAgentFee";
 
 /* Shows once per visit, a few seconds after the page loads, inviting
    people to apply as agents. Only when agents are launched. */
@@ -16,6 +17,7 @@ export function AgentNudge() {
 }
 
 export default function AgentPopup() {
+  const fee = useAgentFee();
   const [open, setOpen] = useState(false);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null; let mounted = true;
@@ -48,7 +50,7 @@ export default function AgentPopup() {
             <li className="flex gap-2"><span className="text-primary-glow">✓</span><span><b className="text-foreground">No deposit.</b> Customers pay, you keep the profit.</span></li>
             <li className="flex gap-2"><span className="text-primary-glow">✓</span><span><b className="text-foreground">Withdraw to MoMo</b> from 20.00.</span></li>
           </ul>
-          <p className="mt-3 text-center text-[12px] text-muted-foreground">Only <b className="text-foreground">3.00 a month</b> · <span className="text-primary-glow">40% off for now</span></p>
+          <p className="mt-3 text-center text-[12px] text-muted-foreground">Only <b className="text-foreground">{fee ? fee2(fee.payNow) : "…"} a month</b> · {fee?.percentOff ? <span className="text-primary-glow">{fee.percentOff}% off your first month</span> : null}</p>
           <Link to="/agents" onClick={() => setOpen(false)} className="onyx-btn-primary mt-3 block w-full py-2.5 text-center text-[13.5px]">Apply now</Link>
           <button type="button" onClick={close} className="mt-1 w-full py-1.5 text-[12px] text-muted-foreground">Maybe later</button>
         </div>
