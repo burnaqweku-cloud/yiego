@@ -82,7 +82,7 @@ export default function Shop() {
             className="group inline-flex items-center gap-2 text-[13.5px] font-semibold text-primary-glow"
           >
             <Gift size={15} aria-hidden="true" />
-            Invite &amp; earn
+            Invite &amp; earn GHS 6.00 in data
             <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
           </button>
           <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />
