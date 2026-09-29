@@ -7,6 +7,8 @@ import type { PlanOption, PlanQuote } from "@/lib/agents";
 /* Choose 1, 3 or 12 months and pay through Paystack. Used on the first-pay
    screen and in the Renew / Extend sheet. Whatever is bought is added to the
    end of the current plan; lapsed agents start again from the day they pay. */
+const money = (n: number) => (Number(n) % 1 === 0 ? String(Number(n)) : Number(n).toFixed(2));
+
 export default function PlanPicker({ quote, verb = "Pay", extending = false }: { quote: PlanQuote | null; verb?: string; extending?: boolean }) {
   const [months, setMonths] = useState<1 | 3 | 12>(1);
   const [busy, setBusy] = useState(false);
@@ -31,8 +33,8 @@ export default function PlanPicker({ quote, verb = "Pay", extending = false }: {
               {p.saving_pct > 0 && <span className="absolute -top-2 right-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-[#04120c]">Save {p.saving_pct}%</span>}
               {promo && <span className="absolute -top-2 right-2 rounded-full bg-amber px-2 py-0.5 text-[10px] font-bold text-[#1a1200]">{quote.promo!.percent_off}% off</span>}
               <p className="truncate text-[11px] text-muted-foreground sm:text-[12px]">{p.months === 1 ? "1 month" : `${p.months} months`}</p>
-              <p className="mt-1 truncate font-semibold leading-tight tabular-nums text-foreground"><span className="text-[9px] font-medium text-muted-foreground sm:text-[10.5px]">GHS </span><span className="text-[14.5px] sm:text-[19px]">{Number(p.pay_now).toFixed(2)}</span></p>
-              <p className="truncate text-[10px] tabular-nums text-faint-foreground sm:text-[10.5px]">{p.months === 1 ? (promo ? `was ${Number(p.list_price).toFixed(2)}` : "per month") : `${Number(p.per_month).toFixed(2)}/mo`}</p>
+              <p className="mt-1 text-[9px] font-medium uppercase tracking-wide text-muted-foreground sm:text-[10px]">GHS</p><p className="whitespace-nowrap text-[17px] font-semibold leading-none tabular-nums text-foreground sm:text-[20px]">{money(p.pay_now)}</p>
+              <p className="mt-1 whitespace-nowrap text-[10px] tabular-nums text-faint-foreground sm:text-[10.5px]">{p.months === 1 ? (promo ? `was ${money(p.list_price)}` : "per month") : `${money(p.per_month)}/mo`}</p>
             </button>
           );
         })}
