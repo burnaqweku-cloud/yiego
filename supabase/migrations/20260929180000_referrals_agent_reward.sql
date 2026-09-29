@@ -1,0 +1,5 @@
+-- Applied live 29 Sep 2026 (migration referrals_agent_reward).
+-- referrals.agent_* columns (5.00 reward, status, intent, checks). referral_credit/uncredit(id, kind) for
+-- both rewards. Trigger zz_payment_intents_referral_trg: on a referred user's FIRST succeeded
+-- agent_subscription payment, run device/payer checks -> credit GHS 5.00 to the referrer's wallet (or flag);
+-- on refund -> take it back. my_referrals() and admin_referral_action() cover both rewards.

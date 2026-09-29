@@ -58,7 +58,7 @@ export default function Hero() {
 
           <button type="button" onClick={() => setInviteOpen(true)} className="group mt-5 inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full border border-primary-glow/25 bg-primary/[0.08] px-4 py-2 text-center text-[13.5px] font-semibold text-primary-glow" data-reveal style={delay(190)}>
             <Gift size={15} aria-hidden="true" />
-            Invite &amp; earn GHS 1.00 in data
+            Invite &amp; earn free data
             <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
           </button>
           <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />

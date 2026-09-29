@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Check, Copy, Gift, Share2, Tag, Wallet } from "lucide-react";
+import { ArrowRight, Check, Copy, Gift, Share2, Store, Tag, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import Modal from "@/components/ui/modal";
 import { FlowHeader } from "@/components/flows/flow-parts";
@@ -13,7 +13,7 @@ export default function InviteSheet({ open, onClose }: { open: boolean; onClose:
   const { isAuthenticated } = useAuth();
   const [data, setData] = useState<ReferralSummary | null>(null); const [copied, setCopied] = useState(false);
   useEffect(() => { if (open && isAuthenticated) void myReferrals().then(setData); }, [open, isAuthenticated]);
-  const reward = formatGHS(data?.reward ?? 1);
+  const reward = formatGHS(data?.reward ?? 1); const agentReward = formatGHS(data?.agent_reward ?? 5);
   const link = data?.code ? inviteLink(data.code) : null;
   const text = link ? `Buy MTN, Telecel and AirtelTigo data on DataYego — delivered in minutes. Sign up with my link and get the referral price on your first bundle: ${link}` : "";
   const copy = async () => { if (!link) return; try { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { toast.error("Couldn't copy. Long-press the link instead."); } };
@@ -24,12 +24,13 @@ export default function InviteSheet({ open, onClose }: { open: boolean; onClose:
   };
   return (
     <Modal open={open} onClose={onClose} label="Invite and earn">
-      <FlowHeader title="Invite & earn" subtitle={`Invite a friend. Get ${reward} in data.`} onClose={onClose} />
+      <FlowHeader title="Invite & earn" subtitle="Invite a friend. Earn free data." onClose={onClose} />
       <div className="min-w-0 space-y-4 px-5 pb-[max(28px,env(safe-area-inset-bottom))] pt-4">
-        <div className="rounded-2xl border border-primary-glow/20 bg-primary/[0.07] p-4 text-center"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary-glow"><Gift size={22} /></span><p className="mt-2 font-display text-[18px] font-semibold leading-tight text-foreground">Get free data</p><p className="mt-1 text-[13px] text-muted-foreground">Invite a friend. Earn {reward} in data.</p></div>
+        <div className="rounded-2xl border border-primary-glow/20 bg-primary/[0.07] p-4 text-center"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary-glow"><Gift size={22} /></span><p className="mt-2 font-display text-[18px] font-semibold leading-tight text-foreground">Get free data</p><p className="mt-1 text-[13px] text-muted-foreground">Invite a friend. Earn {reward} in data, or {agentReward} if they become an agent.</p></div>
         <ul className="space-y-3 text-[13px] leading-5 text-muted-foreground">
           <li className="flex min-w-0 gap-3"><span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/[0.05] text-primary-glow"><Tag size={15} /></span><span>Your friend gets the <b className="text-foreground">referral price</b> (our agent price) on their first bundle, any network, any size.</span></li>
           <li className="flex min-w-0 gap-3"><span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/[0.05] text-primary-glow"><Wallet size={15} /></span><span>You get <b className="text-foreground">{reward} in your DataYego wallet</b> once their first order is delivered. Spend it on data. No limit on friends.</span></li>
+          <li className="flex min-w-0 gap-3"><span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/[0.05] text-primary-glow"><Store size={15} /></span><span>If your friend <b className="text-foreground">becomes a DataYego agent</b> and pays their first month, you get another <b className="text-foreground">{agentReward}</b>.</span></li>
         </ul>
         {isAuthenticated ? (<>
           <div><p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">Your link</p>

@@ -13,7 +13,7 @@ export async function recordDevice() {
   try { const { data: s } = await supabase.auth.getSession(); if (!s.session) return; await p1().rpc("record_device", { p_hash: await deviceHash() }); } catch { /* best effort */ }
 }
 
-export interface ReferralSummary { code: string | null; reward: number; invited: number; rewarded: number; earned: number; list: Array<{ name: string; joined: string; status: "waiting" | "rewarded" | "reversed" | "not_eligible"; amount: number | null }> }
+export interface ReferralSummary { code: string | null; reward: number; agent_reward: number; invited: number; rewarded: number; earned: number; list: Array<{ name: string; joined: string; status: "waiting" | "rewarded" | "reversed" | "not_eligible"; amount: number | null; agent: "rewarded" | "reversed" | null; agent_amount: number | null }> }
 export async function myReferrals(): Promise<ReferralSummary | null> { const { data } = await p1().rpc("my_referrals", {}); return (data as ReferralSummary) ?? null; }
 export async function friendPriceEligible(): Promise<boolean> { const { data } = await p1().rpc("my_friend_price", {}); return Boolean((data as { eligible?: boolean } | null)?.eligible); }
 export const inviteLink = (code: string) => `${window.location.origin}/r/${code}`;
