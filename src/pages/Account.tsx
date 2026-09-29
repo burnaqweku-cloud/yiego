@@ -24,8 +24,8 @@ export default function Account() {
       <Seo title="Your Account — DataYego" description="Manage your DataYego account details." path="/account" noindex />
       <PageHeader eyebrow="Account" title="Your account" subtitle="Manage your personal details and preferences." />
 
-      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-      <section className="onyx-panel rounded-[24px] p-6">
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
+      <section className="onyx-panel min-w-0 rounded-[24px] p-6">
         <div className="flex items-center gap-4">
           <span className="onyx-avatar h-14 w-14 shrink-0 text-lg">{initials}</span>
           <div className="min-w-0 flex-1">
