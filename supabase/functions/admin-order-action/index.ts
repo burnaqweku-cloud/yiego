@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("id, order_reference, status, payment_status, supplier_id, supplier_order_reference, supplier_purchase_id, supplier_status, suppliers(code)")
+      .select("id, order_reference, status, payment_status, admin_resolution_status, supplier_id, supplier_order_reference, supplier_purchase_id, supplier_status, suppliers(code)")
       .eq("order_reference", orderReference)
       .maybeSingle();
 
@@ -151,8 +151,10 @@ Deno.serve(async (req) => {
     }
     if (action === "retry") {
       const retryableStatuses = new Set(["failed", "failed_needs_review", "cancelled"]);
-      if (!retryableStatuses.has(order.status)) {
-        return jsonResponse({ error: "Only failed or cancelled orders can be retried" }, { status: 409 });
+      // MTN verification orders may be re-sent too: once MTN approves the number the re-send goes through.
+      const awaitingVerification = order.admin_resolution_status === "awaiting_verification";
+      if (!retryableStatuses.has(order.status) && !awaitingVerification) {
+        return jsonResponse({ error: "Only failed, cancelled or verification-held orders can be retried" }, { status: 409 });
       }
       if (order.payment_status !== "succeeded") {
         return jsonResponse({ error: "Only successfully paid orders can be retried" }, { status: 409 });
