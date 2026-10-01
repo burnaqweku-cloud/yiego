@@ -24,6 +24,9 @@ export function speedLabel(s: NetworkSpeed | undefined): string | null {
 export function speedPill(s: NetworkSpeed | undefined, network = "MTN"): { text: string; slow: boolean } | null {
   const label = speedLabel(s); if (!s || !label) return null;
   const slow = s.median_minutes > 30;
-  if (s.window === "stale") return { text: `Last ${network} order took ${label}`, slow };
+  if (s.window === "stale") {
+    const ago = s.last_at ? Math.round((Date.now() - new Date(s.last_at).getTime()) / 3_600_000) : null;
+    return { text: `Last ${network} order took ${label}${ago ? ` · ${ago} hr ago` : ""}`, slow: false };
+  }
   return { text: slow ? `${network} delays: orders taking ${label}` : `${network} delivering in ${label}`, slow };
 }
