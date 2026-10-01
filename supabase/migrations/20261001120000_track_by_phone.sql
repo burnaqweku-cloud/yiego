@@ -1,0 +1,3 @@
+-- Applied live 1 Oct 2026 (migration track_by_phone).
+-- phase1.track_by_phone(phone, email): public; latest paid order for a number -> status/bundle only.
+-- Reference revealed only to the buyer (signed-in owner or matching checkout/account email).

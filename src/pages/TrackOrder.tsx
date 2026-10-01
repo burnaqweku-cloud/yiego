@@ -116,8 +116,27 @@ export default function TrackOrder() {
     return { response, payload };
   };
 
+  // Phone-number lookup: only the latest order's status; the reference needs the buyer's email.
+  interface PhoneResult { found: boolean; status?: string; network?: string; product?: string; store?: string | null; updated_at?: string; owner?: boolean; reference?: string | null; identity?: "account" | "email"; email_hint?: string | null }
+  const [phoneResult, setPhoneResult] = useState<PhoneResult | null>(null);
+  const [phoneQueried, setPhoneQueried] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const isPhone = (v: string) => /^0\d{9}$/.test(v.replace(/\D/g, "")) && !/[A-Z]/.test(v);
+  const lookupPhone = async (phone: string, email?: string) => {
+    setLoading(true); setError(null); setOrder(null);
+    const { data, error: rpcError } = await (supabase as unknown as { schema: (s: string) => { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: PhoneResult | null; error: { message: string } | null }> } }).schema("phase1").rpc("track_by_phone", { p_phone: phone, p_email: email ?? null });
+    setLoading(false);
+    if (rpcError || !data) { setPhoneResult(null); return setError("Couldn't check that number right now. Please try again."); }
+    if (!data.found) { setPhoneResult(null); return setError("No paid order found for that number yet."); }
+    setPhoneResult(data); setPhoneQueried(phone);
+    if (email && !data.owner) setError("That email doesn't match the one used for this order.");
+    if (data.owner && data.reference) { setPhoneResult(null); setReference(data.reference); void lookup(data.reference); }
+  };
   const lookup = async (nextReference = reference) => {
-    const ref = nextReference.trim().toUpperCase();
+    const raw = nextReference.trim();
+    if (isPhone(raw)) { setReference(raw.replace(/\D/g, "")); return lookupPhone(raw.replace(/\D/g, "")); }
+    setPhoneResult(null);
+    const ref = raw.toUpperCase();
     if (!ref) return;
     setLoading(true);
     setError(null);
@@ -184,11 +203,28 @@ export default function TrackOrder() {
       <DeliveryProgress className="mb-4" />
       <Card className="w-full">
         <CardContent className="p-6 sm:p-7">
-            <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your DataYego order reference — the <span className="font-mono text-foreground">YG-</span> code from your receipt or the link we sent you back to after payment. That's all you need.</p></div>
+            <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your order reference (the <span className="font-mono text-foreground">YG-</span> code from your receipt) or the phone number the data was sent to.</p></div>
             <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto]">
-              <input className="onyx-field font-mono uppercase" value={reference} onChange={(event) => setReference(event.target.value.toUpperCase())} onKeyDown={(event) => { if (event.key === "Enter") lookup(); }} placeholder="YG-XXXXXXXXXX" aria-label="Order reference" />
+              <input className="onyx-field font-mono uppercase" value={reference} onChange={(event) => setReference(event.target.value.toUpperCase())} onKeyDown={(event) => { if (event.key === "Enter") lookup(); }} placeholder="Order ID or phone number" aria-label="Order reference or phone number" />
               <Button onClick={() => lookup()} disabled={loading || !reference.trim()}>{loading ? <Loader2 className="animate-spin" /> : <Search />}Track</Button>
             </div>
+            {phoneResult && !order && (
+              <div className="mt-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">Latest order for {phoneQueried}</p>
+                <p className="mt-2 font-display text-xl font-semibold text-white">{statusLabel(phoneResult.status)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{phoneResult.network} · {phoneResult.product}{phoneResult.store ? ` · via ${phoneResult.store}` : ""}{phoneResult.updated_at ? ` · updated ${new Date(phoneResult.updated_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</p>
+                <p className="mt-2 text-[12.5px] leading-5 text-muted-foreground">{phoneResult.status === "completed" ? "The data has been delivered to this number." : phoneResult.status === "in_progress" ? "The order is being processed. Data usually lands within minutes." : phoneResult.status === "awaiting_verification" ? "MTN is verifying this number before its first bundle. It will be delivered automatically once cleared." : phoneResult.status === "refunded" ? "This order was refunded." : "Contact support with the order reference if you need help."}</p>
+                <div className="mt-4 border-t border-white/[0.06] pt-4">
+                  <p className="text-[12.5px] font-semibold text-foreground">Did you pay for this order?</p>
+                  {phoneResult.identity === "account" && !isAuthenticated ? (
+                    <p className="mt-1 text-[12.5px] text-muted-foreground">Sign in to the account you ordered with to see the reference and full details.</p>
+                  ) : (<>
+                    <p className="mt-1 text-[12.5px] text-muted-foreground">Enter the email you used at checkout{phoneResult.email_hint ? ` (${phoneResult.email_hint})` : ""} to see the reference and full details.</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]"><input value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} type="email" autoCapitalize="none" placeholder="Email you paid with" className="onyx-field" /><Button variant="soft" disabled={loading || !ownerEmail.trim()} onClick={() => void lookupPhone(phoneQueried, ownerEmail.trim())}>Show details</Button></div>
+                  </>)}
+                </div>
+              </div>
+            )}
 
             {recent.length > 0 && !order && (
               <div className="mt-4">
