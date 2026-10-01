@@ -79,6 +79,7 @@ interface DbError { message: string }
 interface QueryChain<T> extends PromiseLike<{ data: T; error: DbError | null }> {
   select: (columns?: string) => QueryChain<T>;
   eq: (column: string, value: unknown) => QueryChain<T>;
+  or: (filters: string) => QueryChain<T>;
   order: (column: string, options?: { ascending?: boolean }) => QueryChain<T>;
   limit: (count: number) => QueryChain<T>;
 }

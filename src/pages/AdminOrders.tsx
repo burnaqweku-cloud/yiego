@@ -72,6 +72,8 @@ export default function AdminOrders() {
   const [pageSize, setPageSize] = useState(10);
   const [lookup, setLookup] = useState("");
   const [lookedUp, setLookedUp] = useState<AdminOrderRow | null>(null);
+  type Summary = { all: number; pending: number; delivered: number; failed: number; wrong_network: number; payment_failed: number; verification: number };
+  const [summary, setSummary] = useState<Summary | null>(null);
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState(false);
   const [selected, setSelected] = useState<AdminOrderRow | null>(null);
@@ -82,10 +84,18 @@ export default function AdminOrders() {
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, recipient_phone, guest_email, amount, cost_amount, currency, status, payment_status, supplier_status, supplier_order_reference, supplier_retry_after, supplier_retry_count, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, wallet_ledger_entry_id, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name), agent_id, agent_price, agent_margin, agents(slug, store_name)").order("created_at", { ascending: false });
+    // Recent orders for browsing, plus EVERY order that still needs a hand (any age), plus true counts from the whole table.
+    const [recent, open, summary] = await Promise.all([
+      adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, recipient_phone, guest_email, amount, cost_amount, currency, status, payment_status, supplier_status, supplier_order_reference, supplier_retry_after, supplier_retry_count, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, wallet_ledger_entry_id, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name), agent_id, agent_price, agent_margin, agents(slug, store_name)").order("created_at", { ascending: false }).limit(1000),
+      adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, recipient_phone, guest_email, amount, cost_amount, currency, status, payment_status, supplier_status, supplier_order_reference, supplier_retry_after, supplier_retry_count, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, wallet_ledger_entry_id, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name), agent_id, agent_price, agent_margin, agents(slug, store_name)").or("status.eq.failed_needs_review,admin_resolution_status.eq.awaiting_verification,admin_resolution_status.eq.wrong_network").order("created_at", { ascending: false }),
+      (adminDatabase() as unknown as { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown }> }).rpc("admin_orders_summary", {}),
+    ]);
+    const { data, error } = recent;
     if (error) { toast.error("Could not load orders."); setOrders([]); }
     else {
-      const next = (data ?? []) as AdminOrderRow[];
+      const seen = new Set<string>();
+      const next = ([...((data ?? []) as AdminOrderRow[]), ...(((open.data ?? []) as AdminOrderRow[]))]).filter((o) => { if (seen.has(o.id)) return false; seen.add(o.id); return true; });
+      setSummary((summary.data as Summary | null) ?? null);
       setOrders(next);
       setSelected((current) => current ? next.find((order) => order.id === current.id) ?? null : null);
       setLookedUp((current) => current ? next.find((order) => order.id === current.id) ?? current : null);
@@ -108,11 +118,13 @@ export default function AdminOrders() {
     void loadEvents(order.id);
   };
 
-  const pending = orders.filter((order) => PENDING_STATUSES.includes(order.status)).length;
-  const delivered = orders.filter((order) => order.status === "delivered").length;
-  const failed = orders.filter((order) => FAILED_STATUSES.includes(order.status) && order.admin_resolution_status !== WRONG_NETWORK).length;
-  const wrongNetwork = orders.filter((order) => order.admin_resolution_status === WRONG_NETWORK).length;
-  const paymentFailed = orders.filter(isPaymentFailed).length;
+  // Counts come from the whole table; the loaded list is only for browsing.
+  const pending = summary?.pending ?? orders.filter((order) => PENDING_STATUSES.includes(order.status)).length;
+  const delivered = summary?.delivered ?? orders.filter((order) => order.status === "delivered").length;
+  const failed = summary?.failed ?? orders.filter((order) => FAILED_STATUSES.includes(order.status) && order.admin_resolution_status !== WRONG_NETWORK).length;
+  const wrongNetwork = summary?.wrong_network ?? orders.filter((order) => order.admin_resolution_status === WRONG_NETWORK).length;
+  const paymentFailed = summary?.payment_failed ?? orders.filter(isPaymentFailed).length;
+  const totalAll = summary?.all ?? orders.length;
 
   // Numbers MTN is still verifying. Once MTN clears one, the bundle is
   // resubmitted by hand on the DBH portal, so this list is what the admin
@@ -254,7 +266,7 @@ export default function AdminOrders() {
     <AdminPageHeader eyebrow="Operations" title="Order management" description="Search, filter and manage every stage of payment, fulfilment, delivery and customer communication." />
     <OrdersPulse />
     <AdminStatStrip loading={loading} items={[
-      { label: "All", value: orders.length, active: lifecycleFilter === "all", onClick: () => { setLifecycleFilter("all"); setCustomerFilter("all"); } },
+      { label: "All", value: totalAll, active: lifecycleFilter === "all", onClick: () => { setLifecycleFilter("all"); setCustomerFilter("all"); } },
       { label: "In progress", value: pending, active: lifecycleFilter === "in_progress", onClick: () => { setLifecycleFilter("in_progress"); setCustomerFilter("all"); } },
       { label: "Delivered", value: delivered, tone: "success", active: lifecycleFilter === "delivered", onClick: () => { setLifecycleFilter("delivered"); setCustomerFilter("all"); } },
       { label: "Failed delivery", value: failed, tone: failed ? "warning" : "default", active: lifecycleFilter === "failed_group", onClick: () => { setLifecycleFilter("failed_group"); setCustomerFilter("all"); } },

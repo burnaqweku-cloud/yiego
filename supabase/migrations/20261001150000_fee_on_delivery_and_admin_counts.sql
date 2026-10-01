@@ -1,0 +1,4 @@
+-- Applied live 1 Oct 2026 (migrations checkout_fee_recognised_on_delivery, admin_orders_summary).
+-- Checkout fee (4%) now posts to liability fees_pending at payment and moves to fee_income on delivery
+-- (or offsets the refund). Existing undelivered Paystack orders were reclassified via kind 'fee_deferred'.
+-- phase1.admin_orders_summary(): true counts for the admin Orders page from the whole table.
