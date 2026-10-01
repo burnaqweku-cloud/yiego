@@ -7,7 +7,7 @@ import { useSupplierChoices, type SupplierBundle, type SupplierChoice } from "@/
 import { useFlows } from "@/store/flows";
 import { useReveal } from "@/hooks/useReveal";
 import { cn } from "@/lib/utils";
-import { speedLabel, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 import { Info } from "lucide-react";
 import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
@@ -479,9 +479,9 @@ export default function BundleCatalogue() {
                         >
                           {group.network.name.toUpperCase()}
                         </span>
-                        {group.network.name === "MTN" && speedLabel(speeds[group.network.name]) ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-glow/20 bg-primary/[0.08] px-3 py-1 text-[12.5px] font-semibold text-primary-glow" title="Typical time from payment to delivery right now">
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary-glow" />{speeds[group.network.name]?.window === "stale" ? `Last MTN order took ${speedLabel(speeds[group.network.name])}` : `MTN delivering in ${speedLabel(speeds[group.network.name])}`}
+                        {group.network.name === "MTN" && speedPill(speeds.MTN) ? (
+                          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12.5px] font-semibold ${speedPill(speeds.MTN)!.slow ? "border-amber/30 bg-amber/10 text-amber" : "border-primary-glow/20 bg-primary/[0.08] text-primary-glow"}`} title="Typical time from payment to delivery right now, counting orders still in progress">
+                            <span className={`h-1.5 w-1.5 rounded-full ${speedPill(speeds.MTN)!.slow ? "bg-amber" : "bg-primary-glow"}`} />{speedPill(speeds.MTN)!.text}
                           </span>
                         ) : (<>
                           <span className="font-display text-[15px] font-semibold tracking-tight text-foreground">

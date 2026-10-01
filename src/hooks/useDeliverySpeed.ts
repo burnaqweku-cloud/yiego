@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /* Per-network delivery speed for the catalogue: median of the last 2 hours when there are
    at least 3 deliveries, otherwise the most recent delivered order (within 12 hours). */
-export interface NetworkSpeed { window: "2h" | "last" | "stale"; sample: number; median_minutes: number; last_at?: string }
+export interface NetworkSpeed { window: "2h" | "last" | "stale"; sample: number; median_minutes: number; at_least?: boolean; last_at?: string }
 export function useDeliverySpeed() {
   const [speeds, setSpeeds] = useState<Record<string, NetworkSpeed>>({});
   useEffect(() => {
@@ -17,8 +17,13 @@ export function useDeliverySpeed() {
 export function speedLabel(s: NetworkSpeed | undefined): string | null {
   if (!s) return null;
   const m = Math.round(s.median_minutes);
-  if (m < 1) return "under a minute";
-  if (m < 60) return `~${m} min`;
-  const h = Math.round(m / 60 * 10) / 10;
-  return `~${h} hr`;
+  const core = m < 1 ? "under a minute" : m < 60 ? `${m} min` : `${Math.round(m / 60 * 10) / 10} hr`;
+  return s.at_least ? `over ${core}` : m < 1 ? core : `~${core}`;
+}
+/** Wording + tone for the pill. Slow (over 30 min) shows amber so delays are visible, not hidden in a number. */
+export function speedPill(s: NetworkSpeed | undefined, network = "MTN"): { text: string; slow: boolean } | null {
+  const label = speedLabel(s); if (!s || !label) return null;
+  const slow = s.median_minutes > 30;
+  if (s.window === "stale") return { text: `Last ${network} order took ${label}`, slow };
+  return { text: slow ? `${network} delays: orders taking ${label}` : `${network} delivering in ${label}`, slow };
 }
