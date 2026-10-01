@@ -54,6 +54,7 @@ const AdminFinance = lazy(() => import("./pages/AdminFinance"));
 const AdminFunding = lazy(() => import("./pages/AdminFunding"));
 const Invite = lazy(() => import("./pages/Invite"));
 const CheckMtn = lazy(() => import("./pages/CheckMtn"));
+const AgentCheckMtn = lazy(() => import("./pages/agent/AgentCheckMtn"));
 const AdminSubmittedNumbers = lazy(() => import("./pages/AdminSubmittedNumbers"));
 const AdminReferrals = lazy(() => import("./pages/AdminReferrals"));
 const AdminUndelivered = lazy(() => import("./pages/AdminUndelivered"));
@@ -93,7 +94,7 @@ const App = () => (
     {/* One shell for the whole site: the same header and footer wrap the
         marketing pages, the shop and the account area. */}
     <Route path="/s/:slug" element={<StoreShell />}><Route index element={<StoreHome />} /><Route path="track" element={<StoreOrder />} /><Route path="success" element={<StoreOrder />} /></Route>
-    <Route path="/agent" element={<AgentShell />}><Route index element={<AgentHome />} /><Route path="buy" element={<AgentBuy />} /><Route path="help" element={<AgentHelp />} /><Route path="orders" element={<AgentOrdersPage />} /><Route path="prices" element={<AgentPrices />} /><Route path="earnings" element={<AgentEarnings />} /><Route path="store" element={<AgentStoreSettings />} /></Route>
+    <Route path="/agent" element={<AgentShell />}><Route index element={<AgentHome />} /><Route path="buy" element={<AgentBuy />} /><Route path="help" element={<AgentHelp />} /><Route path="check-mtn" element={<AgentCheckMtn />} /><Route path="orders" element={<AgentOrdersPage />} /><Route path="prices" element={<AgentPrices />} /><Route path="earnings" element={<AgentEarnings />} /><Route path="store" element={<AgentStoreSettings />} /></Route>
     <Route element={<PublicShell />}>
       {/* Marketing pages lay out their own full-bleed sections. */}
       <Route path="/" element={<Home />} /><Route path="/agents" element={<AgentsApply />} />

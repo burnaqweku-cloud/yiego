@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { CreditCard, ExternalLink, Home, LogOut, Package, Settings, ShoppingBag, Tags, Wallet } from "lucide-react";
+import { CreditCard, ExternalLink, Gift, Home, LifeBuoy, LogOut, Menu, Package, PhoneForwarded, Settings, ShoppingBag, Tags, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
@@ -26,16 +26,18 @@ export const useAgent = () => { const c = useContext(AgentContext); if (!c) thro
 export const p1 = () => (supabase as unknown as { schema: (s: string) => any }).schema("phase1");
 export const fmt = (d: string) => new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
-const NAV = [
-  { to: "/agent", label: "Home", icon: Home, end: true },
-  { to: "/agent/buy", label: "Buy data", icon: ShoppingBag },
-  { to: "/agent/orders", label: "Orders", icon: Package },
-  { to: "/agent/prices", label: "Prices", icon: Tags },
-  { to: "/agent/earnings", label: "Earnings", icon: Wallet },
-  { to: "/agent/store", label: "Store", icon: Settings },
+// Agent-only navigation, grouped like the admin panel's. Nothing here reaches admin pages.
+const NAV_GROUPS: Array<{ label: string; items: Array<{ to: string; label: string; icon: typeof Home; end?: boolean }> }> = [
+  { label: "", items: [{ to: "/agent", label: "Home", icon: Home, end: true }] },
+  { label: "Sell", items: [{ to: "/agent/buy", label: "Buy data", icon: ShoppingBag }, { to: "/agent/prices", label: "Prices", icon: Tags }, { to: "/agent/store", label: "Store settings", icon: Settings }] },
+  { label: "Orders", items: [{ to: "/agent/orders", label: "Orders", icon: Package }, { to: "/agent/check-mtn", label: "Check MTN numbers", icon: PhoneForwarded }] },
+  { label: "Money", items: [{ to: "/agent/earnings", label: "Earnings & payouts", icon: Wallet }] },
+  { label: "Grow", items: [{ to: "/account", label: "Invite & earn", icon: Gift }, { to: "/agent/help", label: "Help Center", icon: LifeBuoy }] },
 ];
+const NAV = NAV_GROUPS.flatMap((g) => g.items);
 
 export default function AgentShell() {
+  const [drawer, setDrawer] = useState(false);
   const { user, isAuthenticated, signOut } = useAuth(); const navigate = useNavigate();
   const [agent, setAgent] = useState<Agent | null | undefined>(undefined);
   const [renew, setRenew] = useState(false);
@@ -73,7 +75,7 @@ export default function AgentShell() {
           {/* Desktop sidebar */}
           <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-white/[0.06] p-4 sm:flex">
             <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div><NotificationBell /></div>
-            <nav className="mt-6 flex flex-col gap-1">{NAV.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:bg-white/[0.04]"}`}><n.icon size={16} />{n.label}</NavLink>)}</nav>
+            <nav className="mt-6 flex flex-col gap-3">{NAV_GROUPS.map((g) => <div key={g.label || "home"}>{g.label && <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">{g.label}</p>}<div className="flex flex-col gap-0.5">{g.items.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:bg-white/[0.04]"}`}><n.icon size={16} />{n.label}</NavLink>)}</div></div>)}</nav>
             <div className="mt-auto space-y-1 text-[12.5px]">
               <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><ExternalLink size={14} />View my store</a>
               <Link to="/" onClick={() => sessionStorage.setItem("yg-agent-browse", "1")} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit DataYego</Link>
@@ -83,10 +85,10 @@ export default function AgentShell() {
           <div className="min-w-0 flex-1">
             {/* Mobile header */}
             <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[0.06] bg-background/85 px-4 py-3 backdrop-blur sm:hidden">
-              <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div>
+              <div className="flex min-w-0 items-center gap-3"><button type="button" onClick={() => setDrawer(true)} aria-label="Menu" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Menu size={18} /></button><div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div></div>
               <div className="flex items-center gap-2"><span className="rounded-full bg-primary/12 px-2.5 py-1 text-[12px] font-semibold text-primary-glow">{formatGHS(Number(agent.earnings_balance))}</span><NotificationBell /><a href={storeUrl} target="_blank" rel="noreferrer" aria-label="View store" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><ExternalLink size={14} /></a></div>
             </header>
-            <main className="px-4 pb-24 pt-4 sm:px-8 sm:pb-10 sm:pt-8">
+            <main className="px-4 pb-10 pt-4 sm:px-8 sm:pb-10 sm:pt-8">
               {sub.state === "grace" && <div className="mb-4 rounded-2xl border border-amber/40 bg-amber/10 p-3.5 text-[12.5px] text-foreground"><p className="font-semibold">Your plan ended on {longDate(sub.paidUntil)}.</p><p className="mt-0.5 text-muted-foreground">Renew by tonight ({longDate(sub.closesOn)}) to keep your store open. Nothing changes until then.</p><button type="button" onClick={() => setRenew(true)} className="onyx-btn-primary mt-2.5 px-4 py-2 text-[12.5px]">Renew now</button></div>}
               {sub.state === "lapsed" && <div className="mb-4 rounded-2xl border border-danger/40 bg-danger/10 p-3.5 text-[12.5px] text-foreground"><p className="font-semibold">Your store is closed.</p><p className="mt-0.5 text-muted-foreground">Customers can't order and agent prices are locked. Your balance and orders are safe — you can still withdraw. Renew to reopen instantly.</p><button type="button" onClick={() => setRenew(true)} className="onyx-btn-primary mt-2.5 px-4 py-2 text-[12.5px]">Renew now</button></div>}
               <Outlet />
@@ -102,9 +104,21 @@ export default function AgentShell() {
           </div>
         )}
         {/* Mobile bottom nav */}
-        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-white/[0.08] bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
-          {NAV.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[10.5px] ${isActive ? "text-primary-glow" : "text-muted-foreground"}`}><n.icon size={19} />{n.label}</NavLink>)}
-        </nav>
+        {/* Mobile drawer: same grouped navigation as the desktop sidebar */}
+        {drawer && (
+          <div className="fixed inset-0 z-50 sm:hidden" onClick={() => setDrawer(false)}>
+            <div className="absolute inset-0 bg-black/60" />
+            <aside className="absolute inset-y-0 left-0 flex w-[82%] max-w-[320px] flex-col bg-background p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p><p className="text-[12px] text-primary-glow">{formatGHS(Number(agent.earnings_balance))} earned</p></div><button type="button" onClick={() => setDrawer(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
+              <nav className="mt-5 flex flex-1 flex-col gap-3 overflow-y-auto">{NAV_GROUPS.map((g) => <div key={g.label || "home"}>{g.label && <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">{g.label}</p>}<div className="flex flex-col gap-0.5">{g.items.map((n) => <NavLink key={n.to} to={n.to} end={n.end} onClick={() => setDrawer(false)} className={({ isActive }) => `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-foreground hover:bg-white/[0.04]"}`}><n.icon size={17} />{n.label}</NavLink>)}</div></div>)}</nav>
+              <div className="mt-4 space-y-0.5 border-t border-white/[0.06] pt-3 text-[13px]">
+                <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><ExternalLink size={14} />View my store</a>
+                <Link to="/" onClick={() => { sessionStorage.setItem("yg-agent-browse", "1"); setDrawer(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Shop as a customer</Link>
+                <button type="button" onClick={() => void signOut().then(() => navigate("/")).catch(() => toast.error("Could not sign out."))} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-danger"><LogOut size={14} />Sign out</button>
+              </div>
+            </aside>
+          </div>
+        )}
       </div>
     </AgentContext.Provider>
   );

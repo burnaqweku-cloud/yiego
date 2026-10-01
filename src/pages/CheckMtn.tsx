@@ -11,7 +11,7 @@ const parse = (text: string) => [...new Set(text.split(/[^\d+]+/).map(normalizeG
 const toneClass: Record<"ok" | "wait" | "bad", string> = { ok: "text-primary-glow", wait: "text-amber", bad: "text-danger" };
 const ToneIcon = ({ tone }: { tone: "ok" | "wait" | "bad" }) => tone === "ok" ? <Check size={15} /> : tone === "wait" ? <Clock size={15} /> : <X size={15} />;
 
-export default function CheckMtn() {
+export default function CheckMtn({ embedded = false }: { embedded?: boolean } = {}) {
   const [bulk, setBulk] = useState("");
   const [results, setResults] = useState<CheckResult[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -45,12 +45,12 @@ export default function CheckMtn() {
     try { await navigator.clipboard.writeText(list); toast.success("Approved numbers copied."); } catch { toast.error("Couldn't copy."); }
   };
   return (
-    <div className="mx-auto w-full max-w-[760px] space-y-6">
-      <Seo title="Check MTN number · DataYego" description="Check whether an MTN number is approved for instant data delivery, and submit it for verification if not. Free, no account needed." path="/check-mtn" />
+    <div className={embedded ? "w-full space-y-6" : "mx-auto w-full max-w-[760px] space-y-6"}>
+      {!embedded && <Seo title="Check MTN number · DataYego" description="Check whether an MTN number is approved for instant data delivery, and submit it for verification if not. Free, no account needed." path="/check-mtn" />}
       <section className="onyx-panel rounded-[24px] p-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">MTN number check</p>
-        <h1 className="mt-2 font-display text-[26px] font-semibold leading-tight text-foreground">Is this MTN number ready for instant data?</h1>
-        <p className="mt-2 text-[13.5px] leading-6 text-muted-foreground">MTN verifies a number the first time it receives a bundle from our supplier. Approved numbers get data in minutes; new ones can take a few days. Check before you buy, for yourself or for the people you buy for.</p>
+        <h1 className="mt-2 font-display text-[26px] font-semibold leading-tight text-foreground">{embedded ? "Check a customer's MTN number" : "Is this MTN number ready for instant data?"}</h1>
+        <p className="mt-2 text-[13.5px] leading-6 text-muted-foreground">{embedded ? "MTN verifies a number the first time it receives a bundle from our supplier. Approved numbers get data in minutes; new ones can take a few days. Check before you sell so you can tell your customer what to expect." : "MTN verifies a number the first time it receives a bundle from our supplier. Approved numbers get data in minutes; new ones can take a few days. Check before you buy, for yourself or for the people you buy for."}</p>
         <div className="mt-5"><p className="mb-2 text-[13px] font-semibold text-foreground">Check one number</p><MtnCheckField source="checker" /></div>
       </section>
       <section className="onyx-panel rounded-[24px] p-6">
