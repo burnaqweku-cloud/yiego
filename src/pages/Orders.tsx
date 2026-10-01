@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Seo from "@/components/seo/Seo";
 import DeliveryProgress from "@/components/shop/DeliveryProgress";
+import TrackOrder from "@/pages/TrackOrder";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Loader2, PackageCheck, RefreshCcw, Search } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
@@ -123,8 +124,10 @@ export default function Orders() {
 
       <DeliveryProgress />
 
+      <TrackOrder embedded />
+
       <section className="onyx-panel rounded-[24px] p-4 sm:p-5">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="hidden">
           <label className="relative block"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-faint-foreground" size={17} /><input className="onyx-field w-full pl-11" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search order ID, recipient, network or bundle" /></label>
           <Button variant="soft" onClick={() => navigate("/track-order")}><Search size={16} /> Track reference</Button>
         </div>
@@ -137,7 +140,7 @@ export default function Orders() {
         <section className="grid gap-3 xl:grid-cols-2">
           {visible.map((order) => {
             const status = customerStatus(order);
-            return <Link key={order.id} to={`/track-order?reference=${encodeURIComponent(order.order_reference)}`} className="onyx-panel block rounded-[22px] p-5 transition hover:border-primary-glow/25">
+            return <Link key={order.id} to={`/orders?reference=${encodeURIComponent(order.order_reference)}`} className="onyx-panel block rounded-[22px] p-5 transition hover:border-primary-glow/25">
               <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-display text-[16px] font-semibold text-white">{order.data_products?.name ?? "Data bundle"}</p><p className="mt-1 font-mono text-xs text-faint-foreground">{order.order_reference}</p></div><Badge variant={status === "delivered" ? "success" : "amber"}>{label(status)}</Badge></div>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm"><div><p className="text-[11px] uppercase tracking-[0.12em] text-faint-foreground">Network</p><p className="mt-1 font-semibold text-foreground">{order.networks?.name ?? "—"}</p></div><div><p className="text-[11px] uppercase tracking-[0.12em] text-faint-foreground">Recipient</p><p className="mt-1 font-semibold text-foreground">{maskPhone(order.recipient_phone)}</p></div></div>
               <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/[0.06] pt-4"><span className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString("en-GH")}</span><span className="font-display font-semibold text-white">{formatGHS(Number(order.amount))}</span></div>

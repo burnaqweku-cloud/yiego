@@ -72,7 +72,7 @@ function statusLabel(status?: string) {
   }
 }
 
-export default function TrackOrder() {
+export default function TrackOrder({ embedded = false }: { embedded?: boolean } = {}) {
   const { isAuthenticated } = useAuth();
   const [fixPhone, setFixPhone] = useState(""); const [fixEmail, setFixEmail] = useState(""); const [fixing, setFixing] = useState(false);
   const FIX_ERRORS: Record<string, string> = {
@@ -191,19 +191,19 @@ export default function TrackOrder() {
 
   useEffect(() => {
     const initialReference = searchParams.get("reference");
-    if (initialReference) lookup(initialReference);
+    if (initialReference) { setReference(initialReference.toUpperCase()); void lookup(initialReference); if (embedded) window.scrollTo({ top: 0, behavior: "smooth" }); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   // The site header and footer wrap this page now — it carries only its own
   // content, centred in the standard column.
   return (
-    <div className="mx-auto w-full max-w-[760px]">
-      <Seo {...metaFor("/track-order")} />
-      <DeliveryProgress className="mb-4" />
+    <div className={embedded ? "w-full" : "mx-auto w-full max-w-[760px]"}>
+      {!embedded && <Seo {...metaFor("/track-order")} />}
+      {!embedded && <DeliveryProgress className="mb-4" />}
       <Card className="w-full">
         <CardContent className="p-6 sm:p-7">
-            <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your order reference (the <span className="font-mono text-foreground">YG-</span> code from your receipt) or the phone number the data was sent to.</p></div>
+            <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your order reference (the <span className="font-mono text-foreground">YG-</span> or <span className="font-mono text-foreground">AG-</span> code from your receipt) or the phone number the data was sent to.</p></div>
             <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto]">
               <input className="onyx-field font-mono uppercase" value={reference} onChange={(event) => setReference(event.target.value.toUpperCase())} onKeyDown={(event) => { if (event.key === "Enter") lookup(); }} placeholder="Order ID or phone number" aria-label="Order reference or phone number" />
               <Button onClick={() => lookup()} disabled={loading || !reference.trim()}>{loading ? <Loader2 className="animate-spin" /> : <Search />}Track</Button>
