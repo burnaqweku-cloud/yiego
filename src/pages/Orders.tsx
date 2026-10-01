@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import Seo from "@/components/seo/Seo";
 import DeliveryProgress from "@/components/shop/DeliveryProgress";
 import TrackOrder from "@/pages/TrackOrder";
+import Modal from "@/components/ui/modal";
+import { FlowHeader } from "@/components/flows/flow-parts";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Loader2, PackageCheck, RefreshCcw, Search } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
@@ -69,6 +71,7 @@ function maskPhone(phone: string) {
 }
 
 export default function Orders() {
+  const [openRef, setOpenRef] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<OrderRow[]>([]);
@@ -140,15 +143,19 @@ export default function Orders() {
         <section className="grid gap-3 xl:grid-cols-2">
           {visible.map((order) => {
             const status = customerStatus(order);
-            return <Link key={order.id} to={`/orders?reference=${encodeURIComponent(order.order_reference)}`} className="onyx-panel block rounded-[22px] p-5 transition hover:border-primary-glow/25">
+            return <button type="button" key={order.id} onClick={() => setOpenRef(order.order_reference)} className="onyx-panel block w-full rounded-[22px] p-5 text-left transition hover:border-primary-glow/25">
               <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-display text-[16px] font-semibold text-white">{order.data_products?.name ?? "Data bundle"}</p><p className="mt-1 font-mono text-xs text-faint-foreground">{order.order_reference}</p></div><Badge variant={status === "delivered" ? "success" : "amber"}>{label(status)}</Badge></div>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm"><div><p className="text-[11px] uppercase tracking-[0.12em] text-faint-foreground">Network</p><p className="mt-1 font-semibold text-foreground">{order.networks?.name ?? "—"}</p></div><div><p className="text-[11px] uppercase tracking-[0.12em] text-faint-foreground">Recipient</p><p className="mt-1 font-semibold text-foreground">{maskPhone(order.recipient_phone)}</p></div></div>
               <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/[0.06] pt-4"><span className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString("en-GH")}</span><span className="font-display font-semibold text-white">{formatGHS(Number(order.amount))}</span></div>
-            </Link>;
+            </button>;
           })}
         </section>
         <div className="flex flex-col gap-3 rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">Showing {from}–{to} of {filtered.length} orders</p><div className="flex items-center gap-2"><Button size="sm" variant="ghost" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft size={16} /> Previous</Button><span className="min-w-16 text-center text-xs font-semibold text-foreground">{safePage} / {totalPages}</span><Button size="sm" variant="ghost" disabled={safePage >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>Next <ChevronRight size={16} /></Button></div></div>
       </>}
+      <Modal open={Boolean(openRef)} onClose={() => setOpenRef(null)} label="Order details">
+        <FlowHeader title="Order details" subtitle={openRef ?? ""} onClose={() => setOpenRef(null)} />
+        <div className="px-5 pb-[max(28px,env(safe-area-inset-bottom))] pt-2">{openRef && <TrackOrder embedded fixedReference={openRef} />}</div>
+      </Modal>
     </div>
   );
 }

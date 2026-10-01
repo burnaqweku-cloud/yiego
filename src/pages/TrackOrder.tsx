@@ -27,6 +27,7 @@ interface PublicOrderStatus {
   createdAt: string;
   updatedAt: string;
   fix?: { enteredNetwork: string | null; wantedNetwork: string | null; identity: "account" | "email" } | null;
+  store?: { slug: string; name: string } | null;
 }
 
 // Order references the guest has looked up on THIS device. Lets someone who
@@ -72,7 +73,8 @@ function statusLabel(status?: string) {
   }
 }
 
-export default function TrackOrder({ embedded = false }: { embedded?: boolean } = {}) {
+/* embedded: inside another page (no page chrome). fixedReference: show one order only, no search box (used in the order sheet). */
+export default function TrackOrder({ embedded = false, fixedReference }: { embedded?: boolean; fixedReference?: string } = {}) {
   const { isAuthenticated } = useAuth();
   const [fixPhone, setFixPhone] = useState(""); const [fixEmail, setFixEmail] = useState(""); const [fixing, setFixing] = useState(false);
   const FIX_ERRORS: Record<string, string> = {
@@ -93,7 +95,7 @@ export default function TrackOrder({ embedded = false }: { embedded?: boolean } 
     setFixPhone(""); void lookup(order.reference);
   };
   const [searchParams] = useSearchParams();
-  const [reference, setReference] = useState(searchParams.get("reference") ?? "");
+  const [reference, setReference] = useState(fixedReference ?? searchParams.get("reference") ?? "");
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState<PublicOrderStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -190,10 +192,10 @@ export default function TrackOrder({ embedded = false }: { embedded?: boolean } 
   };
 
   useEffect(() => {
-    const initialReference = searchParams.get("reference");
-    if (initialReference) { setReference(initialReference.toUpperCase()); void lookup(initialReference); if (embedded) window.scrollTo({ top: 0, behavior: "smooth" }); }
+    const initialReference = fixedReference ?? searchParams.get("reference");
+    if (initialReference) { setReference(initialReference.toUpperCase()); void lookup(initialReference); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, fixedReference]);
 
   // The site header and footer wrap this page now — it carries only its own
   // content, centred in the standard column.
@@ -201,13 +203,13 @@ export default function TrackOrder({ embedded = false }: { embedded?: boolean } 
     <div className={embedded ? "w-full" : "mx-auto w-full max-w-[760px]"}>
       {!embedded && <Seo {...metaFor("/track-order")} />}
       {!embedded && <DeliveryProgress className="mb-4" />}
-      <Card className="w-full">
-        <CardContent className="p-6 sm:p-7">
-            <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your order reference (the <span className="font-mono text-foreground">YG-</span> or <span className="font-mono text-foreground">AG-</span> code from your receipt) or the phone number the data was sent to.</p></div>
-            <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto]">
+      <Card className={fixedReference ? "w-full border-0 bg-transparent shadow-none" : "w-full"}>
+        <CardContent className={fixedReference ? "p-0" : "p-6 sm:p-7"}>
+            {!fixedReference && <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your order reference (the <span className="font-mono text-foreground">YG-</span> or <span className="font-mono text-foreground">AG-</span> code from your receipt) or the phone number the data was sent to.</p></div>}
+            {!fixedReference && <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto]">
               <input className="onyx-field font-mono uppercase" value={reference} onChange={(event) => setReference(event.target.value.toUpperCase())} onKeyDown={(event) => { if (event.key === "Enter") lookup(); }} placeholder="Order ID or phone number" aria-label="Order reference or phone number" />
               <Button onClick={() => lookup()} disabled={loading || !reference.trim()}>{loading ? <Loader2 className="animate-spin" /> : <Search />}Track</Button>
-            </div>
+            </div>}
             {phoneResult && !order && (
               <div className="mt-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">Latest order for {phoneQueried}</p>
@@ -226,7 +228,7 @@ export default function TrackOrder({ embedded = false }: { embedded?: boolean } 
               </div>
             )}
 
-            {recent.length > 0 && !order && (
+            {!fixedReference && recent.length > 0 && !order && (
               <div className="mt-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">Recent orders on this device</p>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -238,9 +240,11 @@ export default function TrackOrder({ embedded = false }: { embedded?: boolean } 
             )}
 
             {error && <div className="mt-5 rounded-2xl border border-danger/25 bg-danger/[0.08] p-4 text-sm text-ink-rose">{error}</div>}
-            {order && <div className="mt-6 rounded-[22px] border border-white/10 bg-white/[0.03] p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[12px] text-faint-foreground">Order reference</p><p className="font-display text-xl font-semibold text-white">{order.reference}</p></div><Badge variant={order.orderStatus === "completed" ? "success" : order.orderStatus === "awaiting_verification" ? "mint" : "amber"}>{order.orderStatus === "awaiting_verification" ? <Clock size={12} /> : <ShieldCheck size={12} />}{statusLabel(order.orderStatus)}</Badge></div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">{[["Network", order.network ?? "—"],["Bundle", order.product ?? "—"],["Recipient", order.recipient],["Payment", statusLabel(order.paymentStatus)],["Amount", formatGHS(Number(order.amount))],["Delivery", statusLabel(order.deliveryStatus)]].map(([label, value]) => <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">{label}</p><p className="mt-1 text-sm font-semibold capitalize text-foreground">{value}</p></div>)}</div>
+            {loading && fixedReference && !order && <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground"><Loader2 className="animate-spin" size={16} />Loading order…</div>}
+            {order && <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-3"><p className="min-w-0 truncate font-display text-[17px] font-semibold text-white">{order.reference}</p><Badge variant={order.orderStatus === "completed" ? "success" : order.orderStatus === "awaiting_verification" ? "mint" : order.orderStatus === "refunded" ? "neutral" : "amber"}>{order.orderStatus === "awaiting_verification" ? <Clock size={12} /> : <ShieldCheck size={12} />}{statusLabel(order.orderStatus)}</Badge></div>
+              <p className="mt-1.5 text-[13px] leading-5 text-foreground">{order.network ?? "—"} · {(order.product ?? "").replace(/^.*?—\s*/, "") || "—"} · to {order.recipient} · {formatGHS(Number(order.amount))}</p>
+              <p className="mt-0.5 text-[12px] text-faint-foreground">{order.paymentStatus === "succeeded" ? "Paid" : order.paymentStatus === "refunded" ? "Refunded" : "Not paid"} · {new Date(order.updatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}{order.store ? ` · via ${order.store.name}` : ""}</p>
               {order.orderStatus === "wrong_network" && order.fix ? (
                 <div className="mt-4 rounded-2xl border border-amber/30 bg-amber/[0.08] p-4">
                   <div className="flex items-center gap-2"><AlertTriangle size={14} className="text-amber" /><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber">Wrong network</p></div>
@@ -255,18 +259,11 @@ export default function TrackOrder({ embedded = false }: { embedded?: boolean } 
                   <p className="mt-3 text-[12px] leading-5 text-muted-foreground">Bundles can only go to a number on the network you selected. Please check it carefully: once a bundle is delivered it can't be reversed or refunded.</p>
                 </div>
               ) : order.orderStatus === "awaiting_verification" ? (
-                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                  <div className="flex items-center gap-2"><Clock size={14} className="text-primary-glow" /><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-glow">MTN number verification</p></div>
-                  <p className="mt-2 text-sm font-semibold text-white">Your order hasn't failed — it's on hold while MTN verifies the number.</p>
-                  <p className="mt-2 text-sm leading-6 text-foreground">{order.statusMessage}</p>
-                  <ul className="mt-3 space-y-1.5 text-sm leading-6 text-muted-foreground">
-                    <li>• MTN checks numbers receiving a bundle for the first time.</li>
-                    <li>• This usually takes a few days.</li>
-                    <li>• Your data is delivered automatically once the check is done — nothing to do on your side.</li>
-                    <li>• Future orders to this number will go through normally.</li>
-                  </ul>
+                <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-3">
+                  <div className="flex items-center gap-2"><Clock size={13} className="text-primary-glow" /><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-glow">MTN number verification</p></div>
+                  <p className="mt-1.5 text-[13px] leading-5 text-foreground">Not failed, just on hold: MTN checks numbers receiving a bundle for the first time, usually a few days. Your data is delivered automatically once cleared, and future orders to this number go through normally.</p>
                 </div>
-              ) : order.statusMessage && <div className="mt-4 rounded-2xl border border-primary-glow/15 bg-primary/[0.06] p-4"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-glow">Latest update</p><p className="mt-1 text-sm leading-6 text-foreground">{order.statusMessage}</p></div>}
+              ) : order.statusMessage && <div className="mt-3 rounded-xl border border-primary-glow/15 bg-primary/[0.06] px-3.5 py-3"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-glow">Latest update</p><p className="mt-1 text-sm leading-6 text-foreground">{order.statusMessage}</p></div>}
               {order.paymentStatus !== "succeeded" && !["cancelled", "refunded"].includes(order.orderStatus) && (
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <Button onClick={continuePayment} disabled={paying}>{paying ? <Loader2 className="animate-spin" /> : <CreditCard />}Continue payment</Button>
