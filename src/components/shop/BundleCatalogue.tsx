@@ -475,17 +475,18 @@ export default function BundleCatalogue() {
                         >
                           {group.network.name.toUpperCase()}
                         </span>
-                        <span className="font-display text-[15px] font-semibold tracking-tight text-foreground">
-                          {group.network.name} bundles
-                        </span>
-                        <span className="tnum text-[12.5px] text-faint-foreground">
-                          {group.rows.length}
-                        </span>
-                        {group.network.name === "MTN" && speedLabel(speeds[group.network.name]) && (
-                          <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-primary-glow/20 bg-primary/[0.08] px-2.5 py-0.5 text-[11px] font-medium text-primary-glow" title="Typical time from payment to delivery right now">
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary-glow" />Delivering in {speedLabel(speeds[group.network.name])}
+                        {group.network.name === "MTN" && speedLabel(speeds[group.network.name]) ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-glow/20 bg-primary/[0.08] px-3 py-1 text-[12.5px] font-semibold text-primary-glow" title="Typical time from payment to delivery right now">
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary-glow" />MTN delivering in {speedLabel(speeds[group.network.name])}
                           </span>
-                        )}
+                        ) : (<>
+                          <span className="font-display text-[15px] font-semibold tracking-tight text-foreground">
+                            {group.network.name} bundles
+                          </span>
+                          <span className="tnum text-[12.5px] text-faint-foreground">
+                            {group.rows.length}
+                          </span>
+                        </>)}
                       </h3>
                     </div>
 
