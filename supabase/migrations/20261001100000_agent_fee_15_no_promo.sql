@@ -1,0 +1,3 @@
+-- Applied live 1 Oct 2026 (migration agent_fee_15_no_promo).
+-- site_settings.agent_plan: monthly 15; plans 1m 15, 3m 40.50, 12m 144. agent_promos all deactivated.
+-- help_articles.plan-and-pricing updated.
