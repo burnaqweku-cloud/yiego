@@ -126,10 +126,11 @@
     background: #f2f7f4;
   }
 
+  html { overflow-x: clip; }
   body {
     @apply bg-background text-foreground font-sans antialiased;
     text-rendering: optimizeLegibility;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   ::selection {

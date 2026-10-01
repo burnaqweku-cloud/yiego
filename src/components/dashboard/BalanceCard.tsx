@@ -15,7 +15,7 @@ export default function BalanceCard() {
   const { symbol, value } = formatAmountParts(animatedBalance);
 
   return (
-    <div className="onyx-wallet group relative flex h-full flex-col overflow-hidden rounded-[26px] p-6 sm:p-7">
+    <div className="onyx-wallet group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[26px] p-6 sm:p-7">
       <GuillocheMesh />
       <span className="onyx-wallet-sheen" aria-hidden="true" />
       <span className="onyx-wallet-edge" aria-hidden="true" />

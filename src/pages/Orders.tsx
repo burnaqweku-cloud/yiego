@@ -140,7 +140,7 @@ export default function Orders() {
       </section>
 
       {loading ? <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="animate-spin" size={17} /> Loading orders…</div> : error ? <div className="rounded-2xl border border-danger/25 bg-danger/[0.08] p-4 text-sm text-ink-rose">We couldn't load your orders. Please refresh and try again.</div> : orders.length === 0 ? <section className="onyx-panel rounded-[24px] p-7 text-center"><PackageCheck className="mx-auto text-primary-glow" size={28} /><h2 className="mt-4 font-display text-xl font-semibold text-white">No orders yet</h2><p className="mt-2 text-sm text-muted-foreground">Your first data purchase will appear here.</p><Button className="mt-5" onClick={() => navigate("/shop")}>Buy data</Button></section> : visible.length === 0 ? <section className="onyx-panel rounded-[24px] p-7 text-center"><Search className="mx-auto text-primary-glow" size={26} /><h2 className="mt-4 font-display text-lg font-semibold text-white">No matching orders</h2><p className="mt-2 text-sm text-muted-foreground">Try another search or status filter.</p></section> : <>
-        <section className="grid gap-3 xl:grid-cols-2">
+        <section className="grid min-w-0 grid-cols-1 gap-3 xl:grid-cols-2">
           {visible.map((order) => {
             const status = customerStatus(order);
             return <button type="button" key={order.id} onClick={() => setOpenRef(order.order_reference)} className="onyx-panel block w-full rounded-[22px] p-5 text-left transition hover:border-primary-glow/25">

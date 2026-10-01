@@ -74,9 +74,9 @@ export default function Wallet() {
 
       {error && <div className="rounded-[22px] border border-danger/25 bg-danger/[0.08] p-4 text-sm text-ink-rose">{error}</div>}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] lg:items-start">
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] lg:items-start">
         <BalanceCard />
-        <section className="onyx-panel rounded-[24px] p-5 sm:p-6">
+        <section className="onyx-panel min-w-0 overflow-hidden rounded-[24px] p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div><h2 className="font-display text-lg font-semibold text-white">Transactions</h2><p className="mt-1 text-xs text-faint-foreground">Deposits, data purchases and refunds</p></div>
             <span className="text-xs text-faint-foreground">{transactions.length} entries</span>
@@ -87,7 +87,7 @@ export default function Wallet() {
               return <button key={transaction.id} type="button" onClick={() => setSelected(transaction)} className="flex w-full items-center gap-3 py-4 text-left">
                 <span className={cn("onyx-tx-icon shrink-0", incoming ? "is-in" : "is-out")}>{incoming ? <ArrowDownToLine size={16} /> : <ArrowUpRight size={16} />}</span>
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-foreground">{transaction.title}</span><span className="block truncate text-xs text-faint-foreground">{transaction.subtitle}</span></span>
-                <span className="text-right"><span className={cn("block font-display text-sm font-semibold", incoming ? "text-success" : "text-foreground")}>{formatSigned(transaction.amount)}</span><span className="mt-1 flex items-center justify-end gap-1 text-[10px] text-faint-foreground"><Clock size={10} /> {transaction.status}</span></span>
+                <span className="shrink-0 text-right"><span className={cn("block whitespace-nowrap font-display text-sm font-semibold", incoming ? "text-success" : "text-foreground")}>{formatSigned(transaction.amount)}</span><span className="mt-1 flex items-center justify-end gap-1 text-[10px] text-faint-foreground"><Clock size={10} /> {transaction.status}</span></span>
               </button>;
             })}</div>
           )}
