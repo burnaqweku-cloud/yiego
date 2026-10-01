@@ -481,7 +481,7 @@ export default function BundleCatalogue() {
                         </span>
                         {group.network.name === "MTN" && speedLabel(speeds[group.network.name]) ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-glow/20 bg-primary/[0.08] px-3 py-1 text-[12.5px] font-semibold text-primary-glow" title="Typical time from payment to delivery right now">
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary-glow" />MTN delivering in {speedLabel(speeds[group.network.name])}
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary-glow" />{speeds[group.network.name]?.window === "stale" ? `Last MTN order took ${speedLabel(speeds[group.network.name])}` : `MTN delivering in ${speedLabel(speeds[group.network.name])}`}
                           </span>
                         ) : (<>
                           <span className="font-display text-[15px] font-semibold tracking-tight text-foreground">

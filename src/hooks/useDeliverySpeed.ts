@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /* Per-network delivery speed for the catalogue: median of the last 2 hours when there are
    at least 3 deliveries, otherwise the most recent delivered order (within 12 hours). */
-export interface NetworkSpeed { window: "2h" | "last"; sample: number; median_minutes: number }
+export interface NetworkSpeed { window: "2h" | "last" | "stale"; sample: number; median_minutes: number; last_at?: string }
 export function useDeliverySpeed() {
   const [speeds, setSpeeds] = useState<Record<string, NetworkSpeed>>({});
   useEffect(() => {
