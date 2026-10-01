@@ -27,7 +27,7 @@ export default function CheckMtn() {
     for (const r of results ?? []) { const t = STATUS_COPY[r.status].tone; if (t === "ok") c.approved++; else if (t === "wait") c.waiting++; else c.bad++; }
     return c;
   }, [results]);
-  const unapproved = useMemo(() => (results ?? []).filter((r) => r.status === "not_approved" || (r.status === "unapproved" && !r.submitted)).map((r) => r.msisdn), [results]);
+  const unapproved = useMemo(() => (results ?? []).filter((r) => r.status === "not_approved").map((r) => r.msisdn), [results]);
   const submitAll = async () => {
     if (unapproved.length === 0) return;
     setBusy(true);

@@ -43,7 +43,7 @@ export default function MtnCheckField({ source, placeholder = "Enter MTN number"
   const border = tone === "ok" ? "border-primary-glow/60 ring-1 ring-primary-glow/30" : tone === "wait" ? "border-amber/60 ring-1 ring-amber/30" : tone === "bad" ? "border-danger/60 ring-1 ring-danger/30" : "";
   const Icon = tone === "ok" ? Check : tone === "wait" ? Clock : tone === "bad" ? X : null;
   const color = tone === "ok" ? "text-primary-glow" : tone === "wait" ? "text-amber" : "text-danger";
-  const canSubmit = result?.status === "not_approved" || (result?.status === "unapproved" && !result.submitted);
+  const canSubmit = result?.status === "not_approved";
 
   return (
     <div className="min-w-0">
@@ -56,7 +56,7 @@ export default function MtnCheckField({ source, placeholder = "Enter MTN number"
           <p className={`font-semibold ${color}`}>{copy.title}</p>
           <p className="text-muted-foreground">{submitNote ?? copy.text}</p>
           {canSubmit && !submitNote && <button type="button" disabled={submitting} onClick={() => void submit()} className="mt-1.5 text-[12.5px] font-semibold text-primary-glow disabled:opacity-60">{submitting ? "Submitting…" : "Submit this number for MTN verification →"}</button>}
-          {result?.status === "unapproved" && result.submitted && !submitNote && <p className="mt-1 text-[11.5px] text-faint-foreground">Submitted {new Date(result.submitted).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}.</p>}
+          {result?.status === "unapproved" && result.submitted && !submitNote && <p className="mt-1 text-[11.5px] text-faint-foreground">Submitted {new Date(result.submitted).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}. We re-check with MTN every hour.</p>}
         </div>
       )}
     </div>
