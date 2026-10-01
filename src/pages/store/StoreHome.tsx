@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { Info } from "lucide-react";
+import MtnCheckField from "@/components/mtn/MtnCheckField";
+import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
+import { speedLabel, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 import { useNavigate } from "react-router-dom";
 import { MessageCircle, Search, ShieldCheck, Zap } from "lucide-react";
 import Seo from "@/components/seo/Seo";
@@ -9,6 +13,7 @@ import { formatGHS } from "@/lib/format";
 import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
 
 export default function StoreHome() {
+  const speeds = useDeliverySpeed(); const [checkInfoOpen, setCheckInfoOpen] = useState(false);
   const store = useStore(); const navigate = useNavigate();
   const [products, setProducts] = useState<Phase1Product[]>([]);
   const [open, setOpen] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null);
@@ -29,7 +34,14 @@ export default function StoreHome() {
       <div className="mt-3 space-y-4">
         {groups.map(({ n, items }) => (
           <section key={n.id}>
-            <h2 className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{n.name}</h2>
+            <div className="mb-1.5 flex items-center gap-2 px-1"><h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{n.name}</h2>{n.id === "mtn" && speedLabel(speeds.MTN) && <span className="inline-flex items-center gap-1 rounded-full border border-primary-glow/20 bg-primary/[0.08] px-2 py-0.5 text-[10.5px] font-semibold text-primary-glow"><span className="h-1.5 w-1.5 rounded-full bg-primary-glow" />{speeds.MTN?.window === "stale" ? `Last MTN order took ${speedLabel(speeds.MTN)}` : `Delivering in ${speedLabel(speeds.MTN)}`}</span>}</div>
+            {n.id === "mtn" && (
+              <div className="onyx-panel mb-3 rounded-2xl p-3.5">
+                <div className="mb-2 flex items-center gap-1.5"><p className="text-[12.5px] font-semibold text-foreground">Check your MTN number before you buy</p><button type="button" onClick={() => setCheckInfoOpen(true)} aria-label="About the MTN number check" className="text-faint-foreground hover:text-primary-glow"><Info size={14} /></button></div>
+                <MtnCheckField source="shop" compact />
+                <MtnCheckInfoSheet open={checkInfoOpen} onClose={() => setCheckInfoOpen(false)} />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {items.map(({ p, price }) => (
                 <button key={p.id} type="button" onClick={() => { setPreselect({ kind: "bundle", networkId: n.id, productCode: p.app_product_code ?? p.id }); setOpen(true); }} className="onyx-panel group rounded-2xl p-3 text-left transition-colors hover:border-primary/40">
@@ -42,9 +54,9 @@ export default function StoreHome() {
       </div>
       <section className="onyx-panel mt-6 rounded-2xl p-4">
         <p className="text-[13.5px] font-semibold text-foreground">Track an order</p>
-        <p className="text-[12px] text-muted-foreground">Enter the order ID from your receipt (starts with AG-).</p>
+        <p className="text-[12px] text-muted-foreground">Enter the order ID from your receipt (starts with AG-) or the phone number the data was sent to.</p>
         <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (track.trim()) navigate(`/s/${store.slug}/track?reference=${encodeURIComponent(track.trim().toUpperCase())}`); }}>
-          <input value={track} onChange={(e) => setTrack(e.target.value)} placeholder="AG-XXXXXXXXXX" className="onyx-field flex-1" /><button type="submit" className="onyx-btn-primary px-4 py-2 text-[13px]"><Search size={14} /></button>
+          <input value={track} onChange={(e) => setTrack(e.target.value)} placeholder="Order ID or phone number" className="onyx-field flex-1" /><button type="submit" className="onyx-btn-primary px-4 py-2 text-[13px]"><Search size={14} /></button>
         </form>
       </section>
       {wa && <a href={wa} target="_blank" rel="noreferrer" className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-4 py-3 text-[14px] font-semibold text-[#062e1a]"><MessageCircle size={17} />Chat with {store.store_name.split("'")[0]} on WhatsApp</a>}
