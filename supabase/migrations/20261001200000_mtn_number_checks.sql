@@ -1,0 +1,5 @@
+-- Applied live 1 Oct 2026 (migration mtn_number_checks).
+-- phase1.beneficiary_checks (10-minute memory of DBH beneficiary answers) and phase1.submitted_numbers
+-- (numbers submitted for MTN verification; no orders). Edge functions check-mtn-number (public check +
+-- submit) and verify-mtn-numbers (hourly, cron secret): re-sends verification-queue orders whose number
+-- DBH now reports approved; marks submitted numbers approved. Cron job verify-mtn-numbers at :07 hourly.

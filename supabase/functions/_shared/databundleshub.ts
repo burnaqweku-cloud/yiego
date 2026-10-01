@@ -51,7 +51,8 @@ export interface DataBundlesHubPayload {
     /* transactions list */
     transactions?: Array<{ _id?: number | string; status?: string; type?: string; errorCode?: string | number | null; error_code?: string | number | null }>;
     pagination?: { hasNextPage?: boolean };
-  };
+  } | Array<{ msisdn?: string; approved?: boolean; status?: string; message?: string | null }>;
+  enforced?: boolean;
 }
 
 function config() {
@@ -132,6 +133,11 @@ export function checkOrderStatus(requestId: number | string) {
 }
 
 /** The whole recent order book in one request. */
+/** Is this MTN number on our approved beneficiary list? Read-only; never creates an order or adds the number. Up to 100 per call. */
+export function checkBeneficiaries(msisdns: string[]) {
+  return call(`/api/beneficiaries/check?msisdn=${encodeURIComponent(msisdns.join(","))}`, { method: "GET", timeoutMs: 20_000 });
+}
+
 export function listTransactions(limit = 100, page = 1) {
   return call(`/api/developer/transactions?limit=${limit}&page=${page}`, { method: "GET", timeoutMs: 25_000 });
 }

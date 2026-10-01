@@ -8,6 +8,9 @@ import { useFlows } from "@/store/flows";
 import { useReveal } from "@/hooks/useReveal";
 import { cn } from "@/lib/utils";
 import { speedLabel, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { Info } from "lucide-react";
+import MtnCheckField from "@/components/mtn/MtnCheckField";
+import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
 
 /**
  * The shop floor: every live bundle, on the page itself.
@@ -246,6 +249,7 @@ function SupplierBanner({ supplier }: { supplier: SupplierChoice }) {
 
 export default function BundleCatalogue() {
   const speeds = useDeliverySpeed();
+  const [checkInfoOpen, setCheckInfoOpen] = useState(false);
   const { openBuyData } = useFlows();
   const { suppliers, loading: choicesLoading, error: choicesError, reload } = useSupplierChoices();
   const [supplierId, setSupplierId] = useState<string | null>(null);
@@ -489,6 +493,13 @@ export default function BundleCatalogue() {
                         </>)}
                       </h3>
                     </div>
+                    {group.network.name === "MTN" && (
+                      <div className="mb-5 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
+                        <div className="mb-2 flex items-center gap-1.5"><p className="text-[13px] font-semibold text-foreground">Check your MTN number before you buy</p><button type="button" onClick={() => setCheckInfoOpen(true)} aria-label="About the MTN number check" className="text-faint-foreground hover:text-primary-glow"><Info size={15} /></button></div>
+                        <MtnCheckField source="shop" />
+                        <MtnCheckInfoSheet open={checkInfoOpen} onClose={() => setCheckInfoOpen(false)} />
+                      </div>
+                    )}
 
                     <BundleGrid rows={group.rows} onBuy={buy} />
                   </div>
