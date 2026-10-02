@@ -70,17 +70,31 @@ export default function NotificationBell({ className = "" }: { className?: strin
   );
 }
 
-/** Thin strip for guests: the newest unread announcement, dismissible. */
+/** One-line strip for notices marked urgent (everyone). Title only; "Read more" opens the full text; × dismisses. */
 export function AnnouncementStrip() {
   const [item, setItem] = useState<Announcement | null>(null);
-  useEffect(() => { void loadAnnouncements().then((l) => setItem(l.find((a) => !a.read) ?? null)); }, []);
+  const [openFull, setOpenFull] = useState(false);
+  useEffect(() => { void loadAnnouncements().then((l) => setItem(l.find((a) => a.is_urgent && !a.read) ?? null)); }, []);
   if (!item) return null;
+  const tone = item.kind === "warning" ? "border-danger/30 bg-danger/10" : item.kind === "price" ? "border-amber/30 bg-amber/10" : "border-primary/30 bg-primary/10";
   return (
-    <div className={`mk-wrap mt-2`}>
-      <div className={`flex items-start gap-3 rounded-2xl border px-4 py-2.5 text-[12.5px] ${item.kind === "warning" ? "border-danger/30 bg-danger/10" : item.kind === "price" ? "border-amber/30 bg-amber/10" : "border-primary/30 bg-primary/10"}`}>
-        <div className="min-w-0 flex-1"><b className="text-foreground">{item.title}</b> <span className="text-muted-foreground">{item.body}</span>{item.link_url && <a href={item.link_url} className="ml-1 font-medium text-primary-glow">{item.link_label ?? "Open"} →</a>}</div>
-        <button type="button" aria-label="Dismiss" onClick={() => { void markRead(item.id); setItem(null); }} className="text-faint-foreground">✕</button>
+    <div className="mk-wrap mt-2">
+      <div className={`flex items-center gap-3 rounded-full border px-4 py-2 text-[12.5px] ${tone}`}>
+        <p className="min-w-0 flex-1 truncate"><b className="text-foreground">{item.title}</b></p>
+        <button type="button" onClick={() => setOpenFull(true)} className="shrink-0 font-semibold text-primary-glow">Read more</button>
+        <button type="button" aria-label="Dismiss" onClick={() => { void markRead(item.id); setItem(null); }} className="shrink-0 text-faint-foreground">×</button>
       </div>
+      {openFull && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={() => setOpenFull(false)}>
+          <div className="onyx-panel w-full max-w-md rounded-t-3xl p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-primary-glow">{KIND_LABEL[item.kind] ?? "Notice"}</p>
+            <h3 className="mt-1 font-display text-[18px] font-semibold text-foreground">{item.title}</h3>
+            <p className="mt-2 whitespace-pre-line text-[13.5px] leading-6 text-muted-foreground">{item.body}</p>
+            {item.link_url && <a href={item.link_url} className="mt-3 inline-flex items-center gap-1 text-[13.5px] font-semibold text-primary-glow">{item.link_label ?? "Open"} <ExternalLink size={14} /></a>}
+            <button type="button" onClick={() => { void markRead(item.id); setItem(null); setOpenFull(false); }} className="onyx-btn-primary mt-4 w-full py-3 text-[14px]">Got it</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

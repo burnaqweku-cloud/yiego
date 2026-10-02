@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export interface Announcement { id: string; title: string; body: string; kind: "update" | "price" | "notice" | "warning"; audience: string; link_url: string | null; link_label: string | null; is_pinned: boolean; starts_at: string; read: boolean }
+export interface Announcement { id: string; title: string; body: string; kind: "update" | "price" | "notice" | "warning"; audience: string; link_url: string | null; link_label: string | null; is_pinned: boolean; is_urgent?: boolean; starts_at: string; read: boolean }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const p1 = () => (supabase as unknown as { schema: (s: string) => any }).schema("phase1");
 const GUEST_KEY = "yg-announcements-read";

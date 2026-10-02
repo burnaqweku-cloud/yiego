@@ -198,7 +198,7 @@ export default function PublicNav() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2.5">
-            {isAuthenticated && <NotificationBell />}
+            <NotificationBell />
             {isAuthenticated ? (
               <div className="relative hidden sm:block" ref={menuRef}>
                 <button

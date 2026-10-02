@@ -11,13 +11,13 @@ import { useAuth } from "@/store/auth-context";
 
 /* Announcements: what customers, agents and visitors see in their bell /
    strip, and (optionally) get by email. */
-interface Ann { id: string; title: string; body: string; audience: "everyone" | "customers" | "agents" | "guests"; kind: "update" | "price" | "notice" | "warning"; link_url: string | null; link_label: string | null; starts_at: string; ends_at: string | null; is_pinned: boolean; is_active: boolean; emailed_at: string | null; created_at: string }
+interface Ann { id: string; title: string; body: string; audience: "everyone" | "customers" | "agents" | "guests"; kind: "update" | "price" | "notice" | "warning"; link_url: string | null; link_label: string | null; is_urgent?: boolean; starts_at: string; ends_at: string | null; is_pinned: boolean; is_active: boolean; emailed_at: string | null; created_at: string }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> };
 const AUD: Record<Ann["audience"], string> = { everyone: "Everyone", customers: "Customers", agents: "Agents", guests: "Visitors (not signed in)" };
 const KIND: Record<Ann["kind"], string> = { update: "Update", price: "Price change", notice: "Notice", warning: "Important" };
 const toLocal = (iso: string | null) => iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "";
-const blank = (): Partial<Ann> => ({ title: "", body: "", audience: "everyone", kind: "update", link_url: "", link_label: "", is_pinned: false, is_active: true, starts_at: new Date().toISOString(), ends_at: null });
+const blank = (): Partial<Ann> => ({ title: "", body: "", audience: "everyone", kind: "update", link_url: "", link_label: "", is_pinned: false, is_urgent: false, is_active: true, starts_at: new Date().toISOString(), ends_at: null });
 
 export default function AdminAnnouncements() {
   const { user } = useAuth(); const actor = user?.id ?? "";
@@ -35,7 +35,7 @@ export default function AdminAnnouncements() {
   const save = async () => {
     if (!edit?.title?.trim() || !edit.body?.trim()) return toast.error("Title and message are needed.");
     setBusy(true);
-    const { error } = await db().rpc("admin_save_announcement", { p_actor: actor, p_id: edit.id ?? null, p_title: edit.title, p_body: edit.body, p_audience: edit.audience, p_kind: edit.kind, p_link_url: edit.link_url ?? null, p_link_label: edit.link_label ?? null, p_starts_at: edit.starts_at ?? null, p_ends_at: edit.ends_at ?? null, p_pinned: edit.is_pinned ?? false, p_active: edit.is_active ?? true });
+    const { error } = await db().rpc("admin_save_announcement", { p_actor: actor, p_id: edit.id ?? null, p_title: edit.title, p_body: edit.body, p_audience: edit.audience, p_kind: edit.kind, p_link_url: edit.link_url ?? null, p_link_label: edit.link_label ?? null, p_starts_at: edit.starts_at ?? null, p_ends_at: edit.ends_at ?? null, p_pinned: edit.is_pinned ?? false, p_active: edit.is_active ?? true, p_urgent: edit.is_urgent ?? false });
     setBusy(false); if (error) return toast.error(error.message); toast.success("Saved. It's live for its audience now."); setEdit(null); void load();
   };
   const sendEmail = async (a: Ann) => {
@@ -68,7 +68,7 @@ export default function AdminAnnouncements() {
             <Field label="Show from"><input type="datetime-local" value={toLocal(edit?.starts_at ?? null)} onChange={(e) => setEdit({ ...edit, starts_at: e.target.value ? new Date(e.target.value).toISOString() : undefined })} className={inputCls} /></Field>
             <Field label="Until (optional)"><input type="datetime-local" value={toLocal(edit?.ends_at ?? null)} onChange={(e) => setEdit({ ...edit, ends_at: e.target.value ? new Date(e.target.value).toISOString() : null })} className={inputCls} /></Field>
           </div>
-          <div className="flex flex-wrap gap-4 text-[12.5px]"><label className="flex items-center gap-2"><input type="checkbox" checked={edit?.is_pinned ?? false} onChange={(e) => setEdit({ ...edit, is_pinned: e.target.checked })} />Pin to top</label><label className="flex items-center gap-2"><input type="checkbox" checked={edit?.is_active ?? true} onChange={(e) => setEdit({ ...edit, is_active: e.target.checked })} />Live</label></div>
+          <div className="flex flex-wrap gap-4 text-[12.5px]"><label className="flex items-center gap-2"><input type="checkbox" checked={edit?.is_pinned ?? false} onChange={(e) => setEdit({ ...edit, is_pinned: e.target.checked })} />Pin to top</label><label className="flex items-center gap-2" title="Shows a one-line strip at the top of every page until dismissed. Use for outages and urgent notices only."><input type="checkbox" checked={edit?.is_urgent ?? false} onChange={(e) => setEdit({ ...edit, is_urgent: e.target.checked })} />Urgent strip</label><label className="flex items-center gap-2"><input type="checkbox" checked={edit?.is_active ?? true} onChange={(e) => setEdit({ ...edit, is_active: e.target.checked })} />Live</label></div>
           <div className="mt-2 flex items-center justify-between gap-2">
             {edit?.id ? <Button variant="quiet" size="sm" onClick={() => edit && void sendEmail(edit as Ann)}><Send size={13} />Email to {AUD[(edit.audience ?? "everyone") as Ann["audience"]].toLowerCase()}</Button> : <span />}
             <div className="flex gap-2"><Button variant="quiet" onClick={() => setEdit(null)}>Cancel</Button><Button onClick={() => void save()} disabled={busy}>Save</Button></div>
