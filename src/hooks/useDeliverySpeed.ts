@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-/* Per-network delivery speed for the catalogue: median of the last 2 hours when there are
-   at least 3 deliveries, otherwise the most recent delivered order (within 12 hours). */
-export interface NetworkSpeed { window: "2h" | "last" | "stale"; sample: number; median_minutes: number; at_least?: boolean; last_at?: string; paused?: boolean }
+/* Per-network delivery speed for the catalogue. Middle value of: orders still waiting (time waited so far)
+   + orders delivered that were paid in the last hour (time taken). Nothing to measure -> "delivering normally". */
+export interface NetworkSpeed { window: "1h" | "none"; sample: number; median_minutes: number; at_least?: boolean; paused?: boolean }
 export function useDeliverySpeed() {
   const [speeds, setSpeeds] = useState<Record<string, NetworkSpeed>>({});
   useEffect(() => {
@@ -12,7 +12,10 @@ export function useDeliverySpeed() {
     void Promise.all([p1.rpc("delivery_speed_by_network", {}), p1.from("networks").select("name, is_paused")]).then(([{ data }, nets]) => {
       if (cancelled) return;
       const next: Record<string, NetworkSpeed> = { ...(data ?? {}) };
-      for (const n of nets.data ?? []) if (n.is_paused) next[n.name] = { ...(next[n.name] ?? { window: "stale", sample: 0, median_minutes: 0 }), paused: true };
+      for (const n of nets.data ?? []) {
+        if (!next[n.name]) next[n.name] = { window: "none", sample: 0, median_minutes: 0 };   // nothing to measure
+        if (n.is_paused) next[n.name] = { ...next[n.name], paused: true };
+      }
       setSpeeds(next);
     });
     return () => { cancelled = true; };
@@ -27,12 +30,10 @@ export function speedLabel(s: NetworkSpeed | undefined): string | null {
 }
 /** Wording + tone for the pill. Slow (over 30 min) shows amber so delays are visible, not hidden in a number. */
 export function speedPill(s: NetworkSpeed | undefined, network = "MTN"): { text: string; slow: boolean; paused?: boolean } | null {
-  if (s?.paused) return { text: `${network} not taking orders right now · check back later`, slow: false, paused: true };
-  const label = speedLabel(s); if (!s || !label) return null;
+  if (!s) return null;
+  if (s.paused) return { text: `${network} not taking orders right now · check back later`, slow: false, paused: true };
+  if (s.window === "none" || s.sample === 0) return { text: `${network} delivering normally`, slow: false };
+  const label = speedLabel(s); if (!label) return null;
   const slow = s.median_minutes > 30;
-  if (s.window === "stale") {
-    const ago = s.last_at ? Math.round((Date.now() - new Date(s.last_at).getTime()) / 3_600_000) : null;
-    return { text: `Last ${network} order took ${label}${ago ? ` · ${ago} hr ago` : ""}`, slow: false };
-  }
   return { text: slow ? `${network} delays: orders taking ${label}` : `${network} delivering in ${label}`, slow };
 }
