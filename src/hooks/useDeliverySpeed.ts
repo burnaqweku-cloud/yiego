@@ -35,5 +35,5 @@ export function speedPill(s: NetworkSpeed | undefined, network = "MTN"): { text:
   if (s.window === "none" || s.sample === 0) return { text: `${network} delivering normally`, slow: false };
   const label = speedLabel(s); if (!label) return null;
   const slow = s.median_minutes > 30;
-  return { text: slow ? `${network} delays: orders taking ${label}` : `${network} delivering in ${label}`, slow };
+  return { text: `${network} delivering in ${label}`, slow };
 }

@@ -480,8 +480,8 @@ export default function BundleCatalogue() {
                           {group.network.name.toUpperCase()}
                         </span>
                         {group.network.name === "MTN" && speedPill(speeds.MTN) ? (
-                          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12.5px] font-semibold ${speedPill(speeds.MTN)!.paused ? "border-white/[0.12] bg-white/[0.05] text-muted-foreground" : speedPill(speeds.MTN)!.slow ? "border-amber/30 bg-amber/10 text-amber" : "border-primary-glow/20 bg-primary/[0.08] text-primary-glow"}`} title="Typical time from payment to delivery right now, counting orders still in progress">
-                            <span className={`h-1.5 w-1.5 rounded-full ${speedPill(speeds.MTN)!.paused ? "bg-faint-foreground" : speedPill(speeds.MTN)!.slow ? "bg-amber" : "bg-primary-glow"}`} />{speedPill(speeds.MTN)!.text}
+                          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12.5px] font-semibold ${speedPill(speeds.MTN)!.paused ? "border-white/[0.12] bg-white/[0.05] text-muted-foreground" : "border-primary-glow/20 bg-primary/[0.08] text-primary-glow"}`} title="Typical time from payment to delivery right now, counting orders still in progress">
+                            <span className={`h-1.5 w-1.5 rounded-full ${speedPill(speeds.MTN)!.paused ? "bg-faint-foreground" : "bg-primary-glow"}`} />{speedPill(speeds.MTN)!.text}
                           </span>
                         ) : (<>
                           <span className="font-display text-[15px] font-semibold tracking-tight text-foreground">
