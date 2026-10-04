@@ -79,12 +79,13 @@ export default function AdminSuppliers() {
             const nProducts = products.filter((p) => p.network_id === n.id); const pausedCount = nProducts.filter((p) => p.is_paused).length;
             return (
               <li key={n.id} className="py-2">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                   <button type="button" onClick={() => setOpenNetwork(open ? null : n.id)} className="min-w-0 flex-1 text-left">
-                    <p className="text-[13px] font-semibold text-foreground">{n.name} {n.is_paused && <Pill tone="warn">paused</Pill>} {pausedCount > 0 && !n.is_paused && <Pill tone="warn">{pausedCount} bundle{pausedCount > 1 ? "s" : ""} paused</Pill>}</p>
+                    <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-foreground">{n.name} {n.is_paused && <Pill tone="warn">paused</Pill>} {pausedCount > 0 && !n.is_paused && <Pill tone="warn">{pausedCount} bundle{pausedCount > 1 ? "s" : ""} paused</Pill>}</p>
                     <p className="text-[11px] text-faint-foreground">{n.is_paused ? n.pause_reason : `${nProducts.length} bundles · ${open ? "hide" : "show"}`}</p>
                   </button>
-                  <label className="flex items-center gap-1.5 text-[11px] text-faint-foreground">Delivered by
+                  <div className="flex flex-wrap items-center gap-2">
+                  <label className="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-faint-foreground">Delivered by
                     <select value={routed?.code ?? ""} onChange={(e) => void call("admin_set_network_supplier", { p_network_code: n.code, p_supplier_code: e.target.value }, `${n.name} now delivered by ${suppliers.find((s) => s.code === e.target.value)?.name ?? "default"}`)} className={`${inputCls} h-8 w-auto py-0 text-[12px]`}>
                       <option value="">Default (priority)</option>
                       {options.map((s) => <option key={s.id} value={s.code}>{s.name}{s.status !== "active" ? ` (${s.status})` : ""}</option>)}
@@ -94,6 +95,7 @@ export default function AdminSuppliers() {
                     ? <Button size="sm" variant="soft" onClick={() => void call("admin_pause_network", { p_network_code: n.code, p_paused: false, p_reason: null }, `${n.name} is back on`)}><Play size={13} />Resume</Button>
                     : <Button size="sm" variant="quiet" onClick={() => { setPausing({ kind: "network", id: n.code, label: n.name }); setReason(""); }}><Pause size={13} />Pause</Button>}
                   <Button size="sm" variant="quiet" title="Shows 'delivering normally' and ignores all earlier orders; the next order starts the live figure afresh." onClick={async () => { if (!window.confirm(`Reset ${n.name} delivery speed? The pill shows "delivering normally" until the next order comes in.`)) return; const { error } = await db().rpc("admin_reset_delivery_speed", { p_network: n.name }); if (error) toast.error(error.message.replace(/_/g, " ")); else toast.success(`${n.name} delivery speed reset.`); }}><RotateCcw size={13} />Reset speed</Button>
+                  </div>
                 </div>
                 {routed && routed.status !== "active" && <p className="mt-1 text-[11px] text-amber">{routed.name} is {routed.status} — orders fall back to the next available supplier until it is activated.</p>}
                 {open && (
