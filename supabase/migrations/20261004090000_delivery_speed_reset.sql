@@ -1,0 +1,2 @@
+-- Applied live 4 Oct 2026 (migration delivery_speed_reset). networks.speed_reset_at; delivery_speed_by_network
+-- ignores orders paid before it. admin_reset_delivery_speed(p_network) sets it to now().

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pause, Play, RefreshCw, Store, Wifi } from "lucide-react";
+import { Pause, Play, RefreshCw, RotateCcw, Store, Wifi } from "lucide-react";
 import { toast } from "sonner";
 import AdminListPagination from "@/components/admin/AdminListPagination";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -93,6 +93,7 @@ export default function AdminSuppliers() {
                   {n.is_paused
                     ? <Button size="sm" variant="soft" onClick={() => void call("admin_pause_network", { p_network_code: n.code, p_paused: false, p_reason: null }, `${n.name} is back on`)}><Play size={13} />Resume</Button>
                     : <Button size="sm" variant="quiet" onClick={() => { setPausing({ kind: "network", id: n.code, label: n.name }); setReason(""); }}><Pause size={13} />Pause</Button>}
+                  <Button size="sm" variant="quiet" title="Shows 'delivering normally' and ignores all earlier orders; the next order starts the live figure afresh." onClick={async () => { if (!window.confirm(`Reset ${n.name} delivery speed? The pill shows "delivering normally" until the next order comes in.`)) return; const { error } = await db().rpc("admin_reset_delivery_speed", { p_network: n.name }); if (error) toast.error(error.message.replace(/_/g, " ")); else toast.success(`${n.name} delivery speed reset.`); }}><RotateCcw size={13} />Reset speed</Button>
                 </div>
                 {routed && routed.status !== "active" && <p className="mt-1 text-[11px] text-amber">{routed.name} is {routed.status} — orders fall back to the next available supplier until it is activated.</p>}
                 {open && (
