@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { storeBase } from "@/lib/storeHost";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Bell, Facebook, Instagram, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound } from "lucide-react";
+import { Bell, Facebook, Instagram, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound, Users } from "lucide-react";
 import { useAuth } from "@/store/auth-context";
 import StoreSupport from "@/components/store/StoreSupport";
+import StorePopup from "@/components/store/StorePopup";
 import { supabase } from "@/integrations/supabase/client";
 import "./templates.css";
 
@@ -20,7 +21,7 @@ const TEMPLATE_FONTS: Record<string, string> = { market: "https://fonts.googleap
 /* The agent's storefront frame: their header with a menu, their pages, their footer.
    Nothing of DataYego's on the page. Pages inside read the store via useStore(). */
 export interface StoreBranding { template: "classic" | "market" | "ledger"; accent_color: string | null; banner_url: string | null; about_text: string | null; hours_text: string | null; store_notice: string | null; contact_phone: string | null; socials: Record<string, string>; featured_product_ids: string[]; faq: Array<{ q: string; a: string }>; delivered_count: number }
-export interface StoreData extends StoreBranding { support?: { whatsapp_url: string | null; chat_on: boolean }; promos?: Record<string, { was: number; ends_at: string }>; id: string; slug: string; store_name: string; tagline: string | null; logo_url: string | null; whatsapp: string | null; status: "active" | "closed"; prices: Record<string, number> }
+export interface StoreData extends StoreBranding { network?: { fee: number; pitch: string | null } | null; custom_domain_for_network?: string | null; support?: { whatsapp_url: string | null; chat_on: boolean }; promos?: Record<string, { was: number; ends_at: string }>; id: string; slug: string; store_name: string; tagline: string | null; logo_url: string | null; whatsapp: string | null; status: "active" | "closed"; prices: Record<string, number> }
 const StoreContext = createContext<StoreData | null>(null);
 export const useStore = () => { const c = useContext(StoreContext); if (!c) throw new Error("useStore outside StoreShell"); return c; };
 export const waLink = (s: StoreData) => s.whatsapp ? `https://wa.me/233${s.whatsapp.replace(/\D/g, "").replace(/^0/, "")}` : null;
@@ -109,6 +110,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
                   { to: `${storeBase(store.slug)}/about`, label: "About", icon: Info },
                   { to: `${storeBase(store.slug)}/contact`, label: "Contact", icon: Phone },
                   { to: `${storeBase(store.slug)}/faq`, label: "FAQ", icon: HelpCircle },
+                  ...(store.network ? [{ to: `${storeBase(store.slug)}/join`, label: "Become an agent", icon: Users }] : []),
                   { to: `${storeBase(store.slug)}/${isAuthenticated ? "account" : "sign-in"}`, label: isAuthenticated ? "Your account" : "Sign in / Create account", icon: UserRound },
                 ] as Array<{ to: string; label: string; icon: typeof Package; end?: boolean }>).map((n) => {
                   const active = n.end ? location.pathname === n.to : location.pathname.startsWith(n.to);
@@ -122,6 +124,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
         )}
         <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-24 pt-5">{children ?? <Outlet />}</main>
         <StoreSupport />
+        <StorePopup />
         <footer className="st-foot border-t border-white/[0.06] px-4 py-6 text-center text-[11.5px] text-faint-foreground">
           <div className="mx-auto flex max-w-2xl flex-col items-center gap-2">
             <p className="text-[12.5px] font-semibold text-foreground">{store.store_name}</p>

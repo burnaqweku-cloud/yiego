@@ -8,4 +8,7 @@ export function isStoreHost(host = window.location.hostname): boolean {
   return true;
 }
 /* Path prefix for store links: "" on a store host, "/s/slug" on the main site. */
-export const storeBase = (slug: string) => (isStoreHost() ? "" : `/s/${slug}`);
+let hostSlug: string | null = null;
+export const setHostSlug = (s: string | null) => { hostSlug = s; };
+/* On a store host, the host's own store lives at the root; any other store (e.g. a sub-agent on the parent's domain) at /s/slug. */
+export const storeBase = (slug: string) => (isStoreHost() && (hostSlug === null || hostSlug === slug) ? "" : `/s/${slug}`);

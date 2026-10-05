@@ -20,7 +20,11 @@ async function enforceHomeStore(session: Session | null) {
   const path = window.location.pathname;
   if (path.startsWith("/s/") || isStoreHost()) return;
   try {
-    const { data } = await (supabase as unknown as { schema: (s: string) => { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: { slug: string; store_name: string } | null }> } }).schema("phase1").rpc("my_home_store", {});
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const p1 = (supabase as unknown as { schema: (s: string) => any }).schema("phase1");
+    const { data: access } = await p1.rpc("my_agent_access", {});
+    if (access) return; // agents and staff manage their store on the main site
+    const { data } = await p1.rpc("my_home_store", {});
     if (data?.slug) {
       await supabase.auth.signOut();
       toast.error(`This account belongs to ${data.store_name}. Sign in at datayego.com/s/${data.slug}, or create a separate DataYego account with a different email.`, { duration: 9000 });

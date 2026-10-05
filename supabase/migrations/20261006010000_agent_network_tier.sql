@@ -1,0 +1,9 @@
+-- Applied live 6 Oct 2026 (migrations agent_network_tier, network_price_floor_and_store_defaults, store_popups_forms).
+-- Agents under agents: agents.parent_agent_id, network_on, network_fee (any amount, 0 = free, no DataYego cut), network_pitch.
+-- agent_cost_price(agent, product): sub-agent's cost = parent's store price. Trigger aa_orders_split_network_margin_trg
+-- splits margin on insert (orders.parent_agent_id, parent_margin); parent_order_settle_trg credits the parent on delivery.
+-- agent_set_price / agent_set_promo floors use agent_cost_price. join_network(parent_slug, name, slug, whatsapp) creates
+-- the sub-agent (active if free, else awaiting_payment); edge network-pay (purpose network_fee, coupons) + trigger on
+-- payment_events -> network_fee_paid credits the parent ledger. my_network(), network_inbox(sub) read-only, store_by_host
+-- also resolves name.parentdomain.com. Parent-only: store_popups (+store_popup_for, store_form_submit),
+-- store_form_submissions, network_announcements, network_coupons (+network_coupon_quote). agent_store exposes 'network'.

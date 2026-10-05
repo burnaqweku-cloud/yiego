@@ -7,12 +7,12 @@ import { p1, useAgent } from "@/components/agent/AgentShell";
 /* Set selling prices, one network at a time. Every row says what the agent
    pays, what they're charging, and what they keep. */
 export default function AgentPrices() {
-  const { products, prices, setPrices, reload } = useAgent();
+  const { products, prices, setPrices, reload, floors, isSub } = useAgent();
   const [network, setNetwork] = useState<"MTN" | "Telecel" | "AirtelTigo">("MTN");
   const [busy, setBusy] = useState(false);
   const items = products.filter((p) => !p.is_paused && p.name.startsWith(network));
-  const floorOf = (p: typeof items[number]) => Number(p.agent_price ?? p.customer_price);
-  const defaultOf = (p: typeof items[number]) => Number(p.store_default_price ?? p.customer_price);
+  const floorOf = (p: typeof items[number]) => Number(floors[p.id] ?? p.agent_price ?? p.customer_price);
+  const defaultOf = (p: typeof items[number]) => Math.max(floorOf(p), Number(p.store_default_price ?? p.customer_price));
   const currentOf = (p: typeof items[number]) => Number(prices[p.id] || defaultOf(p));
 
   const save = async (productId: string, value: number) => {
@@ -36,7 +36,7 @@ export default function AgentPrices() {
     <div className="space-y-3">
       <h1 className="font-display text-[22px] font-semibold text-foreground">Your selling prices</h1>
       <div className="flex gap-2">{(["MTN", "Telecel", "AirtelTigo"] as const).map((n) => <button key={n} type="button" onClick={() => setNetwork(n)} className={`rounded-full px-4 py-1.5 text-[13px] font-medium ${network === n ? "bg-primary/15 text-primary-glow" : "border border-white/[0.08] text-muted-foreground"}`}>{n}</button>)}</div>
-      <div className="flex items-start gap-2 rounded-2xl bg-primary/8 px-3.5 py-3 text-[12.5px] leading-5 text-muted-foreground"><Info size={15} className="mt-0.5 shrink-0 text-primary-glow" /><span>The <b className="text-foreground">agent price</b> is your special price. Your store starts at the <b className="text-foreground">default</b> price; type your own under <b className="text-foreground">Your price</b>. The difference from the agent price is your profit on every sale. Your price can't be lower than the agent price.</span></div>
+      <div className="flex items-start gap-2 rounded-2xl bg-primary/8 px-3.5 py-3 text-[12.5px] leading-5 text-muted-foreground"><Info size={15} className="mt-0.5 shrink-0 text-primary-glow" /><span>{isSub ? <>The <b className="text-foreground">agent price</b> is what you pay your network for each bundle. </> : <>The <b className="text-foreground">agent price</b> is your special price. </>} Your store starts at the <b className="text-foreground">default</b> price; type your own under <b className="text-foreground">Your price</b>. The difference from the agent price is your profit on every sale. Your price can't be lower than the agent price.</span></div>
       <div className="flex flex-wrap gap-2 text-[12px]"><button type="button" disabled={busy} onClick={() => void applyAll("plus")} className="rounded-full border border-white/[0.1] px-3 py-1.5 text-muted-foreground">Set all: agent price + 0.50 (1.00 from 10GB)</button><button type="button" disabled={busy} onClick={() => void applyAll("public")} className="rounded-full border border-white/[0.1] px-3 py-1.5 text-muted-foreground">Reset all to default</button></div>
       <div className="onyx-panel rounded-2xl p-2">
         <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-faint-foreground"><span>Bundle</span><span className="text-right">Agent price</span><span className="text-center">Your price</span><span className="text-right">Profit</span></div>

@@ -1,15 +1,18 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight, CalendarCheck, Copy, HelpCircle, LifeBuoy, Lock, Share2, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/format";
 import { priceListImage } from "@/lib/priceListImage";
-import { fmt, useAgent } from "@/components/agent/AgentShell";
+import { fmt, p1, useAgent } from "@/components/agent/AgentShell";
 import { stageOf, toneClass } from "@/components/agent/orderStage";
 import { longDate } from "@/components/agent/subscription";
 
 export default function AgentHome() {
-  const { agent, orders, products, prices, storeUrl, plan, reload, sub, openRenew } = useAgent();
+  const { agent, orders, products, prices, storeUrl, plan, reload, sub, openRenew, isSub } = useAgent();
+  // Messages from the network this store belongs to (sub-agents only)
+  const [netAnns, setNetAnns] = useState<Array<{ id: string; title: string; body: string; created_at: string }>>([]);
+  useEffect(() => { if (!isSub) return; void p1().from("network_announcements").select("id, title, body, created_at").order("created_at", { ascending: false }).limit(5).then(({ data }) => setNetAnns(data ?? [])); }, [isSub]);
   const [params] = useSearchParams();
   useEffect(() => { if (params.get("paid") === "1") { toast.success("Payment received. You're all set!"); setTimeout(() => void reload(), 2500); } }, [params, reload]);
   const today = useMemo(() => orders.filter((o) => o.paid_at && new Date(o.paid_at).toDateString() === new Date().toDateString()), [orders]);
@@ -22,6 +25,12 @@ export default function AgentHome() {
 
   return (
     <div className="space-y-4">
+      {isSub && netAnns.length > 0 && (
+        <section className="onyx-panel rounded-[22px] p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">From {agent.parent?.store_name ?? "your network"}</p>
+          <ul className="mt-2 divide-y divide-white/[0.06]">{netAnns.map((a) => <li key={a.id} className="py-2"><p className="text-[13.5px] font-semibold text-foreground">{a.title}</p><p className="text-[12.5px] text-muted-foreground">{a.body}</p></li>)}</ul>
+        </section>
+      )}
       <div><p className="text-[12px] text-muted-foreground">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</p><h1 className="font-display text-[24px] font-semibold text-foreground">Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}</h1></div>
       <div className="rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/25 via-primary/10 to-transparent p-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Earnings balance</p>

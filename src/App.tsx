@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { isStoreHost } from "@/lib/storeHost";
+import { isStoreHost, setHostSlug } from "@/lib/storeHost";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -77,6 +77,9 @@ const StoreFaq = lazy(() => import("./pages/store/StoreFaq"));
 const StoreCheckMtn = lazy(() => import("./pages/store/StoreCheckMtn"));
 const StoreAuth = lazy(() => import("./pages/store/StoreAuth"));
 const StoreAccount = lazy(() => import("./pages/store/StoreAccount"));
+const StoreJoin = lazy(() => import("./pages/store/StoreJoin"));
+const AgentNetwork = lazy(() => import("./pages/agent/AgentNetwork"));
+const AgentPopups = lazy(() => import("./pages/agent/AgentPopups"));
 const AgentCustomers = lazy(() => import("./pages/agent/AgentCustomers"));
 const AgentMarketing = lazy(() => import("./pages/agent/AgentMarketing"));
 const AgentAnalytics = lazy(() => import("./pages/agent/AgentAnalytics"));
@@ -101,12 +104,13 @@ function RouteFallback() { return <div className="onyx-canvas grid min-h-dvh pla
 /* Public pages render immediately — RequireAuth/RequireAdmin show their own
    loaders while the session resolves, so nothing waits on auth to paint.
    That first-paint speed is also what crawlers measure. */
-const STORE_ROUTES = <><Route index element={<StoreHome />} /><Route path="about" element={<StoreAbout />} /><Route path="contact" element={<StoreContact />} /><Route path="faq" element={<StoreFaq />} /><Route path="check-mtn" element={<StoreCheckMtn />} /><Route path="sign-in" element={<StoreAuth mode="sign-in" />} /><Route path="sign-up" element={<StoreAuth mode="sign-up" />} /><Route path="account" element={<StoreAccount />} /><Route path="track" element={<StoreOrder />} /><Route path="success" element={<StoreOrder />} /></>;
+const STORE_ROUTES = <><Route index element={<StoreHome />} /><Route path="about" element={<StoreAbout />} /><Route path="contact" element={<StoreContact />} /><Route path="faq" element={<StoreFaq />} /><Route path="check-mtn" element={<StoreCheckMtn />} /><Route path="sign-in" element={<StoreAuth mode="sign-in" />} /><Route path="sign-up" element={<StoreAuth mode="sign-up" />} /><Route path="account" element={<StoreAccount />} /><Route path="join" element={<StoreJoin />} /><Route path="track" element={<StoreOrder />} /><Route path="success" element={<StoreOrder />} /></>;
 
 /* A connected custom domain or slug.datayego.com: that store lives at the root. */
 const StoreHostApp = ({ slug }: { slug: string }) => (
   <BrowserRouter><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
     <Route path="/" element={<StoreShell hostSlug={slug} />}>{STORE_ROUTES}</Route>
+    <Route path="/s/:slug" element={<StoreShell />}>{STORE_ROUTES}</Route>
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes></Suspense></FlowsProvider></ProfileProvider></WalletProvider></AuthProvider></ThemeProvider></BrowserRouter>
 );
@@ -117,6 +121,7 @@ const StoreHostGate = () => {
     void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("store_by_host", { p_host: window.location.hostname }).then((r: { data: { slug: string } | null }) => setSlug(r.data?.slug ?? null));
   }, []);
   if (slug === undefined) return <div className="min-h-dvh bg-[#0b1512]" />;
+  if (slug) setHostSlug(slug);
   if (slug === null) return <div className="flex min-h-dvh items-center justify-center bg-[#0b1512] px-6 text-center text-[14px] text-white/70">This address isn't connected to a store yet.</div>;
   return <StoreHostApp slug={slug} />;
 };
@@ -129,7 +134,7 @@ const App = () => isStoreHost() ? <StoreHostGate /> : (
     {/* One shell for the whole site: the same header and footer wrap the
         marketing pages, the shop and the account area. */}
         <Route path="/s/:slug" element={<StoreShell />}>{STORE_ROUTES}</Route>
-    <Route path="/agent" element={<AgentShell />}><Route index element={<AgentHome />} /><Route path="buy" element={<AgentBuy />} /><Route path="help" element={<AgentHelp />} /><Route path="check-mtn" element={<AgentCheckMtn />} /><Route path="customers" element={<AgentCustomers />} /><Route path="marketing" element={<AgentMarketing />} /><Route path="analytics" element={<AgentAnalytics />} /><Route path="support" element={<AgentSupport />} /><Route path="team" element={<AgentTeam />} /><Route path="domain" element={<AgentDomain />} /><Route path="orders" element={<AgentOrdersPage />} /><Route path="prices" element={<AgentPrices />} /><Route path="earnings" element={<AgentEarnings />} /><Route path="store" element={<AgentStoreSettings />} /></Route>
+    <Route path="/agent" element={<AgentShell />}><Route index element={<AgentHome />} /><Route path="buy" element={<AgentBuy />} /><Route path="help" element={<AgentHelp />} /><Route path="check-mtn" element={<AgentCheckMtn />} /><Route path="customers" element={<AgentCustomers />} /><Route path="marketing" element={<AgentMarketing />} /><Route path="analytics" element={<AgentAnalytics />} /><Route path="support" element={<AgentSupport />} /><Route path="team" element={<AgentTeam />} /><Route path="domain" element={<AgentDomain />} /><Route path="network" element={<AgentNetwork />} /><Route path="popups" element={<AgentPopups />} /><Route path="orders" element={<AgentOrdersPage />} /><Route path="prices" element={<AgentPrices />} /><Route path="earnings" element={<AgentEarnings />} /><Route path="store" element={<AgentStoreSettings />} /></Route>
     <Route element={<PublicShell />}>
       {/* Marketing pages lay out their own full-bleed sections. */}
       <Route path="/" element={<Home />} /><Route path="/agents" element={<AgentsApply />} />
