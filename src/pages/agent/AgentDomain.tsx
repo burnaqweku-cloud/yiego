@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { p1, useAgent } from "@/components/agent/AgentShell";
 import Section from "@/components/agent/Section";
+import EmailDomain from "@/components/agent/EmailDomain";
+import { Mail, Sparkles } from "lucide-react";
 
 /* The store's own address: a free subdomain, and optionally the agent's own domain. */
 interface Status { domain: string | null; status?: string; ssl?: string; live?: boolean; cname_target?: string; errors?: unknown; error?: string }
@@ -58,6 +60,14 @@ export default function AgentDomain() {
           {st?.errors ? <p className="mt-2 text-[11.5px] text-amber">Cloudflare says: {JSON.stringify(st.errors)}</p> : null}
           <div className="mt-4 flex items-center gap-3"><button type="button" disabled={busy} onClick={() => void refresh()} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] px-3 py-1.5 text-[12.5px] text-foreground disabled:opacity-60"><RefreshCw size={13} className={busy ? "animate-spin" : ""} />Check again</button><button type="button" disabled={busy} onClick={() => void disconnect()} className="text-[12.5px] text-danger">Disconnect</button></div>
         </>)}
+      </Section>
+      <Section page="domain" id="perks" title="What your own domain gets you" icon={<Sparkles size={15} />}>
+        <ul className="space-y-2 text-[13.5px] text-muted-foreground">
+          {[["A real website address", `Customers see ${agent.custom_domain ?? "yourstore.com"}, not DataYego's name, on every page.`], ["Every link points to it", "Receipts, tracking links, announcement and support emails, your share link and your price list all use your domain. Old datayego.com/s/ links jump to it automatically."], ["Emails from your domain", `Optional: receipts and announcements come from hello@${agent.custom_domain ?? "yourstore.com"} once you add a few DNS records (below).`], ["Secure certificate, no setup", "HTTPS is issued and renewed for you."], ["Keep your subdomain too", `${agent.slug}.datayego.com and datayego.com/s/${agent.slug} keep working as spare addresses.`]].map(([t, d]) => <li key={t} className="flex gap-2"><span className="mt-0.5 text-primary-glow">✓</span><span><b className="text-foreground">{t}.</b> {d}</span></li>)}
+        </ul>
+      </Section>
+      <Section page="domain" id="email-domain" title="Send email from your domain" icon={<Mail size={15} />} subtitle="Receipts and announcements from hello@yourdomain instead of DataYego's address.">
+        <EmailDomain />
       </Section>
       {!agent.custom_domain && (
         <Section page="domain" id="buy-a-domain-through-us" title="Buy a domain through us" icon={<ShoppingCart size={15} />} subtitle={<>Don't have one? We register it and connect it to your store for you. <b className="text-foreground">.com GHS 250/yr</b> · <b className="text-foreground">.shop GHS 120/yr</b>. Usually live within 24 hours.</>}>

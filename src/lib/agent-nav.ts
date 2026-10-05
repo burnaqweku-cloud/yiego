@@ -16,7 +16,7 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "store-details", label: "Store details", to: "/agent/store/details", sections: ["details", "payout", "alerts"] },
     { id: "store-look", label: "Template & look", to: "/agent/store/look", sections: ["template", "look"] },
     { id: "store-pages", label: "About, featured & FAQ", to: "/agent/store/pages", sections: ["about", "featured", "faq"] },
-    { id: "domain-addresses", label: "Store addresses", to: "/agent/domain/addresses", sections: ["free-address", "your-own-domain"] },
+    { id: "domain-addresses", label: "Store addresses", to: "/agent/domain/addresses", sections: ["free-address", "your-own-domain", "perks", "email-domain"] },
     { id: "domain-buy", label: "Buy a domain", to: "/agent/domain/buy", sections: ["buy-a-domain-through-us", "domains-bought-through-us"] },
   ] },
   { id: "customers", label: "Customers", icon: Users, pages: [

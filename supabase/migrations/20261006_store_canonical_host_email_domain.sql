@@ -1,0 +1,4 @@
+-- Applied 6 Oct 2026 via MCP (store_canonical_host_and_email_domain).
+-- phase1.store_canonical_host(slug) -> active custom domain or null (storefront redirects /s/<slug>/... onto it)
+-- agents: email_domain, email_domain_id, email_domain_status (pending|verified|failed), email_domain_records jsonb, email_from_name
+-- Edge: store-email-domain v1 (Resend domains: setup/status/remove); agent-notify v4 (store URL + from-address helpers; announce + application emails use them)

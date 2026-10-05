@@ -1,10 +1,10 @@
 const RESEND_URL = "https://api.resend.com/emails";
 const SUPPORT_EMAIL = "support@yiego.shop";
 
-export async function sendEmail(input: { to: string; subject: string; html: string; replyTo?: string }) {
+export async function sendEmail(input: { to: string; subject: string; html: string; replyTo?: string; from?: string }) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return { skipped: true as const, reason: "no_api_key" };
-  const from = Deno.env.get("EMAIL_FROM") ?? "DataYego <noreply@datayego.com>";
+  const from = input.from ?? Deno.env.get("EMAIL_FROM") ?? "DataYego <noreply@datayego.com>";
   const body: Record<string, unknown> = { from, to: [input.to], subject: input.subject, html: input.html };
   if (input.replyTo) body.reply_to = input.replyTo;
   const res = await fetch(RESEND_URL, { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });

@@ -53,6 +53,16 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("agent_store", { p_slug: slug, p_preview: true }).then((r: { data: StoreData | null }) => setStore(r.data ?? null));
   }, [slug]);
+  // A store with its own domain lives there: datayego.com/s/<slug>/… (receipts, old links, shares) jumps to it, same page.
+  useEffect(() => {
+    if (hostSlug || !slug) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("store_canonical_host", { p_slug: slug }).then((r: { data: string | null }) => {
+      const host = r.data; if (!host || host === window.location.hostname) return;
+      const rest = window.location.pathname.replace(new RegExp(`^${storeBase(slug).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`), "");
+      window.location.replace(`https://${host}${rest || "/"}${window.location.search}${window.location.hash}`);
+    });
+  }, [slug, hostSlug]);
   const initial = useMemo(() => store?.store_name?.trim().slice(0, 1).toUpperCase() ?? "S", [store]);
   const template = store?.template ?? "classic";
   useEffect(() => {
