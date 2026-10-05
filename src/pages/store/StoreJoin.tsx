@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import StorePage from "@/components/store/StorePage";
 import { useStore } from "@/components/store/StoreShell";
 import { useAuth } from "@/store/auth-context";
 import { setSignupStore } from "@/store/auth";
@@ -45,11 +46,10 @@ export default function StoreJoin() {
   if (offer === undefined) return <div className="h-40" />;
   if (offer === null) return <section className="onyx-panel rounded-[22px] p-5 text-center"><p className="text-[14px] text-foreground">{store.store_name} isn't taking new agents right now.</p><Link to={storeBase(store.slug) || "/"} className="mt-3 inline-block text-[13px] font-semibold text-primary-glow">Back to the store</Link></section>;
   return (
+    <StorePage title={`Sell data under ${store.store_name}`} lead="Your own online data store, your prices, your profit.">
     <div className="space-y-4">
       <section className="onyx-panel rounded-[22px] p-5">
-        <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Become an agent</p>
-        <h1 className="mt-1 font-display text-[24px] font-semibold text-foreground">Sell data under {store.store_name}</h1>
-        <p className="mt-3 whitespace-pre-line text-[14px] leading-7 text-foreground">{offer.pitch?.trim() || `Get your own online data store, set your own prices and keep the profit on every sale. ${store.store_name} supplies the bundles and supports you.`}</p>
+        <p className="whitespace-pre-line text-[14px] leading-7 text-foreground">{offer.pitch?.trim() || `Get your own online data store, set your own prices and keep the profit on every sale. ${store.store_name} supplies the bundles and supports you.`}</p>
         <div className="mt-4 grid grid-cols-2 gap-3 text-center">
           <div className="rounded-2xl bg-white/[0.03] py-3"><p className="text-[18px] font-semibold text-foreground">{Number(offer.fee) > 0 ? formatGHS(Number(offer.fee)) : "Free"}</p><p className="text-[11px] text-faint-foreground">{Number(offer.fee) > 0 ? "per month" : "no monthly fee"}</p></div>
           <div className="rounded-2xl bg-white/[0.03] py-3"><p className="text-[18px] font-semibold text-foreground">{offer.agent_count}</p><p className="text-[11px] text-faint-foreground">agents already</p></div>
@@ -78,5 +78,6 @@ export default function StoreJoin() {
         </section>
       )}
     </div>
+    </StorePage>
   );
 }

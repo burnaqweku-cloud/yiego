@@ -3,6 +3,7 @@ import { storeBase } from "@/lib/storeHost";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useStore } from "@/components/store/StoreShell";
+import StorePage from "@/components/store/StorePage";
 import { useAuth } from "@/store/auth-context";
 import { setSignupStore } from "@/store/auth";
 
@@ -31,10 +32,9 @@ export default function StoreAuth({ mode }: { mode: "sign-in" | "sign-up" }) {
     } catch (e) { toast.error(e instanceof Error ? e.message : "Something went wrong."); } finally { setBusy(false); }
   };
   return (
-    <section className="onyx-panel mx-auto max-w-md rounded-[22px] p-5">
-      <h1 className="font-display text-[22px] font-semibold text-foreground">{mode === "sign-up" ? `Create your ${store.store_name} account` : `Sign in to ${store.store_name}`}</h1>
-      <p className="mt-1 text-[13px] text-muted-foreground">{mode === "sign-up" ? "Save your number, see your orders, and pay from your wallet." : "Your orders and wallet, in one place."}</p>
-      <div className="mt-4 space-y-3">
+    <StorePage narrow title={mode === "sign-up" ? "Create your account" : "Welcome back"} lead={mode === "sign-up" ? `An account with ${store.store_name} saves your number, keeps your orders in one place and lets you pay from a wallet.` : `Sign in to see your orders with ${store.store_name} and your wallet.`}>
+    <section className="onyx-panel rounded-[22px] p-5">
+      <div className="space-y-3">
         {mode === "sign-up" && <input value={f.fullName} onChange={(e) => setF({ ...f, fullName: e.target.value })} placeholder="Full name" autoComplete="name" className="onyx-field w-full" />}
         <input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} type="email" placeholder="Email" autoComplete="email" autoCapitalize="none" className="onyx-field w-full" />
         {mode === "sign-up" && <input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="tel" placeholder="Phone number (0XXXXXXXXX)" autoComplete="tel" className="onyx-field w-full" />}
@@ -44,5 +44,6 @@ export default function StoreAuth({ mode }: { mode: "sign-in" | "sign-up" }) {
       </div>
       <p className="mt-4 text-center text-[12.5px] text-muted-foreground">{mode === "sign-up" ? <>Already have an account? <Link to={`${storeBase(slug)}/sign-in`} className="font-semibold text-primary-glow">Sign in</Link></> : <>New here? <Link to={`${storeBase(slug)}/sign-up`} className="font-semibold text-primary-glow">Create an account</Link></>}</p>
     </section>
+    </StorePage>
   );
 }

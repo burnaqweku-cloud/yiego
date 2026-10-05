@@ -60,6 +60,14 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
     if (document.querySelector(`link[href="${href}"]`)) return;
     const l = document.createElement("link"); l.rel = "stylesheet"; l.href = href; document.head.appendChild(l);
   }, [template]);
+  // The buy sheet and other modals portal to <body>, outside this tree. Put the template
+  // on the body too so they take the store's fonts, colours and shapes.
+  useEffect(() => {
+    if (!store) return;
+    const cls = `tpl-${store.template ?? "classic"}`; const vars = accentVars(store.accent_color);
+    document.body.classList.add(cls, "st-body"); Object.entries(vars).forEach(([k, v]) => document.body.style.setProperty(k, v));
+    return () => { document.body.classList.remove(cls, "st-body"); Object.keys(vars).forEach((k) => document.body.style.removeProperty(k)); };
+  }, [store]);
   if (store === undefined) return <div className="min-h-dvh bg-[#0b1512]" />;
   if (store === null) return <div className="flex min-h-dvh items-center justify-center bg-[#0b1512] px-6 text-center"><div><Store size={30} className="mx-auto text-white/40" /><p className="mt-3 text-[17px] font-semibold text-white">This store isn't open</p><p className="mt-1 text-[13px] text-white/60">It may be paused, or the link may be wrong.</p></div></div>;
   const wa = store.support?.whatsapp_url ?? waLink(store);
@@ -123,7 +131,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
         {annOpen && (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={() => setAnnOpen(false)}>
             <div className="onyx-panel max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-3xl p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between"><h3 className="font-display text-[18px] font-semibold text-foreground">News from {store.store_name}</h3><button type="button" onClick={() => setAnnOpen(false)} aria-label="Close" className="text-muted-foreground"><X size={18} /></button></div>
+              <div className="flex items-center justify-between"><h3 className="font-display text-[18px] font-semibold text-foreground">Latest from {store.store_name}</h3><button type="button" onClick={() => setAnnOpen(false)} aria-label="Close" className="text-muted-foreground"><X size={18} /></button></div>
               <ul className="mt-3 divide-y divide-white/[0.06]">{anns.map((a) => <li key={a.id} className="py-3"><p className="text-[14px] font-semibold text-foreground">{a.title}</p><p className="mt-1 whitespace-pre-line text-[13px] leading-5 text-muted-foreground">{a.body}</p><p className="mt-1 text-[11px] text-faint-foreground">{new Date(a.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</p></li>)}</ul>
             </div>
           </div>

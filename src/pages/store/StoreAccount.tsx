@@ -5,6 +5,7 @@ import { LogOut, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/components/store/StoreShell";
+import StorePage from "@/components/store/StorePage";
 import { useAuth } from "@/store/auth-context";
 import { formatGHS } from "@/lib/format";
 
@@ -25,11 +26,10 @@ export default function StoreAccount() {
   }, [isAuthenticated, slug, user]);
   if (!isAuthenticated) return null;
   return (
+    <StorePage title="Your account" lead={user?.email}>
     <div className="space-y-4">
       <section className="onyx-panel rounded-[22px] p-5">
-        <h1 className="font-display text-[22px] font-semibold text-foreground">Your account</h1>
-        <p className="mt-1 text-[13px] text-muted-foreground">{user?.email}</p>
-        <div className="mt-4 flex items-center justify-between rounded-2xl bg-white/[0.03] px-4 py-3"><span className="flex items-center gap-2 text-[13px] text-muted-foreground"><Wallet size={15} />Wallet</span><span className="font-display text-[18px] font-semibold text-foreground">{balance == null ? "…" : formatGHS(balance)}</span></div>
+        <div className="flex items-center justify-between rounded-2xl bg-white/[0.03] px-4 py-3"><span className="flex items-center gap-2 text-[13px] text-muted-foreground"><Wallet size={15} />Wallet</span><span className="font-display text-[18px] font-semibold text-foreground">{balance == null ? "…" : formatGHS(balance)}</span></div>
         <p className="mt-2 text-[11.5px] text-faint-foreground">Pay from your wallet at checkout, or add money when you buy.</p>
       </section>
       <section className="onyx-panel rounded-[22px] p-5">
@@ -40,5 +40,6 @@ export default function StoreAccount() {
       </section>
       <button type="button" onClick={() => void signOut().then(() => navigate(`${storeBase(slug)}`)).catch(() => toast.error("Could not sign out."))} className="flex items-center gap-2 px-2 text-[13px] text-danger"><LogOut size={14} />Sign out</button>
     </div>
+    </StorePage>
   );
 }

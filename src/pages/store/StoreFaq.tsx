@@ -1,4 +1,5 @@
 import { useStore } from "@/components/store/StoreShell";
+import StorePage from "@/components/store/StorePage";
 
 /* The store's FAQ: the agent's own questions, or the standard set if they haven't written any. */
 export const DEFAULT_FAQ = (name: string): Array<{ q: string; a: string }> => [
@@ -13,12 +14,10 @@ export default function StoreFaq() {
   const store = useStore();
   const items = store.faq?.length ? store.faq : DEFAULT_FAQ(store.store_name);
   return (
-    <section className="onyx-panel rounded-[22px] p-5">
-      <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">FAQ</p>
-      <h1 className="mt-1 font-display text-[22px] font-semibold text-foreground">Common questions</h1>
-      <div className="mt-3 divide-y divide-white/[0.06]">
-        {items.map((f, i) => <details key={i} className="group py-3"><summary className="cursor-pointer list-none text-[14px] font-semibold text-foreground">{f.q}</summary><p className="mt-2 text-[13.5px] leading-6 text-muted-foreground">{f.a}</p></details>)}
-      </div>
+    <StorePage title="Common questions" lead={`Everything people usually ask ${store.store_name} before they buy.`}>
+    <section className={store.template === "studio" ? "border-b border-[var(--st-line)]" : "onyx-panel rounded-[22px] px-5 py-2"}>
+      {items.map((f, i) => <details key={i} className="st-faq group"><summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-3.5 text-[14.5px] font-semibold text-foreground">{f.q}</summary><p className="pb-4 text-[13.5px] leading-6 text-muted-foreground">{f.a}</p></details>)}
     </section>
+    </StorePage>
   );
 }

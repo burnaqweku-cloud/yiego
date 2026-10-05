@@ -3,6 +3,7 @@ import { storeBase } from "@/lib/storeHost";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { CheckCircle2, Clock, MessageCircle, Search, ShoppingBag, XCircle } from "lucide-react";
 import Seo from "@/components/seo/Seo";
+import StorePage from "@/components/store/StorePage";
 import { useStore, waLink } from "@/components/store/StoreShell";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
@@ -53,6 +54,7 @@ export default function StoreOrder() {
   const title = isSuccess && phase === "ok" ? "Payment received" : st === "completed" ? "Delivered" : st === "awaiting_verification" ? "Being verified by MTN" : st === "refunded" ? "Refunded" : st === "needs_support" ? "Needs attention" : st === "wrong_network" ? "Wrong network" : st === "waiting_for_payment" ? "Waiting for payment" : "On its way";
 
   return (
+    <StorePage title={isSuccess ? "Thank you" : "Track your order"} lead={isSuccess ? `Your payment to ${store.store_name} went through. Here's where your order is.` : "Enter the order ID from your receipt (starts with AG-) or the phone number the data was sent to."}>
     <div className="space-y-4">
       <Seo path={`${storeBase(store.slug)}/${isSuccess ? "success" : "track"}`} title={`${isSuccess ? "Payment received" : "Track your order"} · ${store.store_name}`} description={`Order status from ${store.store_name}.`} />
       {!isSuccess && (
@@ -93,5 +95,6 @@ export default function StoreOrder() {
         </div>
       )}
     </div>
+    </StorePage>
   );
 }

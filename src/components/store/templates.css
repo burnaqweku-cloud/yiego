@@ -124,3 +124,26 @@
 .tpl-studio footer.st-foot .brand { color: #fff; font-weight: 700; font-size: 17px; }
 .tpl-studio footer.st-foot h4 { color: #fff; font-weight: 600; font-size: 13.5px; margin-bottom: 10px; }
 @media (prefers-reduced-motion: reduce) { .tpl-studio * { transition: none !important; } }
+
+/* ---------- The buy sheet and other modals, per template ----------
+   StoreShell puts tpl-* on <body> while a store is open, so these reach the portalled sheet. */
+.tpl-market .onyx-modal-backdrop { background: rgba(29, 36, 96, 0.55); backdrop-filter: blur(4px); }
+.tpl-market .onyx-modal-panel { background: #fff8ec; border: 3px solid #1d2460; border-bottom: 0; box-shadow: 0 -8px 0 hsl(var(--primary)); color: #15131f; }
+@media (min-width: 640px) { .tpl-market .onyx-modal-panel { border-bottom: 3px solid #1d2460; box-shadow: 8px 8px 0 hsl(var(--primary)); } }
+.tpl-market .onyx-sheet-handle { background: rgba(29, 36, 96, 0.35); }
+.tpl-market .onyx-tile-icon { background: var(--st-sun); color: #15131f; border: 2px solid #1d2460; border-radius: 10px; }
+.tpl-market .onyx-flow-footer { background: #fff8ec; }
+.tpl-market .st-body-dark, .tpl-market .bg-background, .tpl-market .bg-card { background-color: #fff8ec; }
+
+.tpl-studio .onyx-modal-backdrop { background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(6px); }
+.tpl-studio .onyx-modal-panel { background: #fff; border: 1px solid var(--st-line); box-shadow: 0 -24px 60px -24px rgba(15, 23, 42, 0.35); color: var(--st-ink); }
+.tpl-studio .onyx-sheet-handle { background: #cbd5e1; }
+.tpl-studio .onyx-tile-icon { background: hsl(var(--primary-soft)); color: hsl(var(--primary-glow)); border: 1px solid var(--st-line); border-radius: 12px; }
+.tpl-studio .onyx-flow-footer { background: #fff; }
+.tpl-studio .bg-background, .tpl-studio .bg-card { background-color: #fff; }
+
+/* Light templates: the Market/Studio body shouldn't flash the dark canvas behind sheets. */
+body.st-body.tpl-market { background: #fff8ec; }
+body.st-body.tpl-studio { background: #fff; }
+/* Studio's inner-page FAQ reuses the home accordion. */
+.tpl-studio .st-faq summary { padding: 14px 0; }
