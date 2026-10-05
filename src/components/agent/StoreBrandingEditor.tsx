@@ -11,6 +11,7 @@ import { LayoutTemplate, Palette, Info, Star, HelpCircle } from "lucide-react";
    agent_update_branding, which only ever touches the agent's own row. */
 const inputCls = "onyx-field w-full";
 const Field = ({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) => <label className="block"><span className="mb-1 block text-[12px] font-semibold text-foreground">{label}</span>{children}{hint && <span className="mt-1 block text-[11.5px] text-faint-foreground">{hint}</span>}</label>;
+const TEMPLATE_DEFAULT_ACCENT: Record<string, { hex: string; name: string }> = { classic: { hex: "#21c38a", name: "green" }, market: { hex: "#ff5a3c", name: "coral" }, studio: { hex: "#2563eb", name: "cobalt blue" } };
 const SOCIALS: Array<[string, string, string]> = [["facebook", "Facebook", "https://facebook.com/yourpage"], ["instagram", "Instagram", "https://instagram.com/yourname"], ["tiktok", "TikTok", "https://tiktok.com/@yourname"], ["telegram", "Telegram", "https://t.me/yourname"]];
 
 export default function StoreBrandingEditor() {
@@ -47,6 +48,7 @@ export default function StoreBrandingEditor() {
     if (error) return toast.error(error.message.replace(/_/g, " "));
     toast.success("Store updated."); void reload();
   };
+  const resetAccent = async () => { const { error } = await p1().rpc("agent_update_branding", { p: { accent_color: "" } }); if (error) return toast.error(error.message.replace(/_/g, " ")); setF((x) => ({ ...x, accent_color: "" })); toast.success("Accent reset to the template colour."); void reload(); };
   const SaveBtn = () => <div className="mt-4 flex justify-end"><button type="button" disabled={busy === "save"} onClick={() => void save()} className="onyx-btn-primary px-5 py-2.5 text-[13.5px] disabled:opacity-60">{busy === "save" ? "Saving…" : "Save"}</button></div>;
   const toggleFeatured = (id: string) => setF((s) => ({ ...s, featured: s.featured.includes(id) ? s.featured.filter((x) => x !== id) : s.featured.length >= 6 ? s.featured : [...s.featured, id] }));
 
@@ -80,7 +82,7 @@ export default function StoreBrandingEditor() {
           <div><p className="mb-1 text-[12px] font-semibold text-foreground">Banner</p>{banner ? <img src={banner} alt="" className="h-24 w-full rounded-xl object-cover" /> : <div className="flex h-24 w-full items-center justify-center rounded-xl border border-dashed border-white/[0.12] text-[12px] text-faint-foreground">No banner yet</div>}<div className="mt-2 flex items-center gap-2"><label className="cursor-pointer rounded-full border border-white/[0.12] bg-white/[0.04] px-3 py-2 text-[12.5px] text-foreground"><ImagePlus size={14} className="mr-1 inline" />{busy === "banner" ? "Uploading…" : "Upload"}<input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload("banner", file); e.target.value = ""; }} /></label>{banner && <button type="button" onClick={() => void clear("banner")} className="text-faint-foreground" aria-label="Remove banner"><Trash2 size={15} /></button>}</div><p className="mt-1 text-[11.5px] text-faint-foreground">Wide, about 1200×400.</p></div>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field label="Accent colour" hint="Buttons and highlights on your store."><div className="flex items-center gap-2"><input type="color" value={f.accent_color || "#22c387"} onChange={(e) => setF({ ...f, accent_color: e.target.value })} className="h-10 w-14 cursor-pointer rounded-lg border border-white/[0.1] bg-transparent" /><input value={f.accent_color} onChange={(e) => setF({ ...f, accent_color: e.target.value })} placeholder="#22c387" className={inputCls} /></div></Field>
+          <Field label="Accent colour" hint={`Buttons, prices and highlights on your store. Leave empty for the template's own colour (${TEMPLATE_DEFAULT_ACCENT[template]?.name ?? "green"}).`}><div className="flex items-center gap-2"><input type="color" value={f.accent_color || TEMPLATE_DEFAULT_ACCENT[template]?.hex || "#21c38a"} onChange={(e) => setF({ ...f, accent_color: e.target.value })} className="h-10 w-14 cursor-pointer rounded-lg border border-white/[0.1] bg-transparent" /><input value={f.accent_color} onChange={(e) => setF({ ...f, accent_color: e.target.value })} placeholder={TEMPLATE_DEFAULT_ACCENT[template]?.hex ?? "#21c38a"} className={inputCls} />{f.accent_color && <button type="button" onClick={() => void resetAccent()} className="shrink-0 text-[12.5px] font-semibold text-primary-glow">Reset</button>}</div></Field>
           <Field label="Store notice" hint="One line shown at the top of every page. Leave empty to hide."><input value={f.store_notice} onChange={(e) => setF({ ...f, store_notice: e.target.value })} maxLength={200} placeholder="e.g. MTN orders may take longer today" className={inputCls} /></Field>
         </div>
         <SaveBtn />
