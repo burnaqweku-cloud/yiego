@@ -2,6 +2,17 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Facebook, Instagram, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import "./templates.css";
+
+/* Agent accent (#rrggbb) -> HSL parts for the template CSS variables. */
+function accentVars(hex: string | null): Record<string, string> {
+  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return {};
+  const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b); const l = (max + min) / 2; let h = 0, sat = 0;
+  if (max !== min) { const d = max - min; sat = l > 0.5 ? d / (2 - max - min) : d / (max + min); h = max === r ? ((g - b) / d + (g < b ? 6 : 0)) : max === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; }
+  return { "--st-accent-h": h.toFixed(0), "--st-accent-s": `${(sat * 100).toFixed(0)}%`, "--st-accent-l": `${(l * 100).toFixed(0)}%` };
+}
+const TEMPLATE_FONTS: Record<string, string> = { market: "https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap", ledger: "https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" };
 
 /* The agent's storefront frame: their header with a menu, their pages, their footer.
    Nothing of DataYego's on the page. Pages inside read the store via useStore(). */
@@ -25,6 +36,12 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
     void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("agent_store", { p_slug: slug, p_preview: true }).then((r: { data: StoreData | null }) => setStore(r.data ?? null));
   }, [slug]);
   const initial = useMemo(() => store?.store_name?.trim().slice(0, 1).toUpperCase() ?? "S", [store]);
+  const template = store?.template ?? "classic";
+  useEffect(() => {
+    const href = TEMPLATE_FONTS[template]; if (!href) return;
+    if (document.querySelector(`link[href="${href}"]`)) return;
+    const l = document.createElement("link"); l.rel = "stylesheet"; l.href = href; document.head.appendChild(l);
+  }, [template]);
   if (store === undefined) return <div className="min-h-dvh bg-[#0b1512]" />;
   if (store === null) return <div className="flex min-h-dvh items-center justify-center bg-[#0b1512] px-6 text-center"><div><Store size={30} className="mx-auto text-white/40" /><p className="mt-3 text-[17px] font-semibold text-white">This store isn't open</p><p className="mt-1 text-[13px] text-white/60">It may be paused, or the link may be wrong.</p></div></div>;
   const wa = waLink(store);
@@ -39,8 +56,9 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
   );
   return (
     <StoreContext.Provider value={store}>
+      <div className={`tpl-${template}`} style={accentVars(store.accent_color) as React.CSSProperties}>
       <div className="onyx-canvas flex min-h-dvh flex-col">
-        <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-background/85 backdrop-blur">
+        <header className="st-head sticky top-0 z-30 border-b border-white/[0.06] bg-background/85 backdrop-blur">
           <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
             <button type="button" onClick={() => setMenu(true)} aria-label="Menu" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Menu size={18} /></button>
             <Link to={`/s/${store.slug}`} className="flex min-w-0 flex-1 items-center gap-3">
@@ -54,7 +72,7 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
         {menu && (
           <div className="fixed inset-0 z-50" onClick={() => setMenu(false)}>
             <div className="absolute inset-0 bg-black/60" />
-            <aside className="absolute inset-y-0 left-0 flex w-[82%] max-w-[320px] flex-col bg-background p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <aside className="st-drawer absolute inset-y-0 left-0 flex w-[82%] max-w-[320px] flex-col bg-background p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2.5">{store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-[14px] font-semibold text-primary-glow">{initial}</span>}<p className="truncate text-[15px] font-semibold text-foreground">{store.store_name}</p></div><button type="button" onClick={() => setMenu(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
               <nav className="mt-5 flex flex-1 flex-col gap-0.5 overflow-y-auto">
                 {([
@@ -75,7 +93,7 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
           </div>
         )}
         <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-14 pt-5">{children ?? <Outlet />}</main>
-        <footer className="border-t border-white/[0.06] px-4 py-6 text-center text-[11.5px] text-faint-foreground">
+        <footer className="st-foot border-t border-white/[0.06] px-4 py-6 text-center text-[11.5px] text-faint-foreground">
           <div className="mx-auto flex max-w-2xl flex-col items-center gap-2">
             <p className="text-[12.5px] font-semibold text-foreground">{store.store_name}</p>
             {store.hours_text && <p>{store.hours_text}</p>}
@@ -89,6 +107,7 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
             <p>© {new Date().getFullYear()} {store.store_name}</p>
           </div>
         </footer>
+      </div>
       </div>
     </StoreContext.Provider>
   );

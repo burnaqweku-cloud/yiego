@@ -1,0 +1,92 @@
+/* Storefront templates. Each is its own brand: palette, type, structure.
+   Scoped under .tpl-* so nothing leaks into the main site. Accent comes from the agent (--st-accent). */
+
+/* ---------- MARKET: the kiosk signboard ---------- */
+.tpl-market {
+  --background: 40 100% 97%;           /* chalk */
+  --foreground: 248 22% 10%;           /* ink */
+  --card: 0 0% 100%;
+  --muted-foreground: 248 10% 35%;
+  --faint-foreground: 248 8% 48%;
+  --primary: var(--st-accent-h, 10) var(--st-accent-s, 100%) var(--st-accent-l, 62%);   /* coral by default */
+  --primary-strong: var(--st-accent-h, 10) var(--st-accent-s, 100%) 52%;
+  --primary-glow: var(--st-accent-h, 10) var(--st-accent-s, 100%) 46%;
+  --primary-soft: var(--st-accent-h, 10) 100% 94%;
+  --primary-foreground: 0 0% 100%;
+  --amber: 46 100% 50%;
+  --st-board: #1d2460;
+  --st-sun: #ffd23f;
+  font-family: "Rubik", "Manrope", system-ui, sans-serif;
+  color: hsl(var(--foreground));
+}
+.tpl-market .onyx-canvas { background: #fff8ec; }
+.tpl-market .font-display { font-family: "Rubik", sans-serif; font-weight: 900; letter-spacing: -0.02em; }
+.tpl-market .onyx-panel { background: #ffffff; border: 2px solid #1d2460; box-shadow: 4px 4px 0 #1d2460; border-radius: 14px; }
+.tpl-market .onyx-field { background: #fff; border: 2px solid #1d2460; color: #15131f; border-radius: 12px; }
+.tpl-market .onyx-field::placeholder { color: #7a7890; }
+.tpl-market .onyx-btn-primary { background: hsl(var(--primary)); color: #fff; border-radius: 999px; box-shadow: 3px 3px 0 #1d2460; border: 2px solid #1d2460; font-weight: 700; }
+.tpl-market header.st-head { background: #fff8ec; border-bottom: 3px solid #1d2460; }
+.tpl-market .st-board { background: var(--st-board); color: #fff8ec; border-radius: 18px; padding: 22px 20px 20px; position: relative; box-shadow: 6px 6px 0 hsl(var(--primary)); }
+.tpl-market .st-board h1 { font-family: "Rubik", sans-serif; font-weight: 900; font-size: clamp(30px, 8vw, 44px); line-height: 1; letter-spacing: -0.02em; }
+.tpl-market .st-board p { color: rgba(255, 248, 236, 0.82); }
+.tpl-market .st-sticker { display: inline-block; background: var(--st-sun); color: #15131f; font-weight: 800; padding: 4px 10px; border-radius: 6px; transform: rotate(-2deg); box-shadow: 2px 2px 0 rgba(21, 19, 31, 0.35); }
+.tpl-market .st-row { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; background: #fff; border: 2px solid #1d2460; border-radius: 14px; padding: 10px 12px; box-shadow: 3px 3px 0 #1d2460; transition: transform 120ms ease; }
+.tpl-market .st-row:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #1d2460; }
+.tpl-market .st-row .st-gb { background: var(--st-sun); font-weight: 900; font-size: 22px; min-width: 68px; text-align: center; padding: 8px 6px; border-radius: 8px; transform: rotate(-2deg); line-height: 1; }
+.tpl-market .st-row .st-gb small { display: block; font-size: 11px; font-weight: 700; margin-top: 2px; }
+.tpl-market .st-row .st-price { margin-left: auto; font-weight: 900; font-size: 20px; color: hsl(var(--primary-glow)); white-space: nowrap; }
+.tpl-market .st-net { font-weight: 900; font-size: 20px; color: var(--st-board); }
+.tpl-market .st-pill { background: #fff; border: 2px solid #1d2460; color: #1d2460; font-weight: 700; border-radius: 999px; }
+.tpl-market .st-pill.on { background: #1d2460; color: #fff8ec; }
+.tpl-market .st-drawer { background: #fff8ec; color: #15131f; border-right: 3px solid #1d2460; }
+.tpl-market footer.st-foot { background: var(--st-board); color: #fff8ec; border: 0; }
+.tpl-market footer.st-foot a, .tpl-market footer.st-foot p { color: #fff8ec; }
+
+/* ---------- LEDGER: the till receipt ---------- */
+.tpl-ledger {
+  --background: 60 20% 98%;            /* paper */
+  --foreground: 0 0% 10%;              /* ink */
+  --card: 0 0% 100%;
+  --muted-foreground: 0 0% 32%;
+  --faint-foreground: 0 0% 46%;
+  --primary: var(--st-accent-h, 170) var(--st-accent-s, 80%) var(--st-accent-l, 27%);  /* teal by default */
+  --primary-strong: var(--st-accent-h, 170) var(--st-accent-s, 80%) 22%;
+  --primary-glow: var(--st-accent-h, 170) var(--st-accent-s, 80%) 27%;
+  --primary-soft: var(--st-accent-h, 170) 50% 93%;
+  --primary-foreground: 0 0% 100%;
+  --amber: 36 90% 45%;
+  --st-line: #dddbd2;
+  --st-stamp: #c62828;
+  font-family: "Public Sans", "Manrope", system-ui, sans-serif;
+  color: hsl(var(--foreground));
+}
+.tpl-ledger .onyx-canvas { background: #fafaf7; }
+.tpl-ledger .font-display { font-family: "Public Sans", sans-serif; font-weight: 600; letter-spacing: -0.01em; }
+.tpl-ledger .onyx-panel { background: #fff; border: 1px solid var(--st-line); box-shadow: none; border-radius: 6px; }
+.tpl-ledger .onyx-field { background: #fff; border: 1px solid #c9c7bd; color: #1a1a1a; border-radius: 6px; }
+.tpl-ledger .onyx-field::placeholder { color: #8a887f; }
+.tpl-ledger .onyx-btn-primary { background: hsl(var(--primary)); color: #fff; border-radius: 6px; box-shadow: none; font-weight: 600; }
+.tpl-ledger header.st-head { background: #fafaf7; border-bottom: 1px solid var(--st-line); }
+.tpl-ledger .st-receipt { background: #fff; border: 1px solid var(--st-line); border-radius: 4px 4px 0 0; padding: 22px 18px 18px; text-align: center; position: relative; }
+.tpl-ledger .st-receipt h1 { font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 20px; letter-spacing: 0.08em; text-transform: uppercase; }
+.tpl-ledger .st-receipt p { color: #555; font-size: 13px; }
+.tpl-ledger .st-dash { border: 0; border-top: 1px dashed #b9b7ae; margin: 14px 0; }
+.tpl-ledger .st-tear { height: 10px; background: linear-gradient(135deg, transparent 6px, #fff 6px) 0 0 / 12px 12px, linear-gradient(-135deg, transparent 6px, #fff 6px) 0 0 / 12px 12px; background-repeat: repeat-x; margin-top: -1px; }
+.tpl-ledger .st-list { background: #fff; border: 1px solid var(--st-line); border-top: 0; padding: 6px 18px 14px; }
+.tpl-ledger .st-net { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #333; padding: 12px 0 4px; }
+.tpl-ledger .st-row { display: flex; align-items: baseline; gap: 8px; width: 100%; text-align: left; padding: 9px 0; font-family: "IBM Plex Mono", monospace; font-size: 14.5px; color: #1a1a1a; border: 0; background: none; }
+.tpl-ledger .st-row .st-gb { font-weight: 600; white-space: nowrap; }
+.tpl-ledger .st-row .st-lead { flex: 1; border-bottom: 2px dotted #c9c7bd; transform: translateY(-4px); min-width: 16px; }
+.tpl-ledger .st-row .st-price { font-weight: 600; white-space: nowrap; color: hsl(var(--primary)); }
+.tpl-ledger .st-row small { font-family: "Public Sans", sans-serif; font-size: 11px; color: #777; margin-left: 4px; }
+.tpl-ledger .st-pill { background: #fff; border: 1px solid #c9c7bd; color: #333; font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 4px; }
+.tpl-ledger .st-pill.on { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.tpl-ledger .st-drawer { background: #fafaf7; color: #1a1a1a; border-right: 1px solid var(--st-line); }
+.tpl-ledger .st-stamp { display: inline-block; border: 2px solid var(--st-stamp); color: var(--st-stamp); font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; transform: rotate(-3deg); border-radius: 3px; }
+.tpl-ledger footer.st-foot { background: transparent; border-top: 1px dashed #b9b7ae; font-family: "IBM Plex Mono", monospace; letter-spacing: 0.04em; }
+
+/* Both light templates: tone down dark-theme utility colours used inside shared components. */
+.tpl-market .text-white, .tpl-ledger .text-white { color: hsl(var(--foreground)); }
+.tpl-market [class*="border-white/"], .tpl-ledger [class*="border-white/"] { border-color: rgba(0, 0, 0, 0.1); }
+.tpl-market [class*="bg-white/"], .tpl-ledger [class*="bg-white/"] { background-color: rgba(0, 0, 0, 0.04); }
+.tpl-market [class*="divide-white/"] > *, .tpl-ledger [class*="divide-white/"] > * { border-color: rgba(0, 0, 0, 0.08); }
