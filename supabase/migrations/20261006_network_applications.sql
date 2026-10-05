@@ -1,0 +1,6 @@
+-- Applied 6 Oct 2026 via MCP (see migration names agent_network_applications, network_clean_questions_lower_first, network_application_create_store_cast).
+-- agents.network_auto_approve, agents.network_questions (jsonb, default 3 questions)
+-- table network_applications (answers snapshotted with labels; agent_id is a PLAIN column, not an FK, to keep PostgREST embeds on agents unambiguous)
+-- functions: network_clean_questions, network_set_application_settings, store_network_offer (now returns questions/auto_approve),
+--   network_application_create_store (internal), network_apply, my_network_application, network_applications, network_application_decide,
+--   trigger network_applications_notify -> agent-notify kind 'application' (received/approved/declined)
