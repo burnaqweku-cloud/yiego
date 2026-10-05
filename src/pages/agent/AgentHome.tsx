@@ -21,14 +21,30 @@ export default function AgentHome() {
   const pendingOrders = useMemo(() => orders.filter((o) => !["delivered", "refunded", "cancelled"].includes(o.status)), [orders]);
   const pending = pendingOrders.reduce((a, o) => a + Number(o.agent_margin ?? 0), 0);
   const priceList = () => { const list = products.filter((p) => !p.is_paused).map((p) => `${p.name}: GH₵ ${Number(prices[p.id] ?? p.store_default_price ?? p.customer_price).toFixed(2)}`).join("\n"); return `${agent.store_name} — price list\n\n${list}\n\nOrder here: ${storeUrl}`; };
+  const setupKey = `dy.agent.setup.hidden.${agent.id}`;
+  const [setupHidden, setSetupHidden] = useState(() => { try { return localStorage.getItem(setupKey) === "1"; } catch { return false; } });
+  const setup = [
+    { label: "Pick a template and your colours", done: !!(agent.logo_url || agent.accent_color || (agent.template && agent.template !== "classic")), to: "/agent/store/look" },
+    { label: "Add your logo", done: !!agent.logo_url, to: "/agent/store/look" },
+    { label: "Set your prices", done: Object.keys(prices).length > 0, to: "/agent/prices" },
+    { label: "Add your MoMo number for payouts", done: !!agent.momo_number, to: "/agent/store/details" },
+    { label: "Share your store link", done: orders.length > 0, to: "/agent/domain/addresses" },
+  ];
+  const setupDone = setup.every((x) => x.done);
   const share = async () => { const text = `Buy MTN, Telecel and AirtelTigo data from my store: ${storeUrl}`; if (navigator.share) { try { await navigator.share({ title: agent.store_name, text, url: storeUrl }); return; } catch { /* cancelled */ } } await navigator.clipboard.writeText(text); toast.success("Link copied."); };
 
   return (
     <div className="space-y-4">
       {isSub && netAnns.length > 0 && (
         <section className="onyx-panel rounded-[22px] p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">From {agent.parent?.store_name ?? "your network"}</p>
-          <ul className="mt-2 divide-y divide-white/[0.06]">{netAnns.map((a) => <li key={a.id} className="py-2"><p className="text-[13.5px] font-semibold text-foreground">{a.title}</p><p className="text-[12.5px] text-muted-foreground">{a.body}</p></li>)}</ul>
+          <p className="text-[15px] font-semibold text-foreground">From {agent.parent?.store_name ?? "your network"}</p>
+          <ul className="mt-2 divide-y divide-white/[0.06]">{netAnns.map((a) => <li key={a.id} className="py-2.5"><p className="text-[13.5px] font-semibold text-foreground">{a.title}</p><p className="mt-0.5 whitespace-pre-line text-[12.5px] leading-5 text-muted-foreground">{a.body}</p><p className="mt-1 text-[11px] text-faint-foreground">{new Date(a.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</p></li>)}</ul>
+        </section>
+      )}
+      {!setupDone && !setupHidden && (
+        <section className="onyx-panel rounded-[22px] p-4">
+          <div className="flex items-start justify-between gap-3"><div><p className="text-[15px] font-semibold text-foreground">Set up {agent.store_name}</p><p className="mt-0.5 text-[12.5px] text-muted-foreground">{setup.filter((x) => x.done).length} of {setup.length} done. Each step takes a minute.</p></div><button type="button" onClick={() => { localStorage.setItem(setupKey, "1"); setSetupHidden(true); }} className="text-[12px] text-faint-foreground">Hide</button></div>
+          <ul className="mt-3 space-y-1.5">{setup.map((x) => <li key={x.label}><Link to={x.to} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${x.done ? "text-faint-foreground" : "bg-white/[0.03] text-foreground"}`}><span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[12px] ${x.done ? "border-primary-glow/40 bg-primary/15 text-primary-glow" : "border-white/[0.15]"}`}>{x.done ? "✓" : ""}</span><span className={`text-[13.5px] ${x.done ? "line-through" : "font-medium"}`}>{x.label}</span>{!x.done && <span className="ml-auto text-[12px] text-primary-glow">Do it</span>}</Link></li>)}</ul>
         </section>
       )}
       <div><p className="text-[12px] text-muted-foreground">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</p><h1 className="font-display text-[24px] font-semibold text-foreground">Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}</h1></div>

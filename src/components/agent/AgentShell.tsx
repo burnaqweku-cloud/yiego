@@ -175,13 +175,16 @@ function NetworkPayScreen({ agent }: { agent: Agent }) {
   return (
     <div className="onyx-canvas flex min-h-dvh items-center justify-center px-5 py-8">
       <div className="onyx-panel w-full max-w-md rounded-3xl p-6">
-        <div className="text-center"><CreditCard size={28} className="mx-auto text-primary-glow" /><h1 className="mt-3 text-[20px] font-semibold text-foreground">{agent.status === "suspended" ? "This store is suspended" : "Open your store"}</h1><p className="mt-1 text-[13px] text-muted-foreground">{agent.status === "suspended" ? `Contact ${agent.parent?.store_name ?? "your network"} to sort this out.` : `Your store is under ${agent.parent?.store_name ?? "a network"}. Pay the monthly fee and it opens straight away.`}</p></div>
+        <div className="text-center"><CreditCard size={28} className="mx-auto text-primary-glow" /><p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">{agent.status === "suspended" ? "Suspended" : "Approved · awaiting payment"}</p><h1 className="mt-1 text-[20px] font-semibold text-foreground">{agent.status === "suspended" ? "This store is suspended" : `Open ${agent.store_name}`}</h1><p className="mt-1 text-[13px] text-muted-foreground">{agent.status === "suspended" ? `Contact ${agent.parent?.store_name ?? "your network"} to sort this out.` : `Your store is under ${agent.parent?.store_name ?? "a network"}. Pay the monthly fee and it opens straight away.`}</p></div>
         {agent.status !== "suspended" && (<div className="mt-5 space-y-3">
           <div className="grid grid-cols-3 gap-2">{[1, 3, 6].map((m) => <button key={m} type="button" onClick={() => setMonths(m)} className={`rounded-2xl border p-3 text-center ${months === m ? "border-primary-glow/50 bg-primary/10" : "border-white/[0.08]"}`}><p className="text-[13px] font-semibold text-foreground">{m} month{m > 1 ? "s" : ""}</p><p className="text-[12px] text-muted-foreground">{formatGHS(fee * m)}</p></button>)}</div>
           <input value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="Coupon code (optional)" autoCapitalize="characters" className="onyx-field w-full" />
           <button type="button" disabled={busy} onClick={() => void pay()} className="onyx-btn-primary w-full py-3 text-[14px] disabled:opacity-60">{busy ? "Please wait…" : `Pay ${formatGHS(fee * months)} + 4% fee`}</button>
-          <p className="text-center text-[11.5px] text-faint-foreground">Paid to {agent.parent?.store_name}. You then set your own prices and keep the profit on every sale.</p>
+          <p className="text-center text-[11.5px] text-faint-foreground">Paid to {agent.parent?.store_name}. Coupons from {agent.parent?.store_name} are applied at payment.</p>
         </div>)}
+        {agent.status !== "suspended" && <ul className="mt-5 space-y-2 text-left text-[13px] text-muted-foreground">
+          {[["Your own online store", `${agent.store_name} at ${agent.slug}.datayego.com, with your logo, colours and pages.`], ["Your prices, your profit", `Buy at ${agent.parent?.store_name ?? "your network"}'s agent price, sell at yours, keep the difference on every sale.`], ["Nothing to deliver", "Payment, delivery and receipts run automatically. Your profit is paid to MoMo."], ["Support when you need it", `${agent.parent?.store_name ?? "Your network"} can see your support inbox and help you out.`]].map(([t, d]) => <li key={t} className="flex gap-2"><span className="mt-0.5 text-primary-glow">✓</span><span><b className="text-foreground">{t}.</b> {d}</span></li>)}
+        </ul>}
         <Link to="/" className="mt-4 block text-center text-[12px] text-muted-foreground">Back</Link>
       </div>
     </div>
