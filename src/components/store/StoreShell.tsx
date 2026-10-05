@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Bell, Facebook, Instagram, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound } from "lucide-react";
 import { useAuth } from "@/store/auth-context";
+import StoreSupport from "@/components/store/StoreSupport";
 import { supabase } from "@/integrations/supabase/client";
 import "./templates.css";
 
@@ -18,7 +19,7 @@ const TEMPLATE_FONTS: Record<string, string> = { market: "https://fonts.googleap
 /* The agent's storefront frame: their header with a menu, their pages, their footer.
    Nothing of DataYego's on the page. Pages inside read the store via useStore(). */
 export interface StoreBranding { template: "classic" | "market" | "ledger"; accent_color: string | null; banner_url: string | null; about_text: string | null; hours_text: string | null; store_notice: string | null; contact_phone: string | null; socials: Record<string, string>; featured_product_ids: string[]; faq: Array<{ q: string; a: string }>; delivered_count: number }
-export interface StoreData extends StoreBranding { promos?: Record<string, { was: number; ends_at: string }>; id: string; slug: string; store_name: string; tagline: string | null; logo_url: string | null; whatsapp: string | null; status: "active" | "closed"; prices: Record<string, number> }
+export interface StoreData extends StoreBranding { support?: { whatsapp_url: string | null; chat_on: boolean }; promos?: Record<string, { was: number; ends_at: string }>; id: string; slug: string; store_name: string; tagline: string | null; logo_url: string | null; whatsapp: string | null; status: "active" | "closed"; prices: Record<string, number> }
 const StoreContext = createContext<StoreData | null>(null);
 export const useStore = () => { const c = useContext(StoreContext); if (!c) throw new Error("useStore outside StoreShell"); return c; };
 export const waLink = (s: StoreData) => s.whatsapp ? `https://wa.me/233${s.whatsapp.replace(/\D/g, "").replace(/^0/, "")}` : null;
@@ -58,7 +59,7 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
   }, [template]);
   if (store === undefined) return <div className="min-h-dvh bg-[#0b1512]" />;
   if (store === null) return <div className="flex min-h-dvh items-center justify-center bg-[#0b1512] px-6 text-center"><div><Store size={30} className="mx-auto text-white/40" /><p className="mt-3 text-[17px] font-semibold text-white">This store isn't open</p><p className="mt-1 text-[13px] text-white/60">It may be paused, or the link may be wrong.</p></div></div>;
-  const wa = waLink(store);
+  const wa = store.support?.whatsapp_url ?? waLink(store);
   if (store.status === "closed") return (
     <div className="onyx-canvas flex min-h-dvh flex-col items-center justify-center px-6 text-center">
       {store.logo_url ? <img src={store.logo_url} alt="" className="h-16 w-16 rounded-full object-cover" /> : <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/20 text-[24px] font-bold text-primary-glow">{initial}</span>}
@@ -117,7 +118,8 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
             </aside>
           </div>
         )}
-        <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-14 pt-5">{children ?? <Outlet />}</main>
+        <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-24 pt-5">{children ?? <Outlet />}</main>
+        <StoreSupport />
         <footer className="st-foot border-t border-white/[0.06] px-4 py-6 text-center text-[11.5px] text-faint-foreground">
           <div className="mx-auto flex max-w-2xl flex-col items-center gap-2">
             <p className="text-[12.5px] font-semibold text-foreground">{store.store_name}</p>

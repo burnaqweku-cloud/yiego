@@ -1,0 +1,6 @@
+-- Applied live 5 Oct 2026 (migrations agent_staff_and_support_chat, store_support_in_store_payload).
+-- agent_staff (+agent_add_staff/remove, my_agent_access: owner|staff, staff_store_orders).
+-- Store support: agents.support_whatsapp_url/_on, support_chat_on, support_ai_on (+agent_set_support).
+-- Chat: store_conversations, store_messages; customer RPCs store_chat_open/send/read/request_human
+-- (guest = visitor key); store RPCs agent_inbox/_unread, agent_conversation, agent_reply, agent_conversation_set.
+-- Edge store-chat-ai: AI first reply with store context; hands over to human on money/unsure/asked.

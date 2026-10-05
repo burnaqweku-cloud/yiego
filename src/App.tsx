@@ -77,6 +77,8 @@ const StoreAccount = lazy(() => import("./pages/store/StoreAccount"));
 const AgentCustomers = lazy(() => import("./pages/agent/AgentCustomers"));
 const AgentMarketing = lazy(() => import("./pages/agent/AgentMarketing"));
 const AgentAnalytics = lazy(() => import("./pages/agent/AgentAnalytics"));
+const AgentSupport = lazy(() => import("./pages/agent/AgentSupport"));
+const AgentTeam = lazy(() => import("./pages/agent/AgentTeam"));
 const AgentShell = lazy(() => import("./components/agent/AgentShell"));
 const AgentHome = lazy(() => import("./pages/agent/AgentHome"));
 const AgentBuy = lazy(() => import("./pages/agent/AgentBuy"));
@@ -103,7 +105,7 @@ const App = () => (
     {/* One shell for the whole site: the same header and footer wrap the
         marketing pages, the shop and the account area. */}
     <Route path="/s/:slug" element={<StoreShell />}><Route index element={<StoreHome />} /><Route path="about" element={<StoreAbout />} /><Route path="contact" element={<StoreContact />} /><Route path="faq" element={<StoreFaq />} /><Route path="check-mtn" element={<StoreCheckMtn />} /><Route path="sign-in" element={<StoreAuth mode="sign-in" />} /><Route path="sign-up" element={<StoreAuth mode="sign-up" />} /><Route path="account" element={<StoreAccount />} /><Route path="track" element={<StoreOrder />} /><Route path="success" element={<StoreOrder />} /></Route>
-    <Route path="/agent" element={<AgentShell />}><Route index element={<AgentHome />} /><Route path="buy" element={<AgentBuy />} /><Route path="help" element={<AgentHelp />} /><Route path="check-mtn" element={<AgentCheckMtn />} /><Route path="customers" element={<AgentCustomers />} /><Route path="marketing" element={<AgentMarketing />} /><Route path="analytics" element={<AgentAnalytics />} /><Route path="orders" element={<AgentOrdersPage />} /><Route path="prices" element={<AgentPrices />} /><Route path="earnings" element={<AgentEarnings />} /><Route path="store" element={<AgentStoreSettings />} /></Route>
+    <Route path="/agent" element={<AgentShell />}><Route index element={<AgentHome />} /><Route path="buy" element={<AgentBuy />} /><Route path="help" element={<AgentHelp />} /><Route path="check-mtn" element={<AgentCheckMtn />} /><Route path="customers" element={<AgentCustomers />} /><Route path="marketing" element={<AgentMarketing />} /><Route path="analytics" element={<AgentAnalytics />} /><Route path="support" element={<AgentSupport />} /><Route path="team" element={<AgentTeam />} /><Route path="orders" element={<AgentOrdersPage />} /><Route path="prices" element={<AgentPrices />} /><Route path="earnings" element={<AgentEarnings />} /><Route path="store" element={<AgentStoreSettings />} /></Route>
     <Route element={<PublicShell />}>
       {/* Marketing pages lay out their own full-bleed sections. */}
       <Route path="/" element={<Home />} /><Route path="/agents" element={<AgentsApply />} />

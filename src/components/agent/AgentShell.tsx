@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { BarChart3, CreditCard, ExternalLink, Gift, Home, LifeBuoy, LogOut, Megaphone, Menu, Package, PhoneForwarded, Settings, ShoppingBag, Tags, Users, Wallet } from "lucide-react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { BarChart3, CreditCard, ExternalLink, Gift, Home, LifeBuoy, LogOut, Megaphone, Menu, MessagesSquare, Package, PhoneForwarded, Settings, ShoppingBag, Tags, UserCog, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
@@ -15,11 +15,11 @@ import { X } from "lucide-react";
 /* The agent app. Its own header, its own navigation (bottom bar on phones,
    sidebar on desktop), no public site chrome. Pages read shared data from
    AgentContext so each one stays small. */
-export interface Agent { id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; template?: string; accent_color?: string | null; logo_url?: string | null; banner_url?: string | null; about_text?: string | null; hours_text?: string | null; store_notice?: string | null; contact_phone?: string | null; socials?: Record<string, string>; featured_product_ids?: string[]; faq?: Array<{ q: string; a: string }>; sale_alert_email?: boolean }
+export interface Agent { id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; template?: string; accent_color?: string | null; logo_url?: string | null; banner_url?: string | null; about_text?: string | null; hours_text?: string | null; store_notice?: string | null; contact_phone?: string | null; socials?: Record<string, string>; featured_product_ids?: string[]; faq?: Array<{ q: string; a: string }>; sale_alert_email?: boolean; support_whatsapp_url?: string | null; support_whatsapp_on?: boolean; support_chat_on?: boolean; support_ai_on?: boolean }
 export interface AgentOrder { order_reference: string; recipient_phone: string; amount: number; agent_margin: number | null; status: string; admin_resolution_status: string | null; paid_at: string | null; created_at: string; data_products: { name: string } | null; networks: { name: string } | null }
 export interface AgentPayout { id: string; amount: number; fee: number; net: number; status: string; created_at: string; paid_at: string | null; note: string | null }
 export interface Plan { payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number }
-interface Ctx { agent: Agent; orders: AgentOrder[]; payouts: AgentPayout[]; products: Phase1Product[]; prices: Record<string, string>; setPrices: (p: Record<string, string>) => void; plan: Plan | null; quote: PlanQuote | null; storeUrl: string; reload: () => Promise<void>; sub: SubInfo; openRenew: () => void }
+interface Ctx { role: "owner" | "staff"; unread: number; agent: Agent; orders: AgentOrder[]; payouts: AgentPayout[]; products: Phase1Product[]; prices: Record<string, string>; setPrices: (p: Record<string, string>) => void; plan: Plan | null; quote: PlanQuote | null; storeUrl: string; reload: () => Promise<void>; sub: SubInfo; openRenew: () => void }
 const AgentContext = createContext<Ctx | null>(null);
 export const useAgent = () => { const c = useContext(AgentContext); if (!c) throw new Error("useAgent outside AgentShell"); return c; };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,14 +27,19 @@ export const p1 = () => (supabase as unknown as { schema: (s: string) => any }).
 export const fmt = (d: string) => new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 // Agent-only navigation, grouped like the admin panel's. Nothing here reaches admin pages.
-const NAV_GROUPS: Array<{ label: string; items: Array<{ to: string; label: string; icon: typeof Home; end?: boolean }> }> = [
+type NavItem = { to: string; label: string; icon: typeof Home; end?: boolean; badge?: boolean };
+const OWNER_GROUPS: Array<{ label: string; items: NavItem[] }> = [
   { label: "", items: [{ to: "/agent", label: "Home", icon: Home, end: true }] },
   { label: "Sell", items: [{ to: "/agent/buy", label: "Buy data", icon: ShoppingBag }, { to: "/agent/prices", label: "Prices", icon: Tags }, { to: "/agent/store", label: "Store settings", icon: Settings }] },
-  { label: "Orders", items: [{ to: "/agent/orders", label: "Orders", icon: Package }, { to: "/agent/check-mtn", label: "Check MTN numbers", icon: PhoneForwarded }, { to: "/agent/customers", label: "Customers", icon: Users }] },
+  { label: "Customers", items: [{ to: "/agent/support", label: "Support", icon: MessagesSquare, badge: true }, { to: "/agent/orders", label: "Orders", icon: Package }, { to: "/agent/customers", label: "Customers", icon: Users }, { to: "/agent/check-mtn", label: "Check MTN numbers", icon: PhoneForwarded }] },
   { label: "Money", items: [{ to: "/agent/earnings", label: "Earnings & payouts", icon: Wallet }] },
-  { label: "Grow", items: [{ to: "/agent/marketing", label: "Announcements & promos", icon: Megaphone }, { to: "/agent/analytics", label: "Analytics", icon: BarChart3 }, { to: "/account", label: "Invite & earn", icon: Gift }, { to: "/agent/help", label: "Help Center", icon: LifeBuoy }] },
+  { label: "Grow", items: [{ to: "/agent/marketing", label: "Announcements & promos", icon: Megaphone }, { to: "/agent/analytics", label: "Analytics", icon: BarChart3 }, { to: "/agent/team", label: "Support & team", icon: UserCog }, { to: "/account", label: "Invite & earn", icon: Gift }, { to: "/agent/help", label: "Help Center", icon: LifeBuoy }] },
 ];
-const NAV = NAV_GROUPS.flatMap((g) => g.items);
+// Staff: the store's customers, nothing about money or settings.
+const STAFF_GROUPS: Array<{ label: string; items: NavItem[] }> = [
+  { label: "Customers", items: [{ to: "/agent/support", label: "Support", icon: MessagesSquare, badge: true, end: true }, { to: "/agent/orders", label: "Orders", icon: Package }, { to: "/agent/customers", label: "Customers", icon: Users }, { to: "/agent/check-mtn", label: "Check MTN numbers", icon: PhoneForwarded }] },
+  { label: "", items: [{ to: "/agent/help", label: "Help Center", icon: LifeBuoy }] },
+];
 
 export default function AgentShell() {
   const [drawer, setDrawer] = useState(false);
@@ -44,12 +49,24 @@ export default function AgentShell() {
   const [orders, setOrders] = useState<AgentOrder[]>([]); const [payouts, setPayouts] = useState<AgentPayout[]>([]);
   const [products, setProducts] = useState<Phase1Product[]>([]); const [prices, setPrices] = useState<Record<string, string>>({});
   const [plan, setPlan] = useState<Plan | null>(null); const [quote, setQuote] = useState<PlanQuote | null>(null);
+  const [role, setRole] = useState<"owner" | "staff">("owner"); const [unread, setUnread] = useState(0);
 
   const reload = useCallback(async () => {
     if (!user) return;
-    const [a, pr, q, s] = await Promise.all([p1().from("agents").select("id, slug, store_name, tagline, status, paid_until, momo_number, momo_name, whatsapp, earnings_balance, template, accent_color, logo_url, banner_url, about_text, hours_text, store_notice, contact_phone, socials, featured_product_ids, faq, sale_alert_email").eq("user_id", user.id).maybeSingle(), loadPhase1Products(), planQuote(), p1().from("site_settings").select("value").eq("key", "agent_plan").maybeSingle()]);
-    const g = (a.data as Agent | null) ?? null; setAgent(g); setProducts(pr.data ?? []); setQuote(q); setPlan(s.data?.value ?? null);
-    if (g) {
+    const [a, pr, q, s] = await Promise.all([p1().from("agents").select("id, slug, store_name, tagline, status, paid_until, momo_number, momo_name, whatsapp, earnings_balance, template, accent_color, logo_url, banner_url, about_text, hours_text, store_notice, contact_phone, socials, featured_product_ids, faq, sale_alert_email, support_whatsapp_url, support_whatsapp_on, support_chat_on, support_ai_on").eq("user_id", user.id).maybeSingle(), loadPhase1Products(), planQuote(), p1().from("site_settings").select("value").eq("key", "agent_plan").maybeSingle()]);
+    let g = (a.data as Agent | null) ?? null; let r: "owner" | "staff" = "owner";
+    if (!g) {
+      // Not an agent: maybe staff on someone's store.
+      const { data: acc } = await p1().rpc("my_agent_access", {});
+      if (acc?.role === "staff") {
+        const { data: sa } = await p1().from("agents").select("id, slug, store_name, tagline, status, paid_until, whatsapp, template, accent_color, logo_url").eq("id", acc.agent_id).maybeSingle();
+        if (sa) { g = { ...(sa as Agent), momo_number: null, momo_name: null, earnings_balance: 0 }; r = "staff"; }
+      }
+    }
+    setRole(r); setAgent(g); setProducts(pr.data ?? []); setQuote(q); setPlan(s.data?.value ?? null);
+    if (g && r === "staff") {
+      const { data: so } = await p1().rpc("staff_store_orders", {}); setOrders((so as AgentOrder[]) ?? []); setPayouts([]); setPrices({});
+    } else if (g) {
       const [o, py, ap] = await Promise.all([
         p1().from("orders").select("order_reference, recipient_phone, amount, agent_margin, status, admin_resolution_status, paid_at, created_at, data_products(name), networks(name)").eq("agent_id", g.id).eq("payment_status", "succeeded").order("paid_at", { ascending: false }).limit(300),
         p1().from("agent_payouts").select("*").eq("agent_id", g.id).order("created_at", { ascending: false }),
@@ -60,22 +77,30 @@ export default function AgentShell() {
     }
   }, [user]);
   useEffect(() => { if (!isAuthenticated) { navigate(`/auth?next=${encodeURIComponent("/agent")}`); return; } sessionStorage.removeItem("yg-agent-browse"); void reload(); }, [isAuthenticated, reload, navigate]);
+  // Staff only ever see their store's customer pages. Anything else bounces to Support.
+  const location = useLocation();
+  useEffect(() => {
+    if (role !== "staff" || !agent) return;
+    const ok = ["/agent/support", "/agent/orders", "/agent/customers", "/agent/check-mtn", "/agent/help"];
+    if (!ok.some((p) => location.pathname === p || location.pathname.startsWith(p + "/"))) navigate("/agent/support", { replace: true });
+  }, [role, agent, location.pathname, navigate]);
+  useEffect(() => { if (!agent) return; const tick = () => void p1().rpc("agent_inbox_unread", {}).then(({ data }) => setUnread(Number(data ?? 0))); tick(); const t = setInterval(tick, 20000); return () => clearInterval(t); }, [agent]);
 
   if (agent === undefined) return <div className="min-h-dvh bg-background" />;
   if (agent === null) return <div className="mk-wrap py-16 text-center"><p className="text-[16px] font-semibold text-foreground">You're not an agent yet</p><Link to="/agents" className="mt-4 inline-block text-[13px] text-primary-glow">Apply to be an agent</Link></div>;
   const storeUrl = `${window.location.origin}/s/${agent.slug}`;
 
   const sub = subscriptionOf(agent, quote?.grace_days ?? 1);
-  if (sub.state === "unpaid" || sub.state === "suspended") return <PayScreen agent={agent} quote={quote} />;
+  if (role === "owner" && (sub.state === "unpaid" || sub.state === "suspended")) return <PayScreen agent={agent} quote={quote} />;
 
   return (
-    <AgentContext.Provider value={{ agent, orders, payouts, products, prices, setPrices, plan, quote, storeUrl, reload, sub, openRenew: () => setRenew(true) }}>
+    <AgentContext.Provider value={{ role, unread, agent, orders, payouts, products, prices, setPrices, plan, quote, storeUrl, reload, sub, openRenew: () => setRenew(true) }}>
       <div className="onyx-canvas min-h-dvh">
         <div className="mx-auto flex max-w-5xl">
           {/* Desktop sidebar */}
           <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-white/[0.06] p-4 sm:flex">
             <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div><NotificationBell /></div>
-            <nav className="mt-6 flex flex-col gap-3">{NAV_GROUPS.map((g) => <div key={g.label || "home"}>{g.label && <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">{g.label}</p>}<div className="flex flex-col gap-0.5">{g.items.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:bg-white/[0.04]"}`}><n.icon size={16} />{n.label}</NavLink>)}</div></div>)}</nav>
+            <nav className="mt-6 flex flex-col gap-3">{(role === "staff" ? STAFF_GROUPS : OWNER_GROUPS).map((g) => <div key={g.label || "home"}>{g.label && <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">{g.label}</p>}<div className="flex flex-col gap-0.5">{g.items.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:bg-white/[0.04]"}`}><n.icon size={16} />{n.label}{n.badge && unread > 0 && <span className="ml-auto rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{unread}</span>}</NavLink>)}</div></div>)}</nav>
             <div className="mt-auto space-y-1 text-[12.5px]">
               <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><ExternalLink size={14} />View my store</a>
               <Link to="/" onClick={() => sessionStorage.setItem("yg-agent-browse", "1")} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit DataYego</Link>
@@ -110,7 +135,7 @@ export default function AgentShell() {
             <div className="absolute inset-0 bg-black/60" />
             <aside className="absolute inset-y-0 left-0 flex w-[82%] max-w-[320px] flex-col bg-background p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p><p className="text-[12px] text-primary-glow">{formatGHS(Number(agent.earnings_balance))} earned</p></div><button type="button" onClick={() => setDrawer(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
-              <nav className="mt-5 flex flex-1 flex-col gap-3 overflow-y-auto">{NAV_GROUPS.map((g) => <div key={g.label || "home"}>{g.label && <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">{g.label}</p>}<div className="flex flex-col gap-0.5">{g.items.map((n) => <NavLink key={n.to} to={n.to} end={n.end} onClick={() => setDrawer(false)} className={({ isActive }) => `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-foreground hover:bg-white/[0.04]"}`}><n.icon size={17} />{n.label}</NavLink>)}</div></div>)}</nav>
+              <nav className="mt-5 flex flex-1 flex-col gap-3 overflow-y-auto">{(role === "staff" ? STAFF_GROUPS : OWNER_GROUPS).map((g) => <div key={g.label || "home"}>{g.label && <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">{g.label}</p>}<div className="flex flex-col gap-0.5">{g.items.map((n) => <NavLink key={n.to} to={n.to} end={n.end} onClick={() => setDrawer(false)} className={({ isActive }) => `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-foreground hover:bg-white/[0.04]"}`}><n.icon size={17} />{n.label}{n.badge && unread > 0 && <span className="ml-auto rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{unread}</span>}</NavLink>)}</div></div>)}</nav>
               <div className="mt-4 space-y-0.5 border-t border-white/[0.06] pt-3 text-[13px]">
                 <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><ExternalLink size={14} />View my store</a>
                 <Link to="/" onClick={() => { sessionStorage.setItem("yg-agent-browse", "1"); setDrawer(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Shop as a customer</Link>
