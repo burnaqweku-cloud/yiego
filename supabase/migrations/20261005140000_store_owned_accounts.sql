@@ -1,0 +1,4 @@
+-- Applied live 5 Oct 2026 (migration store_owned_customer_accounts).
+-- profiles.home_store_id: set at sign-up from auth metadata 'store' (agent slug). my_home_store() lets the
+-- main site refuse store-owned logins. my_store_orders(slug): a customer's orders on one store.
+-- agent_customers(): the agent's customers (owned accounts + signed-in buyers), their store only.

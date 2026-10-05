@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { CreditCard, ExternalLink, Gift, Home, LifeBuoy, LogOut, Menu, Package, PhoneForwarded, Settings, ShoppingBag, Tags, Wallet } from "lucide-react";
+import { CreditCard, ExternalLink, Gift, Home, LifeBuoy, LogOut, Menu, Package, PhoneForwarded, Settings, ShoppingBag, Tags, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
@@ -30,7 +30,7 @@ export const fmt = (d: string) => new Date(d).toLocaleString("en-GB", { day: "nu
 const NAV_GROUPS: Array<{ label: string; items: Array<{ to: string; label: string; icon: typeof Home; end?: boolean }> }> = [
   { label: "", items: [{ to: "/agent", label: "Home", icon: Home, end: true }] },
   { label: "Sell", items: [{ to: "/agent/buy", label: "Buy data", icon: ShoppingBag }, { to: "/agent/prices", label: "Prices", icon: Tags }, { to: "/agent/store", label: "Store settings", icon: Settings }] },
-  { label: "Orders", items: [{ to: "/agent/orders", label: "Orders", icon: Package }, { to: "/agent/check-mtn", label: "Check MTN numbers", icon: PhoneForwarded }] },
+  { label: "Orders", items: [{ to: "/agent/orders", label: "Orders", icon: Package }, { to: "/agent/check-mtn", label: "Check MTN numbers", icon: PhoneForwarded }, { to: "/agent/customers", label: "Customers", icon: Users }] },
   { label: "Money", items: [{ to: "/agent/earnings", label: "Earnings & payouts", icon: Wallet }] },
   { label: "Grow", items: [{ to: "/account", label: "Invite & earn", icon: Gift }, { to: "/agent/help", label: "Help Center", icon: LifeBuoy }] },
 ];

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Facebook, Instagram, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock } from "lucide-react";
+import { Facebook, Instagram, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound } from "lucide-react";
+import { useAuth } from "@/store/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import "./templates.css";
 
@@ -25,6 +26,7 @@ export const waLink = (s: StoreData) => s.whatsapp ? `https://wa.me/233${s.whats
 export default function StoreShell({ children }: { children?: ReactNode }) {
   const { slug = "" } = useParams();
   const [menu, setMenu] = useState(false);
+  const { isAuthenticated } = useAuth();
   const [store, setStore] = useState<StoreData | null | undefined>(undefined);
   const navigate = useNavigate(); const location = useLocation();
   // An agent who changed their link: send visitors on the old one to the new one.
@@ -65,6 +67,7 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
               {store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-[15px] font-semibold text-primary-glow">{initial}</span>}
               <span className="min-w-0"><span className="block truncate text-[15.5px] font-semibold text-foreground">{store.store_name}</span>{store.tagline && <span className="block truncate text-[11.5px] text-muted-foreground">{store.tagline}</span>}</span>
             </Link>
+            <Link to={`/s/${store.slug}/${isAuthenticated ? "account" : "sign-in"}`} aria-label={isAuthenticated ? "Your account" : "Sign in"} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><UserRound size={17} /></Link>
             {wa && <a href={wa} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#25D366]/15 text-[#25D366]"><MessageCircle size={18} /></a>}
           </div>
           {store.store_notice && <div className="border-t border-white/[0.06] bg-primary/[0.08] px-4 py-2 text-center text-[12.5px] text-foreground"><span className="mx-auto block max-w-2xl">{store.store_notice}</span></div>}
@@ -82,6 +85,7 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
                   { to: `/s/${store.slug}/about`, label: "About", icon: Info },
                   { to: `/s/${store.slug}/contact`, label: "Contact", icon: Phone },
                   { to: `/s/${store.slug}/faq`, label: "FAQ", icon: HelpCircle },
+                  { to: `/s/${store.slug}/${isAuthenticated ? "account" : "sign-in"}`, label: isAuthenticated ? "Your account" : "Sign in / Create account", icon: UserRound },
                 ] as Array<{ to: string; label: string; icon: typeof Package; end?: boolean }>).map((n) => {
                   const active = n.end ? location.pathname === n.to : location.pathname.startsWith(n.to);
                   return <Link key={n.to} to={n.to} onClick={() => setMenu(false)} className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] ${active ? "bg-primary/15 text-primary-glow" : "text-foreground hover:bg-white/[0.04]"}`}><n.icon size={17} />{n.label}</Link>;
