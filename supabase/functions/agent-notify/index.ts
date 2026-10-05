@@ -63,6 +63,31 @@ Deno.serve(async (req) => {
       await supabase.from("store_announcements").update({ emailed_at: new Date().toISOString() }).eq("id", ann.id);
       return jsonResponse({ sent, customers: (customers ?? []).length });
     }
+    if (body.kind === "application") {
+      // Sub-agent applications: "received" (to applicant + parent), "approved" / "declined" (to applicant).
+      const denied = await requireCronSecret(req, supabase); if (denied) return denied;
+      const { data: a } = await supabase.from("network_applications").select("id, status, applicant_name, applicant_email, store_name, requested_slug, answers, decision_note, agents!network_applications_parent_agent_id_fkey(store_name, slug, user_id, network_fee, custom_domain, custom_domain_status)").eq("id", String(body.applicationId)).maybeSingle();
+      if (!a?.agents) return jsonResponse({ skipped: "not_found" });
+      const parent = a.agents as { store_name: string; slug: string; user_id: string; network_fee: number; custom_domain: string | null; custom_domain_status: string | null };
+      const storeUrl = parent.custom_domain && parent.custom_domain_status === "active" ? `https://${parent.custom_domain}` : `https://${parent.slug}.datayego.com`;
+      const first = (a.applicant_name ?? "").split(" ")[0];
+      const event = String(body.event);
+      // Auto-approved applications are approved in the same transaction; don't send "received" on top of "approved".
+      if (event === "received" && a.status !== "pending") return jsonResponse({ skipped: "auto_approved" });
+      let sent = 0;
+      if (event === "received") {
+        if (a.applicant_email) { const r = await sendEmail({ to: a.applicant_email, subject: `${parent.store_name} received your application`, html: wrap("Application received", `<p>${first ? `Hi ${esc(first)},` : "Hi,"}</p><p>Thanks for applying to sell data under <b>${esc(parent.store_name)}</b>. They'll look at it and you'll get an email as soon as they decide.</p><p>Store name you asked for: <b>${esc(a.store_name)}</b> (${esc(a.requested_slug)}.datayego.com)</p>`, { href: `${storeUrl}/join`, label: "See your application" }) }); if (!("skipped" in r && r.skipped) && r.ok) sent++; }
+        const { data: pu } = await supabase.auth.admin.getUserById(parent.user_id);
+        if (pu?.user?.email) { const answers = (a.answers as Array<{ label: string; answer: string }>).filter((x) => x.answer).map((x) => `<p style="margin:0 0 10px"><b>${esc(x.label)}</b><br>${esc(x.answer)}</p>`).join("");
+          const r = await sendEmail({ to: pu.user.email, subject: `New agent application: ${a.applicant_name ?? a.store_name}`, html: wrap("Someone wants to sell under you", `<p><b>${esc(a.applicant_name ?? "An applicant")}</b> applied to open <b>${esc(a.store_name)}</b> under ${esc(parent.store_name)}.</p>${answers}`, { href: `${site}/agent/network`, label: "Review in your dashboard" }) }); if (!("skipped" in r && r.skipped) && r.ok) sent++; }
+      } else if (event === "approved" && a.applicant_email) {
+        const fee = Number(parent.network_fee ?? 0);
+        const r = await sendEmail({ to: a.applicant_email, subject: `You're approved to sell under ${parent.store_name}`, html: wrap("You're in", `<p>${first ? `Hi ${esc(first)},` : "Hi,"}</p><p><b>${esc(parent.store_name)}</b> approved your application.${a.decision_note ? ` They added: <i>${esc(a.decision_note)}</i>` : ""}</p><p>${fee > 0 ? `Sign in to your dashboard to pay the GH\u20b5 ${fee.toFixed(2)} fee and your store opens straight away.` : "Your store is open. Sign in to set your prices, add your logo and share your link."}</p>`, { href: `${site}/agent`, label: "Open your dashboard" }) }); if (!("skipped" in r && r.skipped) && r.ok) sent++;
+      } else if (event === "declined" && a.applicant_email) {
+        const r = await sendEmail({ to: a.applicant_email, subject: `About your application to ${parent.store_name}`, html: wrap("Application not approved", `<p>${first ? `Hi ${esc(first)},` : "Hi,"}</p><p><b>${esc(parent.store_name)}</b> didn't approve your application this time.${a.decision_note ? ` Their note: <i>${esc(a.decision_note)}</i>` : ""}</p><p>You can still buy data from ${esc(parent.store_name)} as a customer, and you're welcome to apply again later.</p>`, { href: storeUrl, label: `Open ${parent.store_name}` }) }); if (!("skipped" in r && r.skipped) && r.ok) sent++;
+      }
+      return jsonResponse({ sent });
+    }
     return jsonResponse({ error: "Unsupported kind" }, { status: 400 });
   } catch (e) { return jsonResponse({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 }); }
 });

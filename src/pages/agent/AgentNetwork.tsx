@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Copy, Network as NetIcon, Ticket, Megaphone, MessagesSquare } from "lucide-react";
+import { Copy, Network as NetIcon, Ticket, Megaphone, MessagesSquare, Inbox, ListChecks } from "lucide-react";
+import NetworkApplications from "@/components/agent/NetworkApplications";
+import NetworkQuestions from "@/components/agent/NetworkQuestions";
 import { toast } from "sonner";
 import { p1, useAgent } from "@/components/agent/AgentShell";
 import Section from "@/components/agent/Section";
@@ -44,6 +46,12 @@ export default function AgentNetwork() {
         {[["Agents", net ? `${net.totals.active}/${net.totals.agents}` : "…"], ["Their sales", net ? formatGHS(Number(net.totals.sales)) : "…"], ["Your margin on them", net ? formatGHS(Number(net.totals.my_margin)) : "…"], ["Fees received", net ? formatGHS(Number(net.totals.fee_income)) : "…"]].map(([l, v]) => <div key={l} className="onyx-panel rounded-2xl p-3 text-center"><p className="text-[17px] font-semibold tabular-nums text-foreground">{v}</p><p className="text-[11px] text-faint-foreground">{l}</p></div>)}
       </div>
 
+      <Section page="network" id="applications" title="Applications" icon={<Inbox size={15} />} subtitle="People asking to sell under you. Approve or decline; they're emailed either way." defaultOpen>
+        <NetworkApplications onChange={() => void load()} />
+      </Section>
+      <Section page="network" id="questions" title="Application form" icon={<ListChecks size={15} />} subtitle="The questions applicants answer, and whether you approve by hand or automatically.">
+        <NetworkQuestions />
+      </Section>
       <Section page="network" id="agents" title="Agents">
         {!net ? <p className="mt-2 text-[13px] text-muted-foreground">Loading…</p> : net.agents.length === 0 ? <p className="mt-2 text-[13px] text-muted-foreground">No agents yet. Share your invite link.</p> : (
           <ul className="mt-2 divide-y divide-white/[0.06]">{net.agents.map((s) => <li key={s.id} className="flex items-start justify-between gap-3 py-3"><div className="min-w-0"><p className="truncate text-[13.5px] font-semibold text-foreground">{s.store_name} <span className={`ml-1 rounded-full px-2 py-0.5 text-[10.5px] ${s.status === "active" ? "bg-primary/15 text-primary-glow" : "bg-amber/15 text-amber"}`}>{s.status === "awaiting_payment" ? "not paid yet" : s.status}</span></p><p className="text-[11.5px] text-faint-foreground">{s.slug}.datayego.com{s.whatsapp ? ` · ${s.whatsapp}` : ""} · joined {d(s.created_at)}{s.paid_until && s.status === "active" ? ` · paid to ${d(s.paid_until)}` : ""}</p><p className="text-[11.5px] text-faint-foreground">{s.orders} orders · sales {formatGHS(Number(s.sales))} · your margin {formatGHS(Number(s.my_margin))} · fees {formatGHS(Number(s.fees_paid))}</p></div><button type="button" onClick={() => void openPeek(s)} className="shrink-0 rounded-full border border-white/[0.12] px-2.5 py-1 text-[11.5px] text-foreground"><MessagesSquare size={12} className="mr-1 inline" />Support</button></li>)}</ul>
