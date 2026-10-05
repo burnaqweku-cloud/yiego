@@ -7,3 +7,5 @@
 -- payment_events -> network_fee_paid credits the parent ledger. my_network(), network_inbox(sub) read-only, store_by_host
 -- also resolves name.parentdomain.com. Parent-only: store_popups (+store_popup_for, store_form_submit),
 -- store_form_submissions, network_announcements, network_coupons (+network_coupon_quote). agent_store exposes 'network'.
+-- 6 Oct fix: orders.parent_agent_id has NO foreign key (a second FK to agents made every orders→agents embed
+-- ambiguous for PostgREST: admin Orders, order emails, tracking all failed). Plain indexed column instead.
