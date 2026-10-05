@@ -1,0 +1,1 @@
+-- Applied 5 Oct 2026 via MCP: agent_update_branding socials loop used k/v without alias (jsonb_each_text → key/value) → "column k does not exist". Rewritten with alias s(k,v); featured limit moved into subquery; length caps on about/notice/hours.
