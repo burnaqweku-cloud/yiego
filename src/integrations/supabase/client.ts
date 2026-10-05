@@ -27,7 +27,9 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
     }
 
     headers.set('apikey', supabaseKey);
-    return fetch(input, { ...init, headers });
+    // Never let the browser cache API answers: a cached error response (e.g. an HTTP 300) would
+    // otherwise keep failing a page long after the server was fixed.
+    return fetch(input, { ...init, headers, cache: 'no-store' });
   };
 }
 
