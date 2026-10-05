@@ -1,0 +1,5 @@
+-- Applied live 5 Oct 2026 (migrations store_frame_branding, store_media_bucket).
+-- agents: template (classic|market|ledger), accent_color, banner_url, about_text, hours_text, store_notice,
+-- contact_phone, socials jsonb, featured_product_ids uuid[], faq jsonb. agent_store() returns them + delivered_count.
+-- agent_update_branding(jsonb): agent edits their own branding (text sanitised). Storage bucket store-media
+-- (public read; agents write under their own agent-id folder).

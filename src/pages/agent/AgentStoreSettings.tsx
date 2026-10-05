@@ -3,6 +3,7 @@ import { BadgeCheck, Check, ExternalLink, X } from "lucide-react";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/format";
 import { p1, useAgent } from "@/components/agent/AgentShell";
+import StoreBrandingEditor from "@/components/agent/StoreBrandingEditor";
 
 export default function AgentStoreSettings() {
   const { agent, quote, storeUrl, reload } = useAgent();
@@ -60,6 +61,7 @@ export default function AgentStoreSettings() {
         <div className="grid gap-3 sm:grid-cols-2">{field("momo_number", "MoMo number", { inputMode: "tel" })}{field("momo_name", "Name on MoMo")}</div>
       </div>
       <div className="flex justify-end"><button type="button" onClick={() => void save()} className="onyx-btn-primary px-5 py-2.5 text-[13.5px]">Save</button></div>
+      <StoreBrandingEditor />
     </div>
   );
 }
