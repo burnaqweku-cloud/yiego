@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Facebook, Instagram, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound } from "lucide-react";
+import { Bell, Facebook, Instagram, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound } from "lucide-react";
 import { useAuth } from "@/store/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import "./templates.css";
@@ -18,7 +18,7 @@ const TEMPLATE_FONTS: Record<string, string> = { market: "https://fonts.googleap
 /* The agent's storefront frame: their header with a menu, their pages, their footer.
    Nothing of DataYego's on the page. Pages inside read the store via useStore(). */
 export interface StoreBranding { template: "classic" | "market" | "ledger"; accent_color: string | null; banner_url: string | null; about_text: string | null; hours_text: string | null; store_notice: string | null; contact_phone: string | null; socials: Record<string, string>; featured_product_ids: string[]; faq: Array<{ q: string; a: string }>; delivered_count: number }
-export interface StoreData extends StoreBranding { id: string; slug: string; store_name: string; tagline: string | null; logo_url: string | null; whatsapp: string | null; status: "active" | "closed"; prices: Record<string, number> }
+export interface StoreData extends StoreBranding { promos?: Record<string, { was: number; ends_at: string }>; id: string; slug: string; store_name: string; tagline: string | null; logo_url: string | null; whatsapp: string | null; status: "active" | "closed"; prices: Record<string, number> }
 const StoreContext = createContext<StoreData | null>(null);
 export const useStore = () => { const c = useContext(StoreContext); if (!c) throw new Error("useStore outside StoreShell"); return c; };
 export const waLink = (s: StoreData) => s.whatsapp ? `https://wa.me/233${s.whatsapp.replace(/\D/g, "").replace(/^0/, "")}` : null;
@@ -27,6 +27,18 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
   const { slug = "" } = useParams();
   const [menu, setMenu] = useState(false);
   const { isAuthenticated } = useAuth();
+  // Store announcements (the agent's own), with a per-device "seen" marker.
+  const [anns, setAnns] = useState<Array<{ id: string; title: string; body: string; created_at: string }>>([]);
+  const [annOpen, setAnnOpen] = useState(false);
+  const seenKey = `yg-store-ann-seen:${slug}`;
+  const unread = anns.filter((a) => !(localStorage.getItem(seenKey) ?? "").split(",").includes(a.id)).length;
+  useEffect(() => {
+    if (!slug) return;
+    const p1 = (supabase as unknown as { schema: (s: string) => { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown }> } }).schema("phase1");
+    void p1.rpc("store_announcements_for", { p_slug: slug }).then((r) => setAnns((r.data as typeof anns) ?? []));
+    void p1.rpc("store_visit", { p_slug: slug });
+  }, [slug]);
+  const markSeen = () => { localStorage.setItem(seenKey, anns.map((a) => a.id).join(",")); setAnnOpen(true); };
   const [store, setStore] = useState<StoreData | null | undefined>(undefined);
   const navigate = useNavigate(); const location = useLocation();
   // An agent who changed their link: send visitors on the old one to the new one.
@@ -67,11 +79,20 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
               {store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-[15px] font-semibold text-primary-glow">{initial}</span>}
               <span className="min-w-0"><span className="block truncate text-[15.5px] font-semibold text-foreground">{store.store_name}</span>{store.tagline && <span className="block truncate text-[11.5px] text-muted-foreground">{store.tagline}</span>}</span>
             </Link>
+            {anns.length > 0 && <button type="button" onClick={markSeen} aria-label="Store news" className="relative flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Bell size={17} />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{unread}</span>}</button>}
             <Link to={`/s/${store.slug}/${isAuthenticated ? "account" : "sign-in"}`} aria-label={isAuthenticated ? "Your account" : "Sign in"} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><UserRound size={17} /></Link>
             {wa && <a href={wa} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#25D366]/15 text-[#25D366]"><MessageCircle size={18} /></a>}
           </div>
           {store.store_notice && <div className="border-t border-white/[0.06] bg-primary/[0.08] px-4 py-2 text-center text-[12.5px] text-foreground"><span className="mx-auto block max-w-2xl">{store.store_notice}</span></div>}
         </header>
+        {annOpen && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={() => setAnnOpen(false)}>
+            <div className="onyx-panel max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-3xl p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between"><h3 className="font-display text-[18px] font-semibold text-foreground">News from {store.store_name}</h3><button type="button" onClick={() => setAnnOpen(false)} aria-label="Close" className="text-muted-foreground"><X size={18} /></button></div>
+              <ul className="mt-3 divide-y divide-white/[0.06]">{anns.map((a) => <li key={a.id} className="py-3"><p className="text-[14px] font-semibold text-foreground">{a.title}</p><p className="mt-1 whitespace-pre-line text-[13px] leading-5 text-muted-foreground">{a.body}</p><p className="mt-1 text-[11px] text-faint-foreground">{new Date(a.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</p></li>)}</ul>
+            </div>
+          </div>
+        )}
         {menu && (
           <div className="fixed inset-0 z-50" onClick={() => setMenu(false)}>
             <div className="absolute inset-0 bg-black/60" />

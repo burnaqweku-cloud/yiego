@@ -61,6 +61,9 @@ export default function AgentStoreSettings() {
         <div className="grid gap-3 sm:grid-cols-2">{field("momo_number", "MoMo number", { inputMode: "tel" })}{field("momo_name", "Name on MoMo")}</div>
       </div>
       <div className="flex justify-end"><button type="button" onClick={() => void save()} className="onyx-btn-primary px-5 py-2.5 text-[13.5px]">Save</button></div>
+      <section className="onyx-panel rounded-[22px] p-5">
+        <label className="flex items-start justify-between gap-3"><span><span className="block text-[14px] font-semibold text-foreground">Email me on every sale</span><span className="block text-[12.5px] text-muted-foreground">A short email when a customer pays on your store, with the bundle, number and your profit.</span></span><input type="checkbox" defaultChecked={agent.sale_alert_email ?? true} onChange={(e) => void p1().rpc("agent_set_sale_alert", { p_on: e.target.checked }).then(({ error }) => error ? toast.error("Couldn't save.") : toast.success(e.target.checked ? "Sale alerts on." : "Sale alerts off."))} className="mt-1 h-5 w-5" /></label>
+      </section>
       <StoreBrandingEditor />
     </div>
   );

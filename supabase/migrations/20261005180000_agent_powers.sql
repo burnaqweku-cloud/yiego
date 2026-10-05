@@ -1,0 +1,6 @@
+-- Applied live 5 Oct 2026 (migrations agent_powers, agent_sale_alert_trigger). All store-scoped, no admin.
+-- store_announcements (+agent_post_announcement, store_announcements_for), store_promos (+agent_set_promo;
+-- floor = agent price; agent_store() prices honour active promos and expose 'promos' {was, ends_at}),
+-- store_visits (+store_visit, agent_analytics), agents.sale_alert_email (+agent_set_sale_alert).
+-- Trigger zz_orders_agent_sale_alert_trg -> edge agent-notify {kind:sale}. agent-notify {kind:announce}
+-- emails the agent's own customers once a day.
