@@ -495,7 +495,7 @@ export default function BundleCatalogue() {
                     </div>
                     {group.network.name === "MTN" && (
                       <div className="mb-5 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
-                        <div className="mb-2 flex items-center gap-1.5"><p className="text-[13px] font-semibold text-foreground">Check your MTN number before you buy</p><button type="button" onClick={() => setCheckInfoOpen(true)} aria-label="About the MTN number check" className="text-faint-foreground hover:text-primary-glow"><Info size={15} /></button></div>
+                        <div className="mb-2 flex items-center gap-1.5"><p className="text-[13px] font-semibold text-foreground">Check if your MTN number is approved before you buy</p><button type="button" onClick={() => setCheckInfoOpen(true)} aria-label="About the MTN number check" className="text-faint-foreground hover:text-primary-glow"><Info size={15} /></button></div>
                         <MtnCheckField source="shop" />
                         <MtnCheckInfoSheet open={checkInfoOpen} onClose={() => setCheckInfoOpen(false)} />
                       </div>

@@ -7,7 +7,7 @@ import { FlowHeader } from "@/components/flows/flow-parts";
 export default function MtnCheckInfoSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Modal open={open} onClose={onClose} label="About the MTN number check">
-      <FlowHeader title="Why check your MTN number?" subtitle="Takes a second, saves you days." onClose={onClose} />
+      <FlowHeader title="Is your MTN number approved?" subtitle="Approved numbers get data in minutes. Others can take days." onClose={onClose} />
       <div className="space-y-4 px-5 pb-[max(28px,env(safe-area-inset-bottom))] pt-3 text-[13.5px] leading-6 text-muted-foreground">
         <p>MTN verifies every number the first time it receives a bundle from our supplier. Until a number is approved, orders to it can take days instead of minutes. Checking first tells you what to expect before you pay.</p>
         <div className="space-y-2.5">
