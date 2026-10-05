@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isStoreHost, setHostSlug } from "@/lib/storeHost";
+import { useStore } from "@/components/store/StoreShell";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -70,6 +71,8 @@ const AdminAgentDetail = lazy(() => import("./pages/AdminAgentDetail"));
 const AgentsApply = lazy(() => import("./pages/AgentsApply"));
 const StoreShell = lazy(() => import("./components/store/StoreShell"));
 const StoreHome = lazy(() => import("./pages/store/StoreHome"));
+const StudioHome = lazy(() => import("./pages/store/StudioHome"));
+const StoreIndex = () => { const st = useStore(); return st.template === "studio" ? <StudioHome /> : <StoreHome />; };
 const StoreOrder = lazy(() => import("./pages/store/StoreOrder"));
 const StoreAbout = lazy(() => import("./pages/store/StoreAbout"));
 const StoreContact = lazy(() => import("./pages/store/StoreContact"));
@@ -104,7 +107,7 @@ function RouteFallback() { return <div className="onyx-canvas grid min-h-dvh pla
 /* Public pages render immediately — RequireAuth/RequireAdmin show their own
    loaders while the session resolves, so nothing waits on auth to paint.
    That first-paint speed is also what crawlers measure. */
-const STORE_ROUTES = <><Route index element={<StoreHome />} /><Route path="about" element={<StoreAbout />} /><Route path="contact" element={<StoreContact />} /><Route path="faq" element={<StoreFaq />} /><Route path="check-mtn" element={<StoreCheckMtn />} /><Route path="sign-in" element={<StoreAuth mode="sign-in" />} /><Route path="sign-up" element={<StoreAuth mode="sign-up" />} /><Route path="account" element={<StoreAccount />} /><Route path="join" element={<StoreJoin />} /><Route path="track" element={<StoreOrder />} /><Route path="success" element={<StoreOrder />} /></>;
+const STORE_ROUTES = <><Route index element={<StoreIndex />} /><Route path="bundles" element={<StoreHome />} /><Route path="about" element={<StoreAbout />} /><Route path="contact" element={<StoreContact />} /><Route path="faq" element={<StoreFaq />} /><Route path="check-mtn" element={<StoreCheckMtn />} /><Route path="sign-in" element={<StoreAuth mode="sign-in" />} /><Route path="sign-up" element={<StoreAuth mode="sign-up" />} /><Route path="account" element={<StoreAccount />} /><Route path="join" element={<StoreJoin />} /><Route path="track" element={<StoreOrder />} /><Route path="success" element={<StoreOrder />} /></>;
 
 /* A connected custom domain or slug.datayego.com: that store lives at the root. */
 const StoreHostApp = ({ slug }: { slug: string }) => (

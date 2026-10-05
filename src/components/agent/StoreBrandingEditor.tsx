@@ -55,16 +55,16 @@ export default function StoreBrandingEditor() {
     setTemplate(t);
     const { error } = await p1().rpc("agent_update_branding", { p: { template: t } });
     if (error) { toast.error(error.message.replace(/_/g, " ")); setTemplate(agent.template ?? "classic"); return; }
-    toast.success(`Store switched to ${t === "market" ? "Market" : t === "ledger" ? "Ledger" : "Classic"}.`); void reload();
+    toast.success(`Store switched to ${t === "market" ? "Market" : t === "studio" ? "Studio" : "Classic"}.`); void reload();
   };
   return (
     <div className="space-y-3">
-      <Section page="store" id="template" title="Template" icon={<LayoutTemplate size={15} />} badge={template === "market" ? "Market" : template === "ledger" ? "Ledger" : "Classic"} subtitle="Three different designs. Switch any time; your bundles, prices and pages stay the same.">
+      <Section page="store" id="template" title="Template" icon={<LayoutTemplate size={15} />} badge={template === "market" ? "Market" : template === "studio" ? "Studio" : "Classic"} subtitle="Three different designs. Switch any time; your bundles, prices and pages stay the same.">
         <div className="grid gap-3 sm:grid-cols-3">
           {([
             { id: "classic", name: "Classic", blurb: "Dark, green, card grid. The look you have today.", preview: <div className="h-24 rounded-xl bg-[#0b1512] p-2"><div className="h-3 w-1/2 rounded bg-[#22c387]/70" /><div className="mt-2 grid grid-cols-3 gap-1"><div className="h-9 rounded bg-white/10" /><div className="h-9 rounded bg-white/10" /><div className="h-9 rounded bg-white/10" /></div></div> },
             { id: "market", name: "Market", blurb: "A painted kiosk signboard with sticker prices. Loud and friendly.", preview: <div className="h-24 rounded-xl bg-[#fff8ec] p-2"><div className="h-8 rounded-md bg-[#1d2460] shadow-[3px_3px_0_#ff5a3c]" /><div className="mt-2 flex items-center gap-1 rounded-md border-2 border-[#1d2460] bg-white p-1"><div className="h-5 w-7 -rotate-2 rounded bg-[#ffd23f]" /><div className="h-2 flex-1 rounded bg-[#1d2460]/20" /><div className="h-3 w-8 rounded bg-[#ff5a3c]" /></div></div> },
-            { id: "ledger", name: "Ledger", blurb: "A till receipt: dotted price lines on paper. Quiet and precise.", preview: <div className="h-24 rounded-xl bg-[#fafaf7] p-2"><div className="mx-auto h-2 w-1/2 rounded bg-[#1a1a1a]/70" /><div className="mt-2 border-t border-dashed border-[#b9b7ae]" /><div className="mt-2 space-y-1.5">{[0, 1, 2].map((i) => <div key={i} className="flex items-end gap-1"><div className="h-2 w-10 rounded bg-[#1a1a1a]/60" /><div className="flex-1 border-b-2 border-dotted border-[#c9c7bd]" /><div className="h-2 w-6 rounded bg-[#0e7c6b]" /></div>)}</div></div> },
+            { id: "studio", name: "Studio", blurb: "A clean white company website: top navigation, big headline, Buy button, price list, footer.", preview: <div className="h-24 rounded-xl border border-[#e5e9f0] bg-white p-2"><div className="flex items-center justify-between"><div className="h-2 w-10 rounded bg-[#0f172a]" /><div className="flex gap-1"><div className="h-2 w-6 rounded bg-[#cbd5e1]" /><div className="h-2 w-6 rounded bg-[#cbd5e1]" /><div className="h-3 w-9 rounded bg-[#2563eb]" /></div></div><div className="mt-3 h-3 w-3/4 rounded bg-[#0f172a]" /><div className="mt-1 h-3 w-1/2 rounded bg-[#0f172a]" /><div className="mt-2 flex gap-1"><div className="h-4 w-12 rounded bg-[#2563eb]" /><div className="h-4 w-12 rounded border border-[#e5e9f0]" /></div></div> },
           ] as Array<{ id: string; name: string; blurb: string; preview: React.ReactNode }>).map((t) => (
             <button key={t.id} type="button" onClick={() => void pickTemplate(t.id)} className={`rounded-2xl border p-2 text-left transition ${template === t.id ? "border-primary-glow/50 ring-1 ring-primary-glow/30" : "border-white/[0.08] hover:border-white/[0.2]"}`}>
               {t.preview}

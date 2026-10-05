@@ -4,7 +4,7 @@ import { Info } from "lucide-react";
 import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
 import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { MessageCircle, Search, ShieldCheck, Zap } from "lucide-react";
 import Seo from "@/components/seo/Seo";
 import BuyDataFlow, { type AgentStoreContext, type BuyPreselect } from "@/components/flows/BuyDataFlow";
@@ -18,7 +18,8 @@ export default function StoreHome() {
   const store = useStore(); const navigate = useNavigate();
   const [products, setProducts] = useState<Phase1Product[]>([]);
   const [open, setOpen] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null);
-  const [network, setNetwork] = useState<"all" | "mtn" | "telecel" | "at">("all"); const [track, setTrack] = useState("");
+  const [sp] = useSearchParams(); const initialNet = (["mtn", "telecel", "at"] as const).find((n) => n === sp.get("network")) ?? "all";
+  const [network, setNetwork] = useState<"all" | "mtn" | "telecel" | "at">(initialNet); const [track, setTrack] = useState("");
   useEffect(() => { void loadPhase1Products().then((r) => setProducts(r.data ?? [])); }, []);
   const agent: AgentStoreContext = useMemo(() => ({ slug: store.slug, name: store.store_name, prices: store.prices }), [store]);
   const groups = useMemo(() => NETWORKS.map((n) => { const prefix = n.id === "mtn" ? "mtn" : n.id === "telecel" ? "tel" : "at"; return { n, items: products.filter((p) => p.app_product_code?.startsWith(prefix) && !p.is_paused).map((p) => ({ p, price: Number(store.prices?.[p.id] ?? p.customer_price) })) }; }).filter((g) => g.items.length && (network === "all" || g.n.id === network)), [products, store, network]);
@@ -37,15 +38,7 @@ export default function StoreHome() {
           {speedPill(speeds.MTN) && <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[12px] font-semibold text-[#fff8ec]"><span className="h-1.5 w-1.5 rounded-full bg-[#ffd23f]" />{speedPill(speeds.MTN)!.text}</p>}
         </section>
       )}
-      {tpl === "ledger" && (
-        <section className="st-receipt">
-          <h1>{store.store_name}</h1>
-          <p className="mt-1">{store.tagline ?? "MTN · Telecel · AirtelTigo"}</p>
-          <hr className="st-dash" />
-          <p className="font-mono text-[12px] tracking-wide">{store.delivered_count.toLocaleString()} orders delivered{speedPill(speeds.MTN) ? ` · ${speedPill(speeds.MTN)!.text}` : ""}</p>
-          {store.store_notice && <p className="mt-3"><span className="st-stamp">{store.store_notice}</span></p>}
-        </section>
-      )}
+      {tpl === "studio" && <section className="pb-2 pt-2"><h1 className="st-h2">All bundles</h1><p className="mt-1.5 text-[14.5px] text-[var(--st-slate)]">Pick a network, tap a bundle, enter the number. Prices include everything.</p></section>}
       {tpl === "classic" && <section className="rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent p-5">
         <h1 className="font-display text-[24px] font-semibold leading-tight text-foreground sm:text-[28px]">Buy data in seconds.</h1>
         <p className="mt-1 text-[13.5px] text-muted-foreground">MTN, Telecel and AirtelTigo. Pay with MoMo or card, delivered straight to the number.</p>
@@ -61,7 +54,7 @@ export default function StoreHome() {
       <div className="mt-3 space-y-4">
         {groups.map(({ n, items }) => (
           <section key={n.id}>
-            <div className="mb-1.5 flex items-center gap-2 px-1"><h2 className={tpl === "classic" ? "text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground" : "st-net"}>{tpl === "ledger" ? `${n.name} bundles` : n.name}</h2>{n.id === "mtn" && speedPill(speeds.MTN) && <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${speedPill(speeds.MTN)!.paused ? "border-white/[0.12] bg-white/[0.05] text-muted-foreground" : "border-primary-glow/20 bg-primary/[0.08] text-primary-glow"}`}><span className={`h-1.5 w-1.5 rounded-full ${speedPill(speeds.MTN)!.paused ? "bg-faint-foreground" : "bg-primary-glow"}`} />{speedPill(speeds.MTN)!.text}</span>}</div>
+            <div className="mb-1.5 flex items-center gap-2 px-1"><h2 className={tpl === "classic" ? "text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground" : tpl === "studio" ? "text-[15px] font-bold text-foreground" : "st-net"}>{n.name}</h2>{n.id === "mtn" && speedPill(speeds.MTN) && <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${speedPill(speeds.MTN)!.paused ? "border-white/[0.12] bg-white/[0.05] text-muted-foreground" : "border-primary-glow/20 bg-primary/[0.08] text-primary-glow"}`}><span className={`h-1.5 w-1.5 rounded-full ${speedPill(speeds.MTN)!.paused ? "bg-faint-foreground" : "bg-primary-glow"}`} />{speedPill(speeds.MTN)!.text}</span>}</div>
             {n.id === "mtn" && (
               <div className="onyx-panel mb-3 rounded-2xl p-3.5">
                 <div className="mb-2 flex items-center gap-1.5"><p className="text-[12.5px] font-semibold text-foreground">Check if your MTN number is approved before you buy</p><button type="button" onClick={() => setCheckInfoOpen(true)} aria-label="About the MTN number check" className="text-faint-foreground hover:text-primary-glow"><Info size={14} /></button></div>
@@ -70,8 +63,7 @@ export default function StoreHome() {
               </div>
             )}
             {tpl === "market" && <div className="space-y-2.5">{items.map(({ p, price }) => <button key={p.id} type="button" onClick={() => { setPreselect({ kind: "bundle", networkId: n.id, productCode: p.app_product_code ?? p.id }); setOpen(true); }} className="st-row"><span className="st-gb">{p.name.replace(/^.*?—\s*/, "")}<small>{n.name}</small></span><span className="min-w-0 text-[13px] text-muted-foreground">{p.validity ?? "Validity set by the network"}</span><span className="st-price">{store.promos?.[p.id] && <s className="mr-1.5 text-[13px] font-medium opacity-60">{formatGHS(store.promos[p.id].was)}</s>}{formatGHS(price)}</span></button>)}</div>}
-            {tpl === "ledger" && <div className="st-list">{items.map(({ p, price }) => <button key={p.id} type="button" onClick={() => { setPreselect({ kind: "bundle", networkId: n.id, productCode: p.app_product_code ?? p.id }); setOpen(true); }} className="st-row"><span className="st-gb">{n.name} {p.name.replace(/^.*?—\s*/, "")}</span>{p.validity && <small>{p.validity}</small>}<span className="st-lead" /><span className="st-price">{store.promos?.[p.id] && <s className="mr-1 opacity-50">{formatGHS(store.promos[p.id].was)}</s>}{formatGHS(price)}</span></button>)}</div>}
-            {tpl === "classic" && <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {(tpl === "classic" || tpl === "studio") && <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {items.map(({ p, price }) => (
                 <button key={p.id} type="button" onClick={() => { setPreselect({ kind: "bundle", networkId: n.id, productCode: p.app_product_code ?? p.id }); setOpen(true); }} className="onyx-panel group rounded-2xl p-3 text-left transition-colors hover:border-primary/40">
                   <p className="text-[18px] font-semibold text-foreground">{p.name.replace(/^.*?—\s*/, "")}</p>

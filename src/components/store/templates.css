@@ -42,51 +42,83 @@
 .tpl-market footer.st-foot { background: var(--st-board); color: #fff8ec; border: 0; }
 .tpl-market footer.st-foot a, .tpl-market footer.st-foot p { color: #fff8ec; }
 
-/* ---------- LEDGER: the till receipt ---------- */
-.tpl-ledger {
-  --background: 60 20% 98%;            /* paper */
-  --foreground: 0 0% 10%;              /* ink */
+/* Both light templates: tone down dark-theme utility colours used inside shared components. */
+.tpl-market .text-white, .tpl-studio .text-white { color: hsl(var(--foreground)); }
+.tpl-market [class*="border-white/"], .tpl-studio [class*="border-white/"] { border-color: rgba(0, 0, 0, 0.1); }
+.tpl-market [class*="bg-white/"], .tpl-studio [class*="bg-white/"] { background-color: rgba(0, 0, 0, 0.04); }
+.tpl-market [class*="divide-white/"] > *, .tpl-studio [class*="divide-white/"] > * { border-color: rgba(0, 0, 0, 0.08); }
+
+/* ---------- STUDIO: a clean, white, telecom-grade website ----------
+   One family (Plus Jakarta Sans), one brand colour (the agent's accent, cobalt by default),
+   generous white space, soft slate bands between sections. Looks like a company, not a card stack. */
+.tpl-studio {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;           /* ink navy */
   --card: 0 0% 100%;
-  --muted-foreground: 0 0% 32%;
-  --faint-foreground: 0 0% 46%;
-  --primary: var(--st-accent-h, 170) var(--st-accent-s, 80%) var(--st-accent-l, 27%);  /* teal by default */
-  --primary-strong: var(--st-accent-h, 170) var(--st-accent-s, 80%) 22%;
-  --primary-glow: var(--st-accent-h, 170) var(--st-accent-s, 80%) 27%;
-  --primary-soft: var(--st-accent-h, 170) 50% 93%;
+  --muted-foreground: 215 19% 35%;
+  --faint-foreground: 215 14% 50%;
+  --primary: var(--st-accent-h, 221) var(--st-accent-s, 83%) var(--st-accent-l, 53%);   /* cobalt */
+  --primary-strong: var(--st-accent-h, 221) var(--st-accent-s, 83%) 45%;
+  --primary-glow: var(--st-accent-h, 221) var(--st-accent-s, 83%) 45%;
+  --primary-soft: var(--st-accent-h, 221) 90% 95%;
   --primary-foreground: 0 0% 100%;
-  --amber: 36 90% 45%;
-  --st-line: #dddbd2;
-  --st-stamp: #c62828;
-  font-family: "Public Sans", "Manrope", system-ui, sans-serif;
+  --amber: 38 92% 50%;
+  --st-ink: #0f172a;
+  --st-slate: #475569;
+  --st-mist: #f4f6fa;
+  --st-line: #e5e9f0;
+  font-family: "Plus Jakarta Sans", "Manrope", system-ui, sans-serif;
   color: hsl(var(--foreground));
 }
-.tpl-ledger .onyx-canvas { background: #fafaf7; }
-.tpl-ledger .font-display { font-family: "Public Sans", sans-serif; font-weight: 600; letter-spacing: -0.01em; }
-.tpl-ledger .onyx-panel { background: #fff; border: 1px solid var(--st-line); box-shadow: none; border-radius: 6px; }
-.tpl-ledger .onyx-field { background: #fff; border: 1px solid #c9c7bd; color: #1a1a1a; border-radius: 6px; }
-.tpl-ledger .onyx-field::placeholder { color: #8a887f; }
-.tpl-ledger .onyx-btn-primary { background: hsl(var(--primary)); color: #fff; border-radius: 6px; box-shadow: none; font-weight: 600; }
-.tpl-ledger header.st-head { background: #fafaf7; border-bottom: 1px solid var(--st-line); }
-.tpl-ledger .st-receipt { background: #fff; border: 1px solid var(--st-line); border-radius: 4px 4px 0 0; padding: 22px 18px 18px; text-align: center; position: relative; }
-.tpl-ledger .st-receipt h1 { font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 20px; letter-spacing: 0.08em; text-transform: uppercase; }
-.tpl-ledger .st-receipt p { color: #555; font-size: 13px; }
-.tpl-ledger .st-dash { border: 0; border-top: 1px dashed #b9b7ae; margin: 14px 0; }
-.tpl-ledger .st-tear { height: 10px; background: linear-gradient(135deg, transparent 6px, #fff 6px) 0 0 / 12px 12px, linear-gradient(-135deg, transparent 6px, #fff 6px) 0 0 / 12px 12px; background-repeat: repeat-x; margin-top: -1px; }
-.tpl-ledger .st-list { background: #fff; border: 1px solid var(--st-line); border-top: 0; padding: 6px 18px 14px; }
-.tpl-ledger .st-net { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #333; padding: 12px 0 4px; }
-.tpl-ledger .st-row { display: flex; align-items: baseline; gap: 8px; width: 100%; text-align: left; padding: 9px 0; font-family: "IBM Plex Mono", monospace; font-size: 14.5px; color: #1a1a1a; border: 0; background: none; }
-.tpl-ledger .st-row .st-gb { font-weight: 600; white-space: nowrap; }
-.tpl-ledger .st-row .st-lead { flex: 1; border-bottom: 2px dotted #c9c7bd; transform: translateY(-4px); min-width: 16px; }
-.tpl-ledger .st-row .st-price { font-weight: 600; white-space: nowrap; color: hsl(var(--primary)); }
-.tpl-ledger .st-row small { font-family: "Public Sans", sans-serif; font-size: 11px; color: #777; margin-left: 4px; }
-.tpl-ledger .st-pill { background: #fff; border: 1px solid #c9c7bd; color: #333; font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 4px; }
-.tpl-ledger .st-pill.on { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-.tpl-ledger .st-drawer { background: #fafaf7; color: #1a1a1a; border-right: 1px solid var(--st-line); }
-.tpl-ledger .st-stamp { display: inline-block; border: 2px solid var(--st-stamp); color: var(--st-stamp); font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; transform: rotate(-3deg); border-radius: 3px; }
-.tpl-ledger footer.st-foot { background: transparent; border-top: 1px dashed #b9b7ae; font-family: "IBM Plex Mono", monospace; letter-spacing: 0.04em; }
-
-/* Both light templates: tone down dark-theme utility colours used inside shared components. */
-.tpl-market .text-white, .tpl-ledger .text-white { color: hsl(var(--foreground)); }
-.tpl-market [class*="border-white/"], .tpl-ledger [class*="border-white/"] { border-color: rgba(0, 0, 0, 0.1); }
-.tpl-market [class*="bg-white/"], .tpl-ledger [class*="bg-white/"] { background-color: rgba(0, 0, 0, 0.04); }
-.tpl-market [class*="divide-white/"] > *, .tpl-ledger [class*="divide-white/"] > * { border-color: rgba(0, 0, 0, 0.08); }
+.tpl-studio .onyx-canvas { background: #fff; }
+.tpl-studio .font-display { font-family: "Plus Jakarta Sans", sans-serif; font-weight: 700; letter-spacing: -0.025em; }
+.tpl-studio .onyx-panel { background: #fff; border: 1px solid var(--st-line); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); border-radius: 16px; }
+.tpl-studio .onyx-field { background: #fff; border: 1.5px solid #cbd5e1; color: var(--st-ink); border-radius: 12px; }
+.tpl-studio .onyx-field:focus { border-color: hsl(var(--primary)); outline: none; box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15); }
+.tpl-studio .onyx-field::placeholder { color: #94a3b8; }
+.tpl-studio .onyx-btn-primary { background: hsl(var(--primary)); color: #fff; border-radius: 12px; box-shadow: none; font-weight: 600; }
+.tpl-studio .onyx-btn-primary:hover { background: hsl(var(--primary-strong)); }
+.tpl-studio header.st-head { background: rgba(255,255,255,0.92); border-bottom: 1px solid var(--st-line); }
+.tpl-studio .st-nav a { color: var(--st-slate); font-weight: 500; font-size: 14px; padding: 8px 12px; border-radius: 10px; }
+.tpl-studio .st-nav a:hover { color: var(--st-ink); background: var(--st-mist); }
+.tpl-studio .st-nav a.on { color: hsl(var(--primary-glow)); }
+.tpl-studio .st-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px; padding: 14px 22px; border-radius: 12px; transition: background 120ms ease, transform 120ms ease; }
+.tpl-studio .st-btn:active { transform: translateY(1px); }
+.tpl-studio .st-btn.fill { background: hsl(var(--primary)); color: #fff; }
+.tpl-studio .st-btn.fill:hover { background: hsl(var(--primary-strong)); }
+.tpl-studio .st-btn.ghost { background: #fff; color: var(--st-ink); border: 1.5px solid var(--st-line); }
+.tpl-studio .st-btn.ghost:hover { border-color: #cbd5e1; background: var(--st-mist); }
+.tpl-studio .st-band { background: var(--st-mist); }
+.tpl-studio .st-h1 { font-family: "Plus Jakarta Sans", sans-serif; font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; font-size: clamp(34px, 9vw, 60px); color: var(--st-ink); }
+.tpl-studio .st-h2 { font-family: "Plus Jakarta Sans", sans-serif; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; font-size: clamp(24px, 5.5vw, 36px); color: var(--st-ink); }
+.tpl-studio .st-lead { color: var(--st-slate); font-size: 17px; line-height: 1.55; }
+.tpl-studio .st-ticket { background: #fff; border: 1px solid var(--st-line); border-radius: 20px; box-shadow: 0 24px 48px -24px rgba(15, 23, 42, 0.25), 0 1px 2px rgba(15,23,42,0.05); }
+.tpl-studio .st-ticket .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--st-line); width: 100%; text-align: left; }
+.tpl-studio .st-ticket .row:first-of-type { border-top: 0; }
+.tpl-studio .st-ticket .row:hover { background: var(--st-mist); }
+.tpl-studio .st-ticket .gb { font-weight: 700; font-size: 18px; color: var(--st-ink); }
+.tpl-studio .st-ticket .price { font-weight: 700; font-size: 17px; color: hsl(var(--primary-glow)); white-space: nowrap; }
+.tpl-studio .st-stat { padding: 18px 0; border-top: 1px solid var(--st-line); }
+.tpl-studio .st-stat b { display: block; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--st-ink); }
+.tpl-studio .st-stat span { color: var(--st-slate); font-size: 13px; }
+.tpl-studio .st-tile { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid var(--st-line); border-radius: 16px; padding: 16px; text-align: left; width: 100%; transition: border-color 120ms ease, transform 120ms ease; }
+.tpl-studio .st-tile:hover { border-color: #cbd5e1; }
+.tpl-studio .st-tile:active { transform: translateY(1px); }
+.tpl-studio .st-tile .dot { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; letter-spacing: -0.01em; color: #fff; flex-shrink: 0; }
+.tpl-studio .st-step { position: relative; padding-left: 52px; }
+.tpl-studio .st-step .n { position: absolute; left: 0; top: 0; width: 36px; height: 36px; border-radius: 999px; background: hsl(var(--primary-soft)); color: hsl(var(--primary-glow)); font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.tpl-studio .st-faq summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; font-weight: 600; color: var(--st-ink); font-size: 15.5px; }
+.tpl-studio .st-faq summary::-webkit-details-marker { display: none; }
+.tpl-studio .st-faq summary::after { content: "+"; font-size: 22px; font-weight: 400; color: var(--st-slate); transition: transform 150ms ease; }
+.tpl-studio .st-faq[open] summary::after { transform: rotate(45deg); }
+.tpl-studio .st-faq p { color: var(--st-slate); font-size: 14.5px; line-height: 1.6; padding-bottom: 16px; }
+.tpl-studio .st-faq { border-top: 1px solid var(--st-line); }
+.tpl-studio .st-pill { background: #fff; border: 1.5px solid var(--st-line); color: var(--st-slate); font-weight: 600; border-radius: 999px; }
+.tpl-studio .st-pill.on { background: var(--st-ink); color: #fff; border-color: var(--st-ink); }
+.tpl-studio .st-drawer { background: #fff; color: var(--st-ink); border-right: 1px solid var(--st-line); }
+.tpl-studio footer.st-foot { background: var(--st-ink); color: #cbd5e1; border: 0; text-align: left; }
+.tpl-studio footer.st-foot a { color: #cbd5e1; }
+.tpl-studio footer.st-foot a:hover { color: #fff; }
+.tpl-studio footer.st-foot .brand { color: #fff; font-weight: 700; font-size: 17px; }
+.tpl-studio footer.st-foot h4 { color: #fff; font-weight: 600; font-size: 13.5px; margin-bottom: 10px; }
+@media (prefers-reduced-motion: reduce) { .tpl-studio * { transition: none !important; } }
