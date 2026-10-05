@@ -65,8 +65,8 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
   useEffect(() => {
     if (!store) return;
     const cls = `tpl-${store.template ?? "classic"}`; const vars = accentVars(store.accent_color);
-    document.body.classList.add(cls, "st-body"); Object.entries(vars).forEach(([k, v]) => document.body.style.setProperty(k, v));
-    return () => { document.body.classList.remove(cls, "st-body"); Object.keys(vars).forEach((k) => document.body.style.removeProperty(k)); };
+    document.body.classList.add(cls, "st-body"); if (store.accent_color) document.body.classList.add("has-accent"); Object.entries(vars).forEach(([k, v]) => document.body.style.setProperty(k, v));
+    return () => { document.body.classList.remove(cls, "st-body", "has-accent"); Object.keys(vars).forEach((k) => document.body.style.removeProperty(k)); };
   }, [store]);
   if (store === undefined) return <div className="min-h-dvh bg-[#0b1512]" />;
   if (store === null) return <div className="flex min-h-dvh items-center justify-center bg-[#0b1512] px-6 text-center"><div><Store size={30} className="mx-auto text-white/40" /><p className="mt-3 text-[17px] font-semibold text-white">This store isn't open</p><p className="mt-1 text-[13px] text-white/60">It may be paused, or the link may be wrong.</p></div></div>;
@@ -95,7 +95,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
   const isHome = location.pathname.replace(/\/$/, "") === (storeBase(store.slug) || "");
   return (
     <StoreContext.Provider value={store}>
-      <div className={`tpl-${template}`} style={accentVars(store.accent_color) as React.CSSProperties}>
+      <div className={`tpl-${template} ${store.accent_color ? "has-accent" : ""}`} style={accentVars(store.accent_color) as React.CSSProperties}>
       <div className="onyx-canvas flex min-h-dvh flex-col">
         <header className="st-head sticky top-0 z-30 border-b border-white/[0.06] bg-background/85 backdrop-blur">
           {studio ? (

@@ -1,6 +1,14 @@
 /* Storefront templates. Each is its own brand: palette, type, structure.
    Scoped under .tpl-* so nothing leaks into the main site. Accent comes from the agent (--st-accent). */
 
+/* ---------- CLASSIC: the dark green default; the agent's accent recolours buttons, pills and highlights ---------- */
+.tpl-classic.has-accent, .tpl-classic.has-accent .onyx-canvas {
+  --primary: var(--st-accent-h) var(--st-accent-s) var(--st-accent-l);
+  --primary-strong: var(--st-accent-h) var(--st-accent-s) calc(var(--st-accent-l) - 9%);
+  --primary-glow: var(--st-accent-h) calc(var(--st-accent-s) + 5%) calc(var(--st-accent-l) + 22%);
+  --primary-soft: var(--st-accent-h) 42% 11%;
+}
+
 /* ---------- MARKET: the kiosk signboard ---------- */
 .tpl-market {
   --background: 40 100% 97%;           /* chalk */
