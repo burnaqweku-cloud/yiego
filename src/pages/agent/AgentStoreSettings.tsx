@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { BadgeCheck, Check, Copy, ExternalLink, X } from "lucide-react";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/format";
@@ -9,6 +10,7 @@ import { Store, Wallet, Mail } from "lucide-react";
 
 export default function AgentStoreSettings() {
   const { agent, quote, storeUrl, reload } = useAgent();
+  const { view } = useParams();
   const [f, setF] = useState({ store_name: agent.store_name, tagline: agent.tagline ?? "", whatsapp: agent.whatsapp ?? "", momo_number: agent.momo_number ?? "", momo_name: agent.momo_name ?? "" });
   const save = async () => { const { error } = await p1().rpc("agent_update_store", { p_store_name: f.store_name, p_tagline: f.tagline, p_momo_number: f.momo_number, p_momo_name: f.momo_name, p_whatsapp: f.whatsapp }); if (error) return toast.error(error.message); toast.success("Saved."); void reload(); };
   const [link, setLink] = useState(agent.slug); const [editingLink, setEditingLink] = useState(false);
@@ -34,7 +36,7 @@ export default function AgentStoreSettings() {
   return (
     <div className="space-y-3">
       <h1 className="font-display text-[22px] font-semibold text-foreground">Store</h1>
-      <div className="onyx-panel rounded-2xl p-4">
+      {(!view || view === "details") && <div className="onyx-panel rounded-2xl p-4">
         <p className="text-[13.5px] font-semibold text-foreground">Your store</p>
         <div className="mt-2 space-y-1.5">
           {addresses.map((u) => <div key={u} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2"><a href={u} target="_blank" rel="noreferrer" className="inline-flex min-w-0 items-center gap-1 truncate text-[12.5px] text-primary-glow">{u.replace(/^https?:\/\//, "")}<ExternalLink size={12} className="shrink-0" /></a><button type="button" onClick={() => { void navigator.clipboard.writeText(u); toast.success("Copied."); }} className="shrink-0 text-faint-foreground" aria-label="Copy link"><Copy size={13} /></button></div>)}
@@ -56,7 +58,7 @@ export default function AgentStoreSettings() {
           </div>
         )}
         <p className="mt-2 flex items-center gap-1 text-[12px] text-muted-foreground"><BadgeCheck size={13} className="text-primary-glow" />Plan active until {agent.paid_until}{quote ? ` · next month ${formatGHS(quote.pay_now)}` : ""}</p>
-      </div>
+      </div>}
       <Section page="store" id="details" title="Store details" icon={<Store size={15} />} subtitle={`${agent.store_name}${agent.tagline ? " · " + agent.tagline : ""}`} defaultOpen>
         <div className="space-y-3">
           {field("store_name", "Store name")}

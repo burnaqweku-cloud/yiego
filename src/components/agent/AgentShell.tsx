@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
 import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
 import { planQuote, type PlanQuote } from "@/lib/agents";
+import { AGENT_GROUPS, STAFF_GROUPS as STAFF_NAV, groupForPath, LEGACY_REDIRECTS } from "@/lib/agent-nav";
+import { ChevronDown } from "lucide-react";
 import { useAuth } from "@/store/auth-context";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import PlanPicker from "@/components/agent/PlanPicker";
@@ -27,19 +29,30 @@ export const p1 = () => (supabase as unknown as { schema: (s: string) => any }).
 export const fmt = (d: string) => new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 // Agent-only navigation, grouped like the admin panel's. Nothing here reaches admin pages.
-type NavItem = { to: string; label: string; icon: typeof Home; end?: boolean; badge?: boolean; parentOnly?: boolean };
-const OWNER_GROUPS: Array<{ label: string; items: NavItem[] }> = [
-  { label: "", items: [{ to: "/agent", label: "Home", icon: Home, end: true }] },
-  { label: "Sell", items: [{ to: "/agent/buy", label: "Buy data", icon: ShoppingBag }, { to: "/agent/prices", label: "Prices", icon: Tags }, { to: "/agent/store", label: "Store settings", icon: Settings }, { to: "/agent/domain", label: "Domain", icon: Globe }] },
-  { label: "Customers", items: [{ to: "/agent/support", label: "Support", icon: MessagesSquare, badge: true }, { to: "/agent/orders", label: "Orders", icon: Package }, { to: "/agent/customers", label: "Customers", icon: Users }, { to: "/agent/check-mtn", label: "Check MTN numbers", icon: PhoneForwarded }] },
-  { label: "Money", items: [{ to: "/agent/earnings", label: "Earnings & payouts", icon: Wallet }] },
-  { label: "Grow", items: [{ to: "/agent/marketing", label: "Announcements & promos", icon: Megaphone }, { to: "/agent/analytics", label: "Analytics", icon: BarChart3 }, { to: "/agent/team", label: "Support & team", icon: UserCog }, { to: "/agent/network", label: "Your agents", icon: Network, parentOnly: true }, { to: "/agent/popups", label: "Pop-ups & forms", icon: AppWindow, parentOnly: true }, { to: "/account", label: "Invite & earn", icon: Gift }, { to: "/agent/help", label: "Help Center", icon: LifeBuoy }] },
-];
-// Staff: the store's customers, nothing about money or settings.
-const STAFF_GROUPS: Array<{ label: string; items: NavItem[] }> = [
-  { label: "Customers", items: [{ to: "/agent/support", label: "Support", icon: MessagesSquare, badge: true, end: true }, { to: "/agent/orders", label: "Orders", icon: Package }, { to: "/agent/customers", label: "Customers", icon: Users }, { to: "/agent/check-mtn", label: "Check MTN numbers", icon: PhoneForwarded }] },
-  { label: "", items: [{ to: "/agent/help", label: "Help Center", icon: LifeBuoy }] },
-];
+
+
+/* Two-tier menu: tap a group to open its pages; the group holding the current page opens by itself. */
+function AgentNav({ groups, unread, onNavigate }: { groups: typeof AGENT_GROUPS; unread: number; onNavigate?: () => void }) {
+  const location = useLocation();
+  const active = groupForPath(location.pathname, groups);
+  const [openId, setOpenId] = useState<string>(active?.id ?? "");
+  useEffect(() => { if (active) setOpenId(active.id); }, [active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <nav className="flex flex-col gap-0.5">
+      {groups.map((g) => {
+        const single = g.pages.length === 1;
+        if (single) { const p = g.pages[0]; return <NavLink key={g.id} to={p.to} end={p.end} onClick={onNavigate} className={({ isActive }) => `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-foreground hover:bg-white/[0.04]"}`}><g.icon size={16} />{p.label}</NavLink>; }
+        const open = openId === g.id; const holds = active?.id === g.id;
+        return (
+          <div key={g.id}>
+            <button type="button" onClick={() => setOpenId(open ? "" : g.id)} aria-expanded={open} className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13.5px] ${holds ? "text-foreground" : "text-foreground hover:bg-white/[0.04]"}`}><g.icon size={16} className={holds ? "text-primary-glow" : ""} /><span className="flex-1">{g.label}</span>{g.pages.some((p) => p.badge) && unread > 0 && !open && <span className="rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{unread}</span>}<ChevronDown size={14} className={`text-faint-foreground transition-transform ${open ? "rotate-180" : ""}`} /></button>
+            {open && <div className="mb-1 ml-4 flex flex-col gap-0.5 border-l border-white/[0.08] pl-2">{g.pages.map((p) => <NavLink key={p.id} to={p.to} end={p.end} onClick={onNavigate} className={({ isActive }) => `flex items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"}`}>{p.label}{p.badge && unread > 0 && <span className="ml-auto rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{unread}</span>}</NavLink>)}</div>}
+          </div>
+        );
+      })}
+    </nav>
+  );
+}
 
 export default function AgentShell() {
   const [drawer, setDrawer] = useState(false);
@@ -87,6 +100,8 @@ export default function AgentShell() {
   }, [role, agent, location.pathname, navigate]);
   useEffect(() => { if (!agent) return; const tick = () => void p1().rpc("agent_inbox_unread", {}).then(({ data }) => setUnread(Number(data ?? 0))); tick(); const t = setInterval(tick, 20000); return () => clearInterval(t); }, [agent]);
 
+  const legacy = LEGACY_REDIRECTS[location.pathname.replace(/\/$/, "")];
+  useEffect(() => { if (legacy) navigate(legacy, { replace: true }); }, [legacy, navigate]);
   if (agent === undefined) return <div className="min-h-dvh bg-background" />;
   if (agent === null) return <div className="mk-wrap py-16 text-center"><p className="text-[16px] font-semibold text-foreground">You're not an agent yet</p><Link to="/agents" className="mt-4 inline-block text-[13px] text-primary-glow">Apply to be an agent</Link></div>;
   // The store's best address: their own domain once live, otherwise the free subdomain.
@@ -103,7 +118,7 @@ export default function AgentShell() {
           {/* Desktop sidebar */}
           <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-white/[0.06] p-4 sm:flex">
             <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div><NotificationBell /></div>
-            <nav className="mt-6 flex flex-col gap-3">{(role === "staff" ? STAFF_GROUPS : OWNER_GROUPS.map((g) => ({ ...g, items: g.items.filter((n) => !n.parentOnly || !agent.parent_agent_id) }))).map((g) => <div key={g.label || "home"}>{g.label && <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">{g.label}</p>}<div className="flex flex-col gap-0.5">{g.items.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:bg-white/[0.04]"}`}><n.icon size={16} />{n.label}{n.badge && unread > 0 && <span className="ml-auto rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{unread}</span>}</NavLink>)}</div></div>)}</nav>
+            <div className="mt-6"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !g.parentOnly || !agent.parent_agent_id)} unread={unread} /></div>
             <div className="mt-auto space-y-1 text-[12.5px]">
               <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><ExternalLink size={14} />View my store</a>
               <Link to="/" onClick={() => sessionStorage.setItem("yg-agent-browse", "1")} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit DataYego</Link>
@@ -138,7 +153,7 @@ export default function AgentShell() {
             <div className="absolute inset-0 bg-black/60" />
             <aside className="absolute inset-y-0 left-0 flex w-[82%] max-w-[320px] flex-col bg-background p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p><p className="text-[12px] text-primary-glow">{formatGHS(Number(agent.earnings_balance))} earned</p></div><button type="button" onClick={() => setDrawer(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
-              <nav className="mt-5 flex flex-1 flex-col gap-3 overflow-y-auto">{(role === "staff" ? STAFF_GROUPS : OWNER_GROUPS.map((g) => ({ ...g, items: g.items.filter((n) => !n.parentOnly || !agent.parent_agent_id) }))).map((g) => <div key={g.label || "home"}>{g.label && <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-faint-foreground">{g.label}</p>}<div className="flex flex-col gap-0.5">{g.items.map((n) => <NavLink key={n.to} to={n.to} end={n.end} onClick={() => setDrawer(false)} className={({ isActive }) => `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-foreground hover:bg-white/[0.04]"}`}><n.icon size={17} />{n.label}{n.badge && unread > 0 && <span className="ml-auto rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{unread}</span>}</NavLink>)}</div></div>)}</nav>
+              <div className="mt-5 flex-1 overflow-y-auto"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !g.parentOnly || !agent.parent_agent_id)} unread={unread} onNavigate={() => setDrawer(false)} /></div>
               <div className="mt-4 space-y-0.5 border-t border-white/[0.06] pt-3 text-[13px]">
                 <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><ExternalLink size={14} />View my store</a>
                 <Link to="/" onClick={() => { sessionStorage.setItem("yg-agent-browse", "1"); setDrawer(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Shop as a customer</Link>
