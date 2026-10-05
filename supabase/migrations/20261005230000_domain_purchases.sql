@@ -1,0 +1,5 @@
+-- Applied live 5 Oct 2026 (migrations domain_purchases, domain_order_start_service). Agents buy .com (250) / .shop (120)
+-- through DataYego; admin registers by hand. domain_tld_prices, domain_orders; edge domain-purchase (check via RDAP,
+-- pay via Paystack, purpose 'domain_purchase'); trigger on payment_events marks paid, books domains_pending, emails
+-- admins (agent-notify kind domain_paid). admin_domain_registered(id, cost, registrar, note) books income/cost and hands
+-- the domain to the store; admin_domain_refund(id, reason) credits the agent's wallet.

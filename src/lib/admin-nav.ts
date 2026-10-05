@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { BadgePercent, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon } from "lucide-react";
+import { BadgePercent, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
 export interface AdminPage {
@@ -33,6 +33,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "wallet", label: "Wallet activity", to: "/admin/wallet", icon: WalletCards, keywords: ["deposit", "top up", "balance"] },
     { id: "referrals", label: "Referrals", to: "/admin/referrals", icon: Gift, keywords: ["referral", "invite", "reward", "friend", "flagged"] },
     { id: "suppliers", label: "Suppliers", to: "/admin/suppliers", icon: Store, keywords: ["datamart", "databundleshub", "dbh", "float", "supplier balance"] },
+    { id: "domains", label: "Domains", to: "/admin/domains", icon: Globe, keywords: ["domain", "register", "cname", "agent domain", ".com", ".shop"] },
   ] },
   { id: "catalog", label: "Catalog", icon: Package, pages: [
     { id: "pricing", label: "Data pricing", to: "/admin/sales/pricing", icon: Tags, keywords: ["price", "bundle", "product", "gb"] },
