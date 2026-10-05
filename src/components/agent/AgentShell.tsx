@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, CreditCard, ExternalLink, Gift, Home, LifeBuoy, LogOut, Megaphone, Menu, MessagesSquare, Package, PhoneForwarded, Settings, ShoppingBag, Tags, UserCog, Users, Wallet } from "lucide-react";
+import { BarChart3, CreditCard, ExternalLink, Gift, Globe, Home, LifeBuoy, LogOut, Megaphone, Menu, MessagesSquare, Package, PhoneForwarded, Settings, ShoppingBag, Tags, UserCog, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
@@ -15,7 +15,7 @@ import { X } from "lucide-react";
 /* The agent app. Its own header, its own navigation (bottom bar on phones,
    sidebar on desktop), no public site chrome. Pages read shared data from
    AgentContext so each one stays small. */
-export interface Agent { id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; template?: string; accent_color?: string | null; logo_url?: string | null; banner_url?: string | null; about_text?: string | null; hours_text?: string | null; store_notice?: string | null; contact_phone?: string | null; socials?: Record<string, string>; featured_product_ids?: string[]; faq?: Array<{ q: string; a: string }>; sale_alert_email?: boolean; support_whatsapp_url?: string | null; support_whatsapp_on?: boolean; support_chat_on?: boolean; support_ai_on?: boolean }
+export interface Agent { id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; template?: string; accent_color?: string | null; logo_url?: string | null; banner_url?: string | null; about_text?: string | null; hours_text?: string | null; store_notice?: string | null; contact_phone?: string | null; socials?: Record<string, string>; featured_product_ids?: string[]; faq?: Array<{ q: string; a: string }>; sale_alert_email?: boolean; support_whatsapp_url?: string | null; support_whatsapp_on?: boolean; support_chat_on?: boolean; support_ai_on?: boolean; custom_domain?: string | null; custom_domain_status?: string | null }
 export interface AgentOrder { order_reference: string; recipient_phone: string; amount: number; agent_margin: number | null; status: string; admin_resolution_status: string | null; paid_at: string | null; created_at: string; data_products: { name: string } | null; networks: { name: string } | null }
 export interface AgentPayout { id: string; amount: number; fee: number; net: number; status: string; created_at: string; paid_at: string | null; note: string | null }
 export interface Plan { payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number }
@@ -30,7 +30,7 @@ export const fmt = (d: string) => new Date(d).toLocaleString("en-GB", { day: "nu
 type NavItem = { to: string; label: string; icon: typeof Home; end?: boolean; badge?: boolean };
 const OWNER_GROUPS: Array<{ label: string; items: NavItem[] }> = [
   { label: "", items: [{ to: "/agent", label: "Home", icon: Home, end: true }] },
-  { label: "Sell", items: [{ to: "/agent/buy", label: "Buy data", icon: ShoppingBag }, { to: "/agent/prices", label: "Prices", icon: Tags }, { to: "/agent/store", label: "Store settings", icon: Settings }] },
+  { label: "Sell", items: [{ to: "/agent/buy", label: "Buy data", icon: ShoppingBag }, { to: "/agent/prices", label: "Prices", icon: Tags }, { to: "/agent/store", label: "Store settings", icon: Settings }, { to: "/agent/domain", label: "Domain", icon: Globe }] },
   { label: "Customers", items: [{ to: "/agent/support", label: "Support", icon: MessagesSquare, badge: true }, { to: "/agent/orders", label: "Orders", icon: Package }, { to: "/agent/customers", label: "Customers", icon: Users }, { to: "/agent/check-mtn", label: "Check MTN numbers", icon: PhoneForwarded }] },
   { label: "Money", items: [{ to: "/agent/earnings", label: "Earnings & payouts", icon: Wallet }] },
   { label: "Grow", items: [{ to: "/agent/marketing", label: "Announcements & promos", icon: Megaphone }, { to: "/agent/analytics", label: "Analytics", icon: BarChart3 }, { to: "/agent/team", label: "Support & team", icon: UserCog }, { to: "/account", label: "Invite & earn", icon: Gift }, { to: "/agent/help", label: "Help Center", icon: LifeBuoy }] },
@@ -53,7 +53,7 @@ export default function AgentShell() {
 
   const reload = useCallback(async () => {
     if (!user) return;
-    const [a, pr, q, s] = await Promise.all([p1().from("agents").select("id, slug, store_name, tagline, status, paid_until, momo_number, momo_name, whatsapp, earnings_balance, template, accent_color, logo_url, banner_url, about_text, hours_text, store_notice, contact_phone, socials, featured_product_ids, faq, sale_alert_email, support_whatsapp_url, support_whatsapp_on, support_chat_on, support_ai_on").eq("user_id", user.id).maybeSingle(), loadPhase1Products(), planQuote(), p1().from("site_settings").select("value").eq("key", "agent_plan").maybeSingle()]);
+    const [a, pr, q, s] = await Promise.all([p1().from("agents").select("id, slug, store_name, tagline, status, paid_until, momo_number, momo_name, whatsapp, earnings_balance, template, accent_color, logo_url, banner_url, about_text, hours_text, store_notice, contact_phone, socials, featured_product_ids, faq, sale_alert_email, support_whatsapp_url, support_whatsapp_on, support_chat_on, support_ai_on, custom_domain, custom_domain_status").eq("user_id", user.id).maybeSingle(), loadPhase1Products(), planQuote(), p1().from("site_settings").select("value").eq("key", "agent_plan").maybeSingle()]);
     let g = (a.data as Agent | null) ?? null; let r: "owner" | "staff" = "owner";
     if (!g) {
       // Not an agent: maybe staff on someone's store.
@@ -88,7 +88,8 @@ export default function AgentShell() {
 
   if (agent === undefined) return <div className="min-h-dvh bg-background" />;
   if (agent === null) return <div className="mk-wrap py-16 text-center"><p className="text-[16px] font-semibold text-foreground">You're not an agent yet</p><Link to="/agents" className="mt-4 inline-block text-[13px] text-primary-glow">Apply to be an agent</Link></div>;
-  const storeUrl = `${window.location.origin}/s/${agent.slug}`;
+  // The store's best address: their own domain once live, otherwise the free subdomain.
+  const storeUrl = agent.custom_domain && agent.custom_domain_status === "active" ? `https://${agent.custom_domain}` : `https://${agent.slug}.datayego.com`;
 
   const sub = subscriptionOf(agent, quote?.grace_days ?? 1);
   if (role === "owner" && (sub.state === "unpaid" || sub.state === "suspended")) return <PayScreen agent={agent} quote={quote} />;

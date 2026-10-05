@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { storeBase } from "@/lib/storeHost";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useStore } from "@/components/store/StoreShell";
@@ -7,11 +8,11 @@ import { setSignupStore } from "@/store/auth";
 
 /* Sign up / sign in on the agent's store. Accounts created here belong to this store. */
 export default function StoreAuth({ mode }: { mode: "sign-in" | "sign-up" }) {
-  const store = useStore(); const { slug = "" } = useParams(); const navigate = useNavigate();
+  const store = useStore(); const { slug: paramSlug } = useParams(); const slug = paramSlug ?? store.slug; const navigate = useNavigate();
   const { isAuthenticated, signIn, signUp } = useAuth();
   const [f, setF] = useState({ fullName: "", email: "", phone: "", password: "" });
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (isAuthenticated) navigate(`/s/${slug}/account`, { replace: true }); }, [isAuthenticated, slug, navigate]);
+  useEffect(() => { if (isAuthenticated) navigate(`${storeBase(slug)}/account`, { replace: true }); }, [isAuthenticated, slug, navigate]);
   const digits = f.phone.replace(/\D/g, "");
   const phoneValid = /^0\d{9}$/.test(digits);
   const passwordValid = f.password.length >= 8 && /[A-Z]/.test(f.password) && /[a-z]/.test(f.password) && /\d/.test(f.password);
@@ -41,7 +42,7 @@ export default function StoreAuth({ mode }: { mode: "sign-in" | "sign-up" }) {
         {mode === "sign-up" && <p className="text-[11.5px] text-faint-foreground">At least 8 characters with upper and lower case and a number.</p>}
         <button type="button" disabled={busy} onClick={() => void submit()} className="onyx-btn-primary w-full py-3 text-[14px] disabled:opacity-60">{busy ? "Please wait…" : mode === "sign-up" ? "Create account" : "Sign in"}</button>
       </div>
-      <p className="mt-4 text-center text-[12.5px] text-muted-foreground">{mode === "sign-up" ? <>Already have an account? <Link to={`/s/${slug}/sign-in`} className="font-semibold text-primary-glow">Sign in</Link></> : <>New here? <Link to={`/s/${slug}/sign-up`} className="font-semibold text-primary-glow">Create an account</Link></>}</p>
+      <p className="mt-4 text-center text-[12.5px] text-muted-foreground">{mode === "sign-up" ? <>Already have an account? <Link to={`${storeBase(slug)}/sign-in`} className="font-semibold text-primary-glow">Sign in</Link></> : <>New here? <Link to={`${storeBase(slug)}/sign-up`} className="font-semibold text-primary-glow">Create an account</Link></>}</p>
     </section>
   );
 }

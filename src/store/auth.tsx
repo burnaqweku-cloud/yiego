@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { deviceHash } from "@/lib/device";
 import { clearInvite, pendingInvite, recordDevice } from "@/lib/referrals";
 import { toast } from "sonner";
+import { isStoreHost } from "@/lib/storeHost";
 
 /* Store-owned accounts: created on an agent's store, they live there. On the main site
    that login is refused and the person is sent to their store. */
@@ -17,7 +18,7 @@ export const setSignupStore = (slug: string | null) => { if (slug) localStorage.
 async function enforceHomeStore(session: Session | null) {
   if (!session) return;
   const path = window.location.pathname;
-  if (path.startsWith("/s/")) return;
+  if (path.startsWith("/s/") || isStoreHost()) return;
   try {
     const { data } = await (supabase as unknown as { schema: (s: string) => { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: { slug: string; store_name: string } | null }> } }).schema("phase1").rpc("my_home_store", {});
     if (data?.slug) {

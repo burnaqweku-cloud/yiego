@@ -1,0 +1,6 @@
+-- Applied live 5 Oct 2026. Cloudflare for SaaS on datayego.com: fallback origin stores-origin.datayego.com
+-- (AAAA 100::, proxied) -> Worker datayego-stores (route */*) which fetches the app from datayego.com and serves it
+-- under the custom host. Wildcard *.datayego.com (proxied) gives every agent slug.datayego.com.
+-- agents.custom_domain/_status/_cf_id; store_by_host(host) resolves a host to a store. Edge cf-domains:
+-- setup (cron secret), connect/status/disconnect (agent JWT). Cloudflare token in internal_secrets 'cloudflare'.
+-- NOTE: datayego.com and www A records MUST stay DNS-only (grey cloud); proxied breaks Lovable.

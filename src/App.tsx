@@ -1,5 +1,7 @@
-import { Suspense, lazy } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Suspense, lazy, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { isStoreHost } from "@/lib/storeHost";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Loader2 } from "lucide-react";
 import { ThemeProvider, useTheme } from "@/store/theme";
@@ -79,6 +81,7 @@ const AgentMarketing = lazy(() => import("./pages/agent/AgentMarketing"));
 const AgentAnalytics = lazy(() => import("./pages/agent/AgentAnalytics"));
 const AgentSupport = lazy(() => import("./pages/agent/AgentSupport"));
 const AgentTeam = lazy(() => import("./pages/agent/AgentTeam"));
+const AgentDomain = lazy(() => import("./pages/agent/AgentDomain"));
 const AgentShell = lazy(() => import("./components/agent/AgentShell"));
 const AgentHome = lazy(() => import("./pages/agent/AgentHome"));
 const AgentBuy = lazy(() => import("./pages/agent/AgentBuy"));
@@ -97,15 +100,35 @@ function RouteFallback() { return <div className="onyx-canvas grid min-h-dvh pla
 /* Public pages render immediately — RequireAuth/RequireAdmin show their own
    loaders while the session resolves, so nothing waits on auth to paint.
    That first-paint speed is also what crawlers measure. */
-const App = () => (
+const STORE_ROUTES = <><Route index element={<StoreHome />} /><Route path="about" element={<StoreAbout />} /><Route path="contact" element={<StoreContact />} /><Route path="faq" element={<StoreFaq />} /><Route path="check-mtn" element={<StoreCheckMtn />} /><Route path="sign-in" element={<StoreAuth mode="sign-in" />} /><Route path="sign-up" element={<StoreAuth mode="sign-up" />} /><Route path="account" element={<StoreAccount />} /><Route path="track" element={<StoreOrder />} /><Route path="success" element={<StoreOrder />} /></>;
+
+/* A connected custom domain or slug.datayego.com: that store lives at the root. */
+const StoreHostApp = ({ slug }: { slug: string }) => (
+  <BrowserRouter><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
+    <Route path="/" element={<StoreShell hostSlug={slug} />}>{STORE_ROUTES}</Route>
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes></Suspense></FlowsProvider></ProfileProvider></WalletProvider></AuthProvider></ThemeProvider></BrowserRouter>
+);
+const StoreHostGate = () => {
+  const [slug, setSlug] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("store_by_host", { p_host: window.location.hostname }).then((r: { data: { slug: string } | null }) => setSlug(r.data?.slug ?? null));
+  }, []);
+  if (slug === undefined) return <div className="min-h-dvh bg-[#0b1512]" />;
+  if (slug === null) return <div className="flex min-h-dvh items-center justify-center bg-[#0b1512] px-6 text-center text-[14px] text-white/70">This address isn't connected to a store yet.</div>;
+  return <StoreHostApp slug={slug} />;
+};
+
+const App = () => isStoreHost() ? <StoreHostGate /> : (
   <BrowserRouter><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
     {/* Focused, chrome-free task pages. */}
     <Route path="/auth" element={<Auth />} /><Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/admin" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<Admin />} /><Route path="orders" element={<AdminOrders />} /><Route path="disputes" element={<AdminDisputes />} /><Route path="reviews" element={<AdminReviews />} /><Route path="sales/pricing" element={<AdminPricing />} /><Route path="suppliers" element={<AdminSuppliers />} /><Route path="wallet" element={<AdminWallet />} /><Route path="finance" element={<AdminFinance />} /><Route path="finance/funding" element={<AdminFunding />} /><Route path="finance/undelivered" element={<AdminUndelivered />} /><Route path="finance/master" element={<AdminMasterBalance />} /><Route path="agents" element={<AdminAgents />} /><Route path="agents/applications" element={<AdminAgents />} /><Route path="agents/list" element={<AdminAgents />} /><Route path="agents/subscriptions" element={<AdminAgents />} /><Route path="agents/payouts" element={<AdminAgents />} /><Route path="referrals" element={<AdminReferrals />} /><Route path="orders/submitted-numbers" element={<AdminSubmittedNumbers />} /><Route path="agents/plan" element={<AdminAgents />} /><Route path="agents/launch" element={<AdminAgents />} /><Route path="agents/:id" element={<AdminAgentDetail />} /><Route path="orders/received" element={<AdminOrdersReceived />} /><Route path="announcements" element={<AdminAnnouncements />} /><Route path="help" element={<AdminHelp />} /><Route path="finance/suppliers/:code" element={<AdminSupplierBalance />} /><Route path="finance/master" element={<AdminMasterBalance />} /><Route path="agents" element={<AdminAgents />} /><Route path="agents/applications" element={<AdminAgents />} /><Route path="agents/list" element={<AdminAgents />} /><Route path="agents/subscriptions" element={<AdminAgents />} /><Route path="agents/payouts" element={<AdminAgents />} /><Route path="agents/plan" element={<AdminAgents />} /><Route path="agents/launch" element={<AdminAgents />} /><Route path="agents/:id" element={<AdminAgentDetail />} /><Route path="orders/received" element={<AdminOrdersReceived />} /><Route path="announcements" element={<AdminAnnouncements />} /><Route path="finance/suppliers/:code" element={<AdminSupplierBalance />} /><Route path="users" element={<AdminUsers />} /><Route path="contacts/information" element={<AdminContact />} /><Route path="legal" element={<AdminLegal />} /><Route path="ai-support" element={<AdminAISupport />} /><Route path="ai-knowledge" element={<AdminAIKnowledge />} /><Route path="support-inbox" element={<AdminSupportInbox />} /></Route>
     {/* One shell for the whole site: the same header and footer wrap the
         marketing pages, the shop and the account area. */}
-    <Route path="/s/:slug" element={<StoreShell />}><Route index element={<StoreHome />} /><Route path="about" element={<StoreAbout />} /><Route path="contact" element={<StoreContact />} /><Route path="faq" element={<StoreFaq />} /><Route path="check-mtn" element={<StoreCheckMtn />} /><Route path="sign-in" element={<StoreAuth mode="sign-in" />} /><Route path="sign-up" element={<StoreAuth mode="sign-up" />} /><Route path="account" element={<StoreAccount />} /><Route path="track" element={<StoreOrder />} /><Route path="success" element={<StoreOrder />} /></Route>
-    <Route path="/agent" element={<AgentShell />}><Route index element={<AgentHome />} /><Route path="buy" element={<AgentBuy />} /><Route path="help" element={<AgentHelp />} /><Route path="check-mtn" element={<AgentCheckMtn />} /><Route path="customers" element={<AgentCustomers />} /><Route path="marketing" element={<AgentMarketing />} /><Route path="analytics" element={<AgentAnalytics />} /><Route path="support" element={<AgentSupport />} /><Route path="team" element={<AgentTeam />} /><Route path="orders" element={<AgentOrdersPage />} /><Route path="prices" element={<AgentPrices />} /><Route path="earnings" element={<AgentEarnings />} /><Route path="store" element={<AgentStoreSettings />} /></Route>
+        <Route path="/s/:slug" element={<StoreShell />}>{STORE_ROUTES}</Route>
+    <Route path="/agent" element={<AgentShell />}><Route index element={<AgentHome />} /><Route path="buy" element={<AgentBuy />} /><Route path="help" element={<AgentHelp />} /><Route path="check-mtn" element={<AgentCheckMtn />} /><Route path="customers" element={<AgentCustomers />} /><Route path="marketing" element={<AgentMarketing />} /><Route path="analytics" element={<AgentAnalytics />} /><Route path="support" element={<AgentSupport />} /><Route path="team" element={<AgentTeam />} /><Route path="domain" element={<AgentDomain />} /><Route path="orders" element={<AgentOrdersPage />} /><Route path="prices" element={<AgentPrices />} /><Route path="earnings" element={<AgentEarnings />} /><Route path="store" element={<AgentStoreSettings />} /></Route>
     <Route element={<PublicShell />}>
       {/* Marketing pages lay out their own full-bleed sections. */}
       <Route path="/" element={<Home />} /><Route path="/agents" element={<AgentsApply />} />

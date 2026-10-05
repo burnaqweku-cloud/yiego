@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { storeBase } from "@/lib/storeHost";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Bell, Facebook, Instagram, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound } from "lucide-react";
 import { useAuth } from "@/store/auth-context";
@@ -24,8 +25,9 @@ const StoreContext = createContext<StoreData | null>(null);
 export const useStore = () => { const c = useContext(StoreContext); if (!c) throw new Error("useStore outside StoreShell"); return c; };
 export const waLink = (s: StoreData) => s.whatsapp ? `https://wa.me/233${s.whatsapp.replace(/\D/g, "").replace(/^0/, "")}` : null;
 
-export default function StoreShell({ children }: { children?: ReactNode }) {
-  const { slug = "" } = useParams();
+export default function StoreShell({ children, hostSlug }: { children?: ReactNode; hostSlug?: string }) {
+  const params = useParams();
+  const slug = hostSlug ?? params.slug ?? "";
   const [menu, setMenu] = useState(false);
   const { isAuthenticated } = useAuth();
   // Store announcements (the agent's own), with a per-device "seen" marker.
@@ -44,7 +46,7 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
   const navigate = useNavigate(); const location = useLocation();
   // An agent who changed their link: send visitors on the old one to the new one.
   useEffect(() => {
-    if (store && store.slug !== slug) navigate(location.pathname.replace(`/s/${slug}`, `/s/${store.slug}`) + location.search, { replace: true });
+    if (store && store.slug !== slug && !hostSlug) navigate(location.pathname.replace(`${storeBase(slug)}`, `${storeBase(store.slug)}`) + location.search, { replace: true });
   }, [store, slug, navigate, location.pathname, location.search]);
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,12 +78,12 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
         <header className="st-head sticky top-0 z-30 border-b border-white/[0.06] bg-background/85 backdrop-blur">
           <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
             <button type="button" onClick={() => setMenu(true)} aria-label="Menu" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Menu size={18} /></button>
-            <Link to={`/s/${store.slug}`} className="flex min-w-0 flex-1 items-center gap-3">
+            <Link to={`${storeBase(store.slug)}` || "/"} className="flex min-w-0 flex-1 items-center gap-3">
               {store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-[15px] font-semibold text-primary-glow">{initial}</span>}
               <span className="min-w-0"><span className="block truncate text-[15.5px] font-semibold text-foreground">{store.store_name}</span>{store.tagline && <span className="block truncate text-[11.5px] text-muted-foreground">{store.tagline}</span>}</span>
             </Link>
             {anns.length > 0 && <button type="button" onClick={markSeen} aria-label="Store news" className="relative flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Bell size={17} />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{unread}</span>}</button>}
-            <Link to={`/s/${store.slug}/${isAuthenticated ? "account" : "sign-in"}`} aria-label={isAuthenticated ? "Your account" : "Sign in"} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><UserRound size={17} /></Link>
+            <Link to={`${storeBase(store.slug)}/${isAuthenticated ? "account" : "sign-in"}`} aria-label={isAuthenticated ? "Your account" : "Sign in"} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><UserRound size={17} /></Link>
             {wa && <a href={wa} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#25D366]/15 text-[#25D366]"><MessageCircle size={18} /></a>}
           </div>
           {store.store_notice && <div className="border-t border-white/[0.06] bg-primary/[0.08] px-4 py-2 text-center text-[12.5px] text-foreground"><span className="mx-auto block max-w-2xl">{store.store_notice}</span></div>}
@@ -101,13 +103,13 @@ export default function StoreShell({ children }: { children?: ReactNode }) {
               <div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2.5">{store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-[14px] font-semibold text-primary-glow">{initial}</span>}<p className="truncate text-[15px] font-semibold text-foreground">{store.store_name}</p></div><button type="button" onClick={() => setMenu(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
               <nav className="mt-5 flex flex-1 flex-col gap-0.5 overflow-y-auto">
                 {([
-                  { to: `/s/${store.slug}`, label: "Bundles", icon: Package, end: true },
-                  { to: `/s/${store.slug}/track`, label: "Track order", icon: Search },
-                  { to: `/s/${store.slug}/check-mtn`, label: "Check MTN number", icon: PhoneForwarded },
-                  { to: `/s/${store.slug}/about`, label: "About", icon: Info },
-                  { to: `/s/${store.slug}/contact`, label: "Contact", icon: Phone },
-                  { to: `/s/${store.slug}/faq`, label: "FAQ", icon: HelpCircle },
-                  { to: `/s/${store.slug}/${isAuthenticated ? "account" : "sign-in"}`, label: isAuthenticated ? "Your account" : "Sign in / Create account", icon: UserRound },
+                  { to: `${storeBase(store.slug)}`, label: "Bundles", icon: Package, end: true },
+                  { to: `${storeBase(store.slug)}/track`, label: "Track order", icon: Search },
+                  { to: `${storeBase(store.slug)}/check-mtn`, label: "Check MTN number", icon: PhoneForwarded },
+                  { to: `${storeBase(store.slug)}/about`, label: "About", icon: Info },
+                  { to: `${storeBase(store.slug)}/contact`, label: "Contact", icon: Phone },
+                  { to: `${storeBase(store.slug)}/faq`, label: "FAQ", icon: HelpCircle },
+                  { to: `${storeBase(store.slug)}/${isAuthenticated ? "account" : "sign-in"}`, label: isAuthenticated ? "Your account" : "Sign in / Create account", icon: UserRound },
                 ] as Array<{ to: string; label: string; icon: typeof Package; end?: boolean }>).map((n) => {
                   const active = n.end ? location.pathname === n.to : location.pathname.startsWith(n.to);
                   return <Link key={n.to} to={n.to} onClick={() => setMenu(false)} className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] ${active ? "bg-primary/15 text-primary-glow" : "text-foreground hover:bg-white/[0.04]"}`}><n.icon size={17} />{n.label}</Link>;

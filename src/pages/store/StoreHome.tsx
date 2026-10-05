@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { storeBase } from "@/lib/storeHost";
 import { Info } from "lucide-react";
 import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
@@ -26,7 +27,7 @@ export default function StoreHome() {
   const tpl = store.template ?? "classic";
   return (
     <>
-      <Seo path={`/s/${store.slug}`} title={`${store.store_name} — MTN, Telecel & AirtelTigo data`} description={store.tagline ?? `Buy MTN, Telecel and AirtelTigo data bundles from ${store.store_name}. Fast delivery.`} />
+      <Seo path={`${storeBase(store.slug)}`} title={`${store.store_name} — MTN, Telecel & AirtelTigo data`} description={store.tagline ?? `Buy MTN, Telecel and AirtelTigo data bundles from ${store.store_name}. Fast delivery.`} />
       {store.banner_url && <img src={store.banner_url} alt="" className="mb-4 h-36 w-full rounded-3xl object-cover sm:h-48" />}
       {tpl === "market" && (
         <section className="st-board">
@@ -83,7 +84,7 @@ export default function StoreHome() {
       <section className="onyx-panel mt-6 rounded-2xl p-4">
         <p className="text-[13.5px] font-semibold text-foreground">Track an order</p>
         <p className="text-[12px] text-muted-foreground">Enter the order ID from your receipt (starts with AG-) or the phone number the data was sent to.</p>
-        <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (track.trim()) navigate(`/s/${store.slug}/track?reference=${encodeURIComponent(track.trim().toUpperCase())}`); }}>
+        <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (track.trim()) navigate(`${storeBase(store.slug)}/track?reference=${encodeURIComponent(track.trim().toUpperCase())}`); }}>
           <input value={track} onChange={(e) => setTrack(e.target.value)} placeholder="Order ID or phone number" className="onyx-field flex-1" /><button type="submit" className="onyx-btn-primary px-4 py-2 text-[13px]"><Search size={14} /></button>
         </form>
       </section>

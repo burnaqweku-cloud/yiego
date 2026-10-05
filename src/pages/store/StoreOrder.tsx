@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { storeBase } from "@/lib/storeHost";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { CheckCircle2, Clock, MessageCircle, Search, ShoppingBag, XCircle } from "lucide-react";
 import Seo from "@/components/seo/Seo";
@@ -53,7 +54,7 @@ export default function StoreOrder() {
 
   return (
     <div className="space-y-4">
-      <Seo path={`/s/${store.slug}/${isSuccess ? "success" : "track"}`} title={`${isSuccess ? "Payment received" : "Track your order"} · ${store.store_name}`} description={`Order status from ${store.store_name}.`} />
+      <Seo path={`${storeBase(store.slug)}/${isSuccess ? "success" : "track"}`} title={`${isSuccess ? "Payment received" : "Track your order"} · ${store.store_name}`} description={`Order status from ${store.store_name}.`} />
       {!isSuccess && (
         <form className="onyx-panel flex gap-2 rounded-2xl p-3" onSubmit={(e) => { e.preventDefault(); const v = input.trim(); if (!v) return; if (isPhone(v)) void lookupPhone(v.replace(/\D/g, "")); else setReference(v.toUpperCase()); }}>
           <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Order ID or phone number" className="onyx-field flex-1" /><button type="submit" className="onyx-btn-primary px-4 py-2 text-[13px]"><Search size={14} /></button>
@@ -86,8 +87,8 @@ export default function StoreOrder() {
           {st === "wrong_network" && <Link to={`/track-order?reference=${encodeURIComponent(order.reference)}`} className="mx-auto mt-3 block max-w-sm rounded-2xl border border-amber/40 bg-amber/10 px-4 py-3 text-left text-[12.5px] leading-5 text-foreground"><b>This number isn't on the network you chose.</b> Tap here to enter the correct number and we'll send your bundle straight away.</Link>}
           {isSuccess && <p className="mt-3 text-[11.5px] text-faint-foreground">Keep your Order ID — it's how you check this order any time. We've emailed it to you too.</p>}
           <div className="mx-auto mt-5 grid max-w-sm gap-2 sm:grid-cols-2">
-            <Link to={`/s/${store.slug}`} className="onyx-btn-primary py-2.5 text-center text-[13.5px]"><ShoppingBag size={15} className="mr-1 inline" />Buy more data</Link>
-            {wa ? <a href={`${wa}?text=${encodeURIComponent(`Hello, about my order ${order.reference}`)}`} target="_blank" rel="noreferrer" className="rounded-full border border-white/[0.12] py-2.5 text-center text-[13.5px] text-foreground"><MessageCircle size={15} className="mr-1 inline" />Ask on WhatsApp</a> : <Link to={`/s/${store.slug}/track?reference=${order.reference}`} className="rounded-full border border-white/[0.12] py-2.5 text-center text-[13.5px] text-foreground">Track later</Link>}
+            <Link to={`${storeBase(store.slug)}`} className="onyx-btn-primary py-2.5 text-center text-[13.5px]"><ShoppingBag size={15} className="mr-1 inline" />Buy more data</Link>
+            {wa ? <a href={`${wa}?text=${encodeURIComponent(`Hello, about my order ${order.reference}`)}`} target="_blank" rel="noreferrer" className="rounded-full border border-white/[0.12] py-2.5 text-center text-[13.5px] text-foreground"><MessageCircle size={15} className="mr-1 inline" />Ask on WhatsApp</a> : <Link to={`${storeBase(store.slug)}/track?reference=${order.reference}`} className="rounded-full border border-white/[0.12] py-2.5 text-center text-[13.5px] text-foreground">Track later</Link>}
           </div>
         </div>
       )}
