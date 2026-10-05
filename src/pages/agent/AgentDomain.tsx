@@ -4,6 +4,7 @@ import { formatGHS } from "@/lib/format";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { p1, useAgent } from "@/components/agent/AgentShell";
+import Section from "@/components/agent/Section";
 
 /* The store's own address: a free subdomain, and optionally the agent's own domain. */
 interface Status { domain: string | null; status?: string; ssl?: string; live?: boolean; cname_target?: string; errors?: unknown; error?: string }
@@ -33,15 +34,13 @@ export default function AgentDomain() {
   return (
     <div className="space-y-6">
       <div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Domain</p><h1 className="font-display text-[24px] font-semibold text-foreground">Your store's address</h1><p className="mt-1 text-[13px] text-muted-foreground">Customers can reach your store three ways. All of them show the same store.</p></div>
-      <section className="onyx-panel rounded-[22px] p-5">
-        <h2 className="flex items-center gap-2 text-[15px] font-semibold text-foreground"><Globe size={16} className="text-primary-glow" />Free address</h2>
+      <Section page="domain" id="free-address" title="Free address" icon={<Globe size={15} />} defaultOpen>
         <div className="mt-3 space-y-2">
           {[`https://${sub}`, `https://datayego.com/s/${agent.slug}`].map((u) => <div key={u} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2.5"><a href={u} target="_blank" rel="noreferrer" className="truncate text-[13.5px] text-foreground">{u.replace("https://", "")}</a><button type="button" onClick={() => copy(u)} className="shrink-0 text-faint-foreground" aria-label="Copy"><Copy size={14} /></button></div>)}
         </div>
-        <p className="mt-2 text-[11.5px] text-faint-foreground">Your subdomain works right away, no setup. Every page of your store lives on it: {sub}/track, /sign-in, and so on.</p>
-      </section>
-      <section className="onyx-panel rounded-[22px] p-5">
-        <h2 className="text-[15px] font-semibold text-foreground">Your own domain</h2>
+        <p className="mt-2 text-[11.5px] text-faint-foreground">Both are free, both always work, and both show the same store. Share whichever you like: the first looks like a website of your own; the second is handy when someone already knows DataYego. Every page lives on each of them: {sub}/track, /sign-in, and so on.</p>
+      </Section>
+      <Section page="domain" id="your-own-domain" title="Your own domain">
         {!agent.custom_domain ? (<>
           <p className="mt-1 text-[12.5px] text-muted-foreground">Own a domain like mystore.com? Connect it and your store runs on it, with its own secure certificate. You keep the domain with whoever you bought it from.</p>
           <div className="mt-3 flex gap-2"><input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="mystore.com" autoCapitalize="none" className="onyx-field flex-1" /><button type="button" disabled={busy} onClick={() => void connect()} className="onyx-btn-primary px-4 py-2 text-[13px] disabled:opacity-60">Connect</button></div>
@@ -59,11 +58,9 @@ export default function AgentDomain() {
           {st?.errors ? <p className="mt-2 text-[11.5px] text-amber">Cloudflare says: {JSON.stringify(st.errors)}</p> : null}
           <div className="mt-4 flex items-center gap-3"><button type="button" disabled={busy} onClick={() => void refresh()} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] px-3 py-1.5 text-[12.5px] text-foreground disabled:opacity-60"><RefreshCw size={13} className={busy ? "animate-spin" : ""} />Check again</button><button type="button" disabled={busy} onClick={() => void disconnect()} className="text-[12.5px] text-danger">Disconnect</button></div>
         </>)}
-      </section>
+      </Section>
       {!agent.custom_domain && (
-        <section className="onyx-panel rounded-[22px] p-5">
-          <h2 className="flex items-center gap-2 text-[15px] font-semibold text-foreground"><ShoppingCart size={16} className="text-primary-glow" />Buy a domain through us</h2>
-          <p className="mt-1 text-[12.5px] text-muted-foreground">Don't have one? We register it and connect it to your store for you. <b className="text-foreground">.com GHS 250/yr</b> · <b className="text-foreground">.shop GHS 120/yr</b>. Usually live within 24 hours.</p>
+        <Section page="domain" id="buy-a-domain-through-us" title="Buy a domain through us" icon={<ShoppingCart size={15} />} subtitle={<>Don't have one? We register it and connect it to your store for you. <b className="text-foreground">.com GHS 250/yr</b> · <b className="text-foreground">.shop GHS 120/yr</b>. Usually live within 24 hours.</>}>
           <div className="mt-3 flex gap-2"><input value={buy} onChange={(e) => { setBuy(e.target.value); setQuote(null); }} placeholder="mystore.com or mystore.shop" autoCapitalize="none" className="onyx-field flex-1" /><button type="button" disabled={buying} onClick={() => void check()} className="rounded-full border border-white/[0.12] px-4 py-2 text-[13px] text-foreground disabled:opacity-60">Check</button></div>
           {quote && (
             <div className={`mt-3 rounded-2xl border p-4 ${quote.available === false ? "border-amber/30 bg-amber/5" : "border-primary-glow/30 bg-primary/5"}`}>
@@ -74,13 +71,12 @@ export default function AgentDomain() {
               </>)}
             </div>
           )}
-        </section>
+        </Section>
       )}
       {orders.length > 0 && (
-        <section className="onyx-panel rounded-[22px] p-5">
-          <h2 className="text-[15px] font-semibold text-foreground">Domains bought through us</h2>
+        <Section page="domain" id="domains-bought-through-us" title="Domains bought through us">
           <ul className="mt-2 divide-y divide-white/[0.06]">{orders.map((o) => <li key={o.id} className="flex items-center justify-between gap-3 py-2.5"><span><span className="block text-[13.5px] font-semibold text-foreground">{o.domain}</span><span className="block text-[11.5px] text-faint-foreground">{formatGHS(Number(o.price))} · {new Date(o.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}{o.expires_at ? ` · renews ${new Date(o.expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : ""}</span></span><span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${o.status === "live" || o.status === "registered" ? "bg-primary/15 text-primary-glow" : o.status === "paid" ? "bg-amber/15 text-amber" : "bg-white/[0.06] text-muted-foreground"}`}>{o.status === "paid" ? "Being set up" : o.status === "registered" ? "Registered" : o.status === "live" ? "Live" : o.status}</span></li>)}</ul>
-        </section>
+        </Section>
       )}
     </div>
   );

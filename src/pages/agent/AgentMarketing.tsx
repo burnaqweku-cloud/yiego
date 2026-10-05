@@ -3,6 +3,7 @@ import { Megaphone, Tag, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { p1, useAgent } from "@/components/agent/AgentShell";
+import Section from "@/components/agent/Section";
 import { formatGHS } from "@/lib/format";
 
 /* Announcements to the store's customers, and promos on bundles. Store-only; never below agent price. */
@@ -55,15 +56,12 @@ export default function AgentMarketing() {
     <div className="space-y-6">
       <div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Marketing</p><h1 className="font-display text-[24px] font-semibold text-foreground">Talk to your customers</h1><p className="mt-1 text-[13px] text-muted-foreground">Announcements show on {agent.store_name}; you can also email them to people who signed up there. Promos drop a bundle's price for a few days.</p></div>
 
-      <section className="onyx-panel rounded-[22px] p-5">
-        <h2 className="flex items-center gap-2 text-[15px] font-semibold text-foreground"><Megaphone size={16} className="text-primary-glow" />Announcement</h2>
+      <Section page="marketing" id="announcement" title="Announcement" icon={<Megaphone size={15} />} defaultOpen>
         <div className="mt-3 space-y-2"><input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="Title, e.g. Weekend data deals" className="onyx-field w-full" /><textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={600} placeholder="What do you want your customers to know?" className="onyx-field w-full resize-y" /><div className="flex justify-end"><button type="button" disabled={busy === "post"} onClick={() => void post()} className="onyx-btn-primary px-4 py-2 text-[13px] disabled:opacity-60">Post to store</button></div></div>
         {anns.length > 0 && <ul className="mt-4 divide-y divide-white/[0.06]">{anns.map((a) => <li key={a.id} className="py-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className={`text-[13.5px] font-semibold ${a.is_active ? "text-foreground" : "text-faint-foreground line-through"}`}>{a.title}</p><p className="mt-0.5 text-[12.5px] text-muted-foreground">{a.body}</p><p className="mt-1 text-[11px] text-faint-foreground">{new Date(a.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}{a.emailed_at ? " · emailed" : ""}</p></div><div className="flex shrink-0 flex-col gap-1">{a.is_active && !a.emailed_at && <button type="button" disabled={busy === a.id} onClick={() => void email(a.id)} className="inline-flex items-center gap-1 rounded-full border border-white/[0.12] px-2.5 py-1 text-[11.5px] text-foreground"><Mail size={12} />{busy === a.id ? "Sending…" : "Email customers"}</button>}{a.is_active && <button type="button" onClick={() => void hide(a.id)} className="text-[11.5px] text-faint-foreground">Remove</button>}</div></div></li>)}</ul>}
-      </section>
+      </Section>
 
-      <section className="onyx-panel rounded-[22px] p-5">
-        <h2 className="flex items-center gap-2 text-[15px] font-semibold text-foreground"><Tag size={16} className="text-primary-glow" />Promo</h2>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">A lower price on one bundle for up to 30 days. It can't go below your agent price, so you never sell at a loss.</p>
+      <Section page="marketing" id="promo" title="Promo" icon={<Tag size={15} />} subtitle="A lower price on one bundle for up to 30 days. It can't go below your agent price, so you never sell at a loss.">
         <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
           <select value={promoProduct} onChange={(e) => setPromoProduct(e.target.value)} className="onyx-field"><option value="">Choose a bundle</option>{active.map((p) => <option key={p.id} value={p.id}>{p.name.replace(" Data — ", " ")} · now {formatGHS(Number(prices[p.id] ?? p.store_default_price ?? p.customer_price))}</option>)}</select>
           <input value={promoPrice} onChange={(e) => setPromoPrice(e.target.value)} inputMode="decimal" placeholder={chosen ? `Price (min ${floor.toFixed(2)})` : "Promo price"} className="onyx-field w-full sm:w-40" />
@@ -72,7 +70,7 @@ export default function AgentMarketing() {
         {chosen && <p className="mt-2 text-[11.5px] text-faint-foreground">Your price now {formatGHS(current)} · your cost {formatGHS(floor)} · promo profit {promoPrice ? formatGHS(Math.max(0, Number(promoPrice) - floor)) : "—"} per sale</p>}
         <div className="mt-3 flex justify-end"><button type="button" disabled={busy === "promo"} onClick={() => void setPromo()} className="onyx-btn-primary px-4 py-2 text-[13px] disabled:opacity-60">Start promo</button></div>
         {promos.length > 0 && <ul className="mt-4 divide-y divide-white/[0.06]">{promos.map((p) => <li key={p.id} className="flex items-center justify-between gap-3 py-3"><span className="min-w-0"><span className="block text-[13.5px] font-semibold text-foreground">{name(p.product_id)} at {formatGHS(Number(p.promo_price))}</span><span className="block text-[11.5px] text-faint-foreground">ends {new Date(p.ends_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span></span><button type="button" onClick={() => void endPromo(p.id)} className="text-[12px] text-faint-foreground">End now</button></li>)}</ul>}
-      </section>
+      </Section>
     </div>
   );
 }
