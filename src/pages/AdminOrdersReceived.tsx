@@ -21,8 +21,8 @@ const STAGE_LABEL: Record<Stage, string> = { all: "All", in_progress: "In progre
 interface Row { id: string; order_reference: string; recipient_phone: string; amount: number; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { name: string } | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any };
-const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
-const endOfDay = (d: Date) => { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; };
+const startOfDay = (d: Date) => { const x = new Date(d); x.setUTCHours(0, 0, 0, 0); return x; };
+const endOfDay = (d: Date) => { const x = new Date(d); x.setUTCHours(23, 59, 59, 999); return x; };
 const age = (from: string) => { const m = Math.max(0, Math.round((Date.now() - +new Date(from)) / 60000)); return m < 60 ? `${m} min` : m < 2880 ? `${Math.floor(m / 60)} h` : `${Math.floor(m / 1440)} d`; };
 const BUCKET_TITLE: Record<Bucket, string> = { all: "All orders", delivered: "Delivered", waiting: "Waiting to deliver", refunded: "Refunded" };
 

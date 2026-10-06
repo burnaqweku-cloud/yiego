@@ -14,8 +14,9 @@ type Source = "all" | "platform" | "agents";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any };
 
-const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
-const endOfDay = (d: Date) => { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; };
+// Ghana time (GMT): day boundaries are UTC midnight regardless of the device clock.
+const startOfDay = (d: Date) => { const x = new Date(d); x.setUTCHours(0, 0, 0, 0); return x; };
+const endOfDay = (d: Date) => { const x = new Date(d); x.setUTCHours(23, 59, 59, 999); return x; };
 const iso = (d: Date) => d.toISOString();
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 

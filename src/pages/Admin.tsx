@@ -11,7 +11,8 @@ import { formatGHS } from "@/lib/format";
 
 type Period = "today" | "7d" | "30d" | "all";
 const PERIODS = [{ value: "today" as const, label: "Today" }, { value: "7d" as const, label: "7 days" }, { value: "30d" as const, label: "30 days" }, { value: "all" as const, label: "Since launch" }];
-const since = (p: Period) => { if (p === "all") return "2026-09-12T00:00:00Z"; const d = new Date(); if (p === "today") d.setHours(0, 0, 0, 0); else d.setDate(d.getDate() - (p === "7d" ? 7 : 30)); return d.toISOString(); };
+// Days are Ghana days (GMT, no daylight saving), whatever clock the admin's phone is on.
+const since = (p: Period) => { if (p === "all") return "2026-09-12T00:00:00Z"; const d = new Date(); d.setUTCHours(0, 0, 0, 0); if (p !== "today") d.setUTCDate(d.getUTCDate() - (p === "7d" ? 7 : 30)); return d.toISOString(); };
 
 interface OrderRow { order_reference: string; recipient_phone: string; amount: number; status: string; payment_status: string; admin_resolution_status: string | null; supplier_retry_after: string | null; created_at: string; networks: { name: string } | null; data_products: { name: string } | null }
 interface Overview { period: { revenue: number; net: number; fee_income: number }; owed: { undelivered: number; undelivered_count: number }; cash: { supplier_float: Record<string, number> } }

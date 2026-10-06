@@ -23,7 +23,7 @@ const PERIODS: { value: Period; label: string }[] = [{ value: "today", label: "T
 function periodFrom(p: Period): string | null {
   if (p === "all") return null;
   const d = new Date();
-  if (p === "today") { d.setHours(0, 0, 0, 0); return d.toISOString(); }
+  if (p === "today") { d.setUTCHours(0, 0, 0, 0); return d.toISOString(); }
   d.setDate(d.getDate() - (p === "7d" ? 7 : 30)); return d.toISOString();
 }
 
