@@ -92,8 +92,8 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
   );
   const studio = template === "studio";
   const NAV = [
-    ...(studio ? [{ to: `${storeBase(store.slug)}` || "/", label: "Home", icon: Store, end: true }] : []),
-    { to: studio ? `${storeBase(store.slug)}/bundles` : `${storeBase(store.slug)}`, label: "Bundles", icon: Package, end: !studio },
+    { to: `${storeBase(store.slug)}` || "/", label: "Home", icon: Store, end: true },
+    { to: `${storeBase(store.slug)}/bundles`, label: "Bundles", icon: Package },
     { to: `${storeBase(store.slug)}/track`, label: "Track order", icon: Search },
     { to: `${storeBase(store.slug)}/check-mtn`, label: "Check MTN number", icon: PhoneForwarded },
     { to: `${storeBase(store.slug)}/about`, label: "About", icon: Info },

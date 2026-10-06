@@ -29,7 +29,6 @@ export default function StoreHome() {
   return (
     <>
       <Seo path={`${storeBase(store.slug)}`} title={`${store.store_name} — MTN, Telecel & AirtelTigo data`} description={store.tagline ?? `Buy MTN, Telecel and AirtelTigo data bundles from ${store.store_name}. Fast delivery.`} />
-      {store.banner_url && <img src={store.banner_url} alt="" className="mb-4 h-36 w-full rounded-3xl object-cover sm:h-48" />}
       {tpl === "market" && (
         <section className="st-board">
           <span className="st-sticker text-[12px]">MTN · Telecel · AirtelTigo</span>
