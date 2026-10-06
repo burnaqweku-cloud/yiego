@@ -42,6 +42,7 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "agent-messages", label: "Message your agents", to: "/agent/network/messages", sections: ["message-your-agents"] },
   ] },
   { id: "team", label: "Team & support", icon: UserCog, pages: [
+    { id: "assistant", label: "Store assistant", to: "/agent/assistant" },
     { id: "support-settings", label: "Support buttons", to: "/agent/team/support", sections: ["buttons-on-your-store"] },
     { id: "staff", label: "Staff", to: "/agent/team/staff", sections: ["team"] },
   ] },
