@@ -1,0 +1,4 @@
+-- Applied 6 Oct 2026 (marketing_improvements, store_marketing_grants):
+-- grants on store_announcements/store_promos/store_popups(/form_submissions) to authenticated (dashboard could not read/write them before)
+-- agent_post_announcement caps title 60 / body 240
+-- store_popups: starts_at, ends_at, delay_seconds, pages text[], shows, clicks, updated_at; store_popup_for(slug, page); store_popup_hit(id, kind)

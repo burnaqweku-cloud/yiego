@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,26 +7,28 @@ import { useStore } from "@/components/store/StoreShell";
 import { storeBase } from "@/lib/storeHost";
 
 /* The store owner's pop-up (parent agents only). Honours once / daily / always per device. */
-interface Popup { id: string; title: string; body: string | null; image_url: string | null; button_label: string | null; action: "join" | "link" | "form" | "message"; action_url: string | null; frequency: "once" | "daily" | "always" }
+interface Popup { id: string; title: string; body: string | null; image_url: string | null; button_label: string | null; action: "join" | "link" | "form" | "message"; action_url: string | null; frequency: "once" | "daily" | "always"; delay_seconds?: number }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const p1 = () => (supabase as unknown as { schema: (s: string) => any }).schema("phase1");
 export default function StorePopup() {
-  const store = useStore(); const navigate = useNavigate();
+  const store = useStore(); const navigate = useNavigate(); const { pathname } = useLocation();
+  const base = storeBase(store.slug); const page = pathname.replace(/\/$/, "") === (base || "") ? "home" : pathname.startsWith(`${base}/bundles`) ? "bundles" : "other";
   const [p, setP] = useState<Popup | null>(null); const [form, setForm] = useState(false); const [f, setF] = useState({ name: "", phone: "", email: "", message: "" }); const [busy, setBusy] = useState(false);
   useEffect(() => {
     let alive = true;
-    void p1().rpc("store_popup_for", { p_slug: store.slug }).then((r: { data: Popup | null }) => {
+    void p1().rpc("store_popup_for", { p_slug: store.slug, p_page: page }).then((r: { data: Popup | null }) => {
       const pop = r.data; if (!pop || !alive) return;
       const key = `yg-popup:${pop.id}`; const last = Number(localStorage.getItem(key) ?? 0);
       if (pop.frequency === "once" && last) return;
       if (pop.frequency === "daily" && Date.now() - last < 86_400_000) return;
-      const t = setTimeout(() => { setP(pop); localStorage.setItem(key, String(Date.now())); }, 1800);
+      const t = setTimeout(() => { setP(pop); localStorage.setItem(key, String(Date.now())); void p1().rpc("store_popup_hit", { p_id: pop.id, p_kind: "show" }); }, Math.max(0, Number(pop.delay_seconds ?? 2)) * 1000);
       return () => clearTimeout(t);
     });
     return () => { alive = false; };
-  }, [store.slug]);
+  }, [store.slug, page]);
   if (!p) return null;
   const act = () => {
+    void p1().rpc("store_popup_hit", { p_id: p.id, p_kind: "click" });
     if (p.action === "join") { setP(null); navigate(`${storeBase(store.slug)}/join`); }
     else if (p.action === "link" && p.action_url) { window.open(p.action_url, "_blank", "noopener"); setP(null); }
     else if (p.action === "form") setForm(true);
