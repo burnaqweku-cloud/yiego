@@ -11,10 +11,10 @@ export function WhatsAppGlyph({ size = 30 }: { size?: number }) {
 export default function WhatsAppFab({ href, label = "Chat on WhatsApp", className = "", badge = true }: { href: string; label?: string; className?: string; badge?: boolean }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
-      className={`pointer-events-auto relative grid h-16 w-16 place-items-center rounded-full transition-transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${className}`}
+      className={`pointer-events-auto relative grid h-14 w-14 place-items-center rounded-full transition-transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${className}`}
       style={{ backgroundColor: "#25D366", backgroundImage: "linear-gradient(180deg, #2fe06f 0%, #25D366 55%, #1fbe5b 100%)", boxShadow: "0 6px 18px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.04) inset" }}>
-      <WhatsAppGlyph size={38} />
-      {badge && <span className="absolute -right-0.5 -top-0.5 grid h-[22px] w-[22px] place-items-center rounded-full border-2 border-white text-[12px] font-extrabold leading-none text-white" style={{ backgroundColor: "#ff2d2d" }} aria-hidden="true">!</span>}
+      <WhatsAppGlyph size={32} />
+      {badge && <span className="absolute -right-0.5 -top-0.5 grid h-5 w-5 place-items-center rounded-full border-2 border-white text-[11px] font-extrabold leading-none text-white" style={{ backgroundColor: "#ff2d2d" }} aria-hidden="true">!</span>}
     </a>
   );
 }
