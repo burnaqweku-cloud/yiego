@@ -8,9 +8,9 @@ import Section from "@/components/agent/Section";
 interface Popup { id: string; title: string; body: string | null; image_url: string | null; button_label: string | null; action: "join" | "link" | "form" | "message"; action_url: string | null; frequency: "once" | "daily" | "always"; is_active: boolean }
 interface Sub { id: string; name: string | null; phone: string | null; email: string | null; message: string | null; created_at: string }
 export default function AgentPopups() {
-  const { agent } = useAgent();
+  const { agent, networkOpen } = useAgent();
   const [popups, setPopups] = useState<Popup[]>([]); const [subs, setSubs] = useState<Sub[]>([]);
-  const [f, setF] = useState({ title: "", body: "", button_label: "Join as an agent", action: "join" as Popup["action"], action_url: "", frequency: "once" as Popup["frequency"] });
+  const [f, setF] = useState({ title: "", body: "", button_label: "Learn more", action: "link" as Popup["action"], action_url: "", frequency: "once" as Popup["frequency"] });
   const load = async () => { const [p, s] = await Promise.all([p1().from("store_popups").select("*").order("created_at", { ascending: false }), p1().from("store_form_submissions").select("*").order("created_at", { ascending: false }).limit(200)]); setPopups(p.data ?? []); setSubs(s.data ?? []); };
   useEffect(() => { void load(); }, []);
   const create = async () => {
@@ -29,7 +29,7 @@ export default function AgentPopups() {
         <input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} maxLength={80} placeholder="Title, e.g. Earn money selling data" className="onyx-field w-full" />
         <textarea value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} rows={3} maxLength={400} placeholder="A sentence or two." className="onyx-field w-full resize-y" />
         <div className="grid gap-3 sm:grid-cols-3">
-          <label className="block"><span className="mb-1 block text-[12px] font-semibold text-foreground">Button does</span><select value={f.action} onChange={(e) => setF({ ...f, action: e.target.value as Popup["action"], button_label: e.target.value === "join" ? "Join as an agent" : e.target.value === "form" ? "Send my details" : e.target.value === "link" ? "Open" : "Got it" })} className="onyx-field w-full"><option value="join">Sign up as my agent</option><option value="form">Fill a form (name, phone, email, message)</option><option value="link">Open a link / WhatsApp</option><option value="message">Just a message</option></select></label>
+          <label className="block"><span className="mb-1 block text-[12px] font-semibold text-foreground">Button does</span><select value={f.action} onChange={(e) => setF({ ...f, action: e.target.value as Popup["action"], button_label: e.target.value === "join" ? "Join as an agent" : e.target.value === "form" ? "Send my details" : e.target.value === "link" ? "Open" : "Got it" })} className="onyx-field w-full">{networkOpen && <option value="join">Sign up as my agent</option>}<option value="form">Fill a form (name, phone, email, message)</option><option value="link">Open a link / WhatsApp</option><option value="message">Just a message</option></select></label>
           <label className="block"><span className="mb-1 block text-[12px] font-semibold text-foreground">Button label</span><input value={f.button_label} onChange={(e) => setF({ ...f, button_label: e.target.value })} maxLength={30} className="onyx-field w-full" /></label>
           <label className="block"><span className="mb-1 block text-[12px] font-semibold text-foreground">Show</span><select value={f.frequency} onChange={(e) => setF({ ...f, frequency: e.target.value as Popup["frequency"] })} className="onyx-field w-full"><option value="once">Once per visitor</option><option value="daily">Once a day</option><option value="always">Every visit</option></select></label>
         </div>

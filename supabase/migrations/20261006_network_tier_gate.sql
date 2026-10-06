@@ -1,0 +1,4 @@
+-- Applied 6 Oct 2026: agents-under-agents tier gated behind site_settings.network_tier {enabled:false, allow:[agent ids]}.
+-- phase1.network_tier_open(agent) / network_tier_status(); store_network_offer, agent_store ('network' key), network_apply,
+-- join_network and agent_set_network all respect it. Sub-agents that already exist keep working.
+-- To open for everyone: update phase1.site_settings set value = jsonb_set(value,'{enabled}','true') where key='network_tier';

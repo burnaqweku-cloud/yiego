@@ -21,7 +21,7 @@ export interface Agent { id: string; slug: string; store_name: string; tagline: 
 export interface AgentOrder { order_reference: string; recipient_phone: string; amount: number; agent_margin: number | null; status: string; admin_resolution_status: string | null; paid_at: string | null; created_at: string; data_products: { name: string } | null; networks: { name: string } | null }
 export interface AgentPayout { id: string; amount: number; fee: number; net: number; status: string; created_at: string; paid_at: string | null; note: string | null }
 export interface Plan { payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number }
-interface Ctx { role: "owner" | "staff"; unread: number; floors: Record<string, number>; isSub: boolean; agent: Agent; orders: AgentOrder[]; payouts: AgentPayout[]; products: Phase1Product[]; prices: Record<string, string>; setPrices: (p: Record<string, string>) => void; plan: Plan | null; quote: PlanQuote | null; storeUrl: string; reload: () => Promise<void>; sub: SubInfo; openRenew: () => void }
+interface Ctx { role: "owner" | "staff"; networkOpen: boolean; unread: number; floors: Record<string, number>; isSub: boolean; agent: Agent; orders: AgentOrder[]; payouts: AgentPayout[]; products: Phase1Product[]; prices: Record<string, string>; setPrices: (p: Record<string, string>) => void; plan: Plan | null; quote: PlanQuote | null; storeUrl: string; reload: () => Promise<void>; sub: SubInfo; openRenew: () => void }
 const AgentContext = createContext<Ctx | null>(null);
 export const useAgent = () => { const c = useContext(AgentContext); if (!c) throw new Error("useAgent outside AgentShell"); return c; };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,7 +32,7 @@ export const fmt = (d: string) => new Date(d).toLocaleString("en-GB", { day: "nu
 
 
 /* Two-tier menu: tap a group to open its pages; the group holding the current page opens by itself. */
-function AgentNav({ groups, unread, onNavigate }: { groups: typeof AGENT_GROUPS; unread: number; onNavigate?: () => void }) {
+function AgentNav({ groups, unread, onNavigate, soon = [] }: { groups: typeof AGENT_GROUPS; unread: number; onNavigate?: () => void; soon?: string[] }) {
   const location = useLocation();
   const active = groupForPath(location.pathname, groups);
   const [openId, setOpenId] = useState<string>(active?.id ?? "");
@@ -45,7 +45,7 @@ function AgentNav({ groups, unread, onNavigate }: { groups: typeof AGENT_GROUPS;
         const open = openId === g.id; const holds = active?.id === g.id;
         return (
           <div key={g.id}>
-            <button type="button" onClick={() => setOpenId(open ? "" : g.id)} aria-expanded={open} className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13.5px] ${holds ? "text-foreground" : "text-foreground hover:bg-white/[0.04]"}`}><g.icon size={16} className={holds ? "text-primary-glow" : ""} /><span className="flex-1">{g.label}</span>{g.pages.some((p) => p.badge) && unread > 0 && !open && <span className="rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{unread}</span>}<ChevronDown size={14} className={`text-faint-foreground transition-transform ${open ? "rotate-180" : ""}`} /></button>
+            <button type="button" onClick={() => setOpenId(open ? "" : g.id)} aria-expanded={open} className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13.5px] ${holds ? "text-foreground" : "text-foreground hover:bg-white/[0.04]"}`}><g.icon size={16} className={holds ? "text-primary-glow" : ""} /><span className="flex-1">{g.label}</span>{soon.includes(g.id) && <span className="rounded-full border border-white/[0.12] px-1.5 text-[10px] font-semibold text-faint-foreground">Soon</span>}{g.pages.some((p) => p.badge) && unread > 0 && !open && <span className="rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{unread}</span>}<ChevronDown size={14} className={`text-faint-foreground transition-transform ${open ? "rotate-180" : ""}`} /></button>
             {open && <div className="mb-1 ml-4 flex flex-col gap-0.5 border-l border-white/[0.08] pl-2">{g.pages.map((p) => <NavLink key={p.id} to={p.to} end={p.end} onClick={onNavigate} className={({ isActive }) => `flex items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"}`}>{p.label}{p.badge && unread > 0 && <span className="ml-auto rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{unread}</span>}</NavLink>)}</div>}
           </div>
         );
@@ -62,7 +62,9 @@ export default function AgentShell() {
   const [orders, setOrders] = useState<AgentOrder[]>([]); const [payouts, setPayouts] = useState<AgentPayout[]>([]);
   const [products, setProducts] = useState<Phase1Product[]>([]); const [prices, setPrices] = useState<Record<string, string>>({});
   const [plan, setPlan] = useState<Plan | null>(null); const [quote, setQuote] = useState<PlanQuote | null>(null);
-  const [role, setRole] = useState<"owner" | "staff">("owner"); const [unread, setUnread] = useState(0); const [floors, setFloors] = useState<Record<string, number>>({});
+  const [role, setRole] = useState<"owner" | "staff">("owner"); const [unread, setUnread] = useState(0);
+  const [networkOpen, setNetworkOpen] = useState(false);
+  useEffect(() => { if (!agent) return; void p1().rpc("network_tier_status", {}).then(({ data }) => setNetworkOpen(!!(data as { open_for_me?: boolean } | null)?.open_for_me)); }, [agent?.id]); // eslint-disable-line react-hooks/exhaustive-deps const [floors, setFloors] = useState<Record<string, number>>({});
 
   const reload = useCallback(async () => {
     if (!user) return;
@@ -112,13 +114,13 @@ export default function AgentShell() {
   if (role === "owner" && (sub.state === "unpaid" || sub.state === "suspended")) return isSub ? <NetworkPayScreen agent={agent} /> : <PayScreen agent={agent} quote={quote} />;
 
   return (
-    <AgentContext.Provider value={{ role, unread, floors, isSub, agent, orders, payouts, products, prices, setPrices, plan, quote, storeUrl, reload, sub, openRenew: () => setRenew(true) }}>
+    <AgentContext.Provider value={{ role, networkOpen, unread, floors, isSub, agent, orders, payouts, products, prices, setPrices, plan, quote, storeUrl, reload, sub, openRenew: () => setRenew(true) }}>
       <div className="onyx-canvas min-h-dvh">
         <div className="mx-auto flex max-w-5xl">
           {/* Desktop sidebar */}
           <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-white/[0.06] p-4 sm:flex">
             <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div><NotificationBell /></div>
-            <div className="mt-6"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !g.parentOnly || !agent.parent_agent_id)} unread={unread} /></div>
+            <div className="mt-6"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !g.parentOnly || !agent.parent_agent_id)} unread={unread} soon={networkOpen ? [] : ["agents"]} /></div>
             <div className="mt-auto space-y-1 text-[12.5px]">
               <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><ExternalLink size={14} />View my store</a>
               <Link to="/" onClick={() => sessionStorage.setItem("yg-agent-browse", "1")} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit DataYego</Link>
@@ -153,7 +155,7 @@ export default function AgentShell() {
             <div className="absolute inset-0 bg-black/60" />
             <aside className="absolute inset-y-0 left-0 flex w-[82%] max-w-[320px] flex-col bg-background p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p><p className="text-[12px] text-primary-glow">{formatGHS(Number(agent.earnings_balance))} earned</p></div><button type="button" onClick={() => setDrawer(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
-              <div className="mt-5 flex-1 overflow-y-auto"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !g.parentOnly || !agent.parent_agent_id)} unread={unread} onNavigate={() => setDrawer(false)} /></div>
+              <div className="mt-5 flex-1 overflow-y-auto"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !g.parentOnly || !agent.parent_agent_id)} unread={unread} onNavigate={() => setDrawer(false)} soon={networkOpen ? [] : ["agents"]} /></div>
               <div className="mt-4 space-y-0.5 border-t border-white/[0.06] pt-3 text-[13px]">
                 <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><ExternalLink size={14} />View my store</a>
                 <Link to="/" onClick={() => { sessionStorage.setItem("yg-agent-browse", "1"); setDrawer(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Shop as a customer</Link>

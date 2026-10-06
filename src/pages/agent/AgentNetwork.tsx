@@ -5,6 +5,7 @@ import NetworkQuestions from "@/components/agent/NetworkQuestions";
 import { toast } from "sonner";
 import { p1, useAgent } from "@/components/agent/AgentShell";
 import Section from "@/components/agent/Section";
+import ComingSoon from "@/components/agent/ComingSoon";
 import { formatGHS } from "@/lib/format";
 
 /* Parent agents: recruit agents under them. Fee, pitch, invite link, their agents, coupons, announcements, read-only support. */
@@ -14,7 +15,7 @@ interface Coupon { id: string; code: string; percent_off: number; max_uses: numb
 interface Conv { id: string; status: string; mode: string; name: string; last_message_at: string; messages: Array<{ sender: string; body: string; created_at: string }> }
 
 export default function AgentNetwork() {
-  const { agent, reload, storeUrl } = useAgent();
+  const { agent, reload, storeUrl, networkOpen } = useAgent();
   const [on, setOn] = useState(agent.network_on ?? false); const [fee, setFee] = useState(String(agent.network_fee ?? 0)); const [pitch, setPitch] = useState(agent.network_pitch ?? "");
   const [net, setNet] = useState<Net | null>(null); const [coupons, setCoupons] = useState<Coupon[]>([]); const [code, setCode] = useState(""); const [pct, setPct] = useState("20"); const [maxUses, setMaxUses] = useState("");
   const [annTitle, setAnnTitle] = useState(""); const [annBody, setAnnBody] = useState(""); const [anns, setAnns] = useState<Array<{ id: string; title: string; body: string; created_at: string }>>([]);
@@ -28,6 +29,7 @@ export default function AgentNetwork() {
   const postAnn = async () => { if (!annTitle.trim() || !annBody.trim()) return; const { error } = await p1().from("network_announcements").insert({ agent_id: agent.id, title: annTitle.trim(), body: annBody.trim() }); if (error) return toast.error("Couldn't post."); setAnnTitle(""); setAnnBody(""); toast.success("Posted to your agents."); void load(); };
   const openPeek = async (s: Sub) => { setPeek(s); setConvs(null); const { data } = await p1().rpc("network_inbox", { p_sub: s.id }); setConvs((data as Conv[]) ?? []); };
   const d = (iso: string | null) => iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "—";
+  if (!networkOpen) return (<div className="space-y-6"><div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Your agents</p><h1 className="font-display text-[24px] font-semibold text-foreground">Build your own network</h1></div><ComingSoon title="Coming soon" blurb="Soon you'll be able to recruit agents who sell under you: they get their own store, you set the monthly fee and earn a margin on everything they sell." /></div>);
   return (
     <div className="space-y-6">
       <div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Your agents</p><h1 className="font-display text-[24px] font-semibold text-foreground">Build your own network</h1><p className="mt-1 text-[13px] text-muted-foreground">People sign up on your store, pay you a monthly fee you choose (or nothing), and get their own store. They buy at your prices; you earn on every bundle they sell.</p></div>
