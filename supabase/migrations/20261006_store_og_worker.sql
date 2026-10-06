@@ -1,0 +1,4 @@
+-- Applied 6 Oct 2026: phase1.store_og(host) (public link-preview data) + Cloudflare Worker datayego-stores
+-- redeployed via new edge function cf-worker-deploy (cron secret): rewrites <title>/og:*/twitter:*/icons on HTML
+-- for every store host so WhatsApp/Facebook/Telegram previews show the store, not DataYego.
+-- NOTE: cf-domains "setup" still contains the OLD worker; run cf-worker-deploy after any setup.
