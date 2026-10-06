@@ -162,7 +162,7 @@ const App = () => isStoreHost() ? <StoreHostGate /> : (
       {/* App pages render inside the standard content column. */}
       <Route element={<AppPage />}>
         <Route path="/shop" element={<Shop />} />
-        <Route path="/track-order" element={<TrackOrder />} /><Route path="/r/:code" element={<Invite />} /><Route path="/g/:slug" element={<Giveaway />} /><Route path="/check-mtn" element={<CheckMtn />} /><Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/track-order" element={<TrackOrder />} /><Route path="/r/:code" element={<Invite />} /><Route path="/g/:slug" element={<Giveaway />} /><Route path="/giveaway" element={<Giveaway />} /><Route path="/check-mtn" element={<CheckMtn />} /><Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/support/ai" element={<AISupport />} />
         <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
         <Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />
