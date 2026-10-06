@@ -10,7 +10,9 @@ const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 type Agent = { id: string; slug: string; store_name: string; tagline: string | null; about_text: string | null; hours_text: string | null; faq: Array<{ q: string; a: string }> | null; whatsapp: string | null; support_ai_on: boolean | null; support_whatsapp_url: string | null };
 
 // deno-lint-ignore no-explicit-any
-async function buildSystem(supabase: any, agent: Agent, userId: string | null) {
+const storeUrlOf = (a: Agent & { custom_domain?: string | null; custom_domain_status?: string | null }) => a.custom_domain && a.custom_domain_status === "active" ? `https://${a.custom_domain}` : `https://${a.slug}.datayego.com`;
+const REF_RE = /\b(AG|YG)-[A-Z0-9]{6,12}\b/gi;
+async function buildSystem(supabase: any, agent: Agent, userId: string | null, mentioned: string[] = []) {
   const { data: store } = await supabase.rpc("agent_store", { p_slug: agent.slug, p_preview: true });
   const { data: products } = await supabase.from("data_products").select("id, name, validity").eq("is_active", true);
   const prices = (products ?? []).map((p: { id: string; name: string; validity: string | null }) => `${p.name.replace(" Data \u2014 ", " ")}: GHS ${Number(store?.prices?.[p.id] ?? 0).toFixed(2)}${p.validity ? ` (${p.validity})` : ""}`).join("\n");
@@ -20,9 +22,17 @@ async function buildSystem(supabase: any, agent: Agent, userId: string | null) {
     const { data: o } = await supabase.from("orders").select("order_reference, recipient_phone, amount, status, payment_status, admin_resolution_status, paid_at, data_products(name), networks(name)").eq("user_id", userId).eq("agent_id", agent.id).order("created_at", { ascending: false }).limit(5);
     orders = (o ?? []).map((x: { order_reference: string; recipient_phone: string; amount: number; status: string; payment_status: string; admin_resolution_status: string | null; paid_at: string | null; data_products: { name: string } | null; networks: { name: string } | null }) => `${x.order_reference}: ${x.networks?.name} ${String(x.data_products?.name ?? "").replace(/^.*?\u2014\s*/, "")} to ${x.recipient_phone}, GHS ${Number(x.amount).toFixed(2)}, ${x.payment_status === "refunded" ? "refunded" : x.payment_status !== "succeeded" ? "not paid" : x.admin_resolution_status === "awaiting_verification" ? "waiting for MTN to verify the number" : x.admin_resolution_status === "wrong_network" ? "wrong network, customer can fix the number on the Track page" : x.status === "delivered" ? "delivered" : x.status === "failed" ? "failed, needs the store" : "in progress"}${x.paid_at ? `, paid ${new Date(x.paid_at).toLocaleString("en-GB")}` : ""}`).join("\n");
   }
+  let looked = "";
+  if (mentioned.length) {
+    const { data: lo } = await supabase.from("orders").select("order_reference, recipient_phone, amount, status, payment_status, admin_resolution_status, paid_at, created_at, data_products(name), networks(name)").eq("agent_id", agent.id).in("order_reference", mentioned.slice(0, 5));
+    const found = new Set((lo ?? []).map((x: { order_reference: string }) => x.order_reference));
+    looked = (lo ?? []).map((x: { order_reference: string; recipient_phone: string; amount: number; status: string; payment_status: string; admin_resolution_status: string | null; paid_at: string | null; created_at: string; data_products: { name: string } | null; networks: { name: string } | null }) => `${x.order_reference}: ${x.networks?.name} ${String(x.data_products?.name ?? "").replace(/^.*?\u2014\s*/, "")} to ${x.recipient_phone.slice(0, 3)}***${x.recipient_phone.slice(-3)}, GHS ${Number(x.amount).toFixed(2)}, ${x.payment_status === "refunded" ? "refunded" : x.payment_status !== "succeeded" ? "NOT PAID (customer should finish payment on the Track page)" : x.admin_resolution_status === "awaiting_verification" ? "paid; MTN is verifying this number (first bundle to it), can take days, then delivers automatically" : x.admin_resolution_status === "wrong_network" ? "paid but the number is on a different network; customer can fix the number on the Track page" : x.status === "delivered" ? "DELIVERED" : String(x.status).startsWith("failed") ? "failed; hand over to the store" : "paid and in progress; delivery is automatic"}${x.paid_at ? `, paid ${new Date(x.paid_at).toLocaleString("en-GB")}` : `, placed ${new Date(x.created_at).toLocaleString("en-GB")}`}`).join("\n")
+      + mentioned.filter((m) => !found.has(m)).map((m) => `\n${m}: no order with this ID on this store (ask them to check the ID from their receipt email; it may be from another shop)`).join("");
+  }
   const { data: kn } = await supabase.from("store_ai_knowledge").select("title, content").eq("agent_id", agent.id).eq("is_active", true).order("sort_order").limit(20);
   const knowledge = (kn ?? []).map((k: { title: string; content: string }) => `### ${k.title}\n${k.content}`).join("\n\n");
   const faq = ((agent.faq ?? []) as Array<{ q: string; a: string }>).map((f) => `Q: ${f.q}\nA: ${f.a}`).join("\n");
+  const url = storeUrlOf(agent as Agent & { custom_domain?: string | null; custom_domain_status?: string | null });
   return `You are the support assistant for "${agent.store_name}", a Ghanaian data-bundle shop. Reply in short, warm, plain English (1\u20134 sentences). Never mention AI, suppliers, DataYego, or internal systems; you speak for the store.
 
 STORE
@@ -38,8 +48,11 @@ DELIVERY RIGHT NOW
 MTN: ${speed?.MTN ? (speed.MTN.sample === 0 ? "delivering normally" : `about ${Math.round(speed.MTN.median_minutes)} min${speed.MTN.at_least ? " or more" : ""}`) : "delivering normally"}. Telecel and AirtelTigo: usually minutes. MTN numbers receiving a bundle for the first time are verified by MTN first, which can take days; customers can check a number on the store's Check MTN page.
 Payments: MoMo or card (Paystack) or the customer's wallet. A delivered bundle cannot be reversed even if the number was wrong.
 
-${orders ? `THIS CUSTOMER'S RECENT ORDERS\n${orders}\n\n` : "The customer is not signed in, so you can't see their orders; ask for the order ID (starts with AG-) and tell them to use the Track page with it or the phone number.\n\n"}${faq ? `STORE FAQ\n${faq}\n\n` : ""}${knowledge ? `THE STORE'S OWN NOTES (written by the store owner; use them for anything about this business: support, hours, offers, how to reach them)\n${knowledge}\n\n` : ""}RULES
-- Help with: prices, how to buy, delivery times, tracking, MTN verification, contact, and anything in the store's notes.
+LINKS (give these when useful, as markdown links, e.g. [Track page](${url}/track))
+Track page: ${url}/track · Bundles: ${url}/bundles · Check an MTN number: ${url}/check-mtn · Home: ${url}${agent.support_whatsapp_url ? ` · WhatsApp: ${agent.support_whatsapp_url}` : ""}
+
+${looked ? `ORDERS THE CUSTOMER MENTIONED (live, this store only)\n${looked}\n\n` : ""}${orders ? `THIS CUSTOMER'S RECENT ORDERS (signed in)\n${orders}\n\n` : ""}${!orders && !looked ? "You can check any order of this store if the customer gives you the order ID (starts with AG-); ask for it. Without an ID you cannot see orders.\n\n" : ""}${faq ? `STORE FAQ\n${faq}\n\n` : ""}${knowledge ? `THE STORE'S OWN NOTES (written by the store owner; use them for anything about this business: support, hours, offers, how to reach them)\n${knowledge}\n\n` : ""}RULES
+- Help with: prices, how to buy, delivery times, tracking, checking an order by its ID, MTN verification, contact, and anything in the store's notes. When you point to a page, include its link.
 - HAND OVER to a human (reply with exactly the word HANDOVER and nothing else) when: the customer asks for a person; anything about refunds, double payment, money deducted without delivery, changing a delivered order, complaints you can't verify, or anything you're unsure about.
 - Never promise refunds or delivery times you can't see. Never invent order details.`;
 }
@@ -64,7 +77,7 @@ Deno.serve(async (req) => {
     const { data: auth } = token ? await supabase.auth.getUser(token) : { data: { user: null } };
     const { data: sec } = await supabase.from("internal_secrets").select("value").eq("key", "gemini").maybeSingle();
     const apiKey = sec?.value ?? Deno.env.get("GEMINI_API_KEY");
-    const AGENT_COLS = "id, slug, store_name, tagline, about_text, hours_text, faq, whatsapp, support_ai_on, support_whatsapp_url";
+    const AGENT_COLS = "id, slug, store_name, tagline, about_text, hours_text, faq, whatsapp, support_ai_on, support_whatsapp_url, custom_domain, custom_domain_status";
 
     if (body.action === "test") {
       if (!auth?.user) return jsonResponse({ error: "Sign in required" }, { status: 401 });
@@ -72,7 +85,7 @@ Deno.serve(async (req) => {
       if (!agent) return jsonResponse({ error: "Not an agent" }, { status: 403 });
       const question = String(body.question ?? "").trim().slice(0, 500); if (!question) return jsonResponse({ error: "Ask something." }, { status: 400 });
       if (!apiKey) return jsonResponse({ error: "The assistant isn't configured yet." }, { status: 500 });
-      const r = await gemini(apiKey, await buildSystem(supabase, agent as Agent, null), [{ role: "user", parts: [{ text: question }] }]);
+      const r = await gemini(apiKey, await buildSystem(supabase, agent as Agent, null, [...new Set(question.toUpperCase().match(REF_RE) ?? [])] as string[]), [{ role: "user", parts: [{ text: question }] }]);
       if (!r.ok) return jsonResponse({ error: "The assistant is busy right now. Try again in a minute." }, { status: 503 });
       if (!r.text || /^HANDOVER\b/i.test(r.text)) return jsonResponse({ handover: "ai_requested" });
       return jsonResponse({ reply: r.text });
@@ -93,7 +106,8 @@ Deno.serve(async (req) => {
       return jsonResponse({ handover: why });
     };
     if (!apiKey) return handover("no_key", `Thanks for your message. Someone from ${agent.store_name} will reply here shortly.`);
-    const system = await buildSystem(supabase, agent, c.user_id ?? null);
+    const mentioned = [...new Set((msgs ?? []).filter((m: { sender: string }) => m.sender === "customer").flatMap((m: { body: string }) => (m.body.toUpperCase().match(REF_RE) ?? [])))] as string[];
+    const system = await buildSystem(supabase, agent, c.user_id ?? null, mentioned);
     const history = (msgs ?? []).filter((m: { sender: string }) => m.sender === "customer" || m.sender === "ai").map((m: { sender: string; body: string }) => ({ role: m.sender === "customer" ? "user" : "model", parts: [{ text: m.body }] }));
     const r = await gemini(apiKey, system, history);
     if (!r.ok) return handover("provider_" + r.status, `Thanks for your message. Someone from ${agent.store_name} will reply here shortly.`);
