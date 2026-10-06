@@ -21,7 +21,7 @@ export default function AgentStoreSettings() {
     const t = setTimeout(() => { void p1().rpc("agent_slug_check", { p_slug: link }).then(({ data }: { data: typeof check }) => setCheck(data)); }, 350);
     return () => clearTimeout(t);
   }, [link, editingLink]);
-  const addresses = [...(agent.custom_domain && agent.custom_domain_status === "active" ? [`https://${agent.custom_domain}`] : []), `https://${agent.slug}.datayego.com`, `https://datayego.com/s/${agent.slug}`];
+  const addresses = [...(agent.custom_domain && agent.custom_domain_status === "active" ? [`https://${agent.custom_domain}`] : []), `https://${agent.slug}.datayego.com`];
   const origin = storeUrl.replace(/\/s\/.*$/, "").replace(/^https?:\/\//, "");
   const LINK_MSG: Record<string, string> = { too_short: "Use at least 3 letters or numbers.", too_long: "Keep it to 30 characters or fewer.", reserved: "That name is reserved. Try another.", taken: "Someone already has that link.", same: "That's your current link." };
   const cooldownUntil = check?.next_change_at ? new Date(check.next_change_at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : null;
@@ -41,7 +41,7 @@ export default function AgentStoreSettings() {
         <div className="mt-2 space-y-1.5">
           {addresses.map((u) => <div key={u} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2"><a href={u} target="_blank" rel="noreferrer" className="inline-flex min-w-0 items-center gap-1 truncate text-[12.5px] text-primary-glow">{u.replace(/^https?:\/\//, "")}<ExternalLink size={12} className="shrink-0" /></a><button type="button" onClick={() => { void navigator.clipboard.writeText(u); toast.success("Copied."); }} className="shrink-0 text-faint-foreground" aria-label="Copy link"><Copy size={13} /></button></div>)}
         </div>
-        <p className="mt-1.5 text-[11.5px] text-faint-foreground">{agent.custom_domain && agent.custom_domain_status === "active" ? "Your own domain is the main address; the two free ones keep working too." : "Both links are free and both always work. Share whichever you like; the first one looks like a website of your own."}</p>
+        <p className="mt-1.5 text-[11.5px] text-faint-foreground">{agent.custom_domain && agent.custom_domain_status === "active" ? "Your own domain is the main address; the free one keeps working too." : "This is your store's address. Share it anywhere; previews on WhatsApp show your store's name and logo."}</p>
         {!editingLink ? (
           <button type="button" onClick={() => { setLink(agent.slug); setEditingLink(true); }} className="mt-1 block text-[12px] font-medium text-primary-glow">Change link</button>
         ) : (
