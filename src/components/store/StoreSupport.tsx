@@ -3,6 +3,7 @@ import { MessageCircle, MessagesSquare, Send, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/components/store/StoreShell";
+import WhatsAppFab from "@/components/layout/WhatsAppFab";
 import { useAuth } from "@/store/auth-context";
 
 /* The store's two floating buttons: WhatsApp (whatever link the agent chose) and chat.
