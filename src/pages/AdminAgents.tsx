@@ -17,7 +17,7 @@ import { useAuth } from "@/store/auth-context";
    Nothing here is visible to customers until the switch is on. */
 
 interface Application { id: string; user_id: string; full_name: string; phone: string; whatsapp: string | null; town: string | null; pitch: string | null; status: "pending" | "approved" | "declined"; decline_reason: string | null; created_at: string; reviewed_at: string | null }
-interface Agent { id: string; user_id: string; slug: string; store_name: string; status: string; paid_until: string | null; earnings_balance: number; created_at: string }
+interface Agent { id: string; user_id: string; slug: string; store_name: string; status: string; paid_until: string | null; earnings_balance: number; created_at: string; parent_agent_id: string | null; network_on: boolean | null }
 interface AgentStats { orders: number; sales: number; salesCount: number; own: number; ownCount: number; earned: number }
 interface Promo { id: string; name: string; percent_off: number; starts_at: string; ends_at: string | null; max_uses: number | null; uses: number; is_active: boolean }
 interface Plan { monthly_price: number; payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number; popup_delay_seconds: number }
@@ -61,7 +61,7 @@ export default function AdminAgents() {
   const load = useCallback(async () => {
     const [a, g, p, s, r, po, sp, gr] = await Promise.all([
       db().from("agent_applications").select("*").order("created_at", { ascending: false }).limit(500),
-      db().from("agents").select("id, user_id, slug, store_name, status, paid_until, earnings_balance, created_at").order("created_at", { ascending: false }),
+      db().from("agents").select("id, user_id, slug, store_name, status, paid_until, earnings_balance, created_at, parent_agent_id, network_on").order("created_at", { ascending: false }),
       db().from("agent_promos").select("*").order("created_at", { ascending: false }),
       db().from("site_settings").select("key, value").in("key", ["agents_launched", "agent_plan"]),
       actor ? db().rpc("admin_role", { p_user: actor }) : Promise.resolve({ data: null, error: null }),
@@ -235,7 +235,7 @@ export default function AdminAgents() {
         </StatGrid>
         <Panel title="Who's paid until when" note="active and lapsed agents">
           <Rows empty={loading ? "Loading…" : "No agents yet."}>
-            {agents.filter((g) => g.status !== "awaiting_payment").sort((a, b) => (a.paid_until ?? "").localeCompare(b.paid_until ?? "")).map((g) => { const days = g.paid_until ? Math.ceil((+new Date(g.paid_until) - Date.now()) / 86400000) : null; return <Row key={g.id} primary={<>{g.store_name} <Pill tone={g.status === "active" ? "good" : "warn"}>{g.status}</Pill></>} secondary={`${emails.get(g.user_id) ?? "—"} · /s/${g.slug}`} right={g.paid_until ?? "—"} rightNote={days == null ? "" : days < 0 ? `${-days} days overdue` : days === 0 ? "ends today" : `${days} days left`} tone={days != null && days <= 3 ? "warn" : "default"} />; })}
+            {agents.filter((g) => g.status !== "awaiting_payment").sort((a, b) => (a.paid_until ?? "").localeCompare(b.paid_until ?? "")).map((g) => { const days = g.paid_until ? Math.ceil((+new Date(g.paid_until) - Date.now()) / 86400000) : null; const parent = g.parent_agent_id ? agents.find((x) => x.id === g.parent_agent_id) : null; const subs = agents.filter((x) => x.parent_agent_id === g.id).length; return <Row key={g.id} primary={<>{g.store_name} <Pill tone={g.status === "active" ? "good" : "warn"}>{g.status}</Pill>{parent && <Pill tone="muted">sub-agent of {parent.store_name}</Pill>}{!parent && subs > 0 && <Pill tone="muted">{subs} sub-agent{subs === 1 ? "" : "s"}</Pill>}</>} secondary={`${emails.get(g.user_id) ?? "—"} · ${g.slug}.datayego.com${parent ? " · plan paid to " + parent.store_name : ""}`} right={g.paid_until ?? "—"} rightNote={days == null ? "" : days < 0 ? `${-days} days overdue` : days === 0 ? "ends today" : `${days} days left`} tone={days != null && days <= 3 ? "warn" : "default"} />; })}
           </Rows>
         </Panel>
         {grants.length > 0 && (

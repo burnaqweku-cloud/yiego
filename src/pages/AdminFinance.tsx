@@ -32,13 +32,13 @@ interface Overview {
   cash: { bank: number; paystack_transit: number; supplier_float: Record<string, number> };
   owed: { customer_wallets: number; undelivered: number; undelivered_count: number; refunds_due: number };
   funding: { outside: number; carried_in: number };
-  period: { revenue: number; fee_income: number; cost_of_bundles: number; paystack_fees: number; topup_fees: number; other_expenses: number; agent_margin?: number; agent_subscriptions?: number; agent_payout_fees?: number; gross_profit: number; net: number; net_excluding_fee_passthrough: number };
+  period: { revenue: number; fee_income: number; cost_of_bundles: number; paystack_fees: number; topup_fees: number; other_expenses: number; agent_margin?: number; agent_subscriptions?: number; agent_payout_fees?: number; network_fees_gross?: number; network_fees_to_parents?: number; network_fees_ours?: number; gross_profit: number; net: number; net_excluding_fee_passthrough: number };
   all_time: { cash_in: number; payouts_received: number; supplier_topups: number; delivered_revenue: number };
 }
 interface Entry { id: string; kind: string; reference: string | null; occurred_at: string; amount: number; source: string; note: string | null; metadata: Record<string, unknown>; supplier_id: string | null; reverses: string | null; created_at: string }
 interface SupplierRow { id: string; code: string; name: string; balance: number | null; last_balance_checked_at: string | null; metadata: Record<string, unknown> | null }
 
-const KIND_LABEL: Record<string, string> = { order_paid: "Order paid", order_delivered: "Order delivered", order_refunded: "Order refunded", wallet_deposit: "Wallet deposit", paystack_payout: "Paystack payout", supplier_topup: "Supplier top-up", expense: "Expense", reversal: "Reversal", opening_balance: "Carried in" };
+const KIND_LABEL: Record<string, string> = { order_paid: "Order paid", order_delivered: "Order delivered", order_refunded: "Order refunded", wallet_deposit: "Wallet deposit", paystack_payout: "Paystack payout", supplier_topup: "Supplier top-up", expense: "Expense", reversal: "Reversal", opening_balance: "Carried in", network_fee: "Sub-agent fee (to parent)", domain_paid: "Domain bought", domain_registered: "Domain registered", agent_subscription: "Agent subscription", agent_payout: "Agent payout" };
 const KIND_TONE: Record<string, Tone> = { order_paid: "good", wallet_deposit: "good", paystack_payout: "good", order_delivered: "default", supplier_topup: "default", order_refunded: "warn", expense: "bad", reversal: "muted", opening_balance: "muted" };
 type LedgerFilter = "all" | "money_in" | "payouts" | "topups" | "expenses" | "corrections";
 const LEDGER_FILTERS: { value: LedgerFilter; label: string; kinds: string[] | null }[] = [
@@ -140,6 +140,7 @@ export default function AdminFinance() {
           <Stat loading={loading} label="Paystack fees" value={<Money value={p?.paystack_fees} />} tone="muted" />
           <Stat loading={loading} label="Top-up charges + expenses" value={<Money value={Number(p?.topup_fees ?? 0) + Number(p?.other_expenses ?? 0)} />} tone="muted" />
           <Stat loading={loading} label="Agent subscriptions" value={<Money value={p?.agent_subscriptions ?? 0} />} note="monthly fees" tone="good" to="/admin/agents/subscriptions" />
+          {Number(p?.network_fees_gross ?? 0) > 0 && <Stat loading={loading} label="Sub-agent fees" value={<Money value={p?.network_fees_ours ?? 0} />} note={`our 4% · ${formatGHS(Number(p?.network_fees_to_parents ?? 0))} passed to parent agents`} tone="good" to="/admin/agents" />}
           <Stat loading={loading} label="Agent payout fees" value={<Money value={p?.agent_payout_fees ?? 0} />} note="1% on withdrawals" tone="good" to="/admin/agents/payouts" />
         </StatGrid>
         <div className="mt-3 grid grid-cols-2 gap-2.5">
