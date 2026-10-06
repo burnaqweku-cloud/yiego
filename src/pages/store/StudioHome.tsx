@@ -9,7 +9,6 @@ import { storeBase } from "@/lib/storeHost";
 import { NETWORKS, type Network } from "@/data/bundles";
 import { formatGHS } from "@/lib/format";
 import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
-import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 import { DEFAULT_FAQ } from "@/pages/store/StoreFaq";
 
 /* The Studio template's home page. This is the store's front door: who they are,
@@ -22,7 +21,7 @@ const NET_SHORT: Record<string, string> = { mtn: "MTN", telecel: "TEL", at: "AT"
 const prefixOf = (n: Network) => (n.id === "mtn" ? "mtn" : n.id === "telecel" ? "tel" : "at");
 
 export default function StudioHome() {
-  const store = useStore(); const navigate = useNavigate(); const speeds = useDeliverySpeed();
+  const store = useStore(); const navigate = useNavigate();
   const base = storeBase(store.slug);
   const [products, setProducts] = useState<Phase1Product[]>([]);
   const [open, setOpen] = useState(false); const [addMoney, setAddMoney] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null);
@@ -41,7 +40,6 @@ export default function StudioHome() {
   const cheapest = useMemo(() => Object.fromEntries(NETWORKS.map((n) => { const ps = live.filter((p) => p.app_product_code?.startsWith(prefixOf(n))).map(priced); return [n.id, ps.length ? Math.min(...ps) : null]; })), [live, store]); // eslint-disable-line react-hooks/exhaustive-deps
   const buy = (p: Phase1Product, n: Network) => { setPreselect({ kind: "bundle", networkId: n.id, productCode: p.app_product_code ?? p.id }); setOpen(true); };
   const wa = store.support?.whatsapp_url ?? waLink(store);
-  const mtn = speedPill(speeds.MTN);
   const faq = (store.faq?.length ? store.faq : DEFAULT_FAQ(store.store_name)).slice(0, 4);
   const first = store.store_name.split("'")[0];
 
@@ -61,8 +59,8 @@ export default function StudioHome() {
               <Link to={`${base}/track`} className="st-btn ghost"><Search size={16} />Track an order</Link>
             </div>
             <div className="mt-8 grid grid-cols-3 gap-4 sm:max-w-md">
-              <div className="st-stat"><b>{store.delivered_count.toLocaleString()}</b><span>bundles delivered</span></div>
-              <div className="st-stat"><b>{mtn && !mtn.paused ? mtn.text.replace(/^MTN delivering in\s*/i, "") : "Minutes"}</b><span>{mtn && !mtn.paused ? "MTN delivery now" : "typical delivery"}</span></div>
+              <div className="st-stat"><b>3</b><span>networks: MTN, Telecel, AirtelTigo</span></div>
+              <div className="st-stat"><b>24/7</b><span>automatic delivery</span></div>
               <div className="st-stat"><b>MoMo</b><span>or card, secured</span></div>
             </div>
           </div>

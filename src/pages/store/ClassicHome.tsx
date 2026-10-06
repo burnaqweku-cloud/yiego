@@ -7,7 +7,6 @@ import BuyDataFlow, { type AgentStoreContext, type BuyPreselect } from "@/compon
 import { useStore, waLink } from "@/components/store/StoreShell";
 import { storeBase } from "@/lib/storeHost";
 import { formatGHS } from "@/lib/format";
-import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 import { DEFAULT_FAQ } from "@/pages/store/StoreFaq";
 import { NET_COLOURS, NET_SHORT, useHomeData } from "@/pages/store/homeData";
 import type { Phase1Product } from "@/lib/phase1-api";
@@ -15,12 +14,12 @@ import type { Network } from "@/data/bundles";
 
 /* Classic's front door: the dark green card language of its bundle grid, as a home page. */
 export default function ClassicHome() {
-  const store = useStore(); const navigate = useNavigate(); const speeds = useDeliverySpeed();
+  const store = useStore(); const navigate = useNavigate();
   const base = storeBase(store.slug); const { picks, perNetwork, loaded } = useHomeData(store);
   const [open, setOpen] = useState(false); const [addMoney, setAddMoney] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null); const [track, setTrack] = useState("");
   const agent: AgentStoreContext = { slug: store.slug, name: store.store_name, prices: store.prices };
   const buy = (p: Phase1Product, n: Network) => { setPreselect({ kind: "bundle", networkId: n.id, productCode: p.app_product_code ?? p.id }); setOpen(true); };
-  const wa = store.support?.whatsapp_url ?? waLink(store); const mtn = speedPill(speeds.MTN); const first = store.store_name.split("'")[0];
+  const wa = store.support?.whatsapp_url ?? waLink(store); const first = store.store_name.split("'")[0];
   const faq = (store.faq?.length ? store.faq : DEFAULT_FAQ(store.store_name)).slice(0, 4);
   return (
     <div className="space-y-6">
@@ -29,7 +28,7 @@ export default function ClassicHome() {
         <h1 className="font-display text-[30px] font-semibold leading-[1.05] text-foreground sm:text-[38px]">Data for any number,<br />in minutes.</h1>
         <p className="mt-3 max-w-[34ch] text-[14.5px] text-muted-foreground">{store.tagline ?? "MTN, Telecel and AirtelTigo. Pay with MoMo or card, delivered straight to the number."}</p>
         <div className="mt-5 flex flex-col gap-2.5 sm:flex-row"><Link to={`${base}/bundles`} className="onyx-btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 text-[15px]">Buy data<ArrowRight size={17} /></Link><Link to={`${base}/track`} className="inline-flex items-center justify-center gap-2 rounded-full border border-white/[0.14] px-5 py-3 text-[14px] font-semibold text-foreground"><Search size={15} />Track an order</Link></div>
-        <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[12px] text-muted-foreground"><span className="inline-flex items-center gap-1.5"><Zap size={13} className="text-primary-glow" />{mtn && !mtn.paused ? mtn.text : "Instant delivery"}</span><span className="inline-flex items-center gap-1.5"><ShieldCheck size={13} className="text-primary-glow" />Secure payment</span><span>{store.delivered_count.toLocaleString()} bundles delivered</span></div>
+        <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[12px] text-muted-foreground"><span className="inline-flex items-center gap-1.5"><Zap size={13} className="text-primary-glow" />Automatic delivery, 24/7</span><span className="inline-flex items-center gap-1.5"><ShieldCheck size={13} className="text-primary-glow" />Secure payment</span><span>MTN · Telecel · AirtelTigo</span></div>
       </section>
 
       <section>

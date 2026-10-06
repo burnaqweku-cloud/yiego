@@ -11,7 +11,7 @@ export default function StoreAbout() {
       <section className="onyx-panel rounded-[22px] p-5">
         <p className="whitespace-pre-line text-[14px] leading-7 text-foreground">{store.about_text?.trim() || `${store.store_name} sells MTN, Telecel and AirtelTigo data bundles, delivered straight to any number in minutes. Pick a bundle, enter the number, pay with MoMo or card, and track your order any time.`}</p>
         <div className="mt-5 grid grid-cols-2 gap-3 text-center">
-          <div className="rounded-2xl bg-white/[0.03] py-3"><p className="text-[18px] font-semibold tabular-nums text-foreground">{store.delivered_count.toLocaleString()}</p><p className="text-[11px] text-faint-foreground">Orders delivered</p></div>
+          <div className="rounded-2xl bg-white/[0.03] py-3"><p className="text-[18px] font-semibold text-foreground">24/7</p><p className="text-[11px] text-faint-foreground">Automatic delivery</p></div>
           <div className="rounded-2xl bg-white/[0.03] py-3"><p className="text-[18px] font-semibold text-foreground">3</p><p className="text-[11px] text-faint-foreground">Networks</p></div>
         </div>
         {store.hours_text && <p className="mt-4 flex items-center gap-1.5 text-[12.5px] text-muted-foreground"><Clock size={13} />{store.hours_text}</p>}

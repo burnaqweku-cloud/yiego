@@ -7,7 +7,6 @@ import BuyDataFlow, { type AgentStoreContext, type BuyPreselect } from "@/compon
 import { useStore, waLink } from "@/components/store/StoreShell";
 import { storeBase } from "@/lib/storeHost";
 import { formatGHS } from "@/lib/format";
-import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 import { DEFAULT_FAQ } from "@/pages/store/StoreFaq";
 import { useHomeData } from "@/pages/store/homeData";
 import type { Phase1Product } from "@/lib/phase1-api";
@@ -16,12 +15,12 @@ import type { Network } from "@/data/bundles";
 /* Market's front door: the same painted signboard and sticker language as its bundle list,
    arranged as a home page. Buying happens on /bundles. */
 export default function MarketHome() {
-  const store = useStore(); const navigate = useNavigate(); const speeds = useDeliverySpeed();
+  const store = useStore(); const navigate = useNavigate();
   const base = storeBase(store.slug); const { picks, perNetwork, loaded } = useHomeData(store);
   const [open, setOpen] = useState(false); const [addMoney, setAddMoney] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null); const [track, setTrack] = useState("");
   const agent: AgentStoreContext = { slug: store.slug, name: store.store_name, prices: store.prices };
   const buy = (p: Phase1Product, n: Network) => { setPreselect({ kind: "bundle", networkId: n.id, productCode: p.app_product_code ?? p.id }); setOpen(true); };
-  const wa = store.support?.whatsapp_url ?? waLink(store); const mtn = speedPill(speeds.MTN); const first = store.store_name.split("'")[0];
+  const wa = store.support?.whatsapp_url ?? waLink(store); const first = store.store_name.split("'")[0];
   const faq = (store.faq?.length ? store.faq : DEFAULT_FAQ(store.store_name)).slice(0, 4);
   return (
     <div className="space-y-7">
@@ -35,8 +34,8 @@ export default function MarketHome() {
           <Link to={`${base}/track`} className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#fff8ec]/60 px-5 py-3 text-[14px] font-bold text-[#fff8ec]"><Search size={15} />Track an order</Link>
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
-          <span className="st-sticker text-[12px]">{store.delivered_count.toLocaleString()} delivered</span>
-          {mtn && !mtn.paused && <span className="st-sticker text-[12px]">{mtn.text}</span>}
+          <span className="st-sticker text-[12px]">Automatic delivery</span>
+          <span className="st-sticker text-[12px]">Open 24/7</span>
           <span className="st-sticker text-[12px]">MoMo or card</span>
         </div>
       </section>
