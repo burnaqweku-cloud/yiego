@@ -1,0 +1,3 @@
+-- 6 Oct 2026: store-chat-ai v2 runs on Google Gemini (gemini-2.5-flash) with the key in phase1.internal_secrets key 'gemini'
+-- (fallback env GEMINI_API_KEY). Tested live on surbanstore: price question answered with the store's own price and
+-- current MTN delivery time; refund complaint -> HANDOVER -> conversation set to human/waiting. Test rows deleted.
