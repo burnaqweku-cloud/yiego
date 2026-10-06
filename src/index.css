@@ -2462,14 +2462,11 @@
 .help-prose th { font-weight: 600; color: hsl(var(--foreground)); }
 .help-prose code { font-size: 0.9em; background: hsl(var(--foreground) / 0.06); padding: 0.1em 0.35em; border-radius: 6px; }
 
-/* Agent invitation pop-up: slides up as a sheet on phones, settles in on larger screens. */
+/* Agent invitation pop-up: centred card that settles in. */
+.yg-agent-pop-hero { background: radial-gradient(120% 90% at 50% 0%, #7cf0b4 0%, #22c387 45%, #0b7a52 100%); }
 @media (prefers-reduced-motion: no-preference) {
   .yg-agent-pop-scrim { animation: yg-pop-fade 0.24s ease-out both; }
-  .yg-agent-pop-panel { animation: yg-pop-sheet 0.38s cubic-bezier(0.22, 1, 0.36, 1) both; }
-}
-@media (prefers-reduced-motion: no-preference) and (min-width: 640px) {
-  .yg-agent-pop-panel { animation: yg-pop-settle 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .yg-agent-pop-panel { animation: yg-pop-settle 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
 }
 @keyframes yg-pop-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes yg-pop-sheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
-@keyframes yg-pop-settle { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes yg-pop-settle { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: none; } }

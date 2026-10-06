@@ -35,6 +35,8 @@ const SHOWCASE: { network: string; label: string; gb: number }[] = [
 ];
 /** Sales a month used in the profit example. */
 const EXAMPLE_SALES = 40;
+/** Selling price used in the profit example (MTN 10GB). */
+const EXAMPLE_SELL = 48;
 
 interface Row { label: string; pub: number; agent: number }
 const m2 = (n: number) => n.toFixed(2);
@@ -113,101 +115,75 @@ export default function AgentPopup() {
   }, [open, dismiss]);
 
   if (!open) return null;
-  const lead = rows?.find((r) => r.label === "MTN 10GB") ?? rows?.[0];
-  const plans = (quote?.plans ?? []).slice().sort((a, b) => a.months - b.months);
-  const longest = plans.length ? Math.max(...plans.map((p) => p.months)) : 0;
+  const lead = rows?.find((r) => r.label === "MTN 10GB") ?? null;
+  const keep = lead ? EXAMPLE_SELL - lead.agent : 0;
+  const monthly = Number(quote?.pay_now ?? quote?.monthly ?? 0);
   const ring = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center sm:p-6" role="presentation">
-      <div className="yg-agent-pop-scrim absolute inset-0 bg-black/65 backdrop-blur-[3px]" onClick={dismiss} aria-hidden="true" />
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-5" role="presentation">
+      <div className="yg-agent-pop-scrim absolute inset-0 bg-black/60 backdrop-blur-[4px]" onClick={dismiss} aria-hidden="true" />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="agent-pop-title"
         aria-describedby="agent-pop-desc"
-        className="yg-agent-pop-panel relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[28px] border border-border bg-card text-foreground shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.6)] sm:max-w-[440px] sm:rounded-[28px] sm:shadow-[0_30px_80px_-24px_rgba(0,0,0,0.7)]"
+        className="yg-agent-pop-panel relative flex max-h-[90dvh] w-full max-w-[360px] flex-col overflow-hidden rounded-[28px] bg-card text-foreground shadow-[0_30px_80px_-20px_rgba(0,0,0,0.65)] ring-1 ring-border"
       >
-        <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-foreground/15 sm:hidden" aria-hidden="true" />
-        <button type="button" aria-label="Close" onClick={dismiss} className={`absolute right-4 top-4 z-10 grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground ${ring}`}>
-          <X size={18} />
+        <button type="button" aria-label="Close" onClick={dismiss} className={`absolute right-3.5 top-3.5 z-10 grid h-9 w-9 place-items-center rounded-full bg-black/25 text-white backdrop-blur-sm transition-colors hover:bg-black/40 ${ring}`}>
+          <X size={17} />
         </button>
 
-        <div className="overflow-y-auto overscroll-contain px-6 pb-5 pt-4 sm:px-7 sm:pt-7">
-          <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-background/60 py-1.5 pl-2.5 pr-3.5 text-[13px] text-muted-foreground">
-            <Lock size={13} className="shrink-0 text-primary-glow" aria-hidden="true" />
-            <span className="truncate"><span className="font-semibold text-foreground">yourname</span>.datayego.com</span>
-          </div>
-
-          <h2 id="agent-pop-title" className="mt-4 pr-8 font-display text-[26px] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[28px]">Run your own data shop</h2>
-          <p id="agent-pop-desc" className="mt-2 text-[15px] leading-relaxed text-muted-foreground">Get your own store website, buy data at agent prices and keep the profit on every sale.</p>
-
-          {rows && rows.length > 0 && (
-            <section className="mt-5 rounded-2xl border border-border bg-background/50" aria-label="Agent prices today">
-              <div className="flex items-baseline justify-between px-4 pb-1 pt-3.5 text-[12.5px] text-muted-foreground">
-                <span className="font-semibold text-foreground">Agent prices today</span>
-                <span>GH₵</span>
-              </div>
-              <table className="w-full text-[14px]">
-                <thead className="sr-only"><tr><th>Bundle</th><th>Public price</th><th>Agent price</th><th>You save</th></tr></thead>
-                <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.label} className="border-t border-border/70 first:border-t-0">
-                      <td className="py-2.5 pl-4 font-medium">{r.label}</td>
-                      <td className="py-2.5 text-right tabular-nums text-muted-foreground"><s>{m2(r.pub)}</s></td>
-                      <td className="py-2.5 pl-3 text-right font-display text-[15px] font-semibold tabular-nums">{m2(r.agent)}</td>
-                      <td className="py-2.5 pl-3 pr-4 text-right"><span className="whitespace-nowrap rounded-full bg-primary/[0.12] px-2 py-0.5 text-[12px] font-semibold tabular-nums text-primary-glow">Save {m2(r.pub - r.agent)}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {lead && (
-                <p className="border-t border-border/70 px-4 py-3 text-[13.5px] leading-snug text-muted-foreground">
-                  Sell {lead.label} at <span className="font-semibold text-foreground">{m2(lead.pub)}</span> and keep <span className="font-semibold text-foreground">{m2(lead.pub - lead.agent)}</span>. {EXAMPLE_SALES} sales a month is <span className="font-semibold text-primary-glow">GH₵ {m2((lead.pub - lead.agent) * EXAMPLE_SALES)}</span> profit.
-                </p>
-              )}
-            </section>
-          )}
-
-          <ul className="mt-5 space-y-3 text-[14.5px] leading-snug">
-            <li className="flex items-center gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary-glow"><Store size={18} aria-hidden="true" /></span>
-              <span><span className="font-semibold">Your own store website.</span> <span className="text-muted-foreground">Share one link, set your own prices.</span></span>
-            </li>
-            <li className="flex items-center gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary-glow"><Wallet size={18} aria-hidden="true" /></span>
-              <span><span className="font-semibold">No stock to buy.</span> <span className="text-muted-foreground">Customers pay online and the data is sent for you.</span></span>
-            </li>
-            <li className="flex items-center gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary-glow"><Banknote size={18} aria-hidden="true" /></span>
-              <span><span className="font-semibold">Cash out to MoMo.</span> <span className="text-muted-foreground">Withdraw your profit from GH₵ {m2(payoutMin)}.</span></span>
-            </li>
-          </ul>
-
-          {plans.length > 0 && (
-            <div className="mt-5">
-              <p className="text-[12.5px] font-semibold">Store plans</p>
-              <div className={`mt-2 grid gap-2 ${plans.length >= 3 ? "grid-cols-3" : plans.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
-                {plans.map((p) => (
-                  <div key={p.months} className={`rounded-2xl border px-3 py-2.5 ${p.months === longest && plans.length > 1 ? "border-primary/45 bg-primary/[0.07]" : "border-border bg-background/50"}`}>
-                    <p className="text-[12px] text-muted-foreground">{p.months === 1 ? "1 month" : `${p.months} months`}</p>
-                    <p className="mt-0.5 font-display text-[17px] font-semibold leading-tight tabular-nums">{m2(Number(p.pay_now))}</p>
-                    <p className={`mt-0.5 text-[11.5px] ${Number(p.saving_pct) > 0 ? "font-semibold text-primary-glow" : "text-muted-foreground"}`}>
-                      {Number(p.saving_pct) > 0 ? `Save ${Math.round(Number(p.saving_pct))}%` : `${m2(Number(p.per_month))} a month`}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              {quote?.promo?.percent_off ? <p className="mt-2 text-[12.5px] font-semibold text-primary-glow">{quote.promo.percent_off}% off right now: {quote.promo.name}</p> : null}
+        <div className="overflow-y-auto overscroll-contain">
+          <div className="yg-agent-pop-hero relative px-5 pb-5 pt-6 text-center">
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-white/90 text-[#0b7a52] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.45)]"><Store size={28} aria-hidden="true" /></span>
+            <div className="mx-auto mt-3 inline-flex max-w-full items-center gap-1.5 rounded-full bg-black/20 px-3 py-1 text-[12px] text-white/90">
+              <Lock size={11} aria-hidden="true" />
+              <span className="truncate"><span className="font-semibold text-white">yourname</span>.datayego.com</span>
             </div>
-          )}
-
-          <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
-            <Link to="/agents" data-autofocus onClick={() => setClosed(true)} className={`onyx-btn-primary w-full sm:order-2 ${ring}`}>Apply</Link>
-            <Link to="/help/agents" onClick={() => setClosed(true)} className={`flex min-h-[48px] w-full items-center justify-center rounded-[14px] border border-border px-5 text-[14.5px] font-semibold text-foreground transition-colors hover:bg-foreground/[0.04] sm:order-1 ${ring}`}>See how it works</Link>
           </div>
-          <button type="button" onClick={dismiss} className={`mt-1.5 w-full rounded-xl py-2.5 text-[14px] text-muted-foreground transition-colors hover:text-foreground ${ring}`}>Not now</button>
+
+          <div className="px-5 pb-5 pt-4">
+            <h2 id="agent-pop-title" className="text-center font-display text-[22px] font-semibold leading-tight tracking-[-0.02em]">Earn by selling data</h2>
+            <p id="agent-pop-desc" className="mt-1 text-center text-[13.5px] text-muted-foreground">Your own store, agent prices, your profit.</p>
+
+            {rows && rows.length > 0 && (
+              <div className="mt-4 rounded-2xl border border-border bg-background/50 px-3.5 py-1.5">
+                <table className="w-full text-[13px]">
+                  <caption className="sr-only">Agent prices today, in GH₵</caption>
+                  <thead className="sr-only"><tr><th>Bundle</th><th>Public price</th><th>Agent price</th><th>You save</th></tr></thead>
+                  <tbody>
+                    {rows.map((r) => (
+                      <tr key={r.label} className="border-t border-border/60 first:border-t-0">
+                        <td className="py-2 font-medium">{r.label}</td>
+                        <td className="py-2 text-right tabular-nums text-muted-foreground"><s>{m2(r.pub)}</s></td>
+                        <td className="py-2 pl-2.5 text-right font-semibold tabular-nums">{m2(r.agent)}</td>
+                        <td className="py-2 pl-2.5 text-right"><span className="whitespace-nowrap rounded-full bg-primary/[0.12] px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-primary-glow">-{m2(r.pub - r.agent)}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {lead && keep > 0 && (
+              <p className="mt-3 rounded-2xl bg-primary/[0.09] px-3.5 py-3 text-center text-[13px] leading-snug text-foreground">
+                Sell {lead.label} at <b>{m2(EXAMPLE_SELL)}</b> and keep <b>{m2(keep)}</b>.<br />
+                {EXAMPLE_SALES} sales a month is <b className="text-primary-glow">GH₵ {m2(keep * EXAMPLE_SALES)}</b> profit.
+              </p>
+            )}
+
+            <ul className="mt-4 space-y-2.5 text-[13px]">
+              <li className="flex items-center gap-2.5"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/[0.12] text-primary-glow"><Store size={14} aria-hidden="true" /></span>Your own store link, your own prices</li>
+              <li className="flex items-center gap-2.5"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/[0.12] text-primary-glow"><Wallet size={14} aria-hidden="true" /></span>Profit added to your balance on every sale</li>
+              <li className="flex items-center gap-2.5"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/[0.12] text-primary-glow"><Banknote size={14} aria-hidden="true" /></span>Withdraw to MoMo from GH₵ {m2(payoutMin)}</li>
+            </ul>
+
+            <Link to="/agents" data-autofocus onClick={() => setClosed(true)} className={`onyx-btn-primary mt-5 w-full ${ring}`}>Apply</Link>
+            {monthly > 0 && <p className="mt-2 text-center text-[12px] text-muted-foreground">From GH₵ {m2(monthly)} a month{quote?.promo?.percent_off ? `, ${quote.promo.percent_off}% off now` : ""}</p>}
+            <button type="button" onClick={dismiss} className={`mt-1 w-full rounded-xl py-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground ${ring}`}>Not now</button>
+          </div>
         </div>
       </div>
     </div>
