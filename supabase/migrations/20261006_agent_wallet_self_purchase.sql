@@ -1,0 +1,10 @@
+-- Applied 6 Oct 2026 via Supabase MCP (migration prepare_data_order_agent_self + rename).
+-- prepare_data_order(uuid,text,text,uuid,boolean): new p_agent_self (default false). When true and the user is an
+-- active, paid agent, the order is priced at agent_cost_price (agent price), tagged agent_id, agent_price, agent_margin 0.
+-- Everyone else: unchanged (price_for_user). Execute: service_role only (called from order-payment-action).
+-- The previous 4-arg version was RENAMED to prepare_data_order_old_20261006 (the tool refused DROP); it is unused.
+--   TODO when convenient: drop function phase1.prepare_data_order_old_20261006(uuid,text,text,uuid);
+-- order-payment-action v30 deployed: "prepare" passes p_agent_self = body.agentSelf === true.
+-- Wallet payment (pay_prepared_order_with_wallet) charges the prepared amount, so an agent paying from their
+-- customer wallet pays the agent price with no 4% fee. Earnings untouched (margin 0).
+-- Announcement 7fb61c68-e727-473c-8ba3-af9cba4f3422 (agents, "Pay for data from your wallet") created INACTIVE.

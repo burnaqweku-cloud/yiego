@@ -23,6 +23,7 @@ const RULES: Array<{ match: RegExp; message: string }> = [
   { match: /network_not_available/i, message: "This network isn't available right now. Try another one." },
   { match: /product_not_found|product_not_active/i, message: "That bundle isn't on sale right now. Pick another size." },
   { match: /supplier_mapping_not_found/i, message: "That bundle can't be delivered right now. Try another size, or contact support." },
+  { match: /agent_plan_required/i, message: "Agent prices are part of your plan. Renew your plan to buy at agent price." },
   { match: /order_not_found/i, message: "We couldn't find that order. Check the reference and try again." },
   { match: /order_already_paid/i, message: "This order has already been paid for." },
   { match: /order_expired/i, message: "This order expired before payment. Start a new one." },

@@ -123,13 +123,16 @@ function DeliveryStatusPanel({ supplier }: { supplier: SupplierChoice }) {
 export interface AgentStoreContext { slug: string; name: string; prices: Record<string, number>; /** The agent buying for themselves: charged the agent price, no earnings. */ self?: boolean }
 
 export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agent }: { open: boolean; preselect?: BuyPreselect | null; onClose: () => void; onAddMoney: () => void; agent?: AgentStoreContext | null }) {
-  const { balance } = useWallet();
+  const { balance, refresh: refreshWallet } = useWallet();
   const { profile } = useProfile();
   const auth = useAuth();
   const user = auth.user;
   // In an agent's store everyone checks out as a guest through Paystack: the
   // agent's prices apply and wallets don't. Signed-in users still get their email prefilled.
-  const isAuthenticated = auth.isAuthenticated && !agent;
+  // The agent buying for themselves from the dashboard is the exception: they are
+  // signed in, pay from their own wallet (no fee) or Paystack, at the agent price.
+  const selfBuy = Boolean(agent?.self) && auth.isAuthenticated;
+  const isAuthenticated = auth.isAuthenticated && (!agent || selfBuy);
   const [step, setStep] = useState<Step>("supplier");
   const { suppliers, loading: suppliersLoading } = useSupplierChoices();
   const [supplierId, setSupplierId] = useState<string | null>(null);
@@ -273,7 +276,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     if (!network || !bundle || !phoneValid) return;
     if (!isAuthenticated) { setStep("review"); return; }
     setStep("processing");
-    const result = await prepareDataOrder({ productId: bundle.id, recipientPhone: digits, supplierId: chosenSupplier?.id });
+    const result = await prepareDataOrder({ productId: bundle.id, recipientPhone: digits, supplierId: chosenSupplier?.id, agentSelf: selfBuy || undefined });
     if (result.error || !result.data?.data) {
       toast.error(result.error ?? result.data?.error ?? "Could not create the order"); setStep("phone"); return;
     }
@@ -299,6 +302,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     }
     if (action === "share") { setStep("shared"); await refreshPending(); return; }
     if (action === "cancel") { await refreshPending(); setStep("pending"); toast.success("Order cancelled."); return; }
+    if (action === "pay_wallet") void refreshWallet();
     setReceiptRef(order.orderReference); setStep("success");
   }
 

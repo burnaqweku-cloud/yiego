@@ -27,7 +27,8 @@ Deno.serve(async (req) => {
     if (action === "prepare") {
       const supplierRaw = typeof body?.supplierId === "string" ? body.supplierId.trim() : "";
       const supplierId = /^[0-9a-f-]{36}$/i.test(supplierRaw) ? supplierRaw : null;
-      const { data, error } = await supabase.rpc("prepare_data_order", { p_user_id: auth.user.id, p_product_code: String(body.productId ?? ""), p_recipient_phone: String(body.recipientPhone ?? ""), p_supplier_id: supplierId });
+      // agentSelf: an active agent buying from their dashboard pays the agent price (checked in the database).
+      const { data, error } = await supabase.rpc("prepare_data_order", { p_user_id: auth.user.id, p_product_code: String(body.productId ?? ""), p_recipient_phone: String(body.recipientPhone ?? ""), p_supplier_id: supplierId, p_agent_self: body?.agentSelf === true });
       return error ? json({ error: friendlyError(error.message, "We couldn't create this order. Please try again.") }, 400) : json({ status: "success", data });
     }
     if (action === "list_pending") {

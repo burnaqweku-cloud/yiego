@@ -40,6 +40,8 @@ export interface WalletDataOrderInput {
   /** The supplier the customer chose in the shop. Omitted means "whichever
    *  the system ranks first". */
   supplierId?: string;
+  /** An active agent buying from their dashboard: charged the agent price. */
+  agentSelf?: boolean;
 }
 
 export interface WalletDataOrderResponse {
