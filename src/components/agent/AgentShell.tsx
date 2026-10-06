@@ -4,7 +4,7 @@ import { AppWindow, BarChart3, CreditCard, ExternalLink, Gift, Globe, Home, Netw
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
-import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
+import { loadPhase1Networks, loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
 import { planQuote, type PlanQuote } from "@/lib/agents";
 import { AGENT_GROUPS, STAFF_GROUPS as STAFF_NAV, groupForPath, LEGACY_REDIRECTS } from "@/lib/agent-nav";
 import { ChevronDown } from "lucide-react";
@@ -204,8 +204,25 @@ function NetworkPayInline({ agent }: { agent: Agent }) {
     <button type="button" disabled={busy} onClick={() => void pay()} className="onyx-btn-primary w-full py-3 text-[14px] disabled:opacity-60">{busy ? "Please wait…" : `Pay ${formatGHS(fee * months)} + 4% fee to ${agent.parent?.store_name ?? "your network"}`}</button>
   </div>);
 }
+/** "MTN 2GB at 8.50 instead of 9.00, 10GB at 41.00 instead of 43.00 ..." from live public and agent prices. */
+function useMtnSavingLine() {
+  const [line, setLine] = useState("Agent prices on every network, for yourself or to sell.");
+  useEffect(() => {
+    let alive = true;
+    void Promise.all([loadPhase1Products(), loadPhase1Networks()]).then(([{ data: products }, { data: networks }]) => {
+      const mtn = networks.find((n) => n.code === "mtn")?.id;
+      const pick = (gb: number) => products.find((p) => p.network_id === mtn && Number(p.capacity_gb) === gb && Number(p.agent_price) > 0 && Number(p.agent_price) < Number(p.customer_price));
+      const parts = [2, 10].map((gb) => { const p = pick(gb); return p ? `${gb}GB at ${Number(p.agent_price).toFixed(2)} instead of ${Number(p.customer_price).toFixed(2)}` : null; }).filter(Boolean);
+      if (alive && parts.length) setLine(`MTN ${parts.join(", ")}, for yourself or to sell.`);
+    });
+    return () => { alive = false; };
+  }, []);
+  return line;
+}
+
 function PayScreen({ agent, quote }: { agent: Agent; quote: PlanQuote | null }) {
   const suspended = agent.status === "suspended";
+  const cheaperLine = useMtnSavingLine();
   return (
     <div className="onyx-canvas flex min-h-dvh items-center justify-center px-5 py-8">
       <div className="onyx-panel w-full max-w-md rounded-3xl p-6">
@@ -216,7 +233,7 @@ function PayScreen({ agent, quote }: { agent: Agent; quote: PlanQuote | null }) 
         </div>
         {!suspended && <div className="mt-5"><PlanPicker quote={quote} /></div>}
         <ul className="mt-5 space-y-2 text-left text-[13px] text-muted-foreground">
-          {[["Buy data cheaper", "MTN 2GB at 8.50 instead of 8.72, 10GB at 41.00 instead of 41.47 — for yourself or to sell."], ["Free online store", "Your own link. You set the prices and keep the profit on every sale."], ["No deposit needed", "Your customers pay through your store; your profit is saved for you and paid to MoMo from 20.00."], ["We do the rest", "Delivery, payment and support are handled by DataYego."]].map(([t, d]) => <li key={t} className="flex gap-2"><span className="mt-0.5 text-primary-glow">✓</span><span><b className="text-foreground">{t}.</b> {d}</span></li>)}
+          {[["Buy data cheaper", cheaperLine], ["Free online store", "Your own link. You set the prices and keep the profit on every sale."], ["No deposit needed", "Your customers pay through your store; your profit is saved for you and paid to MoMo from 20.00."], ["We do the rest", "Delivery, payment and support are handled by DataYego."]].map(([t, d]) => <li key={t} className="flex gap-2"><span className="mt-0.5 text-primary-glow">✓</span><span><b className="text-foreground">{t}.</b> {d}</span></li>)}
         </ul>
         <Link to="/" className="mt-4 block text-center text-[12px] text-muted-foreground">Back to DataYego</Link>
       </div>
