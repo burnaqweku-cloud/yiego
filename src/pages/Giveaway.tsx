@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 
 /* A giveaway link: one bundle at a special price, one claim per number (and device/account), hidden cap.
    The page never shows how many are left; when the cap is hit it simply reads as ended. */
-interface Campaign { slug: string; title: string; blurb: string | null; price: number; normal_price: number; product_id: string; product_name: string; network: string; network_code: string; validity: string | null; open: boolean; require_account: boolean }
+interface Campaign { slug: string; title: string; blurb: string | null; price: number; normal_price: number; product_id: string; product_code: string | null; product_name: string; network: string; network_code: string; validity: string | null; open: boolean; require_account: boolean }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const p1 = () => (supabase as unknown as { schema: (s: string) => any }).schema("phase1");
 
@@ -36,7 +36,7 @@ export default function Giveaway() {
       const m = error.message;
       return toast.error(m.includes("order_in_progress") ? "This number has an order in progress. Wait until it is delivered, then come back and claim; your place isn't lost." : m.includes("unpaid_order_open") ? "This number has an unpaid order from the last few minutes. Pay or let it expire, then claim here." : m.includes("sign_in_required") ? "Sign in or create a free account to claim." : m.includes("phone_used") ? "This number has already had its giveaway bundle." : m.includes("device_used") || m.includes("account_used") ? "This giveaway is one per person, and this phone has already claimed one." : m.includes("wrong_network") ? `That number isn't on ${c.network}. The giveaway is for ${c.network} numbers.` : m.includes("campaign_full") || m.includes("campaign_closed") ? "This giveaway has ended. Thank you to everyone who took part!" : "Couldn't claim right now. Try again.");
     }
-    setPreselect({ kind: "bundle", networkId: c.network_code as "mtn" | "telecel" | "at", productCode: c.product_id, campaign: { token: data.token, price: Number(data.price), phone: data.phone, title: c.title } });
+    setPreselect({ kind: "bundle", networkId: c.network_code as "mtn" | "telecel" | "at", productCode: c.product_code ?? c.product_id, campaign: { token: data.token, price: Number(data.price), phone: data.phone, title: c.title } });
     setOpen(true);
   };
   const size = c?.product_name.replace(/^.*?—\s*/, "") ?? "";
