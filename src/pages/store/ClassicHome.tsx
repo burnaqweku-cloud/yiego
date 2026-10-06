@@ -24,7 +24,6 @@ export default function ClassicHome() {
   return (
     <div className="space-y-6">
       <Seo path={base} title={`${store.store_name} — MTN, Telecel & AirtelTigo data`} description={store.tagline ?? `Buy MTN, Telecel and AirtelTigo data from ${store.store_name}. Pay with MoMo or card, delivered in minutes.`} />
-      {store.banner_url && <img src={store.banner_url} alt="" className="h-36 w-full rounded-3xl object-cover sm:h-48" />}
       <section className="rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/25 via-primary/8 to-transparent p-6">
         <div className="flex items-center gap-3">{store.logo_url ? <img src={store.logo_url} alt="" className="h-11 w-11 rounded-full object-cover" /> : <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/25 text-[18px] font-bold text-primary-glow">{store.store_name.slice(0, 1).toUpperCase()}</span>}<span className="text-[13px] font-semibold text-primary-glow">{store.store_name}</span></div>
         <h1 className="mt-4 font-display text-[30px] font-semibold leading-[1.05] text-foreground sm:text-[38px]">Data for any number,<br />in minutes.</h1>

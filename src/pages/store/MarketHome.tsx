@@ -25,7 +25,6 @@ export default function MarketHome() {
   return (
     <div className="space-y-7">
       <Seo path={base} title={`${store.store_name} — MTN, Telecel & AirtelTigo data`} description={store.tagline ?? `Buy MTN, Telecel and AirtelTigo data from ${store.store_name}. Pay with MoMo, delivered in minutes.`} />
-      {store.banner_url && <img src={store.banner_url} alt="" className="h-36 w-full rounded-2xl border-2 border-[#1d2460] object-cover shadow-[4px_4px_0_#1d2460] sm:h-48" />}
       <section className="st-board">
         <span className="st-sticker text-[12px]">MTN · Telecel · AirtelTigo</span>
         <h1 className="mt-3">{store.store_name}</h1>
