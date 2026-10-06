@@ -49,7 +49,7 @@ function supportMessage(order: AdminOrderRow) {
   if (order.admin_resolution_reason) return `Hello, your DataYego order ${reference} is currently ${readableStatus(status).toLowerCase()}. ${order.admin_resolution_reason}`;
   if (order.payment_status === "failed") return `Hello, payment for your DataYego order ${reference} was not completed. No successful payment has been confirmed.`;
   if (["created", "pending"].includes(order.payment_status) || status === "awaiting_payment") return `Hello, your DataYego order ${reference} is awaiting payment. You can continue the payment before the order expires.`;
-  if (["paid", "processing"].includes(status)) return `Hello, payment for your DataYego order ${reference} has been confirmed and your data order is being prepared.`;
+  if (["paid", "processing"].includes(status)) return `Hello, payment for your DataYego order ${reference} has been confirmed and your data order is still being processed.`;
   if (status === "pending_supplier") return `Hello, your DataYego order ${reference} is currently being delivered. Delivery is taking a little longer than usual, and we are monitoring it.`;
   if (status === "delivered") return `Hello, your DataYego order ${reference} is marked as completed. Please contact support if the data has not appeared on the recipient number.`;
   if (status === "refunded") return `Hello, your DataYego order ${reference} is marked as refunded. The refund is returned through the original payment channel.`;
