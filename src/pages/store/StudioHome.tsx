@@ -58,10 +58,9 @@ export default function StudioHome() {
               <Link to={`${base}/bundles`} className="st-btn fill">Buy data<ArrowRight size={17} /></Link>
               <Link to={`${base}/track`} className="st-btn ghost"><Search size={16} />Track an order</Link>
             </div>
-            <div className="mt-8 grid grid-cols-3 gap-4 sm:max-w-md">
-              <div className="st-stat"><b>3</b><span>networks: MTN, Telecel, AirtelTigo</span></div>
-              <div className="st-stat"><b>24/7</b><span>automatic delivery</span></div>
-              <div className="st-stat"><b>MoMo</b><span>or card, secured</span></div>
+            <div className="mt-8 grid grid-cols-3 divide-x divide-[var(--st-line)] overflow-hidden rounded-2xl border border-[var(--st-line)] bg-white sm:max-w-md">
+              {[["3", "Networks"], ["24/7", "Auto delivery"], ["MoMo", "or card"]].map(([v, l]) => <div key={l} className="px-2 py-4 text-center"><p className="text-[22px] font-extrabold leading-none tracking-tight text-[var(--st-ink)]">{v}</p><p className="mt-1.5 whitespace-nowrap text-[12px] text-[var(--st-slate)]">{l}</p></div>)}
+            </div>
             </div>
           </div>
           <div className="mt-10 lg:mt-0">
