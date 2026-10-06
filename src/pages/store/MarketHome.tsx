@@ -69,7 +69,7 @@ export default function MarketHome() {
 
       <section className="st-board !py-6">
         <div className="flex items-start gap-4">
-          {store.logo_url ? <img src={store.logo_url} alt="" className="h-16 w-16 shrink-0 rounded-xl border-2 border-[#fff8ec] object-cover" /> : <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#ffd23f] text-[26px] font-black text-[#15131f]">{store.store_name.slice(0, 1).toUpperCase()}</span>}
+          {store.logo_url ? <img src={store.logo_url} alt="" className="h-16 w-16 shrink-0 rounded-xl border-2 border-[#fff8ec] object-contain bg-white p-0.5" /> : <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#ffd23f] text-[26px] font-black text-[#15131f]">{store.store_name.slice(0, 1).toUpperCase()}</span>}
           <div className="min-w-0"><h2 className="!text-[22px]">About {store.store_name}</h2><p className="mt-1.5 whitespace-pre-line text-[13.5px]">{store.about_text?.trim() || `${store.store_name} is an independent data seller. Orders are delivered automatically, day and night, and ${first} is on WhatsApp if anything needs a human.`}</p>{store.hours_text && <p className="mt-2 inline-flex items-center gap-1.5 text-[12.5px]"><Clock size={13} />{store.hours_text}</p>}</div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">{wa && <a href={wa} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2.5 text-[13.5px] font-bold text-[#062b16]"><MessageCircle size={16} />WhatsApp {first}</a>}<Link to={`${base}/about`} className="inline-flex items-center rounded-full border-2 border-[#fff8ec]/60 px-4 py-2.5 text-[13.5px] font-bold text-[#fff8ec]">More about us</Link></div>

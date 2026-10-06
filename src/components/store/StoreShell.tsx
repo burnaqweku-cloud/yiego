@@ -83,7 +83,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
   const wa = store.support?.whatsapp_url ?? waLink(store);
   if (store.status === "closed") return (
     <div className="onyx-canvas flex min-h-dvh flex-col items-center justify-center px-6 text-center">
-      {store.logo_url ? <img src={store.logo_url} alt="" className="h-16 w-16 rounded-full object-cover" /> : <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/20 text-[24px] font-bold text-primary-glow">{initial}</span>}
+      {store.logo_url ? <img src={store.logo_url} alt="" className="h-16 w-16 rounded-xl object-contain bg-white p-0.5" /> : <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/20 text-[24px] font-bold text-primary-glow">{initial}</span>}
       <h1 className="mt-4 text-[20px] font-semibold text-foreground">{store.store_name}</h1>
       <p className="mt-2 max-w-xs text-[13.5px] text-muted-foreground">Data plans aren't available right now. {wa ? `Message ${store.store_name} on WhatsApp and they'll help you out.` : "Please check back soon."}</p>
       {wa && <a href={wa} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-[13.5px] font-semibold text-[#062b16]"><MessageCircle size={16} />WhatsApp {store.store_name}</a>}
@@ -111,7 +111,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
           {studio ? (
             <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 py-3 sm:px-8">
               <Link to={`${storeBase(store.slug)}` || "/"} className="flex min-w-0 items-center gap-2.5">
-                {store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-xl object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-[15px] font-extrabold text-primary-foreground">{initial}</span>}
+                {store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-xl object-contain bg-white p-0.5" /> : <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-[15px] font-extrabold text-primary-foreground">{initial}</span>}
                 <span className="truncate text-[16px] font-bold text-foreground">{store.store_name}</span>
               </Link>
               <nav className="st-nav ml-6 hidden items-center gap-1 md:flex">
@@ -128,7 +128,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
           <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
             <button type="button" onClick={() => setMenu(true)} aria-label="Menu" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Menu size={18} /></button>
             <Link to={`${storeBase(store.slug)}` || "/"} className="flex min-w-0 flex-1 items-center gap-3">
-              {store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-[15px] font-semibold text-primary-glow">{initial}</span>}
+              {store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-xl object-contain bg-white p-0.5" /> : <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-[15px] font-semibold text-primary-glow">{initial}</span>}
               <span className="min-w-0"><span className="block truncate text-[15.5px] font-semibold text-foreground">{store.store_name}</span>{store.tagline && <span className="block truncate text-[11.5px] text-muted-foreground">{store.tagline}</span>}</span>
             </Link>
             {anns.length > 0 && <button type="button" onClick={markSeen} aria-label="Store news" className="relative flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Bell size={17} />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{unread}</span>}</button>}
@@ -152,7 +152,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
           <div className="fixed inset-0 z-50" onClick={() => setMenu(false)}>
             <div className="absolute inset-0 bg-black/60" />
             <aside className="st-drawer absolute inset-y-0 left-0 flex w-[82%] max-w-[320px] flex-col bg-background p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2.5">{store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-[14px] font-semibold text-primary-glow">{initial}</span>}<p className="truncate text-[15px] font-semibold text-foreground">{store.store_name}</p></div><button type="button" onClick={() => setMenu(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
+              <div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2.5">{store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-xl object-contain bg-white p-0.5" /> : <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-[14px] font-semibold text-primary-glow">{initial}</span>}<p className="truncate text-[15px] font-semibold text-foreground">{store.store_name}</p></div><button type="button" onClick={() => setMenu(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
               <nav className="mt-5 flex flex-1 flex-col gap-0.5 overflow-y-auto">
                 {NAV.map((n) => {
                   const active = n.end ? location.pathname === n.to : location.pathname.startsWith(n.to);

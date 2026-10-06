@@ -117,7 +117,7 @@ export default function StudioHome() {
       {/* About: the person behind the store, hours, and a way to reach them. */}
       <section className="st-band px-5 py-12 sm:px-8">
         <div className="mx-auto max-w-5xl sm:grid sm:grid-cols-[auto_1fr] sm:gap-8">
-          {store.logo_url ? <img src={store.logo_url} alt="" className="h-20 w-20 rounded-2xl object-cover shadow-sm" /> : <span className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[hsl(var(--primary))] text-[30px] font-extrabold text-white">{store.store_name.slice(0, 1).toUpperCase()}</span>}
+          {store.logo_url ? <img src={store.logo_url} alt="" className="h-20 w-20 rounded-2xl object-contain bg-white p-0.5 shadow-sm" /> : <span className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[hsl(var(--primary))] text-[30px] font-extrabold text-white">{store.store_name.slice(0, 1).toUpperCase()}</span>}
           <div className="mt-5 sm:mt-0">
             <h2 className="st-h2">About {store.store_name}</h2>
             <p className="mt-3 max-w-[60ch] whitespace-pre-line text-[15px] leading-relaxed text-[var(--st-slate)]">{store.about_text?.trim() || `${store.store_name} is an independent data reseller. Orders are delivered automatically, day and night, and ${first} is on WhatsApp if anything needs a human.`}</p>
