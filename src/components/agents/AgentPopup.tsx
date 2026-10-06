@@ -18,7 +18,7 @@ export function AgentNudge() {
 /* "Become an agent" invitation on the public site.
    - Appears after the delay set in Admin -> Agents -> Plan (popup_delay_seconds).
    - Never on pages where someone is buying, paying, tracking or signing in,
-     never while the buy sheet is open, never for agents or anyone who applied.
+     never while the buy sheet is open, never for agents with an active subscription.
    - Close or "Not now" hides it for 3 days.
    - Every number is live: public vs agent price from data_products, plans from agent_plan_quote. */
 
@@ -70,7 +70,7 @@ export default function AgentPopup() {
       if (!mounted || !(launched || previewRequested())) return;
       if (Date.now() - Number(localStorage.getItem(DISMISS_KEY) ?? 0) < DISMISS_MS) return;
       const me = await myAgentStatus();
-      if (me?.is_agent || me?.application) return;
+      if (me?.is_agent && me.agent_status === "active") return;
       const [r, q] = await Promise.all([loadRows(), planQuote()]);
       if (!mounted) return;
       setRows(r);
