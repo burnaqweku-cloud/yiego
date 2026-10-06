@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowRight, CalendarCheck, Copy, HelpCircle, LifeBuoy, Lock, Share2, ShoppingBag } from "lucide-react";
+import { ArrowRight, CalendarCheck, Copy, HelpCircle, Info, LifeBuoy, Lock, Share2, ShoppingBag, Wallet } from "lucide-react";
+import { useWallet } from "@/store/wallet";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/format";
 import { priceListImage } from "@/lib/priceListImage";
@@ -10,6 +11,7 @@ import { longDate } from "@/components/agent/subscription";
 
 export default function AgentHome() {
   const { agent, orders, products, prices, storeUrl, plan, reload, sub, openRenew, isSub } = useAgent();
+  const { balance: walletBalance } = useWallet();
   // Messages from the network this store belongs to (sub-agents only)
   const [netAnns, setNetAnns] = useState<Array<{ id: string; title: string; body: string; created_at: string }>>([]);
   useEffect(() => { if (!isSub) return; void p1().from("network_announcements").select("id, title, body, created_at").order("created_at", { ascending: false }).limit(5).then(({ data }) => setNetAnns(data ?? [])); }, [isSub]);
@@ -49,15 +51,24 @@ export default function AgentHome() {
       )}
       <div><p className="text-[12px] text-muted-foreground">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</p><h1 className="font-display text-[24px] font-semibold text-foreground">Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}</h1></div>
       <div className="rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/25 via-primary/10 to-transparent p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Earnings balance</p>
-        <p className="mt-1 text-[34px] font-semibold leading-none text-foreground">{formatGHS(Number(agent.earnings_balance))}</p>
-        <p className="mt-1.5 text-[11.5px] text-muted-foreground">Available now · withdraw from {formatGHS(plan?.payout_minimum ?? 20)} to MoMo</p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Earnings balance</p>
+            <p className="mt-1 text-[34px] font-semibold leading-none text-foreground">{formatGHS(Number(agent.earnings_balance))}</p>
+            <p className="mt-1.5 text-[11.5px] text-muted-foreground">Available now · withdraw from {formatGHS(plan?.payout_minimum ?? 20)} to MoMo</p>
+          </div>
+          <Link to="/agent/buy" className="shrink-0 rounded-2xl border border-white/[0.1] bg-background/50 px-3.5 py-2.5 text-right transition-colors hover:border-primary/40">
+            <span className="flex items-center justify-end gap-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Wallet<BalanceTip /></span>
+            <span className="mt-1 block text-[20px] font-semibold leading-none text-foreground">{formatGHS(walletBalance)}</span>
+            <span className="mt-1 flex items-center justify-end gap-1 text-[11px] text-primary-glow"><Wallet size={11} />Top up</span>
+          </Link>
+        </div>
         {pending > 0 && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber/12 px-2.5 py-1 text-[11.5px] text-amber"><span className="h-1.5 w-1.5 rounded-full bg-amber" />{formatGHS(pending)} pending on {pendingOrders.length} order{pendingOrders.length === 1 ? "" : "s"} · released when delivered<Link to="/agent/help?a=available-vs-pending" aria-label="What is pending?" className="ml-1 inline-flex"><HelpCircle size={13} /></Link></p>}
         <div className="mt-4 flex gap-2"><Link to="/agent/earnings" className="onyx-btn-primary px-5 py-2.5 text-center text-[13px]">Withdraw</Link><button type="button" onClick={() => void share()} className="flex items-center gap-1.5 rounded-full border border-white/[0.14] px-4 py-2.5 text-[13px] text-foreground"><Share2 size={14} />Share store</button></div>
       </div>
       {sub.state === "lapsed"
         ? <Link to="/agent/buy" className="onyx-panel flex items-center gap-3 rounded-2xl p-4 opacity-80"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-muted-foreground"><Lock size={18} /></span><span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">Agent prices locked</span><span className="block text-[12px] text-muted-foreground">Renew your plan to buy at agent price again.</span></span><ArrowRight size={16} className="text-muted-foreground" /></Link>
-        : <Link to="/agent/buy" className="onyx-panel flex items-center gap-3 rounded-2xl p-4 hover:border-primary/40"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-glow"><ShoppingBag size={20} /></span><span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">Buy data at your agent price</span><span className="block text-[12px] text-muted-foreground">For yourself or anyone. Pay with MoMo or card.</span></span><ArrowRight size={16} className="text-primary-glow" /></Link>}
+        : <Link to="/agent/buy" className="onyx-panel flex items-center gap-3 rounded-2xl p-4 hover:border-primary/40"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-glow"><ShoppingBag size={20} /></span><span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">Buy data at your agent price</span><span className="block text-[12px] text-muted-foreground">For yourself or anyone. Pay from your wallet, MoMo or card.</span></span><ArrowRight size={16} className="text-primary-glow" /></Link>}
       <button type="button" onClick={openRenew} className="onyx-panel flex w-full items-center gap-3 rounded-2xl p-4 text-left hover:border-primary/40">
         <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${sub.state === "active" ? "bg-primary/15 text-primary-glow" : "bg-amber/15 text-amber"}`}><CalendarCheck size={19} /></span>
         <span className="min-w-0 flex-1">
@@ -84,5 +95,28 @@ export default function AgentHome() {
         <ul className="mt-1 divide-y divide-white/[0.06]">{orders.length === 0 && <li className="py-6 text-center text-[13px] text-muted-foreground">No orders yet. Share your link.</li>}{orders.slice(0, 5).map((o) => <li key={o.order_reference} className="flex items-center justify-between py-2"><div><p className="text-[13px] font-medium text-foreground">{o.networks?.name} {o.data_products?.name?.replace(/^.*?—\s*/, "")} → {o.recipient_phone}</p><p className="text-[11px] text-faint-foreground">{fmt(o.paid_at ?? o.created_at)} · <span className={toneClass(stageOf(o).tone)}>{stageOf(o).label}</span></p></div><p className="text-[12.5px] font-semibold text-primary-glow">+{formatGHS(Number(o.agent_margin ?? 0))}</p></li>)}</ul>
       </div>
     </div>
+  );
+}
+
+/** Small "i" next to the wallet balance: tap for a one-line explanation of the two balances. */
+function BalanceTip() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent | TouchEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", away); document.addEventListener("touchstart", away); document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", away); document.removeEventListener("touchstart", away); document.removeEventListener("keydown", esc); };
+  }, [open]);
+  return (
+    <span ref={ref} className="relative inline-flex">
+      <button type="button" aria-label="What is the wallet?" aria-expanded={open} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); }} className="grid h-5 w-5 place-items-center rounded-full text-muted-foreground hover:text-foreground"><Info size={12} /></button>
+      {open && (
+        <span role="tooltip" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="absolute right-0 top-6 z-20 w-[230px] rounded-xl border border-white/[0.12] bg-card p-3 text-left text-[12px] font-normal normal-case leading-relaxed tracking-normal text-foreground shadow-xl">
+          <b>Wallet</b> is money you put in to buy data at agent price. It can't be withdrawn.<br /><b>Earnings</b> is profit from your sales. That one you withdraw to MoMo.
+        </span>
+      )}
+    </span>
   );
 }
