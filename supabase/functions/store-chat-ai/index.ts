@@ -108,7 +108,9 @@ Deno.serve(async (req) => {
     if (!apiKey) return handover("no_key", `Thanks for your message. Someone from ${agent.store_name} will reply here shortly.`);
     const mentioned = [...new Set((msgs ?? []).filter((m: { sender: string }) => m.sender === "customer").flatMap((m: { body: string }) => (m.body.toUpperCase().match(REF_RE) ?? [])))] as string[];
     const system = await buildSystem(supabase, agent, c.user_id ?? null, mentioned);
-    const history = (msgs ?? []).filter((m: { sender: string }) => m.sender === "customer" || m.sender === "ai").map((m: { sender: string; body: string }) => ({ role: m.sender === "customer" ? "user" : "model", parts: [{ text: m.body }] }));
+    // The assistant sees the whole thread, including what the store owner/staff said while they had it,
+    // so a hand-back continues the conversation instead of starting over.
+    const history = (msgs ?? []).filter((m: { sender: string }) => m.sender !== "system").map((m: { sender: string; body: string }) => ({ role: m.sender === "customer" ? "user" : "model", parts: [{ text: m.sender === "agent" ? `[Said by the store team] ${m.body}` : m.body }] }));
     const r = await gemini(apiKey, system, history);
     if (!r.ok) return handover("provider_" + r.status, `Thanks for your message. Someone from ${agent.store_name} will reply here shortly.`);
     if (!r.text || /^HANDOVER\b/i.test(r.text)) return handover("ai_requested", `I'll get someone from ${agent.store_name} to look at this. They'll reply here; you can also keep typing.`);
