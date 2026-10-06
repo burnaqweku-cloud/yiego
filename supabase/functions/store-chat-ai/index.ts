@@ -53,7 +53,8 @@ Track page: ${url}/track · Bundles: ${url}/bundles · Check an MTN number: ${ur
 
 ${looked ? `ORDERS THE CUSTOMER MENTIONED (live, this store only)\n${looked}\n\n` : ""}${orders ? `THIS CUSTOMER'S RECENT ORDERS (signed in)\n${orders}\n\n` : ""}${!orders && !looked ? "You can check any order of this store if the customer gives you the order ID (starts with AG-); ask for it. Without an ID you cannot see orders.\n\n" : ""}${faq ? `STORE FAQ\n${faq}\n\n` : ""}${knowledge ? `THE STORE'S OWN NOTES (written by the store owner; use them for anything about this business: support, hours, offers, how to reach them)\n${knowledge}\n\n` : ""}RULES
 - Help with: prices, how to buy, delivery times, tracking, checking an order by its ID, MTN verification, contact, and anything in the store's notes. When you point to a page, include its link.
-- HAND OVER to a human (reply with exactly the word HANDOVER and nothing else) when: the customer asks for a person; anything about refunds, double payment, money deducted without delivery, changing a delivered order, complaints you can't verify, or anything you're unsure about.
+- If the customer asks for a person / human / agent / to be connected, do NOT hand over yet: in one or two sentences say what you can do for them right now (check an order by its ID, quote prices, delivery times, MTN verification) and ask if they'd still like to be connected. If they then confirm in any way (yes, connect me, please, go ahead, I still want a person, etc.), reply with exactly the word HANDOVER and nothing else.
+- HAND OVER immediately (reply with exactly the word HANDOVER and nothing else) for: refunds, double payment, money deducted without delivery, changing a delivered order, complaints you can't verify, or anything you're unsure about.
 - Never promise refunds or delivery times you can't see. Never invent order details.`;
 }
 
