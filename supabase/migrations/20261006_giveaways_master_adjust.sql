@@ -1,0 +1,5 @@
+-- Applied 6 Oct 2026 via MCP (campaigns_giveaway, finance_master_adjust):
+-- campaigns + campaign_redemptions (one per phone/account/device, 20-min reservation, hidden cap), RPCs campaign_public, campaign_claim,
+-- campaign_price_for/campaign_attach_order (service role; used by create-guest-data-payment v33 via body.campaignToken), trigger on orders paid,
+-- admin_campaign_stats. First campaign: slug '1gb' MTN 1GB at GHS 3.50, cap 100.
+-- finance_master_adjust(kind add|withdraw|spend, amount, reason) master-admin only; finance_master_adjustments() history for all admins.

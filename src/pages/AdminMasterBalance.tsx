@@ -5,6 +5,7 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Money, Panel, Row, Rows, Stat, StatGrid } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { RecordPartnerCapitalModal, RecordTopupModal } from "@/components/admin/FinanceForms";
+import MasterAdjustments from "@/components/admin/MasterAdjustments";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
@@ -94,6 +95,7 @@ export default function AdminMasterBalance() {
           <Row primary={made >= 0 ? "Made" : "Lost"} secondary="net worth minus what partners put in" right={formatGHS(Math.abs(made))} tone={made >= 0 ? "good" : "bad"} />
         </Rows>
       </Panel>
+      <MasterAdjustments isMaster={isMaster} onChanged={() => void load()} />
       <RecordPartnerCapitalModal open={adding} onClose={() => setAdding(false)} actorId={actor} onDone={() => void load()} />
       <RecordTopupModal open={topping} onClose={() => setTopping(false)} actorId={actor} suppliers={suppliers.map((s) => ({ code: s.code, name: s.name, fee_rate: 0 }))} onDone={() => void load()} />
     </div>

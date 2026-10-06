@@ -52,6 +52,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
   ] },
   { id: "announcements", label: "Announcements", icon: Megaphone, pages: [
     { id: "announcements", label: "Announcements", to: "/admin/announcements", icon: Megaphone, keywords: ["notification", "announce", "update", "notice", "bell", "broadcast"] },
+    { id: "giveaways", label: "Giveaways", to: "/admin/giveaways", icon: Gift, keywords: ["giveaway", "campaign", "promo", "free", "discount"] },
     { id: "help", label: "Help Center", to: "/admin/help", icon: LifeBuoy, keywords: ["help", "article", "faq", "docs", "guide", "agents"] },
   ] },
   { id: "support", label: "Support", icon: LifeBuoy, pages: [

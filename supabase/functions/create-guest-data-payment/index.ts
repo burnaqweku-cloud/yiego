@@ -101,7 +101,11 @@ Deno.serve(async (req) => {
     // Referred customers: first purchase at agent price (decided in the database).
     let friendPrice = false;
     if (!agent && authenticatedUser) { const { data: fp } = await supabase.rpc("friend_price_eligible", { p_user: authenticatedUser.id }); friendPrice = fp === true; }
-    const sellingPrice = agent ? (agentSelf ? Number(agentPrice) : Number(agent.prices?.[product.id] ?? product.customer_price)) : (friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price));
+    // Giveaway / campaign: a reserved claim token sets the price (validated in the database against phone + product).
+    const campaignToken = typeof body?.campaignToken === "string" && /^[0-9a-f]{32}$/i.test(body.campaignToken) ? body.campaignToken : null;
+    let campaignPrice: number | null = null;
+    if (campaignToken && !agent) { const { data: cp } = await supabase.rpc("campaign_price_for", { p_token: campaignToken, p_phone: recipientPhone, p_product: product.id }); if (cp != null) campaignPrice = Number(cp); else return jsonResponse({ error: "This giveaway claim has expired or doesn't match the number. Go back to the giveaway page and claim again.", code: "campaign_invalid" }, { status: 409 }); }
+    const sellingPrice = campaignPrice != null ? campaignPrice : agent ? (agentSelf ? Number(agentPrice) : Number(agent.prices?.[product.id] ?? product.customer_price)) : (friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price));
     const agentMargin = agent && agentPrice != null ? (agentSelf ? 0 : Math.max(0, Math.round((sellingPrice - agentPrice) * 100) / 100)) : null;
 
     // The supplier the guest chose in the shop, if they chose one.
@@ -253,6 +257,7 @@ Deno.serve(async (req) => {
       }
 
       order = inserted;
+      if (campaignToken && campaignPrice != null) await supabase.rpc("campaign_attach_order", { p_token: campaignToken, p_order: inserted.id });
     }
 
     const appUrl = Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL");

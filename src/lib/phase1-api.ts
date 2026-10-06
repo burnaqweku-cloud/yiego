@@ -26,6 +26,8 @@ export interface GuestDataPaymentInput {
   /** Bought through an agent's store: the agent's price applies and the order is theirs. */
   agentSlug?: string;
   agentSelf?: boolean;
+  /** A giveaway claim: the server prices the order from it (see campaign_claim). */
+  campaignToken?: string;
 }
 
 export interface WalletDepositInput {
