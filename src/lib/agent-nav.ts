@@ -16,8 +16,11 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "store-details", label: "Store details", to: "/agent/store/details", sections: ["details", "payout", "alerts"] },
     { id: "store-look", label: "Template & look", to: "/agent/store/look", sections: ["template", "look"] },
     { id: "store-pages", label: "About, featured & FAQ", to: "/agent/store/pages", sections: ["about", "featured", "faq"] },
-    { id: "domain-addresses", label: "Store addresses", to: "/agent/domain/addresses", sections: ["free-address", "your-own-domain", "perks", "email-domain"] },
-    { id: "domain-buy", label: "Buy a domain", to: "/agent/domain/buy", sections: ["buy-a-domain-through-us", "domains-bought-through-us"] },
+    { id: "domain-addresses", label: "Store address", to: "/agent/domain/addresses", sections: ["free-address"] },
+  ] },
+  { id: "domain", label: "Domain", icon: Globe, pages: [
+    { id: "domain-buy", label: "Buy a domain", to: "/agent/domain/buy", sections: ["buy-a-domain-through-us", "domains-bought-through-us", "perks"] },
+    { id: "domain-connect", label: "Connect an existing domain", to: "/agent/domain/connect", sections: ["your-own-domain", "perks", "email-domain"] },
   ] },
   { id: "customers", label: "Customers", icon: Users, pages: [
     { id: "support", label: "Support inbox", to: "/agent/support", badge: true },
@@ -71,4 +74,4 @@ export function groupForPath(pathname: string, groups: AgentNavGroup[]): AgentNa
   return groups.find((g) => g.pages.some((p) => (p.end ? pathname === p.to : pathname.startsWith(p.to)) || (g.id !== "home" && pathname.startsWith(p.to.split("/").slice(0, 3).join("/")))));
 }
 /* Old single-page routes keep working: send them to their first view. */
-export const LEGACY_REDIRECTS: Record<string, string> = { "/agent/store": "/agent/store/details", "/agent/domain": "/agent/domain/addresses", "/agent/marketing": "/agent/marketing/announcements", "/agent/popups": "/agent/popups/popups", "/agent/network": "/agent/network/applications", "/agent/team": "/agent/team/support" };
+export const LEGACY_REDIRECTS: Record<string, string> = { "/agent/store": "/agent/store/details", "/agent/domain": "/agent/domain/buy", "/agent/marketing": "/agent/marketing/announcements", "/agent/popups": "/agent/popups/popups", "/agent/network": "/agent/network/applications", "/agent/team": "/agent/team/support" };
