@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, MessagesSquare, Send, X } from "lucide-react";
+import { MessageCircle, MessagesSquare, Send, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/components/store/StoreShell";
@@ -19,6 +19,12 @@ export default function StoreSupport() {
   const [text, setText] = useState(""); const [name, setName] = useState(() => localStorage.getItem("yg-store-chat-name") ?? ""); const [phone, setPhone] = useState(""); const [busy, setBusy] = useState(false); const [thinking, setThinking] = useState(false);
   const first = (name || "").trim().split(" ")[0];
   const endRef = useRef<HTMLDivElement>(null);
+  type Thread = { id: string; started: string; preview?: string };
+  const listKey = `yg-store-convs:${store.slug}`;
+  const readThreads = (): Thread[] => { try { return JSON.parse(localStorage.getItem(listKey) ?? "[]"); } catch { return []; } };
+  const [threads, setThreads] = useState<Thread[]>(readThreads);
+  const [view, setView] = useState<"chat" | "list">("chat");
+  const rememberThread = (id: string, preview?: string) => { const next = [{ id, started: new Date().toISOString(), preview }, ...readThreads().filter((t) => t.id !== id)].slice(0, 20); localStorage.setItem(listKey, JSON.stringify(next)); setThreads(next); };
   const support = store.support ?? { whatsapp_url: null, chat_on: false };
   const load = async (id: string) => { const { data } = await p1().rpc("store_chat_read", { p_conversation: id, p_visitor: visitorKey() }); if (data) { setMsgs(data.messages ?? []); setMode(data.mode); setStatus(data.status); } };
   useEffect(() => { if (!open || !conv) return; void load(conv); const t = setInterval(() => void load(conv), 4000); return () => clearInterval(t); }, [open, conv]);
@@ -29,17 +35,19 @@ export default function StoreSupport() {
     const { data, error } = await p1().rpc("store_chat_open", { p_slug: store.slug, p_visitor: visitorKey(), p_name: name.trim() || null, p_phone: phone.replace(/\D/g, "") || null });
     setBusy(false);
     if (error) return toast.error("Chat isn't available right now.");
-    setConv(data.conversation_id); localStorage.setItem(`yg-store-conv:${store.slug}`, data.conversation_id); if (name.trim()) localStorage.setItem("yg-store-chat-name", name.trim());
+    setConv(data.conversation_id); localStorage.setItem(`yg-store-conv:${store.slug}`, data.conversation_id); rememberThread(data.conversation_id); setView("chat"); if (name.trim()) localStorage.setItem("yg-store-chat-name", name.trim());
   };
   useEffect(() => { const saved = localStorage.getItem(`yg-store-conv:${store.slug}`); if (saved) setConv(saved); }, [store.slug]);
   const send = async (preset?: string) => {
     const body = (preset ?? text).trim(); if (!body || !conv) return;
-    setText(""); setMsgs((m) => [...m, { id: "tmp" + Date.now(), sender: "customer", body, created_at: new Date().toISOString() }]);
+    setText(""); setMsgs((m) => [...m, { id: "tmp" + Date.now(), sender: "customer", body, created_at: new Date().toISOString() }]); if (!threads.find((t) => t.id === conv)?.preview) rememberThread(conv, body.slice(0, 60));
     const { error } = await p1().rpc("store_chat_send", { p_conversation: conv, p_visitor: visitorKey(), p_body: body });
     if (error) { toast.error(error.message.includes("slow_down") ? "One moment, you're sending fast." : "Couldn't send."); return; }
     await load(conv);
     if (mode === "ai") { setThinking(true); await supabase.functions.invoke("store-chat-ai", { body: { conversationId: conv, visitor: visitorKey() } }).catch(() => null); await load(conv); setThinking(false); }
   };
+  const newChat = () => { setConv(null); setMsgs([]); setMode("ai"); setStatus("open"); localStorage.removeItem(`yg-store-conv:${store.slug}`); setView("chat"); };
+  const openThread = (id: string) => { setConv(id); localStorage.setItem(`yg-store-conv:${store.slug}`, id); setMsgs([]); setView("chat"); };
   const askHuman = async () => { if (!conv) return; await p1().rpc("store_chat_request_human", { p_conversation: conv, p_visitor: visitorKey() }); await load(conv); };
   return (
     <>
@@ -50,8 +58,13 @@ export default function StoreSupport() {
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4" onClick={() => setOpen(false)}>
           <div className="onyx-panel flex h-[85vh] w-full max-w-md flex-col rounded-t-3xl sm:h-[600px] sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3"><div className="flex items-center gap-3">{store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-[14px] font-bold text-primary-glow">{store.store_name.slice(0, 1).toUpperCase()}</span>}<div><p className="text-[14px] font-semibold text-foreground">{store.store_name}</p><p className="flex items-center gap-1.5 text-[11px] text-faint-foreground"><span className="h-1.5 w-1.5 rounded-full bg-primary-glow" />{mode === "human" ? "A person from the store is on this chat" : "Online · replies in seconds"}</p></div></div><button type="button" onClick={() => setOpen(false)} aria-label="Close" className="text-muted-foreground"><X size={18} /></button></div>
-            {!conv ? (
+            <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3"><div className="flex items-center gap-3">{store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-[14px] font-bold text-primary-glow">{store.store_name.slice(0, 1).toUpperCase()}</span>}<div><p className="text-[14px] font-semibold text-foreground">{store.store_name}</p><p className="flex items-center gap-1.5 text-[11px] text-faint-foreground"><span className="h-1.5 w-1.5 rounded-full bg-primary-glow" />{mode === "human" ? "A person from the store is on this chat" : "Online · replies in seconds"}</p></div></div><div className="flex items-center gap-1">{conv && threads.length > 0 && view === "chat" && <button type="button" onClick={() => setView("list")} aria-label="Your chats" className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground"><MessagesSquare size={16} /></button>}{conv && <button type="button" onClick={newChat} aria-label="New chat" className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground"><Plus size={18} /></button>}<button type="button" onClick={() => setOpen(false)} aria-label="Close" className="text-muted-foreground"><X size={18} /></button></div></div>
+            {view === "list" ? (
+              <div className="flex-1 overflow-y-auto px-4 py-3">
+                <div className="mb-3 flex items-center justify-between"><p className="text-[14px] font-semibold text-foreground">Your chats</p><button type="button" onClick={newChat} className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-3 py-1.5 text-[12.5px] font-semibold text-primary-glow"><Plus size={14} />New chat</button></div>
+                <ul className="divide-y divide-white/[0.06]">{threads.map((t) => <li key={t.id}><button type="button" onClick={() => openThread(t.id)} className="flex w-full items-start justify-between gap-3 py-3 text-left"><span className="min-w-0"><span className="block truncate text-[13.5px] font-medium text-foreground">{t.preview ?? "New conversation"}</span><span className="block text-[11.5px] text-faint-foreground">{new Date(t.started).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}{t.id === conv ? " · current" : ""}</span></span><span className="shrink-0 text-[11.5px] text-primary-glow">Open</span></button></li>)}</ul>
+              </div>
+            ) : !conv ? (
               <div className="flex flex-1 flex-col justify-center gap-3 px-5">
                 <div className="text-center">{store.logo_url ? <img src={store.logo_url} alt="" className="mx-auto h-16 w-16 rounded-full object-cover" /> : <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/20 text-[24px] font-bold text-primary-glow">{store.store_name.slice(0, 1).toUpperCase()}</span>}<p className="mt-3 text-[17px] font-semibold text-foreground">Chat with {store.store_name}</p><p className="mt-1 text-[13px] text-muted-foreground">Ask about bundles, prices or an order. Answers in seconds, and a person from the store can step in.</p></div>
                 {!isAuthenticated && <div className="space-y-2"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="name" className="onyx-field w-full" /><input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="Your WhatsApp number" className="onyx-field w-full" /><p className="text-[11.5px] text-faint-foreground">Your number is only so {store.store_name} can reach you on WhatsApp if the chat gets missed.</p></div>}
