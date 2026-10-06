@@ -5,32 +5,77 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/components/store/StoreShell";
 import { storeBase } from "@/lib/storeHost";
+import { useAuth } from "@/store/auth-context";
 
-/* The store owner's pop-up (parent agents only). Honours once / daily / always per device. */
+/* The store owner's pop-up.
+   - once: one time per device; daily: once a day; always: once per visit (not on every page).
+   - Never on sign-in, sign-up, account, tracking or payment pages, nor on the page its own button leads to.
+   - After someone taps the button, it doesn't come back during that visit.
+   - A pop-up that leads to sign-up / sign-in is not shown to customers who are already signed in.
+   - A button that points to this store opens in the same tab; other websites open in a new tab. */
+const QUIET = ["/sign-in", "/sign-up", "/account", "/track", "/success"];
+const seenThisVisit = (id: string) => { try { return sessionStorage.getItem(`yg-popup-seen:${id}`) === "1"; } catch { return false; } };
+const markSeen = (id: string) => { try { sessionStorage.setItem(`yg-popup-seen:${id}`, "1"); } catch { /* ignore */ } };
 interface Popup { id: string; title: string; body: string | null; image_url: string | null; button_label: string | null; action: "join" | "link" | "form" | "message"; action_url: string | null; frequency: "once" | "daily" | "always"; delay_seconds?: number }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const p1 = () => (supabase as unknown as { schema: (s: string) => any }).schema("phase1");
+/** "/sign-up" style path inside this store if the link points to this store, else null. */
+function inStorePath(url: string | null, slug: string): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url, window.location.href);
+    const here = window.location.host.toLowerCase();
+    const host = u.host.toLowerCase();
+    const sub = `${slug}.datayego.com`;
+    let path = u.pathname;
+    const mainSite = (host === "datayego.com" || host === "www.datayego.com") && (path === `/s/${slug}` || path.startsWith(`/s/${slug}/`));
+    if (host === here || host === sub || host === `www.${sub}` || mainSite) {
+      const m = path.match(/^\/s\/[^/]+(\/.*)?$/);
+      if (m) path = m[1] ?? "/";
+      return (path.replace(/\/$/, "") || "/") + u.search + u.hash;
+    }
+  } catch { /* not a URL */ }
+  return null;
+}
 export default function StorePopup() {
-  const store = useStore(); const navigate = useNavigate(); const { pathname } = useLocation();
+  const store = useStore(); const navigate = useNavigate(); const { pathname } = useLocation(); const { isAuthenticated } = useAuth();
   const base = storeBase(store.slug); const page = pathname.replace(/\/$/, "") === (base || "") ? "home" : pathname.startsWith(`${base}/bundles`) ? "bundles" : "other";
   const [p, setP] = useState<Popup | null>(null); const [form, setForm] = useState(false); const [f, setF] = useState({ name: "", phone: "", email: "", message: "" }); const [busy, setBusy] = useState(false);
+  const rest = (pathname.startsWith(`${base}/`) || pathname === base ? pathname.slice(base.length) : pathname).replace(/\/$/, "") || "/";
+  const quiet = QUIET.some((q) => rest === q || rest.startsWith(`${q}/`));
   useEffect(() => {
     let alive = true;
+    let t: ReturnType<typeof setTimeout> | null = null;
+    if (quiet) { setP(null); return; }
     void p1().rpc("store_popup_for", { p_slug: store.slug, p_page: page }).then((r: { data: Popup | null }) => {
       const pop = r.data; if (!pop || !alive) return;
+      if (seenThisVisit(pop.id)) return;
       const key = `yg-popup:${pop.id}`; const last = Number(localStorage.getItem(key) ?? 0);
       if (pop.frequency === "once" && last) return;
       if (pop.frequency === "daily" && Date.now() - last < 86_400_000) return;
-      const t = setTimeout(() => { setP(pop); localStorage.setItem(key, String(Date.now())); void p1().rpc("store_popup_hit", { p_id: pop.id, p_kind: "show" }); }, Math.max(0, Number(pop.delay_seconds ?? 2)) * 1000);
-      return () => clearTimeout(t);
+      const target = pop.action === "link" ? inStorePath(pop.action_url, store.slug) : pop.action === "join" ? "/join" : null;
+      const targetPath = target ? target.split(/[?#]/)[0] : null;
+      if (targetPath && targetPath === rest) return;
+      if (isAuthenticated && targetPath && /^\/(sign-up|sign-in)$/.test(targetPath)) return;
+      t = setTimeout(() => {
+        if (!alive) return;
+        setP(pop); markSeen(pop.id); localStorage.setItem(key, String(Date.now()));
+        void p1().rpc("store_popup_hit", { p_id: pop.id, p_kind: "show" }).then(() => undefined);
+      }, Math.max(0, Number(pop.delay_seconds ?? 2)) * 1000);
     });
-    return () => { alive = false; };
-  }, [store.slug, page]);
+    return () => { alive = false; if (t) clearTimeout(t); };
+  }, [store.slug, page, quiet, rest, isAuthenticated]);
   if (!p) return null;
   const act = () => {
-    void p1().rpc("store_popup_hit", { p_id: p.id, p_kind: "click" });
+    void p1().rpc("store_popup_hit", { p_id: p.id, p_kind: "click" }).then(() => undefined);
+    markSeen(p.id);
     if (p.action === "join") { setP(null); navigate(`${storeBase(store.slug)}/join`); }
-    else if (p.action === "link" && p.action_url) { window.open(p.action_url, "_blank", "noopener"); setP(null); }
+    else if (p.action === "link" && p.action_url) {
+      const inside = inStorePath(p.action_url, store.slug);
+      setP(null);
+      if (inside) navigate(`${base}${inside === "/" ? "" : inside}` || "/");
+      else window.open(p.action_url, "_blank", "noopener");
+    }
     else if (p.action === "form") setForm(true);
     else setP(null);
   };

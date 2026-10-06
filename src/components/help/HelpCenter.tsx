@@ -99,7 +99,7 @@ function Row({ a, onOpen, showCategory }: { a: HelpArticle; onOpen: (s: string) 
 
 function Article({ a, onBack, related, onOpen, footer }: { a: HelpArticle; onBack: () => void; related: HelpArticle[]; onOpen: (s: string) => void; footer: ReactNode }) {
   const [voted, setVoted] = useState<boolean | null>(null);
-  const vote = (helpful: boolean) => { if (voted !== null) return; setVoted(helpful); void p1().rpc("help_article_feedback", { p_slug: a.slug, p_helpful: helpful }); };
+  const vote = (helpful: boolean) => { if (voted !== null) return; setVoted(helpful); void p1().rpc("help_article_feedback", { p_slug: a.slug, p_helpful: helpful }).then(() => undefined); };
   return (
     <div>
       <button type="button" onClick={onBack} className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground"><ArrowLeft size={14} />All articles</button>
