@@ -196,7 +196,7 @@ export default function AgentPopup() {
           )}
 
           <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
-            <Link to="/agents" data-autofocus onClick={() => setClosed(true)} className={`onyx-btn-primary w-full sm:order-2 ${ring}`}>Apply in 2 minutes</Link>
+            <Link to="/agents" data-autofocus onClick={() => setClosed(true)} className={`onyx-btn-primary w-full sm:order-2 ${ring}`}>Apply</Link>
             <Link to="/help/agents" onClick={() => setClosed(true)} className={`flex min-h-[48px] w-full items-center justify-center rounded-[14px] border border-border px-5 text-[14.5px] font-semibold text-foreground transition-colors hover:bg-foreground/[0.04] sm:order-1 ${ring}`}>See how it works</Link>
           </div>
           <button type="button" onClick={dismiss} className={`mt-1.5 w-full rounded-xl py-2.5 text-[14px] text-muted-foreground transition-colors hover:text-foreground ${ring}`}>Not now</button>
