@@ -15,8 +15,6 @@ interface FlowsValue {
    *  recipient step; everything after that is the same flow, unchanged. */
   openBuyData: (preselect?: BuyPreselect) => void;
   openAddMoney: () => void;
-  /** True while the buy or add-money sheet is open; pop-ups wait for it to close. */
-  busy: boolean;
 }
 
 const FlowsContext = createContext<FlowsValue | null>(null);
@@ -57,7 +55,6 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
           setBuyOpen(true);
         },
         openAddMoney,
-        busy: buyOpen || addOpen,
       }}
     >
       {children}

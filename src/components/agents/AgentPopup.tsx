@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Banknote, Lock, Store, Wallet, X } from "lucide-react";
 import { agentsStatus, myAgentStatus, planQuote, previewRequested, rememberPreview, type PlanQuote } from "@/lib/agents";
 import { loadPhase1Networks, loadPhase1Products } from "@/lib/phase1-api";
-import { useFlows } from "@/store/flows";
 
 /** Small strip for signed-in agents who still need to pay: shown wherever the popup is mounted. */
 export function AgentNudge() {
@@ -16,16 +15,13 @@ export function AgentNudge() {
 }
 
 /* "Become an agent" invitation on the public site.
-   - Appears after the delay set in Admin -> Agents -> Plan (popup_delay_seconds).
-   - Never on pages where someone is buying, paying, tracking or signing in,
-     never while the buy sheet is open, never for agents with an active subscription.
-   - Close or "Not now" hides it for 3 days.
+   - Appears on every public page after the delay set in Admin -> Agents -> Plan (popup_delay_seconds).
+   - Never for anyone who is already an agent (paid or not) or has an application waiting.
+   - Close or "Not now" hides it for 24 hours; "Apply" just closes it.
    - Every number is live: public vs agent price from data_products, plans from agent_plan_quote. */
 
 const DISMISS_KEY = "yg-agent-popup-dismissed";
-const DISMISS_MS = 3 * 24 * 3600 * 1000;
-const QUIET_PATHS = ["/agents", "/help", "/giveaway", "/g", "/track-order", "/payment", "/auth", "/reset-password", "/wallet", "/orders", "/account", "/shop", "/support", "/r"];
-const isQuiet = (path: string) => QUIET_PATHS.some((q) => path === q || path.startsWith(`${q}/`));
+const DISMISS_MS = 24 * 3600 * 1000;
 
 /** Bundles in the comparison, in this order. */
 const SHOWCASE: { network: string; label: string; gb: number }[] = [
@@ -53,8 +49,6 @@ async function loadRows(): Promise<Row[]> {
 }
 
 export default function AgentPopup() {
-  const { pathname } = useLocation();
-  const { busy } = useFlows();
   const [due, setDue] = useState(false);
   const [closed, setClosed] = useState(false);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -70,7 +64,7 @@ export default function AgentPopup() {
       if (!mounted || !(launched || previewRequested())) return;
       if (Date.now() - Number(localStorage.getItem(DISMISS_KEY) ?? 0) < DISMISS_MS) return;
       const me = await myAgentStatus();
-      if (me?.is_agent && me.agent_status === "active") return;
+      if (me?.is_agent || me?.application?.status === "pending") return;
       const [r, q] = await Promise.all([loadRows(), planQuote()]);
       if (!mounted) return;
       setRows(r);
@@ -81,7 +75,7 @@ export default function AgentPopup() {
     return () => { mounted = false; if (timer) clearTimeout(timer); };
   }, []);
 
-  const open = due && !closed && !busy && !isQuiet(pathname) && rows !== null;
+  const open = due && !closed && rows !== null;
   const dismiss = useCallback(() => { setClosed(true); localStorage.setItem(DISMISS_KEY, String(Date.now())); }, []);
 
   useEffect(() => {
