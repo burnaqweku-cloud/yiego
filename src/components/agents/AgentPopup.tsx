@@ -17,11 +17,15 @@ export function AgentNudge() {
 /* "Become an agent" invitation on the public site.
    - Appears on every public page after the delay set in Admin -> Agents -> Plan (popup_delay_seconds).
    - Never for anyone who is already an agent (paid or not) or has an application waiting.
-   - Close or "Not now" hides it for 24 hours; "Apply" just closes it.
+   - Once per visit: it shows once, and closing it only hides it for the rest of that visit.
+     A new visit (site opened again, or back after 30 minutes away) shows it again.
    - Every number is live: public vs agent price from data_products, plans from agent_plan_quote. */
 
-const DISMISS_KEY = "yg-agent-popup-dismissed";
-const DISMISS_MS = 24 * 3600 * 1000;
+const SHOWN_KEY = "yg-agent-popup-shown";
+/** Away from the site this long counts as a new visit. */
+const NEW_VISIT_AFTER_MS = 30 * 60 * 1000;
+const shownThisVisit = () => { try { return sessionStorage.getItem(SHOWN_KEY) === "1"; } catch { return false; } };
+const markShown = (v: boolean) => { try { if (v) sessionStorage.setItem(SHOWN_KEY, "1"); else sessionStorage.removeItem(SHOWN_KEY); } catch { /* ignore */ } };
 
 /** Bundles in the comparison, in this order. */
 const SHOWCASE: { network: string; label: string; gb: number }[] = [
@@ -59,10 +63,13 @@ export default function AgentPopup() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     let mounted = true;
+    let hiddenAt = 0;
     rememberPreview();
-    void agentsStatus().then(async ({ launched, plan }) => {
+    const arm = async () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (shownThisVisit()) return;
+      const { launched, plan } = await agentsStatus();
       if (!mounted || !(launched || previewRequested())) return;
-      if (Date.now() - Number(localStorage.getItem(DISMISS_KEY) ?? 0) < DISMISS_MS) return;
       const me = await myAgentStatus();
       if (me?.is_agent || me?.application?.status === "pending") return;
       const [r, q] = await Promise.all([loadRows(), planQuote()]);
@@ -70,13 +77,20 @@ export default function AgentPopup() {
       setRows(r);
       setQuote(q);
       if (plan?.payout_minimum) setPayoutMin(Number(plan.payout_minimum));
-      timer = setTimeout(() => { if (mounted) setDue(true); }, Math.max(1, plan?.popup_delay_seconds ?? 5) * 1000);
-    });
-    return () => { mounted = false; if (timer) clearTimeout(timer); };
+      timer = setTimeout(() => { if (mounted && !shownThisVisit()) { markShown(true); setClosed(false); setDue(true); } }, Math.max(1, plan?.popup_delay_seconds ?? 5) * 1000);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
+      if (hiddenAt && Date.now() - hiddenAt >= NEW_VISIT_AFTER_MS) { markShown(false); setDue(false); void arm(); }
+      hiddenAt = 0;
+    };
+    void arm();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => { mounted = false; if (timer) clearTimeout(timer); document.removeEventListener("visibilitychange", onVisibility); };
   }, []);
 
   const open = due && !closed && rows !== null;
-  const dismiss = useCallback(() => { setClosed(true); localStorage.setItem(DISMISS_KEY, String(Date.now())); }, []);
+  const dismiss = useCallback(() => { setClosed(true); }, []);
 
   useEffect(() => {
     if (!open) return;
