@@ -155,3 +155,8 @@ body.st-body.tpl-market { background: #fff8ec; }
 body.st-body.tpl-studio { background: #fff; }
 /* Studio's inner-page FAQ reuses the home accordion. */
 .tpl-studio .st-faq summary { padding: 14px 0; }
+
+/* Store announcements: a dropdown under the bell, in each template's own skin. */
+.tpl-market .st-news { background: #fff; border: 2px solid #1d2460; box-shadow: 6px 6px 0 #1d2460; border-radius: 14px; }
+.tpl-market .st-news .border-b { border-color: #1d2460 !important; }
+.tpl-studio .st-news { background: #fff; border: 1px solid var(--st-line); box-shadow: 0 24px 48px -20px rgba(15,23,42,0.3); }

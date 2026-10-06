@@ -139,10 +139,12 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
           {store.store_notice && !studio && <div className="border-t border-white/[0.06] bg-primary/[0.08] px-4 py-2 text-center text-[12.5px] text-foreground"><span className="mx-auto block max-w-2xl">{store.store_notice}</span></div>}
         </header>
         {annOpen && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={() => setAnnOpen(false)}>
-            <div className="onyx-panel max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-3xl p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between"><h3 className="font-display text-[18px] font-semibold text-foreground">Latest from {store.store_name}</h3><button type="button" onClick={() => setAnnOpen(false)} aria-label="Close" className="text-muted-foreground"><X size={18} /></button></div>
-              <ul className="mt-3 divide-y divide-white/[0.06]">{anns.map((a) => <li key={a.id} className="py-3"><p className="text-[14px] font-semibold text-foreground">{a.title}</p><p className="mt-1 whitespace-pre-line text-[13px] leading-5 text-muted-foreground">{a.body}</p><p className="mt-1 text-[11px] text-faint-foreground">{new Date(a.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</p></li>)}</ul>
+          <div className="fixed inset-0 z-40" onClick={() => setAnnOpen(false)}>
+            <div className="mx-auto w-full max-w-5xl px-4 pt-[68px] sm:px-8" onClick={(e) => e.stopPropagation()}>
+              <div className="st-news onyx-panel ml-auto w-full max-w-sm overflow-hidden rounded-2xl shadow-2xl">
+                <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3"><p className="text-[14px] font-semibold text-foreground">Updates from {store.store_name}</p><button type="button" onClick={() => setAnnOpen(false)} aria-label="Close" className="text-muted-foreground"><X size={16} /></button></div>
+                <ul className="max-h-[60vh] divide-y divide-white/[0.06] overflow-y-auto">{anns.map((a) => <li key={a.id} className="px-4 py-3"><div className="flex items-start justify-between gap-3"><p className="text-[13.5px] font-semibold text-foreground">{a.title}</p><span className="shrink-0 text-[11px] text-faint-foreground">{new Date(a.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span></div><p className="mt-1 whitespace-pre-line text-[13px] leading-5 text-muted-foreground">{a.body}</p></li>)}</ul>
+              </div>
             </div>
           </div>
         )}
