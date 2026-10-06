@@ -15,7 +15,9 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
   { id: "store", label: "My store", icon: Settings, pages: [
     { id: "store-details", label: "Store details", to: "/agent/store/details", sections: ["details", "payout", "alerts"] },
     { id: "store-look", label: "Template & look", to: "/agent/store/look", sections: ["template", "look"] },
-    { id: "store-pages", label: "About, featured & FAQ", to: "/agent/store/pages", sections: ["about", "featured", "faq"] },
+    { id: "store-about", label: "About & contact", to: "/agent/store/about", sections: ["about"] },
+    { id: "store-featured", label: "Featured bundles", to: "/agent/store/featured", sections: ["featured"] },
+    { id: "store-faq", label: "FAQ", to: "/agent/store/faq", sections: ["faq"] },
     { id: "domain-addresses", label: "Store address", to: "/agent/domain/addresses", sections: ["free-address"] },
   ] },
   { id: "domain", label: "Domain", icon: Globe, pages: [
