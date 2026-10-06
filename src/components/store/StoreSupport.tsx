@@ -62,7 +62,7 @@ export default function StoreSupport() {
   return (
     <>
       <div className="pointer-events-none fixed inset-x-4 bottom-4 z-40 flex items-end justify-between">
-        {support.whatsapp_url ? <a href={support.whatsapp_url} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-[#062b16] shadow-lg"><MessageCircle size={26} /></a> : <span />}
+        {support.whatsapp_url ? <WhatsAppFab href={support.whatsapp_url} label={`${store.store_name} on WhatsApp`} /> : <span />}
         {support.chat_on && <button type="button" onClick={() => setOpen(true)} aria-label="Chat with the store" className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"><MessagesSquare size={24} /></button>}
       </div>
       {open && (
