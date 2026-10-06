@@ -24,27 +24,26 @@ export default function Admin() {
   const [period, setPeriod] = useState<Period>("today");
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [counts, setCounts] = useState<Record<string, number> | null>(null);
   const [suppliers, setSuppliers] = useState<{ code: string; name: string; balance: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const [o, ov, su] = await Promise.all([
-      db().from("orders").select("order_reference, recipient_phone, amount, status, payment_status, admin_resolution_status, supplier_retry_after, created_at, networks(name), data_products(name)").gte("created_at", since(period)).order("created_at", { ascending: false }).limit(500),
+    const [o, ov, su, c] = await Promise.all([
+      db().from("orders").select("order_reference, recipient_phone, amount, status, payment_status, admin_resolution_status, supplier_retry_after, created_at, networks(name), data_products(name)").gte("created_at", since(period)).order("created_at", { ascending: false }).limit(50),
       db().rpc("finance_overview", { p_from: since(period), p_to: null }),
       db().from("suppliers").select("code, name, balance").neq("status", "disabled").order("display_order"),
+      db().rpc("admin_overview_counts", { p_from: since(period) }),
     ]);
-    setOrders(o.data ?? []); setOverview((ov.data as Overview) ?? null); setSuppliers(su.data ?? []); setLoading(false);
+    setOrders(o.data ?? []); setOverview((ov.data as Overview) ?? null); setSuppliers(su.data ?? []); setCounts((c.data as Record<string, number>) ?? null); setLoading(false);
   }, [period]);
   useEffect(() => { void load(); }, [load]);
 
-  const paid = orders.filter((x) => x.payment_status === "succeeded");
-  const delivered = paid.filter((x) => x.status === "delivered").length;
-  const inFlight = paid.filter((x) => ["processing", "pending_supplier", "paid"].includes(x.status));
-  const cooldown = inFlight.filter((x) => x.supplier_retry_after).length;
-  const verification = paid.filter((x) => x.admin_resolution_status === "awaiting_verification").length;
-  const wrongNetwork = paid.filter((x) => x.admin_resolution_status === "wrong_network").length;
-  const failed = paid.filter((x) => x.status.startsWith("failed") && x.admin_resolution_status !== "wrong_network").length;
-  const rate = paid.length ? Math.round((delivered / paid.length) * 100) : 0;
+  // Counts come from the database (same definitions as the Orders page), never from a capped row list.
+  const n = (k: string) => Number(counts?.[k] ?? 0);
+  const paidCount = n("paid"); const delivered = n("delivered"); const inFlightCount = n("in_flight"); const cooldown = n("cooldown");
+  const verification = n("verification"); const wrongNetwork = n("wrong_network"); const failed = n("failed");
+  const rate = paidCount ? Math.round((delivered / paidCount) * 100) : 0;
   const p = overview?.period;
 
   return (
@@ -52,9 +51,9 @@ export default function Admin() {
       <AdminPageHeader title="Overview" description="Orders, money and anything that needs a hand." action={<div className="w-[240px] sm:w-[320px]"><Segmented<Period> value={period} onChange={setPeriod} options={PERIODS} /></div>} />
 
       <StatGrid>
-        <Stat loading={loading} label="Paid orders" value={paid.length} note={`${rate}% delivered`} icon={ClipboardList} to="/admin/orders" />
+        <Stat loading={loading} label="Paid orders" value={paidCount} note={`${rate}% delivered · ${n("unpaid")} unpaid`} icon={ClipboardList} to="/admin/orders" />
         <Stat loading={loading} label="Delivered" value={delivered} icon={CheckCircle2} tone="good" />
-        <Stat loading={loading} label="In progress" value={inFlight.length} note={cooldown ? `${cooldown} waiting on supplier cooldown` : "with the supplier"} icon={Clock3} tone={inFlight.length ? "warn" : "default"} to="/admin/orders?status=pending" />
+        <Stat loading={loading} label="In progress" value={inFlightCount} note={cooldown ? `${cooldown} waiting on supplier cooldown` : "with the supplier"} icon={Clock3} tone={inFlightCount ? "warn" : "default"} to="/admin/orders?status=pending" />
         <Stat loading={loading} label="Needs a human" value={failed + verification + wrongNetwork} note={`${failed} failed · ${verification} MTN verification${wrongNetwork ? ` · ${wrongNetwork} wrong network` : ""}`} icon={AlertTriangle} tone={failed ? "bad" : verification ? "warn" : "default"} to="/admin/orders?status=failed" />
         <Stat loading={loading} label="Revenue" value={<Money value={p?.revenue} />} note="delivered bundles" icon={TrendingUp} to="/admin/finance" />
         <Stat loading={loading} label="Net profit" value={<Money value={p?.net} tone={Number(p?.net) < 0 ? "bad" : "good"} />} note={`incl. ${formatGHS(Number(p?.fee_income ?? 0))} checkout fee`} icon={Receipt} tone={Number(p?.net) < 0 ? "bad" : "good"} to="/admin/finance" />
