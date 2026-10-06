@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
+import { loadOpsStatus, PROCESSING_DELAY_NOTE } from "@/lib/ops-status";
 import { adminDatabase, formatAdminDate, readableStatus, type AdminOrderEventRow, type AdminOrderRow } from "@/lib/admin-data";
 
 const LIFECYCLE_STATUSES = ["created", "awaiting_payment", "paid", "processing", "pending_supplier", "delivered", "failed", "failed_needs_review", "cancelled", "refunded"];
@@ -42,14 +43,14 @@ function routeLabel(order: AdminOrderRow) {
   return supplier.public_name ?? supplier.name;
 }
 
-function supportMessage(order: AdminOrderRow) {
+function supportMessage(order: AdminOrderRow, processingDelay = false) {
   const reference = order.order_reference;
   const status = displayedStatus(order);
   if (status === AWAITING_VERIFICATION) return `Hello, your DataYego order ${reference} has not failed. MTN verifies numbers receiving a bundle for the first time, which usually takes a few days. Your data will be delivered automatically once MTN completes the check, and future orders to this number will go through normally.`;
   if (order.admin_resolution_reason) return `Hello, your DataYego order ${reference} is currently ${readableStatus(status).toLowerCase()}. ${order.admin_resolution_reason}`;
   if (order.payment_status === "failed") return `Hello, payment for your DataYego order ${reference} was not completed. No successful payment has been confirmed.`;
   if (["created", "pending"].includes(order.payment_status) || status === "awaiting_payment") return `Hello, your DataYego order ${reference} is awaiting payment. You can continue the payment before the order expires.`;
-  if (["paid", "processing"].includes(status)) return `Hello, payment for your DataYego order ${reference} has been confirmed and your data order is still being processed.`;
+  if (["paid", "processing"].includes(status)) return `Hello, payment for your DataYego order ${reference} has been confirmed and your data order is still being processed.${processingDelay ? ` ${PROCESSING_DELAY_NOTE}` : ""}`;
   if (status === "pending_supplier") return `Hello, your DataYego order ${reference} is currently being delivered. Delivery is taking a little longer than usual, and we are monitoring it.`;
   if (status === "delivered") return `Hello, your DataYego order ${reference} is marked as completed. Please contact support if the data has not appeared on the recipient number.`;
   if (status === "refunded") return `Hello, your DataYego order ${reference} is marked as refunded. The refund is returned through the original payment channel.`;
@@ -190,13 +191,14 @@ export default function AdminOrders() {
     setCustomerFilter("all");
   };
 
-  const findOrder = () => {
+  const findOrder = async () => {
     const needle = lookup.trim().toLowerCase();
     if (!needle) return toast.error("Enter an order reference, phone number or supplier reference.");
     const match = orders.find((order) => order.order_reference.toLowerCase() === needle || order.recipient_phone.replace(/\s/g, "").includes(needle.replace(/\s/g, "")) || order.supplier_order_reference?.toLowerCase() === needle);
     if (!match) { setLookedUp(null); setMessage(""); return toast.error("No matching order was found."); }
     setLookedUp(match);
-    setMessage(supportMessage(match));
+    const ops = await loadOpsStatus().catch(() => null);
+    setMessage(supportMessage(match, Boolean(ops?.processing_delay)));
     setCopied(false);
   };
 
@@ -297,7 +299,7 @@ export default function AdminOrders() {
 
     <Card><CardContent>
       <div className="flex items-start justify-between gap-4"><div><h2 className="font-display text-lg font-semibold text-white">Track and assist with an order</h2><p className="mt-1 text-sm text-muted-foreground">Search by DataYego reference, recipient phone or supplier reference.</p></div><Badge variant="mint">AI-ready fallback</Badge></div>
-      <div className="mt-4 flex gap-2"><label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-white/10 bg-black/10 px-4 py-3"><Search size={17} className="text-faint-foreground" /><input value={lookup} onChange={(event) => setLookup(event.target.value)} onKeyDown={(event) => event.key === "Enter" && findOrder()} placeholder="YG-..., phone or supplier reference" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-faint-foreground" /></label><Button onClick={findOrder}>Check</Button></div>
+      <div className="mt-4 flex gap-2"><label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-white/10 bg-black/10 px-4 py-3"><Search size={17} className="text-faint-foreground" /><input value={lookup} onChange={(event) => setLookup(event.target.value)} onKeyDown={(event) => event.key === "Enter" && void findOrder()} placeholder="YG-..., phone or supplier reference" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-faint-foreground" /></label><Button onClick={() => void findOrder()}>Check</Button></div>
       {lookedUp && <div className="mt-5 grid gap-4 lg:grid-cols-2"><div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-semibold text-white">{lookedUp.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{lookedUp.recipient_phone} · {lookedUp.networks?.name ?? "Network"}</p></div><div className="flex shrink-0 items-center gap-2">{canRetry(lookedUp) && <Button size="sm" variant="ghost" disabled={retryingRef === lookedUp.order_reference} onClick={() => void retryOrder(lookedUp)}><RotateCcw />{retryingRef === lookedUp.order_reference ? "Sending…" : "Retry"}</Button>}<AdminDetailsButton label={`View ${lookedUp.order_reference}`} onClick={() => openDetails(lookedUp)} /></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><p className="text-faint-foreground">Order</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.status)}</p></div><div><p className="text-faint-foreground">Payment</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.payment_status)}</p></div><div><p className="text-faint-foreground">Supplier</p><p className="mt-1 font-semibold text-foreground">{readableStatus(normalizedSupplierStatus(lookedUp))}</p></div><div><p className="text-faint-foreground">Customer sees</p><p className="mt-1 font-semibold text-foreground">{readableStatus(displayedStatus(lookedUp))}</p></div></div></div><div className="rounded-2xl border border-primary-glow/15 bg-primary/[0.045] p-4"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-glow">Suggested customer response</p><Button variant="ghost" size="sm" onClick={copyMessage} disabled={!message}>{copied ? <ClipboardCheck /> : <Clipboard />}{copied ? "Copied" : "Copy"}</Button></div><textarea value={message} onChange={(event) => { setMessage(event.target.value); setCopied(false); }} className="onyx-field mt-4 min-h-36 resize-y text-sm leading-6" /></div></div>}
     </CardContent></Card>
 

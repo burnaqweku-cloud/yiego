@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { BadgePercent, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon } from "lucide-react";
+import { BadgePercent, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
 export interface AdminPage {
@@ -27,6 +27,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "submitted-numbers", label: "Submitted numbers", to: "/admin/orders/submitted-numbers", icon: PhoneForwarded, keywords: ["mtn", "verification", "submitted", "beneficiary", "check"] },
     { id: "reviews", label: "Review queue", to: "/admin/reviews", icon: ShieldCheck, keywords: ["needs review", "failed", "stuck"] },
     { id: "disputes", label: "Disputes", to: "/admin/disputes", icon: MessageSquareWarning, keywords: ["complaint", "chargeback"] },
+    { id: "status", label: "Status", to: "/admin/status", icon: Activity, keywords: ["delay", "slow", "apology", "processing", "outage"] },
   ] },
   { id: "money", label: "Money", icon: Landmark, pages: [
     { id: "finance", label: "Finance", to: "/admin/finance", icon: TrendingUp, keywords: ["money put in", "top-ups", "funding", "revenue", "profit", "margin", "sales", "reconciliation"] },

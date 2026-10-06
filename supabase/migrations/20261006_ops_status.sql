@@ -1,0 +1,4 @@
+-- Applied 6 Oct 2026 via Supabase MCP (migration ops_status_processing_delay).
+-- site_settings 'ops_status' = {"processing_delay": false}.
+-- phase1.admin_ops_status() and phase1.admin_set_ops_status(boolean): caller_is_admin(), execute granted to authenticated only.
+-- Admin -> Operations -> Status toggles it; Orders' copy message for paid/processing orders appends the apology when on.
