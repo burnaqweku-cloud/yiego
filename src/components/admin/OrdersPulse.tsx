@@ -59,7 +59,6 @@ export default function OrdersPulse() {
   const byDay = useMemo(() => { if (days <= 1) return []; const m = new Map<string, number>(); for (const r of rows) { const k = ymd(new Date(r.paid_at)); m.set(k, (m.get(k) ?? 0) + 1); } return [...m.entries()].sort(); }, [rows, days]);
   const byHour = useMemo(() => { if (days > 1) return []; const h = Array(24).fill(0) as number[]; for (const r of rows) h[new Date(r.paid_at).getHours()] += 1; return h; }, [rows, days]);
   const peakHour = byHour.length ? byHour.indexOf(Math.max(...byHour)) : -1;
-  const uniqueBuyers = new Set(rows.map((r) => r.user_id ?? r.guest_email ?? "")).size;
 
   const drill = (bucket: string) => `/admin/orders/received?bucket=${bucket}&source=${source}&from=${ymd(start)}&to=${ymd(end)}`;
   const exportCsv = () => {
@@ -76,7 +75,7 @@ export default function OrdersPulse() {
         <Button variant="ghost" size="sm" onClick={exportCsv} aria-label="Export"><Download size={13} /></Button>
       </div>
       <StatGrid cols={4}>
-        <Stat loading={loading} label="Orders" value={String(n)} note={days > 1 ? `${(n / days).toFixed(1)} a day` : `${uniqueBuyers} buyer${uniqueBuyers === 1 ? "" : "s"}`} tone="good" to={drill("all")} />
+        <Stat loading={loading} label="Orders" value={String(n)} note={days > 1 ? `${(n / days).toFixed(1)} a day` : "paid"} tone="good" to={drill("all")} />
         <Stat loading={loading} label="Sales" value={<Money value={revenue} />} note={source === "agents" ? `${gb} GB · agents earn ${formatGHS(rows.reduce((a, r) => a + Number(r.agent_margin ?? 0), 0))}` : `${gb} GB`} to={drill("all")} />
         <Stat loading={loading} label="Delivered" value={String(delivered)} note={n ? `${Math.round((delivered / n) * 100)}%` : "—"} tone="good" to={drill("delivered")} />
         <Stat loading={loading} label="Waiting / refunded" value={`${waiting} / ${refunded}`} note={waiting ? "still to deliver" : "all settled"} tone={waiting ? "warn" : "default"} to={drill("waiting")} />

@@ -52,7 +52,7 @@ export default function Admin() {
       <AdminPageHeader title="Overview" description="Orders, money and anything that needs a hand." action={<div className="w-[240px] sm:w-[320px]"><Segmented<Period> value={period} onChange={setPeriod} options={PERIODS} /></div>} />
 
       <StatGrid>
-        <Stat loading={loading} label="Paid orders" value={paidCount} note={`${rate}% delivered · ${n("unpaid")} unpaid`} icon={ClipboardList} to="/admin/orders" />
+        <Stat loading={loading} label="Paid orders" value={paidCount} note={`${rate}% delivered`} icon={ClipboardList} to="/admin/orders" />
         <Stat loading={loading} label="Delivered" value={delivered} icon={CheckCircle2} tone="good" />
         <Stat loading={loading} label="In progress" value={inFlightCount} note={cooldown ? `${cooldown} waiting on supplier cooldown` : "with the supplier"} icon={Clock3} tone={inFlightCount ? "warn" : "default"} to="/admin/orders?status=pending" />
         <Stat loading={loading} label="Needs a human" value={failed + verification + wrongNetwork} note={`${failed} failed · ${verification} MTN verification${wrongNetwork ? ` · ${wrongNetwork} wrong network` : ""}`} icon={AlertTriangle} tone={failed ? "bad" : verification ? "warn" : "default"} to="/admin/orders?status=failed" />
