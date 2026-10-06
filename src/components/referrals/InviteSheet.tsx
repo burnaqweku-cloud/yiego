@@ -15,7 +15,7 @@ export default function InviteSheet({ open, onClose }: { open: boolean; onClose:
   useEffect(() => { if (open && isAuthenticated) void myReferrals().then(setData); }, [open, isAuthenticated]);
   const reward = formatGHS(data?.reward ?? 1); const agentReward = formatGHS(data?.agent_reward ?? 5);
   const link = data?.code ? inviteLink(data.code) : null;
-  const text = link ? `Buy MTN, Telecel and AirtelTigo data on DataYego — delivered in minutes. Sign up with my link and get the referral price on your first bundle: ${link}` : "";
+  const text = link ? `Buy MTN, Telecel and AirtelTigo data on DataYego — usually delivered within minutes. Sign up with my link and get the referral price on your first bundle: ${link}` : "";
   const copy = async () => { if (!link) return; try { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { toast.error("Couldn't copy. Long-press the link instead."); } };
   const share = async () => {
     if (!link) return;

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { formatGHS } from "@/lib/format";
 import { type AgentOrder, useAgent } from "@/components/agent/AgentShell";
 import { stageOf, toneClass } from "@/components/agent/orderStage";
+import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 
 /* The agent's orders: every paid order placed in their store, newest first.
    Period and stage filters, network chips, search, grouped by day, 20 at a time,
@@ -36,6 +37,7 @@ const waLink = (phone: string) => `https://wa.me/233${phone.replace(/\D/g, "").r
 
 export default function AgentOrders() {
   const { orders } = useAgent();
+  const speeds = useDeliverySpeed();
   const [period, setPeriod] = useState<Period>("all");
   const [stage, setStage] = useState<Stage>("all");
   const [network, setNetwork] = useState("all");
@@ -125,7 +127,7 @@ export default function AgentOrders() {
               <p className="px-1 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-faint-foreground">{g.label} <span className="font-normal normal-case tracking-normal">· {g.items.length} order{g.items.length === 1 ? "" : "s"}</span></p>
               <ul className="divide-y divide-white/[0.06]">
                 {g.items.map((o) => {
-                  const st = stageOf(o); const isOpen = open === o.order_reference;
+                  const st = stageOf(o, speeds[o.networks?.name ?? ""]); const isOpen = open === o.order_reference;
                   return (
                     <li key={o.order_reference}>
                       <button type="button" onClick={() => setOpen(isOpen ? null : o.order_reference)} aria-expanded={isOpen} className="flex w-full items-center gap-3 py-2.5 text-left">

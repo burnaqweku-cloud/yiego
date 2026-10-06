@@ -23,17 +23,17 @@ export async function submitNumbers(numbers: string[], source: "shop" | "checker
 
 /* Wording shared by every screen. */
 export const STATUS_COPY: Record<CheckStatus, { tone: "ok" | "wait" | "bad"; title: string; text: string }> = {
-  approved: { tone: "ok", title: "Approved", text: "MTN bundles to this number deliver in minutes." },
-  not_enforced: { tone: "ok", title: "Approved", text: "MTN bundles to this number deliver in minutes." },
-  not_approved: { tone: "wait", title: "Not yet approved", text: "You can still buy. MTN will verify this number first, which can take a few days. After that, every order to it is fast." },
+  approved: { tone: "ok", title: "Approved", text: "MTN accepts bundles to this number straight away, with no verification wait." },
+  not_enforced: { tone: "ok", title: "Approved", text: "MTN accepts bundles to this number straight away, with no verification wait." },
+  not_approved: { tone: "wait", title: "Not yet approved", text: "You can still buy. MTN will verify this number first, which can take a few days. After that, orders to it go through without the wait." },
   unapproved: { tone: "wait", title: "Verification pending with MTN", text: "This number is already with MTN for verification. You can still buy; your order delivers once MTN approves it." },
   blocked: { tone: "bad", title: "Blocked", text: "Our supplier can't send bundles to this number." },
   not_mtn: { tone: "bad", title: "Not an MTN number", text: "This check is for MTN numbers (024, 025, 053, 054, 055, 059)." },
   invalid: { tone: "bad", title: "Not a valid number", text: "Enter a 10-digit Ghana number starting with 0." },
 };
 export const SUBMIT_COPY: Record<SubmitOutcome["outcome"], string> = {
-  submitted: "Submitted. MTN usually approves within a few days. Once approved, orders to this number deliver in minutes.",
-  submitted_unconfirmed: "Submitted to our supplier. If MTN approves it, orders to this number will deliver in minutes.",
+  submitted: "Submitted. MTN usually approves within a few days. Once approved, orders to this number go through without the verification wait.",
+  submitted_unconfirmed: "Submitted to our supplier. If MTN approves it, orders to this number will go through without the verification wait.",
   already_submitted: "This number is already with MTN for verification.",
   already_approved: "Good news: this number is already approved.",
   blocked: "Our supplier can't send bundles to this number.",

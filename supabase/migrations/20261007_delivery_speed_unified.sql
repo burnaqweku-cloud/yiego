@@ -1,0 +1,5 @@
+-- Applied 7 Oct 2026 via Supabase MCP (migration delivery_speed_unified).
+-- phase1.delivery_speed() now uses the same method as delivery_speed_by_network (open orders count for time waited
+-- so far + orders delivered in the last hour, 24h lookback, verification/wrong-network excluded, per-network reset
+-- respected), across all networks. Checkout banner (supplier-delivery-status "current") and the shop/store MTN badge
+-- therefore show the same figure. Front end: typed-in delivery promises replaced with the live measurement or "usually".

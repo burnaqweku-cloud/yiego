@@ -70,7 +70,7 @@ export default function PublicFooter() {
               <Wordmark className="h-[28px]" />
             </Link>
             <p className="mk-body mt-4 text-[13.5px]">
-              Data bundles for MTN, Telecel and AirtelTigo — bought in seconds, delivered in
+              Data bundles for MTN, Telecel and AirtelTigo — bought in seconds, usually delivered in
               minutes, tracked to the last cedi.
             </p>
             <a

@@ -48,7 +48,7 @@ export default function Hero() {
             data-reveal
             style={delay(80)}
           >
-            Data for any line, <span className="mk-accent">delivered in minutes.</span>
+            Data for any line, <span className="mk-accent">usually delivered within minutes.</span>
           </h1>
 
           <p className="mk-lead mt-8 max-w-[40rem] text-balance" data-reveal style={delay(150)}>

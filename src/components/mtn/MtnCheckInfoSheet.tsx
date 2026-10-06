@@ -7,12 +7,12 @@ import { FlowHeader } from "@/components/flows/flow-parts";
 export default function MtnCheckInfoSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Modal open={open} onClose={onClose} label="About the MTN number check">
-      <FlowHeader title="Is your MTN number approved?" subtitle="Approved numbers get data in minutes. Others can take days." onClose={onClose} />
+      <FlowHeader title="Is your MTN number approved?" subtitle="Approved numbers get data without a verification wait. Others can take days." onClose={onClose} />
       <div className="space-y-4 px-5 pb-[max(28px,env(safe-area-inset-bottom))] pt-3 text-[13.5px] leading-6 text-muted-foreground">
-        <p>MTN verifies every number the first time it receives a bundle from our supplier. Until a number is approved, orders to it can take days instead of minutes. Checking first tells you what to expect before you pay.</p>
+        <p>MTN verifies every number the first time it receives a bundle from our supplier. Until a number is approved, orders to it can take days instead of the usual delivery time. Checking first tells you what to expect before you pay.</p>
         <div className="space-y-2.5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">What the colours mean</p>
-          <p className="flex gap-2.5"><Check size={16} className="mt-1 shrink-0 text-primary-glow" /><span><b className="text-foreground">Approved.</b> Bundles to this number deliver in minutes.</span></p>
+          <p className="flex gap-2.5"><Check size={16} className="mt-1 shrink-0 text-primary-glow" /><span><b className="text-foreground">Approved.</b> Bundles to this number go through without the verification wait.</span></p>
           <p className="flex gap-2.5"><Clock size={16} className="mt-1 shrink-0 text-amber" /><span><b className="text-foreground">Not yet approved.</b> You can still buy. Your order goes through once MTN approves the number, usually within a few days. After that, every order to it is fast.</span></p>
           <p className="flex gap-2.5"><X size={16} className="mt-1 shrink-0 text-danger" /><span><b className="text-foreground">Not an MTN number</b> or <b className="text-foreground">blocked.</b> This bundle can't be sent to it.</span></p>
         </div>

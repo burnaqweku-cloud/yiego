@@ -28,6 +28,14 @@ export function speedLabel(s: NetworkSpeed | undefined): string | null {
   const core = m < 1 ? "under a minute" : m < 60 ? `${m} min` : `${Math.round(m / 60 * 10) / 10} hr`;
   return s.at_least ? `over ${core}` : m < 1 ? core : `~${core}`;
 }
+/** "about 20 minutes" / "over 5 hours" from a measurement, or null when nothing is measured. */
+export function speedPhrase(s: NetworkSpeed | undefined): string | null {
+  if (!s || s.paused || s.window === "none" || s.sample === 0) return null;
+  const m = Math.round(s.median_minutes);
+  const core = m < 1 ? "under a minute" : m < 60 ? `${m} minute${m === 1 ? "" : "s"}` : m < 120 ? "about an hour" : `${Math.round(m / 60)} hours`;
+  if (s.at_least) return `over ${core.replace(/^about /, "")}`;
+  return m < 1 || core.startsWith("about") ? core : `about ${core}`;
+}
 /** Wording + tone for the pill. Slow (over 30 min) shows amber so delays are visible, not hidden in a number. */
 export function speedPill(s: NetworkSpeed | undefined, network = "MTN"): { text: string; slow: boolean; paused?: boolean } | null {
   if (!s) return null;

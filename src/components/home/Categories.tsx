@@ -36,7 +36,7 @@ export default function Categories() {
               All three networks, one checkout
             </h2>
             <p className="mk-lead mt-4">
-              Pick the network, pick the size, type the number receiving it. The data lands in
+              Pick the network, pick the size, type the number receiving it. The data usually lands in
               minutes and every order carries a YG- reference you can follow.
             </p>
           </div>

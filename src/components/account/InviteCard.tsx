@@ -10,7 +10,7 @@ export default function InviteCard() {
   useEffect(() => { void myReferrals().then(setData); }, []);
   if (!data?.code) return null;
   const link = inviteLink(data.code);
-  const text = `Buy MTN, Telecel and AirtelTigo data on DataYego — delivered in minutes. Sign up with my link and get the referral price on your first bundle: ${link}`;
+  const text = `Buy MTN, Telecel and AirtelTigo data on DataYego — usually delivered within minutes. Sign up with my link and get the referral price on your first bundle: ${link}`;
   const copy = async () => { try { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { toast.error("Couldn't copy. Long-press the link instead."); } };
   const share = async () => {
     if (navigator.share) { try { await navigator.share({ title: "DataYego", text, url: link }); return; } catch { /* cancelled */ } }
