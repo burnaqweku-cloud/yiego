@@ -12,6 +12,15 @@ const visitorKey = () => { let k = localStorage.getItem("yg-store-visitor"); if 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const p1 = () => (supabase as unknown as { schema: (s: string) => any }).schema("phase1");
 
+/* Assistant bubbles may contain [text](url) links or bare URLs; render them as tappable links in the accent colour. */
+function Linkify({ text }: { text: string }) {
+  const parts: Array<string | { label: string; href: string }> = [];
+  const re = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s)]+)/g; let last = 0; let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) { if (m.index > last) parts.push(text.slice(last, m.index)); parts.push(m[1] ? { label: m[1], href: m[2] } : { label: m[3].replace(/^https?:\/\//, ""), href: m[3] }); last = m.index + m[0].length; }
+  if (last < text.length) parts.push(text.slice(last));
+  return <>{parts.map((p, i) => typeof p === "string" ? <span key={i}>{p}</span> : <a key={i} href={p.href} className="font-semibold text-primary-glow underline underline-offset-2" target={/wa\.me|whatsapp/.test(p.href) ? "_blank" : undefined} rel="noreferrer">{p.label}</a>)}</>;
+}
+
 export default function StoreSupport() {
   const store = useStore(); const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false); const [conv, setConv] = useState<string | null>(null);
@@ -74,7 +83,7 @@ export default function StoreSupport() {
               <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
                 {msgs.length === 0 && <div className="flex justify-start"><div className="max-w-[82%] rounded-2xl rounded-bl-md bg-white/[0.06] px-3.5 py-2 text-[13.5px] leading-5 text-foreground">Hi{first ? ` ${first}` : ""} 👋 Welcome to {store.store_name}. Ask me about bundles, prices, delivery or an order and I'll help right away.</div></div>}
                 {msgs.length === 0 && <div className="flex flex-wrap gap-2 pt-1">{["How much is MTN 1GB?", "Track my order", "How fast is delivery?", "Talk to a person"].map((q) => <button key={q} type="button" onClick={() => { if (q === "Talk to a person") void askHuman(); else void send(q); }} className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-[12.5px] font-medium text-primary-glow">{q}</button>)}</div>}
-                {msgs.map((m) => m.sender === "system" ? <p key={m.id} className="text-center text-[11.5px] text-faint-foreground">{m.body}</p> : <div key={m.id} className={`flex ${m.sender === "customer" ? "justify-end" : "justify-start"}`}><div className={`max-w-[82%] rounded-2xl px-3.5 py-2 text-[13.5px] leading-5 ${m.sender === "customer" ? "bg-primary text-primary-foreground" : "bg-white/[0.06] text-foreground"}`}>{m.sender === "agent" && <p className="mb-0.5 text-[10.5px] font-semibold opacity-70">{store.store_name}</p>}<p className="whitespace-pre-line">{m.body}</p></div></div>)}
+                {msgs.map((m) => m.sender === "system" ? <p key={m.id} className="text-center text-[11.5px] text-faint-foreground">{m.body}</p> : <div key={m.id} className={`flex ${m.sender === "customer" ? "justify-end" : "justify-start"}`}><div className={`max-w-[82%] rounded-2xl px-3.5 py-2 text-[13.5px] leading-5 ${m.sender === "customer" ? "bg-primary text-primary-foreground" : "bg-white/[0.06] text-foreground"}`}>{m.sender === "agent" && <p className="mb-0.5 text-[10.5px] font-semibold opacity-70">{store.store_name}</p>}<p className="whitespace-pre-line">{m.sender === "customer" ? m.body : <Linkify text={m.body} />}</p></div></div>)}
                 {thinking && <div className="flex justify-start"><div className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-white/[0.06] px-3.5 py-2.5"><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:0ms]" /><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:150ms]" /><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:300ms]" /></div></div>}
                 <div ref={endRef} />
               </div>
