@@ -74,7 +74,7 @@ export default function AdminGiveaways() {
       )}
 
       <StatGrid>
-        <Stat label="Bundles given" value={totals.paid} icon={Gift} tone="good" note="paid giveaway orders" />
+        <Stat label="Claimed" value={totals.paid} icon={Gift} tone="good" note="paid giveaway bundles" />
         <Stat label="Discount given" value={formatGHS(totals.discount)} note="normal price minus giveaway price" />
         <Stat label="Real cost to us" value={formatGHS(totals.loss)} note="supplier's actual charge minus what customers paid" tone={totals.loss > 0 ? "bad" : "default"} />
       </StatGrid>
@@ -82,14 +82,14 @@ export default function AdminGiveaways() {
       {list === null && <Panel title="Campaigns"><p className="text-[13px] text-muted-foreground">Loading…</p></Panel>}
       {list?.length === 0 && <Panel title="Campaigns"><p className="text-[13px] text-muted-foreground">No giveaways yet. Create one above; it goes live at once and the public link starts showing it.</p></Panel>}
       {(list ?? []).map((c) => {
-        const used = Number(c.paid) + Number(c.pending); const remaining = Math.max(0, c.max - used); const pct = c.max ? Math.min(100, Math.round((Number(c.paid) / c.max) * 100)) : 0;
+        const used = Number(c.paid); const remaining = Math.max(0, c.max - used); const pct = c.max ? Math.min(100, Math.round((Number(c.paid) / c.max) * 100)) : 0;
         const state = !c.is_active ? "Stopped" : remaining === 0 ? "Full" : c.id === current?.id ? "Live on /giveaway" : "Live";
         return (
           <Panel key={c.id} title={c.title} icon={Gift} action={<Pill tone={state.startsWith("Live") ? "good" : state === "Full" ? "warn" : "muted"}>{state}</Pill>} note={`${c.product.replace(" Data — ", " ")} · ${formatGHS(Number(c.price))} instead of ${formatGHS(Number(c.normal_price))} · created ${d(c.created_at)}`}>
             <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
               <div>
-                <div className="flex items-end justify-between text-[12.5px]"><span className="text-muted-foreground"><b className="text-foreground">{c.paid}</b> paid · <b className="text-foreground">{c.pending}</b> claimed, paying now · <b className="text-foreground">{remaining}</b> remaining</span><span className="text-faint-foreground">cap {c.max}</span></div>
-                <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /><div className="-mt-2.5 h-full rounded-full bg-amber/60" style={{ width: `${c.max ? Math.min(100, Math.round((used / c.max) * 100)) : 0}%`, opacity: 0.35 }} /></div>
+                <div className="flex items-end justify-between text-[12.5px]"><span className="text-muted-foreground"><b className="text-foreground">{c.paid}</b> claimed (paid) · <b className="text-foreground">{remaining}</b> remaining<span className="text-faint-foreground"> · {c.pending} started checkout, not paid</span></span><span className="text-faint-foreground">cap {c.max}</span></div>
+                <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /></div>
                 <div className="mt-3 grid grid-cols-3 gap-3 text-[12.5px]">
                   <div><p className="text-faint-foreground">Discount given</p><p className="font-semibold text-foreground">{formatGHS(Number(c.discount_given))}</p></div>
                   <div><p className="text-faint-foreground">Supplier charged (avg)</p><p className="font-semibold text-foreground">{c.cost != null ? formatGHS(Number(c.cost)) : "—"}</p></div>
@@ -105,9 +105,9 @@ export default function AdminGiveaways() {
             </div>
             {claimsFor === c.id && (
               <div className="mt-4 border-t border-white/[0.06] pt-4">
-                <ManagedList items={claims} filters={[{ id: "all", label: "All" }, { id: "paid", label: "Paid" }, { id: "ordered", label: "Paying" }, { id: "reserved", label: "Claimed" }, { id: "expired", label: "Expired" }]} filterOf={(r) => r.status} searchText={(r) => r.recipient_phone} empty="No claims yet." pageSize={15}
-                  render={(r) => <div className="flex items-center justify-between py-2 text-[12.5px]"><span className="font-mono text-foreground">{r.recipient_phone}</span><span className={r.status === "paid" ? "text-primary-glow" : "text-faint-foreground"}>{r.status === "reserved" ? "claimed" : r.status === "ordered" ? "paying" : r.status}</span><span className="text-faint-foreground">{d(r.created_at)}</span></div>}
-                  countLabel={(n) => `${n} claim${n === 1 ? "" : "s"}`} />
+                <ManagedList items={claims} filters={[{ id: "paid", label: "Claimed (paid)" }, { id: "all", label: "Everything" }, { id: "reserved", label: "Not paid yet" }, { id: "expired", label: "Expired" }]} filterOf={(r) => r.status} searchText={(r) => r.recipient_phone} empty="No claims yet." pageSize={15}
+                  render={(r) => <div className="flex items-center justify-between py-2 text-[12.5px]"><span className="font-mono text-foreground">{r.recipient_phone}</span><span className={r.status === "paid" ? "text-primary-glow" : "text-faint-foreground"}>{r.status === "paid" ? "claimed" : r.status === "reserved" || r.status === "ordered" ? "not paid" : r.status}</span><span className="text-faint-foreground">{d(r.created_at)}</span></div>}
+                  countLabel={(n) => `${n} shown`} />
               </div>
             )}
           </Panel>
