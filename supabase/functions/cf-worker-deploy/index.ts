@@ -5,25 +5,37 @@ import { requireCronSecret } from "../_shared/internal.ts";
 /* Deploys the datayego-stores Cloudflare Worker (cron secret). The Worker serves every store host
    (slug.datayego.com and custom domains) from the app at datayego.com, and rewrites the HTML's
    link-preview tags so WhatsApp/Facebook/Telegram show the STORE's name, tagline and logo.
+   Also rewrites datayego.com/s/<slug> pages the same way. A store with no logo gets no image at all
+   (image meta and icon links removed, icon paths answer 404), never DataYego's banner or icon.
    NOTE: cf-domains' "setup" action still carries the old Worker text; this function is the one to run. */
 const ZONE = "datayego.com"; const WORKER = "datayego-stores";
 const WORKER_JS = `const SUPA = "https://nhxgebulvqhtiiotetoo.supabase.co"; const ANON = "sb_publishable_tAbh99C5tny6sMAiu6ZYrg_BWjkRIAX";
 export default { async fetch(request) {
   const url = new URL(request.url); const host = url.hostname.toLowerCase();
-  if (host === "${ZONE}" || host === "www.${ZONE}") return fetch(request);
+  const apex = host === "${ZONE}" || host === "www.${ZONE}";
+  const sm = apex ? url.pathname.match(/^\\/s\\/([a-z0-9-]+)(?:\\/|$)/i) : null;
+  if (apex && !sm) return fetch(request);
+  // The store this request is for: its own host, or slug.${ZONE} for datayego.com/s/<slug> links.
+  const storeHost = sm ? sm[1].toLowerCase() + ".${ZONE}" : host;
+  const og = () => fetch(SUPA + "/rest/v1/rpc/store_og", { method: "POST", headers: { apikey: ANON, Authorization: "Bearer " + ANON, "Content-Type": "application/json", "Content-Profile": "phase1" }, body: JSON.stringify({ p_host: storeHost }) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   // Favicon paths: WhatsApp and browsers fetch these directly, so serve the store's logo there.
   const ICONS = ["/favicon.ico", "/favicon.png", "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png", "/yiego-icon-192.png", "/yiego-icon-512.png"];
-  if (request.method === "GET" && ICONS.includes(url.pathname)) {
-    const m = await fetch(SUPA + "/rest/v1/rpc/store_og", { method: "POST", headers: { apikey: ANON, Authorization: "Bearer " + ANON, "Content-Type": "application/json", "Content-Profile": "phase1" }, body: JSON.stringify({ p_host: host }) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  if (!apex && request.method === "GET" && ICONS.includes(url.pathname)) {
+    const m = await og();
     if (m && m.image) { const img = await fetch(m.image); if (img.ok) { const h = new Headers(img.headers); h.set("cache-control", "public, max-age=3600"); return new Response(img.body, { status: 200, headers: h }); } }
+    if (m && m.name) return new Response(null, { status: 404, headers: { "cache-control": "public, max-age=600" } });
   }
-  const target = new URL(url.pathname + url.search, "https://${ZONE}");
-  const headers = new Headers(request.headers); headers.set("x-store-host", host); headers.delete("host");
-  const res = await fetch(target.toString(), { method: request.method, headers, body: ["GET","HEAD"].includes(request.method) ? undefined : request.body, redirect: "manual" });
+  let res;
+  if (apex) res = await fetch(request);
+  else {
+    const target = new URL(url.pathname + url.search, "https://${ZONE}");
+    const headers = new Headers(request.headers); headers.set("x-store-host", host); headers.delete("host");
+    res = await fetch(target.toString(), { method: request.method, headers, body: ["GET","HEAD"].includes(request.method) ? undefined : request.body, redirect: "manual" });
+  }
   const out = new Headers(res.headers);
-  const loc = out.get("location"); if (loc && loc.startsWith("https://${ZONE}")) out.set("location", loc.replace("https://${ZONE}", "https://" + host));
+  const loc = out.get("location"); if (!apex && loc && loc.startsWith("https://${ZONE}")) out.set("location", loc.replace("https://${ZONE}", "https://" + host));
   if (request.method === "GET" && (res.headers.get("content-type") || "").includes("text/html")) {
-    const meta = await fetch(SUPA + "/rest/v1/rpc/store_og", { method: "POST", headers: { apikey: ANON, Authorization: "Bearer " + ANON, "Content-Type": "application/json", "Content-Profile": "phase1" }, body: JSON.stringify({ p_host: host }) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const meta = await og();
     if (meta && meta.name) {
       const title = meta.name + " \\u2014 MTN, Telecel & AirtelTigo data"; const desc = meta.description || ""; const img = meta.image || "";
       const set = (attr, val) => ({ element(e) { e.setAttribute(attr, val); } }); const drop = { element(e) { e.remove(); } };
@@ -35,7 +47,7 @@ export default { async fetch(request) {
         .on('meta[name="application-name"]', set("content", meta.name)).on('meta[name="apple-mobile-web-app-title"]', set("content", meta.name))
         .on('meta[name="twitter:card"]', set("content", "summary"));
       rw = img ? rw.on('meta[property="og:image"]', set("content", img)).on('meta[name="twitter:image"]', set("content", img)).on('link[rel="icon"]', set("href", img)).on('link[rel="apple-touch-icon"]', set("href", img))
-               : rw.on('meta[property="og:image"]', drop).on('meta[name="twitter:image"]', drop);
+               : rw.on('meta[property^="og:image"]', drop).on('meta[name^="twitter:image"]', drop).on('link[rel="icon"]', drop).on('link[rel="apple-touch-icon"]', drop).on('link[rel="shortcut icon"]', drop).on('link[rel="mask-icon"]', drop);
       out.delete("content-length");
       return rw.transform(new Response(res.body, { status: res.status, headers: out }));
     }
