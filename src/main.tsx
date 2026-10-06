@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import AppErrorBoundary from "./components/AppErrorBoundary";
 import "./index.css";
 
 // A page left open across a publish asks for code files that no longer exist,
@@ -13,4 +14,4 @@ window.addEventListener("vite:preloadError", (event) => {
   window.location.reload();
 });
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(<AppErrorBoundary><App /></AppErrorBoundary>);
