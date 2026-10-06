@@ -61,7 +61,6 @@ export default function StudioHome() {
             <div className="mt-8 grid grid-cols-3 divide-x divide-[var(--st-line)] overflow-hidden rounded-2xl border border-[var(--st-line)] bg-white sm:max-w-md">
               {[["3", "Networks"], ["24/7", "Auto delivery"], ["MoMo", "or card"]].map(([v, l]) => <div key={l} className="px-2 py-4 text-center"><p className="text-[22px] font-extrabold leading-none tracking-tight text-[var(--st-ink)]">{v}</p><p className="mt-1.5 whitespace-nowrap text-[12px] text-[var(--st-slate)]">{l}</p></div>)}
             </div>
-            </div>
           </div>
           <div className="mt-10 lg:mt-0">
             <div className="st-ticket overflow-hidden">

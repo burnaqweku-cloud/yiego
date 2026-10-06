@@ -64,7 +64,8 @@ export default function AgentShell() {
   const [plan, setPlan] = useState<Plan | null>(null); const [quote, setQuote] = useState<PlanQuote | null>(null);
   const [role, setRole] = useState<"owner" | "staff">("owner"); const [unread, setUnread] = useState(0);
   const [networkOpen, setNetworkOpen] = useState(false);
-  useEffect(() => { if (!agent) return; void p1().rpc("network_tier_status", {}).then(({ data }) => setNetworkOpen(!!(data as { open_for_me?: boolean } | null)?.open_for_me)); }, [agent?.id]); // eslint-disable-line react-hooks/exhaustive-deps const [floors, setFloors] = useState<Record<string, number>>({});
+  useEffect(() => { if (!agent) return; void p1().rpc("network_tier_status", {}).then(({ data }) => setNetworkOpen(!!(data as { open_for_me?: boolean } | null)?.open_for_me)); }, [agent?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [floors, setFloors] = useState<Record<string, number>>({});
 
   const reload = useCallback(async () => {
     if (!user) return;
