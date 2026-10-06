@@ -1,0 +1,12 @@
+-- SECURITY REVIEW 6 Oct 2026 (applied via MCP: security_hardening_6oct, lock_internal_functions). Findings + fixes:
+-- 1. agents: anon had SELECT on the whole table (policy agents_public_store) -> MoMo number/name, earnings, user_id,
+--    Cloudflare/Resend ids of every active agent were readable with the public key. Fixed: revoke anon SELECT, drop policy.
+--    Storefronts use RPCs only (agent_store, store_by_host, store_og, store_canonical_host) - verified working as anon.
+-- 2. Internal functions had default PUBLIC execute: agent_ledger_post (credit any agent!), referral_*, network_fee_paid,
+--    agent_activate_subscription, cron jobs, etc. Fixed: revoked from public/anon/authenticated, granted to service_role;
+--    default privileges changed so new functions are private until granted. Verified blocked as anon; public RPCs still work.
+-- 3. cloudflare_config RLS enabled; domain_tld_prices RLS + read-only policy.
+-- 4. profiles.home_store_id can no longer be changed by the customer themselves (trigger).
+-- Checked OK: internal_secrets (RLS, no grants); admin_*/finance_* guarded by caller_is_admin (actor must equal auth.uid(), aal2);
+-- network_applications RLS; store chat tables only via RPC; edge functions check JWT/cron secret; AI chats are separate
+-- (ai-support: support_* tables, Gemini; store-chat-ai: store_* tables) and never share threads.
