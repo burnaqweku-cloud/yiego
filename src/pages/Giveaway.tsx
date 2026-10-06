@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { useAuth } from "@/store/auth-context";
 import { Gift, ShieldCheck, Zap } from "lucide-react";
 import { toast } from "sonner";
 import Seo from "@/components/seo/Seo";
@@ -12,12 +13,12 @@ import { Button } from "@/components/ui/button";
 
 /* A giveaway link: one bundle at a special price, one claim per number (and device/account), hidden cap.
    The page never shows how many are left; when the cap is hit it simply reads as ended. */
-interface Campaign { slug: string; title: string; blurb: string | null; price: number; normal_price: number; product_id: string; product_name: string; network: string; network_code: string; validity: string | null; open: boolean }
+interface Campaign { slug: string; title: string; blurb: string | null; price: number; normal_price: number; product_id: string; product_name: string; network: string; network_code: string; validity: string | null; open: boolean; require_account: boolean }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const p1 = () => (supabase as unknown as { schema: (s: string) => any }).schema("phase1");
 
 export default function Giveaway() {
-  const { slug = "" } = useParams();
+  const { slug = "" } = useParams(); const { isAuthenticated } = useAuth();
   const [c, setC] = useState<Campaign | null | undefined>(undefined);
   const [phone, setPhone] = useState(""); const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null);
@@ -32,7 +33,7 @@ export default function Giveaway() {
     setBusy(false);
     if (error) {
       const m = error.message;
-      return toast.error(m.includes("phone_used") ? "This number has already had its giveaway bundle." : m.includes("device_used") || m.includes("account_used") ? "This giveaway is one per person, and this phone has already claimed one." : m.includes("wrong_network") ? `That number isn't on ${c.network}. The giveaway is for ${c.network} numbers.` : m.includes("campaign_full") || m.includes("campaign_closed") ? "This giveaway has ended. Thank you to everyone who took part!" : "Couldn't claim right now. Try again.");
+      return toast.error(m.includes("sign_in_required") ? "Sign in or create a free account to claim." : m.includes("phone_used") ? "This number has already had its giveaway bundle." : m.includes("device_used") || m.includes("account_used") ? "This giveaway is one per person, and this phone has already claimed one." : m.includes("wrong_network") ? `That number isn't on ${c.network}. The giveaway is for ${c.network} numbers.` : m.includes("campaign_full") || m.includes("campaign_closed") ? "This giveaway has ended. Thank you to everyone who took part!" : "Couldn't claim right now. Try again.");
     }
     setPreselect({ kind: "bundle", networkId: c.network_code as "mtn" | "telecel" | "at", productCode: c.product_id, campaign: { token: data.token, price: Number(data.price), phone: data.phone, title: c.title } });
     setOpen(true);
@@ -54,9 +55,13 @@ export default function Giveaway() {
               <div><p className="text-[12px] text-faint-foreground">{c.network} · {size}{c.validity ? ` · ${c.validity}` : ""}</p><p className="mt-1 font-display text-[30px] font-semibold text-foreground">{formatGHS(c.price)}</p></div>
               <p className="pb-2 text-[14px] text-faint-foreground line-through">{formatGHS(c.normal_price)}</p>
             </div>
+            {c.require_account && !isAuthenticated ? (
+              <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/10 p-4"><p className="text-[14px] font-semibold text-foreground">Sign in to claim</p><p className="mt-1 text-[13px] text-muted-foreground">This giveaway is for DataYego account holders. Creating an account is free and takes a minute; it also keeps your orders and receipts in one place.</p><div className="mt-3 flex flex-wrap gap-2"><Link to={`/auth?next=${encodeURIComponent(`/g/${slug}`)}`} className="onyx-btn-primary px-4 py-2.5 text-[13.5px]">Sign in / Create account</Link></div></div>
+            ) : (<>
             <label className="mt-5 block"><span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{c.network} number to receive the data</span><input value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="tel" placeholder="024 000 0000" className="onyx-field w-full text-[18px] tracking-wide" /></label>
             <p className="mt-2 text-[12px] text-faint-foreground">One giveaway bundle per number. Check the number carefully; data sent to a wrong number can't be recalled.</p>
             <Button className="mt-4 w-full py-3 text-[15px]" disabled={busy} onClick={() => void claim()}>{busy ? "Checking…" : `Claim and pay ${formatGHS(c.price)}`}</Button>
+            </>)}
             <div className="mt-5 grid grid-cols-2 gap-3 text-[12.5px] text-muted-foreground"><span className="inline-flex items-center gap-1.5"><Zap size={14} className="text-primary-glow" />Delivered automatically</span><span className="inline-flex items-center gap-1.5"><ShieldCheck size={14} className="text-primary-glow" />Pay by MoMo or card</span></div>
           </>
         )}
