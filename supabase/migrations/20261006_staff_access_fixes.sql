@@ -1,0 +1,3 @@
+-- Applied 6 Oct 2026: staff could be invited but never get in (no RLS right to read their agent's row; Customers RPC owner-only).
+-- + policy agents_staff_read via security-definer helper phase1.my_staff_agent_ids() (avoids RLS recursion agents<->agent_staff)
+-- + agent_customers() resolves the staff member's agent. Verified end to end with a throwaway staff user (rolled back).
