@@ -17,9 +17,9 @@ const SOCIALS: Array<[string, string, string]> = [["facebook", "Facebook", "http
 export default function StoreBrandingEditor() {
   const { agent, products, reload } = useAgent();
   const [f, setF] = useState({ accent_color: agent.accent_color ?? "", about_text: agent.about_text ?? "", hours_text: agent.hours_text ?? "", store_notice: agent.store_notice ?? "", contact_phone: agent.contact_phone ?? "", socials: { ...(agent.socials ?? {}) } as Record<string, string>, featured: [...(agent.featured_product_ids ?? [])], faq: (agent.faq?.length ? agent.faq : DEFAULT_FAQ(agent.store_name)).map((x) => ({ ...x })) });
-  const [logo, setLogo] = useState(agent.logo_url ?? ""); const [banner, setBanner] = useState(agent.banner_url ?? "");
+  const [logo, setLogo] = useState(agent.logo_url ?? "");
   const [busy, setBusy] = useState<string | null>(null);
-  useEffect(() => { setLogo(agent.logo_url ?? ""); setBanner(agent.banner_url ?? ""); }, [agent.logo_url, agent.banner_url]);
+  useEffect(() => { setLogo(agent.logo_url ?? ""); }, [agent.logo_url]);
   const active = useMemo(() => products.filter((p) => !p.is_paused), [products]);
 
   const upload = async (kind: "logo" | "banner", file: File) => {
@@ -33,13 +33,13 @@ export default function StoreBrandingEditor() {
     const { error: e2 } = await p1().rpc("agent_update_branding", { p: kind === "logo" ? { logo_url: url } : { banner_url: url } });
     setBusy(null);
     if (e2) return toast.error(e2.message.replace(/_/g, " "));
-    if (kind === "logo") setLogo(url); else setBanner(url);
-    toast.success(kind === "logo" ? "Logo updated." : "Banner updated."); void reload();
+    setLogo(url);
+    toast.success("Logo updated."); void reload();
   };
   const clear = async (kind: "logo" | "banner") => {
     const { error } = await p1().rpc("agent_update_branding", { p: kind === "logo" ? { logo_url: "" } : { banner_url: "" } });
     if (error) return toast.error(error.message.replace(/_/g, " "));
-    if (kind === "logo") setLogo(""); else setBanner(""); void reload();
+    setLogo(""); void reload();
   };
   const save = async () => {
     setBusy("save");
@@ -76,10 +76,9 @@ export default function StoreBrandingEditor() {
           ))}
         </div>
       </Section>
-      <Section page="store" id="look" title="Look" icon={<Palette size={15} />} subtitle="Logo, banner, accent colour and the notice line.">
+      <Section page="store" id="look" title="Look" icon={<Palette size={15} />} subtitle="Logo, accent colour and the notice line.">
         <div className="grid gap-4 sm:grid-cols-2">
           <div><p className="mb-1 text-[12px] font-semibold text-foreground">Logo</p><div className="flex items-center gap-3">{logo ? <img src={logo} alt="" className="h-16 w-16 rounded-full object-cover" /> : <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-[20px] font-semibold text-primary-glow">{agent.store_name.slice(0, 1)}</span>}<label className="cursor-pointer rounded-full border border-white/[0.12] bg-white/[0.04] px-3 py-2 text-[12.5px] text-foreground"><ImagePlus size={14} className="mr-1 inline" />{busy === "logo" ? "Uploading…" : "Upload"}<input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload("logo", file); e.target.value = ""; }} /></label>{logo && <button type="button" onClick={() => void clear("logo")} className="text-faint-foreground" aria-label="Remove logo"><Trash2 size={15} /></button>}</div><p className="mt-1 text-[11.5px] text-faint-foreground">Square, at least 256×256.</p></div>
-          <div><p className="mb-1 text-[12px] font-semibold text-foreground">Banner</p>{banner ? <img src={banner} alt="" className="h-24 w-full rounded-xl object-cover" /> : <div className="flex h-24 w-full items-center justify-center rounded-xl border border-dashed border-white/[0.12] text-[12px] text-faint-foreground">No banner yet</div>}<div className="mt-2 flex items-center gap-2"><label className="cursor-pointer rounded-full border border-white/[0.12] bg-white/[0.04] px-3 py-2 text-[12.5px] text-foreground"><ImagePlus size={14} className="mr-1 inline" />{busy === "banner" ? "Uploading…" : "Upload"}<input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload("banner", file); e.target.value = ""; }} /></label>{banner && <button type="button" onClick={() => void clear("banner")} className="text-faint-foreground" aria-label="Remove banner"><Trash2 size={15} /></button>}</div><p className="mt-1 text-[11.5px] text-faint-foreground">Wide, about 1200×400.</p></div>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field label="Accent colour" hint={`Buttons, prices and highlights on your store. Leave empty for the template's own colour (${TEMPLATE_DEFAULT_ACCENT[template]?.name ?? "green"}).`}><div className="flex items-center gap-2"><input type="color" value={f.accent_color || TEMPLATE_DEFAULT_ACCENT[template]?.hex || "#21c38a"} onChange={(e) => setF({ ...f, accent_color: e.target.value })} className="h-10 w-14 cursor-pointer rounded-lg border border-white/[0.1] bg-transparent" /><input value={f.accent_color} onChange={(e) => setF({ ...f, accent_color: e.target.value })} placeholder={TEMPLATE_DEFAULT_ACCENT[template]?.hex ?? "#21c38a"} className={inputCls} />{f.accent_color && <button type="button" onClick={() => void resetAccent()} className="shrink-0 text-[12.5px] font-semibold text-primary-glow">Reset</button>}</div></Field>
