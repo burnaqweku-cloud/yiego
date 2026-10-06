@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Clock, MessageCircle, Search } from "lucide-react";
 import Seo from "@/components/seo/Seo";
+import AddMoneyFlow from "@/components/flows/AddMoneyFlow";
 import BuyDataFlow, { type AgentStoreContext, type BuyPreselect } from "@/components/flows/BuyDataFlow";
 import { useStore, waLink } from "@/components/store/StoreShell";
 import { storeBase } from "@/lib/storeHost";
@@ -17,7 +18,7 @@ import type { Network } from "@/data/bundles";
 export default function MarketHome() {
   const store = useStore(); const navigate = useNavigate(); const speeds = useDeliverySpeed();
   const base = storeBase(store.slug); const { picks, perNetwork, loaded } = useHomeData(store);
-  const [open, setOpen] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null); const [track, setTrack] = useState("");
+  const [open, setOpen] = useState(false); const [addMoney, setAddMoney] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null); const [track, setTrack] = useState("");
   const agent: AgentStoreContext = { slug: store.slug, name: store.store_name, prices: store.prices };
   const buy = (p: Phase1Product, n: Network) => { setPreselect({ kind: "bundle", networkId: n.id, productCode: p.app_product_code ?? p.id }); setOpen(true); };
   const wa = store.support?.whatsapp_url ?? waLink(store); const mtn = speedPill(speeds.MTN); const first = store.store_name.split("'")[0];
@@ -80,7 +81,8 @@ export default function MarketHome() {
         {faq.map((x) => <details key={x.q} className="group border-t-2 border-dashed border-[#1d2460]/20 first:border-0"><summary className="cursor-pointer list-none py-3 text-[14.5px] font-bold text-[#15131f]">{x.q}</summary><p className="pb-3 text-[13.5px] leading-6 text-muted-foreground">{x.a}</p></details>)}
         <Link to={`${base}/faq`} className="inline-flex items-center gap-1 py-3 text-[13.5px] font-bold text-[#1d2460]">All questions<ArrowRight size={14} /></Link>
       </section>
-      <BuyDataFlow open={open} preselect={preselect} onClose={() => setOpen(false)} onAddMoney={() => undefined} agent={agent} />
+      <BuyDataFlow open={open} preselect={preselect} onClose={() => setOpen(false)} onAddMoney={() => { setOpen(false); setAddMoney(true); }} agent={agent} />
+      <AddMoneyFlow open={addMoney} onClose={() => setAddMoney(false)} />
     </div>
   );
 }

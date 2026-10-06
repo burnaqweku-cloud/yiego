@@ -55,7 +55,13 @@ Deno.serve(async (req) => {
 
     const reference = makePaystackReference("YGDEP");
     const appUrl = (Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL") ?? "https://datayego.com").replace(/\/$/, "");
-    const callbackUrl = `${appUrl}/payment/success?reference=${encodeURIComponent(reference)}&type=deposit`;
+    // Accounts that belong to an agent's store go back to that store after paying, not to datayego.com.
+    let callbackUrl = `${appUrl}/payment/success?reference=${encodeURIComponent(reference)}&type=deposit`;
+    const { data: prof } = await supabase.from("profiles").select("home_store_id").eq("id", authData.user.id).maybeSingle();
+    if (prof?.home_store_id) {
+      const { data: st } = await supabase.from("agents").select("slug, custom_domain, custom_domain_status").eq("id", prof.home_store_id).maybeSingle();
+      if (st) { const host = st.custom_domain && st.custom_domain_status === "active" ? st.custom_domain : `${st.slug}.datayego.com`; callbackUrl = `https://${host}/account?deposit=${encodeURIComponent(reference)}`; }
+    }
 
     // The customer is charged the deposit + 4% Paystack fee, but the wallet is
     // credited only the base deposit — so a "GH₵50 top-up" lands as GH₵50.

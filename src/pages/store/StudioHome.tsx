@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Clock, MessageCircle, Search, ShieldCheck } from "lucide-react";
 import Seo from "@/components/seo/Seo";
+import AddMoneyFlow from "@/components/flows/AddMoneyFlow";
 import BuyDataFlow, { type AgentStoreContext, type BuyPreselect } from "@/components/flows/BuyDataFlow";
 import { useStore, waLink } from "@/components/store/StoreShell";
 import { storeBase } from "@/lib/storeHost";
@@ -24,7 +25,7 @@ export default function StudioHome() {
   const store = useStore(); const navigate = useNavigate(); const speeds = useDeliverySpeed();
   const base = storeBase(store.slug);
   const [products, setProducts] = useState<Phase1Product[]>([]);
-  const [open, setOpen] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null);
+  const [open, setOpen] = useState(false); const [addMoney, setAddMoney] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null);
   const [track, setTrack] = useState("");
   useEffect(() => { void loadPhase1Products().then((r) => setProducts(r.data ?? [])); }, []);
   const agent: AgentStoreContext = useMemo(() => ({ slug: store.slug, name: store.store_name, prices: store.prices }), [store]);
@@ -153,7 +154,8 @@ export default function StudioHome() {
         </div>
       </section>
 
-      <BuyDataFlow open={open} preselect={preselect} onClose={() => setOpen(false)} onAddMoney={() => undefined} agent={agent} />
+      <BuyDataFlow open={open} preselect={preselect} onClose={() => setOpen(false)} onAddMoney={() => { setOpen(false); setAddMoney(true); }} agent={agent} />
+      <AddMoneyFlow open={addMoney} onClose={() => setAddMoney(false)} />
     </div>
   );
 }

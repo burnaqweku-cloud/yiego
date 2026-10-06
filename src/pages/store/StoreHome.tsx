@@ -7,6 +7,7 @@ import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { MessageCircle, Search, ShieldCheck, Zap } from "lucide-react";
 import Seo from "@/components/seo/Seo";
+import AddMoneyFlow from "@/components/flows/AddMoneyFlow";
 import BuyDataFlow, { type AgentStoreContext, type BuyPreselect } from "@/components/flows/BuyDataFlow";
 import { useStore, waLink } from "@/components/store/StoreShell";
 import { NETWORKS, type Network } from "@/data/bundles";
@@ -17,7 +18,7 @@ export default function StoreHome() {
   const speeds = useDeliverySpeed(); const [checkInfoOpen, setCheckInfoOpen] = useState(false);
   const store = useStore(); const navigate = useNavigate();
   const [products, setProducts] = useState<Phase1Product[]>([]);
-  const [open, setOpen] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null);
+  const [open, setOpen] = useState(false); const [addMoney, setAddMoney] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null);
   const [sp] = useSearchParams(); const initialNet = (["mtn", "telecel", "at"] as const).find((n) => n === sp.get("network")) ?? "all";
   const [network, setNetwork] = useState<"all" | "mtn" | "telecel" | "at">(initialNet); const [track, setTrack] = useState("");
   useEffect(() => { void loadPhase1Products().then((r) => setProducts(r.data ?? [])); }, []);
@@ -80,7 +81,8 @@ export default function StoreHome() {
         </form>
       </section>
       {wa && <a href={wa} target="_blank" rel="noreferrer" className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-4 py-3 text-[14px] font-semibold text-[#062e1a]"><MessageCircle size={17} />Chat with {store.store_name.split("'")[0]} on WhatsApp</a>}
-      <BuyDataFlow open={open} preselect={preselect} onClose={() => setOpen(false)} onAddMoney={() => undefined} agent={agent} />
+      <BuyDataFlow open={open} preselect={preselect} onClose={() => setOpen(false)} onAddMoney={() => { setOpen(false); setAddMoney(true); }} agent={agent} />
+      <AddMoneyFlow open={addMoney} onClose={() => setAddMoney(false)} />
     </>
   );
 }
