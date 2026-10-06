@@ -11,6 +11,12 @@ const WORKER_JS = `const SUPA = "https://nhxgebulvqhtiiotetoo.supabase.co"; cons
 export default { async fetch(request) {
   const url = new URL(request.url); const host = url.hostname.toLowerCase();
   if (host === "${ZONE}" || host === "www.${ZONE}") return fetch(request);
+  // Favicon paths: WhatsApp and browsers fetch these directly, so serve the store's logo there.
+  const ICONS = ["/favicon.ico", "/favicon.png", "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png", "/yiego-icon-192.png", "/yiego-icon-512.png"];
+  if (request.method === "GET" && ICONS.includes(url.pathname)) {
+    const m = await fetch(SUPA + "/rest/v1/rpc/store_og", { method: "POST", headers: { apikey: ANON, Authorization: "Bearer " + ANON, "Content-Type": "application/json", "Content-Profile": "phase1" }, body: JSON.stringify({ p_host: host }) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    if (m && m.image) { const img = await fetch(m.image); if (img.ok) { const h = new Headers(img.headers); h.set("cache-control", "public, max-age=3600"); return new Response(img.body, { status: 200, headers: h }); } }
+  }
   const target = new URL(url.pathname + url.search, "https://${ZONE}");
   const headers = new Headers(request.headers); headers.set("x-store-host", host); headers.delete("host");
   const res = await fetch(target.toString(), { method: request.method, headers, body: ["GET","HEAD"].includes(request.method) ? undefined : request.body, redirect: "manual" });
