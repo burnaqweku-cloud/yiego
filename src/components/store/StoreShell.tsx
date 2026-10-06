@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { storeBase } from "@/lib/storeHost";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Bell, Facebook, Instagram, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound, Users } from "lucide-react";
@@ -21,7 +21,7 @@ const TEMPLATE_FONTS: Record<string, string> = { market: "https://fonts.googleap
 /* The agent's storefront frame: their header with a menu, their pages, their footer.
    Nothing of DataYego's on the page. Pages inside read the store via useStore(). */
 export interface StoreBranding { template: "classic" | "market" | "studio"; accent_color: string | null; banner_url: string | null; about_text: string | null; hours_text: string | null; store_notice: string | null; contact_phone: string | null; socials: Record<string, string>; featured_product_ids: string[]; faq: Array<{ q: string; a: string }>; delivered_count: number }
-export interface StoreData extends StoreBranding { network?: { fee: number; pitch: string | null } | null; custom_domain_for_network?: string | null; support?: { whatsapp_url: string | null; chat_on: boolean }; promos?: Record<string, { was: number; ends_at: string }>; id: string; slug: string; store_name: string; tagline: string | null; logo_url: string | null; whatsapp: string | null; status: "active" | "closed"; prices: Record<string, number> }
+export interface StoreData extends StoreBranding { network?: { fee: number; pitch: string | null } | null; custom_domain_for_network?: string | null; support?: { whatsapp_url: string | null; chat_on: boolean }; promos?: Record<string, { was: number; ends_at: string }>; id: string; slug: string; store_name: string; header_name?: string | null; tagline: string | null; logo_url: string | null; whatsapp: string | null; status: "active" | "closed"; prices: Record<string, number> }
 const StoreContext = createContext<StoreData | null>(null);
 export const useStore = () => { const c = useContext(StoreContext); if (!c) throw new Error("useStore outside StoreShell"); return c; };
 export const waLink = (s: StoreData) => s.whatsapp ? `https://wa.me/233${s.whatsapp.replace(/\D/g, "").replace(/^0/, "")}` : null;
@@ -111,24 +111,24 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
             <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 py-3 sm:px-8">
               <Link to={`${storeBase(store.slug)}` || "/"} className="flex min-w-0 items-center gap-2.5">
                 {store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-contain p-[2px]" style={{ background: "#fff", boxShadow: "0 0 0 1px rgba(0,0,0,0.06)" }} /> : null}
-                <span className="truncate text-[16px] font-bold text-foreground">{store.store_name}</span>
+                <FitName text={store.header_name || store.store_name} base={16} className="truncate font-bold text-foreground" />
               </Link>
               <nav className="st-nav ml-6 hidden items-center gap-1 md:flex">
                 {NAV.filter((n) => n.label !== "Home" && n.label !== "Sign in / Create account" && n.label !== "Your account").map((n) => <Link key={n.to} to={n.to} className={(n.end ? location.pathname === n.to : location.pathname.startsWith(n.to)) ? "on" : ""}>{n.label}</Link>)}
               </nav>
               <div className="ml-auto flex items-center gap-2">
-                {anns.length > 0 && <button type="button" onClick={markSeen} aria-label="Store news" className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.1] text-foreground"><Bell size={17} />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{unread}</span>}</button>}
+                {anns.length > 0 && <button type="button" onClick={markSeen} aria-label="Store news" className="relative hidden h-9 w-9 items-center justify-center rounded-xl border md:flex border-white/[0.1] text-foreground"><Bell size={17} />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{unread}</span>}</button>}
                 <Link to={`${storeBase(store.slug)}/${isAuthenticated ? "account" : "sign-in"}`} className="hidden h-9 items-center rounded-xl px-3 text-[14px] font-medium text-muted-foreground md:flex">{isAuthenticated ? "Account" : "Sign in"}</Link>
-                <Link to={`${storeBase(store.slug)}/bundles`} className="st-btn fill !px-4 !py-2 !text-[14px]">Buy data</Link>
-                <button type="button" onClick={() => setMenu(true)} aria-label="Menu" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.1] text-foreground md:hidden"><Menu size={18} /></button>
+                <Link to={`${storeBase(store.slug)}/bundles`} className="st-btn fill shrink-0 whitespace-nowrap !px-3 !py-1.5 !text-[13px] sm:!px-4 sm:!py-2 sm:!text-[14px]">Buy data</Link>
+                <button type="button" onClick={() => setMenu(true)} aria-label={unread > 0 ? "Menu, new store news" : "Menu"} className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.1] text-foreground md:hidden"><Menu size={18} />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background" />}</button>
               </div>
             </div>
           ) : (
-          <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
+          <div className="mx-auto flex max-w-2xl items-center gap-2.5 px-4 py-3">
             <button type="button" onClick={() => setMenu(true)} aria-label="Menu" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Menu size={18} /></button>
-            <Link to={`${storeBase(store.slug)}` || "/"} className="flex min-w-0 flex-1 items-center gap-3">
+            <Link to={`${storeBase(store.slug)}` || "/"} className="flex min-w-0 flex-1 items-center gap-2.5">
               {store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-contain p-[2px]" style={{ background: "#fff", boxShadow: "0 0 0 1px rgba(0,0,0,0.06)" }} /> : null}
-              <span className="min-w-0"><span className="block truncate text-[15.5px] font-semibold text-foreground">{store.store_name}</span>{store.tagline && <span className="block truncate text-[11.5px] text-muted-foreground">{store.tagline}</span>}</span>
+              <span className="min-w-0"><FitName text={store.header_name || store.store_name} base={15.5} className="block truncate font-semibold text-foreground" />{store.tagline && <span className="block truncate text-[11.5px] text-muted-foreground">{store.tagline}</span>}</span>
             </Link>
             {anns.length > 0 && <button type="button" onClick={markSeen} aria-label="Store news" className="relative flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Bell size={17} />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{unread}</span>}</button>}
             <Link to={`${storeBase(store.slug)}/${isAuthenticated ? "account" : "sign-in"}`} aria-label={isAuthenticated ? "Your account" : "Sign in"} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><UserRound size={17} /></Link>
@@ -152,6 +152,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
             <aside className="st-drawer absolute inset-y-0 left-0 flex w-[82%] max-w-[320px] flex-col bg-background p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2.5">{store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-contain p-[2px]" style={{ background: "#fff", boxShadow: "0 0 0 1px rgba(0,0,0,0.06)" }} /> : null}<p className="truncate text-[15px] font-semibold text-foreground">{store.store_name}</p></div><button type="button" onClick={() => setMenu(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
               <nav className="mt-5 flex flex-1 flex-col gap-0.5 overflow-y-auto">
+                {anns.length > 0 && <button type="button" onClick={() => { setMenu(false); markSeen(); }} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[14px] text-foreground hover:bg-white/[0.04]"><Bell size={17} />Store news{unread > 0 && <span className="ml-auto rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">{unread}</span>}</button>}
                 {NAV.map((n) => {
                   const active = n.end ? location.pathname === n.to : location.pathname.startsWith(n.to);
                   return <Link key={n.to} to={n.to} onClick={() => setMenu(false)} className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] ${active ? "bg-primary/15 text-primary-glow" : "text-foreground hover:bg-white/[0.04]"}`}><n.icon size={17} />{n.label}</Link>;
@@ -201,4 +202,27 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
       </div>
     </StoreContext.Provider>
   );
+}
+
+/** The store name in the top bar: always one line. Starts at the template's size and steps down
+    to 12.5px so names up to 20 characters fit on a small phone; anything still too wide ends in "...". */
+function FitName({ text, base, className }: { text: string; base: number; className: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [size, setSize] = useState(base);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = () => {
+      let s = base;
+      el.style.fontSize = `${s}px`;
+      while (s > 12.5 && el.scrollWidth > el.clientWidth + 0.5) { s -= 0.5; el.style.fontSize = `${s}px`; }
+      setSize(s);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    if (el.parentElement) ro.observe(el.parentElement);
+    void document.fonts?.ready.then(fit);
+    return () => ro.disconnect();
+  }, [text, base]);
+  return <span ref={ref} className={className} style={{ fontSize: `${size}px` }} title={text}>{text}</span>;
 }

@@ -1,0 +1,11 @@
+-- Applied 6 Oct 2026 via Supabase MCP (migrations store_header_name, short_store_name_v2, header_name_empty_fallback).
+-- agents.header_name (1-20 chars): short name for the store's top bar; store_name stays the full name (banner etc.).
+-- phase1.short_store_name(text): "Kwame Mensah's Data Store" -> "Kwame Mensah Data" (fits 20; ALL CAPS / lower-case -> Title Case).
+-- Trigger agents_fill_header_name: a store name over 20 chars with no header name gets the short name
+--   (on insert, store-name change, or when the agent clears the header name).
+-- agent_store(...) returns header_name; agent_update_branding accepts header_name (raises header_name_too_long > 20).
+-- Data: header_name backfilled for all 60 agents whose store name was over 20 characters.
+-- Announcement 5252581d-7c7c-4deb-9f16-75a4f945ea6e (audience agents) created INACTIVE: switch on after the publish.
+-- Tested (headless Chromium, real fonts and built CSS): 20-char names fit on one line at 360px+ in Classic, Market
+--   and Studio, with logo and news bell; text steps down to 12.5px at most. Only 20 ALL-CAPS characters with
+--   logo + bell, or phones narrower than 360px, end in "...". Header never wraps.
