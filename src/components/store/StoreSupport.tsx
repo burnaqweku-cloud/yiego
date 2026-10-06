@@ -25,7 +25,7 @@ export default function StoreSupport() {
   const store = useStore(); const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false); const [conv, setConv] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]); const [mode, setMode] = useState<"ai" | "human">("ai"); const [status, setStatus] = useState("open");
-  const [text, setText] = useState(""); const [name, setName] = useState(() => localStorage.getItem("yg-store-chat-name") ?? ""); const [phone, setPhone] = useState(""); const [busy, setBusy] = useState(false); const [thinking, setThinking] = useState(false);
+  const [text, setText] = useState(""); const [name, setName] = useState(() => localStorage.getItem("yg-store-chat-name") ?? ""); const [phone, setPhone] = useState(""); const [busy, setBusy] = useState(false); const [thinking, setThinking] = useState(false); const [loadingThread, setLoadingThread] = useState(false); const cache = useRef<Record<string, Msg[]>>({});
   const first = (name || "").trim().split(" ")[0];
   const endRef = useRef<HTMLDivElement>(null);
   type Thread = { id: string; status: string; mode: string; created_at: string; last_message_at: string; preview: string | null; last_body: string | null };
@@ -36,7 +36,7 @@ export default function StoreSupport() {
   useEffect(() => { if (open) void loadThreads(); }, [open, conv, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
   const rememberThread = (_id: string, _preview?: string) => { void loadThreads(); };
   const support = store.support ?? { whatsapp_url: null, chat_on: false };
-  const load = async (id: string) => { const { data } = await p1().rpc("store_chat_read", { p_conversation: id, p_visitor: visitorKey() }); if (data) { setMsgs(data.messages ?? []); setMode(data.mode); setStatus(data.status); } };
+  const load = async (id: string) => { const { data } = await p1().rpc("store_chat_read", { p_conversation: id, p_visitor: visitorKey() }); if (data) { cache.current[id] = data.messages ?? []; setMsgs(data.messages ?? []); setMode(data.mode); setStatus(data.status); } setLoadingThread(false); };
   useEffect(() => { if (!open || !conv) return; void load(conv); const t = setInterval(() => void load(conv), 4000); return () => clearInterval(t); }, [open, conv]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [msgs.length, open, thinking]);
   const start = async () => {
@@ -47,7 +47,7 @@ export default function StoreSupport() {
     if (error) return toast.error("Chat isn't available right now.");
     setConv(data.conversation_id); localStorage.setItem(`yg-store-conv:${store.slug}`, data.conversation_id); rememberThread(data.conversation_id); setView("chat"); if (name.trim()) localStorage.setItem("yg-store-chat-name", name.trim());
   };
-  useEffect(() => { const saved = localStorage.getItem(`yg-store-conv:${store.slug}`); if (saved) setConv(saved); }, [store.slug]);
+  useEffect(() => { const saved = localStorage.getItem(`yg-store-conv:${store.slug}`); if (saved) { setConv(saved); setLoadingThread(true); } }, [store.slug]);
   const send = async (preset?: string) => {
     const body = (preset ?? text).trim(); if (!body || !conv) return;
     setText(""); setMsgs((m) => [...m, { id: "tmp" + Date.now(), sender: "customer", body, created_at: new Date().toISOString() }]); if (!threads.find((t) => t.id === conv)?.preview) rememberThread(conv);
@@ -57,7 +57,7 @@ export default function StoreSupport() {
     if (mode === "ai") { setThinking(true); await supabase.functions.invoke("store-chat-ai", { body: { conversationId: conv, visitor: visitorKey() } }).catch(() => null); await load(conv); setThinking(false); }
   };
   const newChat = () => { setConv(null); setMsgs([]); setMode("ai"); setStatus("open"); localStorage.removeItem(`yg-store-conv:${store.slug}`); setView("chat"); };
-  const openThread = (id: string) => { setConv(id); localStorage.setItem(`yg-store-conv:${store.slug}`, id); setMsgs([]); setView("chat"); };
+  const openThread = (id: string) => { setConv(id); localStorage.setItem(`yg-store-conv:${store.slug}`, id); const cached = cache.current[id]; setMsgs(cached ?? []); setLoadingThread(!cached); setView("chat"); void load(id); };
   const askHuman = async () => { if (!conv) return; await p1().rpc("store_chat_request_human", { p_conversation: conv, p_visitor: visitorKey() }); await load(conv); };
   return (
     <>
@@ -82,8 +82,9 @@ export default function StoreSupport() {
               </div>
             ) : (<>
               <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
-                {msgs.length === 0 && <div className="flex justify-start"><div className="max-w-[82%] rounded-2xl rounded-bl-md bg-white/[0.06] px-3.5 py-2 text-[13.5px] leading-5 text-foreground">Hi{first ? ` ${first}` : ""} 👋 Welcome to {store.store_name}. Ask me about bundles, prices, delivery or an order and I'll help right away.</div></div>}
-                {msgs.length === 0 && <div className="flex flex-wrap gap-2 pt-1">{["How much is MTN 1GB?", "Track my order", "How fast is delivery?", "Talk to a person"].map((q) => <button key={q} type="button" onClick={() => { if (q === "Talk to a person") void askHuman(); else void send(q); }} className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-[12.5px] font-medium text-primary-glow">{q}</button>)}</div>}
+                {loadingThread && msgs.length === 0 && <div className="space-y-2">{[72, 52, 64].map((w, i) => <div key={i} className={`h-9 animate-pulse rounded-2xl bg-white/[0.06] ${i % 2 ? "ml-auto" : ""}`} style={{ width: `${w}%` }} />)}</div>}
+                {!loadingThread && msgs.length === 0 && <div className="flex justify-start"><div className="max-w-[82%] rounded-2xl rounded-bl-md bg-white/[0.06] px-3.5 py-2 text-[13.5px] leading-5 text-foreground">Hi{first ? ` ${first}` : ""} 👋 Welcome to {store.store_name}. Ask me about bundles, prices, delivery or an order and I'll help right away.</div></div>}
+                {!loadingThread && msgs.length === 0 && <div className="flex flex-wrap gap-2 pt-1">{["How much is MTN 1GB?", "Track my order", "How fast is delivery?", "Talk to a person"].map((q) => <button key={q} type="button" onClick={() => { if (q === "Talk to a person") void askHuman(); else void send(q); }} className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-[12.5px] font-medium text-primary-glow">{q}</button>)}</div>}
                 {msgs.map((m) => m.sender === "system" ? <p key={m.id} className="text-center text-[11.5px] text-faint-foreground">{m.body}</p> : <div key={m.id} className={`flex ${m.sender === "customer" ? "justify-end" : "justify-start"}`}><div className={`max-w-[82%] rounded-2xl px-3.5 py-2 text-[13.5px] leading-5 ${m.sender === "customer" ? "bg-primary text-primary-foreground" : "bg-white/[0.06] text-foreground"}`}>{m.sender === "agent" && <p className="mb-0.5 text-[10.5px] font-semibold opacity-70">{store.store_name}</p>}<p className="whitespace-pre-line">{m.sender === "customer" ? m.body : <Linkify text={m.body} />}</p></div></div>)}
                 {thinking && <div className="flex justify-start"><div className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-white/[0.06] px-3.5 py-2.5"><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:0ms]" /><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:150ms]" /><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:300ms]" /></div></div>}
                 <div ref={endRef} />
