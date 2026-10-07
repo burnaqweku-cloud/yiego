@@ -1,0 +1,4 @@
+-- Applied 7 Oct 2026 via Supabase MCP (migration finance_period_by_paid_date).
+-- finance_overview_unchecked: period figures for order-linked ledger entries (revenue, cost_of_bundles, fee_income,
+-- agent_margin, refunds) are dated by the ORDER's paid_at, not the entry's occurred_at. An order still counts only
+-- once delivered; its money lands on the purchase day. Non-order entries keep occurred_at. Balances unchanged.
