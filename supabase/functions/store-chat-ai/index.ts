@@ -1,12 +1,12 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { chat as llmChat, llmConfig, type LlmMsg } from "../_shared/llm.ts";
 
-/* AI first responder for an agent store's chat (Google Gemini).
+/* AI first responder for an agent store's chat (model via the shared provider layer, _shared/llm.ts).
    { conversationId, visitor }      -> reply to the customer's latest message (visitor key or signed-in owner of the thread)
    { action: "test", question }     -> agent JWT: answer one question with that agent's store context; nothing stored
    Platform facts (orders, delivery, prices, payments) come from DataYego; the agent's own knowledge
    (phase1.store_ai_knowledge + About/hours/FAQ) adds to them and never overrides them. */
-const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 type Agent = { id: string; slug: string; store_name: string; tagline: string | null; about_text: string | null; hours_text: string | null; faq: Array<{ q: string; a: string }> | null; whatsapp: string | null; support_ai_on: boolean | null; support_whatsapp_url: string | null };
 
 // deno-lint-ignore no-explicit-any
@@ -59,12 +59,9 @@ ${looked ? `ORDERS THE CUSTOMER MENTIONED (live, this store only)\n${looked}\n\n
 }
 
 // deno-lint-ignore no-explicit-any
-async function gemini(apiKey: string, system: string, history: Array<Record<string, unknown>>) {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": apiKey }, body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: history, generationConfig: { maxOutputTokens: 350, temperature: 0.4 } }) });
-  const payload = await res.json().catch(() => null);
-  if (!res.ok) return { ok: false as const, status: res.status };
-  const text = String(((payload?.candidates?.[0]?.content?.parts ?? []) as Array<{ text?: string }>).map((p) => p.text ?? "").join("\n")).trim();
-  return { ok: true as const, text };
+async function answer(db: any, system: string, history: LlmMsg[]) {
+  try { const r = await llmChat(db, { system, messages: history, maxTokens: 350, temperature: 0.4 }); return { ok: true as const, text: r.text }; }
+  catch (e) { return { ok: false as const, status: (e as { providerStatus?: number })?.providerStatus ?? 500 }; }
 }
 
 Deno.serve(async (req) => {
@@ -76,8 +73,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
     const { data: auth } = token ? await supabase.auth.getUser(token) : { data: { user: null } };
-    const { data: sec } = await supabase.from("internal_secrets").select("value").eq("key", "gemini").maybeSingle();
-    const apiKey = sec?.value ?? Deno.env.get("GEMINI_API_KEY");
+    const apiKey = (await llmConfig(supabase)).key;
     const AGENT_COLS = "id, slug, store_name, tagline, about_text, hours_text, faq, whatsapp, support_ai_on, support_whatsapp_url, custom_domain, custom_domain_status";
 
     if (body.action === "test") {
@@ -86,7 +82,7 @@ Deno.serve(async (req) => {
       if (!agent) return jsonResponse({ error: "Not an agent" }, { status: 403 });
       const question = String(body.question ?? "").trim().slice(0, 500); if (!question) return jsonResponse({ error: "Ask something." }, { status: 400 });
       if (!apiKey) return jsonResponse({ error: "The assistant isn't configured yet." }, { status: 500 });
-      const r = await gemini(apiKey, await buildSystem(supabase, agent as Agent, null, [...new Set(question.toUpperCase().match(REF_RE) ?? [])] as string[]), [{ role: "user", parts: [{ text: question }] }]);
+      const r = await answer(supabase, await buildSystem(supabase, agent as Agent, null, [...new Set(question.toUpperCase().match(REF_RE) ?? [])] as string[]), [{ role: "user", content: question }]);
       if (!r.ok) return jsonResponse({ error: "The assistant is busy right now. Try again in a minute." }, { status: 503 });
       if (!r.text || /^HANDOVER\b/i.test(r.text)) return jsonResponse({ handover: "ai_requested" });
       return jsonResponse({ reply: r.text });
@@ -111,8 +107,9 @@ Deno.serve(async (req) => {
     const system = await buildSystem(supabase, agent, c.user_id ?? null, mentioned);
     // The assistant sees the whole thread, including what the store owner/staff said while they had it,
     // so a hand-back continues the conversation instead of starting over.
-    const history = (msgs ?? []).filter((m: { sender: string }) => m.sender !== "system").map((m: { sender: string; body: string }) => ({ role: m.sender === "customer" ? "user" : "model", parts: [{ text: m.sender === "agent" ? `[Said by the store team] ${m.body}` : m.body }] }));
-    const r = await gemini(apiKey, system, history);
+    const history: LlmMsg[] = (msgs ?? []).filter((m: { sender: string }) => m.sender !== "system").map((m: { sender: string; body: string }) => ({ role: m.sender === "customer" ? "user" as const : "assistant" as const, content: m.sender === "agent" ? `[Said by the store team] ${m.body}` : m.body }));
+    while (history.length && history[0].role !== "user") history.shift();
+    const r = await answer(supabase, system, history);
     if (!r.ok) return handover("provider_" + r.status, `Thanks for your message. Someone from ${agent.store_name} will reply here shortly.`);
     if (!r.text || /^HANDOVER\b/i.test(r.text)) return handover("ai_requested", `I'll get someone from ${agent.store_name} to look at this. They'll reply here; you can also keep typing.`);
     await supabase.from("store_messages").insert({ conversation_id: c.id, sender: "ai", body: r.text });

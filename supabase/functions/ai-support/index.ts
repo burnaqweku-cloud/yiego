@@ -1,7 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { sendEmail } from "../_shared/email.ts";
+import { chat as llmChat, LlmError, pickRelevant, type LlmMsg, type LlmTool } from "../_shared/llm.ts";
 
-/* DataYego AI: the main-site support assistant. Runs on Google Gemini with function calling.
+/* DataYego AI: the main-site support assistant. Model via the shared provider layer (_shared/llm.ts) with function calling.
    Public chat (rate-limited, anon), stored threads, admin knowledge base, settings, test bench, takeover inbox.
    Separate from the agent-store chat (store-chat-ai): different tables, different persona, never shares threads. */
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
@@ -9,7 +10,6 @@ function jsonResponse(body: unknown, init: ResponseInit = {}) { return new Respo
 function createSupabaseAdmin() { const url = Deno.env.get("SUPABASE_URL"); const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"); if (!url || !key) throw new Error("Backend is not configured"); return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false }, db: { schema: "phase1" } }); }
 type SupabaseAdmin = ReturnType<typeof createSupabaseAdmin>;
 
-const DEFAULT_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 const MODEL_HISTORY_LIMIT = 12; const HISTORY_PAGE_LIMIT = 40; const MAX_TOOL_ROUNDS = 4;
 const DEFAULT_GREETING = "Hi! I'm DataYego AI. Ask me anything about buying data, payments, your wallet or an order. I'm here all day, every day.";
 
@@ -75,48 +75,11 @@ async function enforcePublicRateLimit(req: Request, supabase: SupabaseAdmin) {
   return null;
 }
 
-/* ---- Gemini ---- */
-type Msg = { role: "user" | "assistant"; content: string };
-type Tool = { name: string; description: string; parameters: Record<string, unknown> };
-async function geminiKey(supabase: SupabaseAdmin) { const { data } = await supabase.from("internal_secrets").select("value").eq("key", "gemini").maybeSingle(); return data?.value ?? Deno.env.get("GEMINI_API_KEY") ?? null; }
-function providerError(status: number, payload: any) {
-  const raw = String(payload?.error?.message ?? "Gemini request failed");
-  const code = status === 400 && /api key/i.test(raw) ? "invalid_api_key" : status === 401 || status === 403 ? "provider_permission" : status === 429 ? "provider_limit" : status === 404 ? "model_unavailable" : "provider_error";
-  const publicMessage = code === "invalid_api_key" ? "The Gemini API key is invalid or was revoked." : code === "provider_permission" ? "The Gemini account cannot use this model or request." : code === "provider_limit" ? "AI usage is temporarily limited." : code === "model_unavailable" ? "The configured Gemini model is unavailable." : "The AI provider rejected the request.";
-  return { code, publicMessage, providerStatus: status, type: String(payload?.error?.status ?? "provider_error") };
-}
+/* ---- Model (shared provider layer: Groq / OpenRouter / Mistral / Gemini, chosen in settings) ---- */
+type Msg = LlmMsg; type Tool = LlmTool;
 async function callModel(supabase: SupabaseAdmin, input: { system: string; messages: Msg[]; maxTokens?: number; tools?: Tool[]; runTool?: (name: string, args: Record<string, unknown>) => Promise<unknown> }) {
-  const apiKey = await geminiKey(supabase);
-  if (!apiKey) throw Object.assign(new Error("The AI assistant is not configured."), { safeCode: "missing_api_key", providerStatus: 0, providerType: "missing_secret" });
-  const model = DEFAULT_MODEL;
-  const contents: Array<Record<string, unknown>> = input.messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
-  const toolsUsed: string[] = []; let usage: unknown = null;
-  for (let round = 0; ; round++) {
-    const offerTools = Boolean(input.tools?.length && input.runTool) && round < MAX_TOOL_ROUNDS;
-    const body: Record<string, unknown> = { systemInstruction: { parts: [{ text: input.system }] }, contents, generationConfig: { maxOutputTokens: input.maxTokens ?? 450, temperature: 0.4 } };
-    if (offerTools) body.tools = [{ functionDeclarations: input.tools }];
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": apiKey }, body: JSON.stringify(body) });
-    const payload = await response.json().catch(() => null);
-    if (!response.ok) { const d = providerError(response.status, payload); console.error("Gemini provider error", { status: response.status, code: d.code }); throw Object.assign(new Error(d.publicMessage), { safeCode: d.code, providerStatus: d.providerStatus, providerType: d.type }); }
-    usage = payload?.usageMetadata ?? usage;
-    const parts: Array<Record<string, any>> = payload?.candidates?.[0]?.content?.parts ?? [];
-    const calls = parts.filter((p) => p.functionCall);
-    if (offerTools && calls.length) {
-      contents.push({ role: "model", parts });
-      const responses: Array<Record<string, unknown>> = [];
-      for (const p of calls) {
-        const name = String(p.functionCall.name ?? ""); toolsUsed.push(name);
-        let output: unknown;
-        try { output = await input.runTool!(name, (p.functionCall.args ?? {}) as Record<string, unknown>); } catch (e) { output = { error: e instanceof Error ? e.message : "The tool failed." }; }
-        responses.push({ functionResponse: { name, response: { result: output ?? null } } });
-      }
-      contents.push({ role: "user", parts: responses });
-      continue;
-    }
-    const text = parts.map((p) => String(p.text ?? "")).join("\n").trim();
-    if (!text) throw Object.assign(new Error("The assistant returned an empty response."), { safeCode: "empty_response", providerStatus: 200, providerType: "empty_response" });
-    return { text, model, usage, toolsUsed };
-  }
+  try { const r = await llmChat(supabase, { ...input, maxToolRounds: MAX_TOOL_ROUNDS }); return { text: r.text, model: `${r.provider}/${r.model}`, usage: r.usage, toolsUsed: r.toolsUsed }; }
+  catch (e) { if (e instanceof LlmError) throw Object.assign(new Error(e.message), { safeCode: e.code, providerStatus: e.providerStatus, providerType: e.code }); throw e; }
 }
 
 async function loadAssistantSettings(supabase: SupabaseAdmin) { const { data } = await supabase.from("ai_assistant_settings").select("greeting, persona_notes").eq("id", true).maybeSingle(); return { greeting: data?.greeting || DEFAULT_GREETING, personaNotes: data?.persona_notes ?? "" }; }
@@ -126,7 +89,9 @@ function knowledgeText(entries: KnowledgeEntry[]) {
   const by = new Map<string, KnowledgeEntry[]>(); for (const e of entries) { const l = by.get(e.category) ?? []; l.push(e); by.set(e.category, l); }
   return `KNOWLEDGE BASE (authoritative, maintained by the DataYego team):\n\n${[...by.entries()].map(([c, items]) => `## ${c}\n\n${items.map((i) => `### ${i.title}\n${i.content}`).join("\n\n")}`).join("\n\n")}`;
 }
-function buildSystemPrompt(personaNotes: string, knowledge: string, signedIn: { email: string | null } | null = null) { let t = PERSONA; t += signedIn ? `\n\nSIGNED-IN CONTEXT: the person is signed in to datayego.com${signedIn.email ? ` as ${signedIn.email}` : ""}. my_recent_orders and my_wallet will work for them.` : "\n\nSIGNED-IN CONTEXT: the person is not signed in. my_recent_orders and my_wallet will not work; ask for the Order ID or suggest signing in."; if (knowledge) t += `\n\n${knowledge}`; const n = personaNotes.trim(); if (n) t += `\n\nOWNER GUIDANCE (from the DataYego team; follow it, but never against the hard rules):\n${n}`; return t; }
+function buildSystemPrompt(personaNotes: string, knowledge: string, signedIn: { email: string | null } | null = null) { let t = PERSONA; const n = personaNotes.trim(); if (n) t += `\n\nOWNER GUIDANCE (from the DataYego team; follow it, but never against the hard rules):\n${n}`; if (knowledge) t += `\n\n${knowledge}`; t += signedIn ? `\n\nSIGNED-IN CONTEXT: the person is signed in to datayego.com${signedIn.email ? ` as ${signedIn.email}` : ""}. my_recent_orders and my_wallet will work for them.` : "\n\nSIGNED-IN CONTEXT: the person is not signed in. my_recent_orders and my_wallet will not work; ask for the Order ID or suggest signing in."; return t; }
+/** The entries this question is about (plus the last turn for context), so each call stays small. */
+function relevantKnowledge(entries: KnowledgeEntry[], message: string, history: Msg[]) { const ctx = history.slice(-2).map((m) => m.content).join(" "); const picked = pickRelevant(entries, message, 8, ctx); return picked.length ? picked : entries.filter((e) => e.category === "How to" || e.category === "Buying data").slice(0, 6); }
 async function userEmail(supabase: SupabaseAdmin, userId: string | null) { if (!userId) return null; const { data } = await supabase.auth.admin.getUserById(userId); return data?.user?.email ?? null; }
 function newConversationToken() { const b = new Uint8Array(16); crypto.getRandomValues(b); return "SC-" + Array.from(b).map((x) => x.toString(16).padStart(2, "0")).join("").toUpperCase(); }
 async function findConversation(supabase: SupabaseAdmin, token: string, userId: string | null) {
@@ -232,7 +197,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method === "GET") {
     const url = new URL(req.url); if (url.searchParams.get("diagnostic") !== "provider") return jsonResponse({ status: "ok" });
-    try { const r = await callModel(createSupabaseAdmin(), { system: "You are a connection test.", messages: [{ role: "user", content: "Reply with exactly: YIEGO_AI_READY" }], maxTokens: 20 }); return jsonResponse({ status: "ready", provider: "gemini", model: r.model }); }
+    try { const r = await callModel(createSupabaseAdmin(), { system: "You are a connection test.", messages: [{ role: "user", content: "Reply with exactly: YIEGO_AI_READY" }], maxTokens: 20 }); return jsonResponse({ status: "ready", provider: r.model.split("/")[0], model: r.model }); }
     catch (e) { return jsonResponse({ status: "unavailable", code: (e as any)?.safeCode ?? "ai_unavailable", provider_status: (e as any)?.providerStatus ?? null, provider_type: (e as any)?.providerType ?? null, message: e instanceof Error ? e.message : "AI support is unavailable." }); }
   }
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, { status: 405 });
@@ -255,9 +220,10 @@ Deno.serve(async (req) => {
       if (isNew) modelMessages = [...sanitizeClientHistory(body.history), { role: "user", content: message }];
       else { const { data: stored } = await supabase.from("support_messages").select("sender, body").eq("conversation_id", conversation.id).order("created_at", { ascending: false }).limit(MODEL_HISTORY_LIMIT); modelMessages = (stored ?? []).reverse().map((r) => ({ role: r.sender === "customer" ? "user" as const : "assistant" as const, content: String(r.body).slice(0, 4000) })); while (modelMessages.length && modelMessages[0].role !== "user") modelMessages.shift(); if (!modelMessages.length) modelMessages = [{ role: "user", content: message }]; }
       const [settings, knowledge, email] = await Promise.all([loadAssistantSettings(supabase), loadActiveKnowledge(supabase), userEmail(supabase, userId)]);
-      const result = await callModel(supabase, { system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge), userId ? { email } : null), messages: modelMessages, maxTokens: 700, tools: TOOLS, runTool: (n, a) => runTool(supabase, n, a, conversation, userId) });
+      const picked = relevantKnowledge(knowledge, message, modelMessages.slice(0, -1));
+      const result = await callModel(supabase, { system: buildSystemPrompt(settings.personaNotes, knowledgeText(picked), userId ? { email } : null), messages: modelMessages, maxTokens: 700, tools: TOOLS, runTool: (n, a) => runTool(supabase, n, a, conversation, userId) });
       const escalated = result.toolsUsed.includes("escalate_to_human");
-      await supabase.from("support_messages").insert({ conversation_id: conversation.id, sender: "assistant", body: result.text, meta: { model: result.model, usage: result.usage, knowledge_entries: knowledge.length, tools_used: result.toolsUsed, escalated } });
+      await supabase.from("support_messages").insert({ conversation_id: conversation.id, sender: "assistant", body: result.text, meta: { model: result.model, usage: result.usage, knowledge_entries: picked.length, tools_used: result.toolsUsed, escalated } });
       await supabase.from("support_conversations").update({ last_message_at: new Date().toISOString(), last_message_preview: messagePreview(result.text), last_message_sender: "assistant" }).eq("id", conversation.id);
       return jsonResponse({ status: "success", message: result.text, conversation_token: conversation.conversation_token, conversation_status: "ai", model: result.model, escalated });
     }
@@ -275,7 +241,7 @@ Deno.serve(async (req) => {
     }
 
     const auth = await requireActiveAdmin(req); if (auth.error) return auth.error;
-    if (action === "health") { const r = await callModel(createSupabaseAdmin(), { system: "You are a connection test. Follow the instruction exactly.", messages: [{ role: "user", content: "Reply with exactly: YIEGO_AI_READY" }], maxTokens: 20 }); return jsonResponse({ status: r.text.includes("YIEGO_AI_READY") ? "ready" : "unexpected_response", provider: "gemini", model: r.model }); }
+    if (action === "health") { const r = await callModel(createSupabaseAdmin(), { system: "You are a connection test. Follow the instruction exactly.", messages: [{ role: "user", content: "Reply with exactly: YIEGO_AI_READY" }], maxTokens: 20 }); return jsonResponse({ status: r.text.includes("YIEGO_AI_READY") ? "ready" : "unexpected_response", provider: r.model.split("/")[0], model: r.model }); }
     if (action === "get_assistant_settings") { const s = await loadAssistantSettings(createSupabaseAdmin()); return jsonResponse({ status: "success", greeting: s.greeting, persona_notes: s.personaNotes }); }
     if (action === "update_assistant_settings") {
       const greeting = String(body.greeting ?? "").trim(); const personaNotes = String(body.persona_notes ?? "").trim();
@@ -286,7 +252,8 @@ Deno.serve(async (req) => {
     if (action === "test_customer_reply") {
       const message = String(body.message ?? "").trim(); if (!message || message.length > 1500) return jsonResponse({ error: "Enter a message of up to 1,500 characters." }, { status: 400 });
       const supabase = createSupabaseAdmin(); const [settings, knowledge] = await Promise.all([loadAssistantSettings(supabase), loadActiveKnowledge(supabase)]);
-      const r = await callModel(supabase, { system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge)), messages: [...sanitizeClientHistory(body.history), { role: "user", content: message }], maxTokens: 700, tools: TOOLS, runTool: (n, a) => runTool(supabase, n, a, null) });
+      const hist = sanitizeClientHistory(body.history);
+      const r = await callModel(supabase, { system: buildSystemPrompt(settings.personaNotes, knowledgeText(relevantKnowledge(knowledge, message, hist))), messages: [...hist, { role: "user", content: message }], maxTokens: 700, tools: TOOLS, runTool: (n, a) => runTool(supabase, n, a, null) });
       return jsonResponse({ status: "success", message: r.text, model: r.model, tools_used: r.toolsUsed });
     }
     if (action === "list_knowledge") { const { data, error } = await createSupabaseAdmin().from("ai_knowledge").select("id, category, title, content, is_active, sort_order, updated_at").order("category").order("sort_order").order("created_at"); if (error) throw new Error("Could not load the knowledge base."); return jsonResponse({ status: "success", entries: data ?? [] }); }
@@ -334,6 +301,6 @@ Deno.serve(async (req) => {
     const draft = String(body.draft ?? "").trim(); if (!draft || draft.length > 4000) return jsonResponse({ error: "Enter a support draft of up to 4,000 characters." }, { status: 400 });
     const verifiedFacts = body.verifiedFacts && typeof body.verifiedFacts === "object" ? body.verifiedFacts : {}; const instruction = String(body.instruction ?? "Make the message clear, warm and professional.").trim().slice(0, 500);
     const r = await callModel(createSupabaseAdmin(), { system: "You rewrite customer-support messages for DataYego. Use only supplied verified facts and the safe draft. Do not invent payment, delivery, refund, supplier, account or policy facts. Do not expose internal notes or technical details. Return only a concise, professional customer message.", messages: [{ role: "user", content: `VERIFIED FACTS:\n${JSON.stringify(verifiedFacts, null, 2)}\n\nSAFE DRAFT:\n${draft}\n\nSTYLE REQUEST:\n${instruction}` }], maxTokens: 420 });
-    return jsonResponse({ status: "success", message: r.text, provider: "gemini", model: r.model, usage: r.usage });
+    return jsonResponse({ status: "success", message: r.text, provider: r.model.split("/")[0], model: r.model, usage: r.usage });
   } catch (error) { return jsonResponse({ error: error instanceof Error ? error.message : "AI support is unavailable.", code: (error as any)?.safeCode ?? "ai_unavailable" }, { status: 503 }); }
 });

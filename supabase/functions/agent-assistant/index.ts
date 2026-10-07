@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { chat as llmChat, LlmError, pickRelevant, type LlmMsg } from "../_shared/llm.ts";
 
 /* "Ask DataYego": the assistant inside the agent dashboard.
    Login required; the agent (or an accepted staff member) only. Read-only tools scoped to that
@@ -13,9 +14,7 @@ import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
-const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 const MAX_TOOL_ROUNDS = 4; const HISTORY_LIMIT = 14; const DAILY_LIMIT = 80;
-const money = (n: unknown) => `GH₵ ${Number(n ?? 0).toFixed(2)}`;
 const preview = (t: string) => t.replace(/\s+/g, " ").trim().slice(0, 140);
 
 const DASHBOARD_MAP = `DASHBOARD MAP (datayego.com/agent; say "menu → page" exactly like this)
@@ -164,43 +163,20 @@ async function tool(db: Db, agentId: string, role: string, name: string, args: R
   return { error: `Unknown tool ${name}` };
 }
 
-async function knowledge(db: Db) {
+async function knowledge(db: Db, question: string, context: string) {
   const { data: k } = await db.from("ai_knowledge").select("category, title, content").eq("is_active", true).in("category", ["Agents", "How to", "How orders work", "Payments and wallet"]).order("category").order("sort_order");
   const { data: h } = await db.from("help_articles").select("category, title, body").eq("audience", "agents").eq("is_published", true).order("sort_order");
   // deno-lint-ignore no-explicit-any
-  const kt = (k ?? []).map((e: any) => `### ${e.title}\n${e.content}`).join("\n\n");
-  // deno-lint-ignore no-explicit-any
-  const ht = (h ?? []).map((e: any) => `### ${e.title} (${e.category})\n${String(e.body).slice(0, 1500)}`).join("\n\n");
-  return `KNOWLEDGE BASE (authoritative, maintained by the DataYego team)\n\n${kt}\n\nAGENT HELP CENTER ARTICLES\n\n${ht}`;
+  const all = [...(k ?? []).map((e: any) => ({ category: String(e.category), title: String(e.title), content: String(e.content) })), ...(h ?? []).map((e: any) => ({ category: `Help Center · ${e.category}`, title: String(e.title), content: String(e.body).slice(0, 1500) }))];
+  const picked = pickRelevant(all, question, 7, context);
+  const use = picked.length ? picked : all.filter((e) => e.category === "Agents").slice(0, 5);
+  return `KNOWLEDGE (authoritative, maintained by the DataYego team; the entries relevant to this question)\n\n${use.map((e) => `### ${e.title} (${e.category})\n${e.content}`).join("\n\n")}`;
 }
 
-async function geminiKey(db: Db) { const { data } = await db.from("internal_secrets").select("value").eq("key", "gemini").maybeSingle(); return data?.value ?? Deno.env.get("GEMINI_API_KEY") ?? null; }
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = LlmMsg;
 async function callModel(db: Db, system: string, messages: Msg[], runTool: (n: string, a: Record<string, unknown>) => Promise<unknown>) {
-  const key = await geminiKey(db); if (!key) throw Object.assign(new Error("The assistant is not configured."), { code: "missing_api_key" });
-  const contents: Array<Record<string, unknown>> = messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
-  const used: string[] = []; let usage: unknown = null;
-  for (let round = 0; ; round++) {
-    const offer = round < MAX_TOOL_ROUNDS;
-    const body: Record<string, unknown> = { systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { maxOutputTokens: 700, temperature: 0.3 } };
-    if (offer) body.tools = [{ functionDeclarations: TOOLS }];
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) });
-    const p = await r.json().catch(() => null);
-    if (!r.ok) { const code = r.status === 429 ? "provider_limit" : r.status === 400 ? "provider_request" : "provider_error"; console.error("agent-assistant provider error", { status: r.status, code }); throw Object.assign(new Error(code === "provider_limit" ? "The assistant is busy right now. Try again in a little while." : "The assistant could not answer right now."), { code }); }
-    usage = p?.usageMetadata ?? usage;
-    // deno-lint-ignore no-explicit-any
-    const parts: Array<Record<string, any>> = p?.candidates?.[0]?.content?.parts ?? [];
-    const calls = parts.filter((x) => x.functionCall);
-    if (offer && calls.length) {
-      contents.push({ role: "model", parts });
-      const responses: Array<Record<string, unknown>> = [];
-      for (const c of calls) { const name = String(c.functionCall.name ?? ""); used.push(name); let out: unknown; try { out = await runTool(name, (c.functionCall.args ?? {}) as Record<string, unknown>); } catch (e) { out = { error: e instanceof Error ? e.message : "tool failed" }; } responses.push({ functionResponse: { name, response: { result: out ?? null } } }); }
-      contents.push({ role: "user", parts: responses }); continue;
-    }
-    const text = parts.map((x) => String(x.text ?? "")).join("\n").trim();
-    if (!text) throw Object.assign(new Error("The assistant returned nothing. Try asking again."), { code: "empty" });
-    return { text, used, usage };
-  }
+  try { const r = await llmChat(db, { system, messages, maxTokens: 700, temperature: 0.3, tools: TOOLS, runTool, maxToolRounds: MAX_TOOL_ROUNDS }); return { text: r.text, used: r.toolsUsed, usage: r.usage, model: `${r.provider}/${r.model}` }; }
+  catch (e) { if (e instanceof LlmError) throw Object.assign(new Error(e.message), { code: e.code }); throw e; }
 }
 
 const SUGGEST: Array<[RegExp, string[]]> = [
@@ -257,9 +233,10 @@ Deno.serve(async (req) => {
     const msgs: Msg[] = (hist ?? []).reverse().map((m: any) => ({ role: m.sender === "agent" ? "user" as const : "assistant" as const, content: String(m.body).slice(0, 4000) }));
     while (msgs.length && msgs[0].role !== "user") msgs.shift();
     const { data: a } = await db.from("agents").select("store_name, slug, status").eq("id", agentId).maybeSingle();
-    const system = `${PERSONA}\n\nROLE: ${role} of the store "${a?.store_name}" (${a?.slug}.datayego.com), store status ${a?.status}. Today is ${new Date().toISOString().slice(0, 10)}.\n\n${DASHBOARD_MAP}\n\n${await knowledge(db)}`;
+    const ctx = msgs.slice(-3, -1).map((m) => m.content).join(" ");
+    const system = `${PERSONA}\n\n${DASHBOARD_MAP}\n\n${await knowledge(db, message, ctx)}\n\nROLE: ${role} of the store "${a?.store_name}" (${a?.slug}.datayego.com), store status ${a?.status}. Today is ${new Date().toISOString().slice(0, 10)}.`;
     const result = await callModel(db, system, msgs, (n, args) => tool(db, agentId, role, n, args));
-    await db.from("agent_assistant_messages").insert({ conversation_id: convId, sender: "assistant", body: result.text, meta: { model: MODEL, usage: result.usage, tools_used: result.used } });
+    await db.from("agent_assistant_messages").insert({ conversation_id: convId, sender: "assistant", body: result.text, meta: { model: result.model, usage: result.usage, tools_used: result.used } });
     await db.from("agent_assistant_conversations").update({ last_message_at: new Date().toISOString(), last_message_preview: preview(result.text) }).eq("id", convId);
     return jsonResponse({ conversation_id: convId, message: result.text, tools_used: result.used, remaining: rate ? Math.max(0, Number(rate.limit) - Number(rate.used) - 1) : null });
   } catch (e) {

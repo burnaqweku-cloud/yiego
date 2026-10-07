@@ -1,0 +1,8 @@
+-- Applied via Supabase MCP on 2026-10-07 (migration "ai_provider_setting").
+-- One model layer for all assistants: supabase/functions/_shared/llm.ts.
+-- site_settings 'ai_provider' = {"provider":"groq","model":"openai/gpt-oss-120b"}; keys in internal_secrets under the provider
+-- name (groq added today; gemini kept). admin_ai_provider() / admin_set_ai_provider(provider, model, key?) : caller_is_admin().
+-- Why: Gemini free tier is 20 requests/day and Google billing rejected the owner's card. Groq free tier: 8K tokens/min,
+-- 200K tokens/day, 1K requests/day, so both assistants now send only the knowledge entries relevant to the question
+-- (pickRelevant in llm.ts) and keep the static prompt first (Groq doesn't count cached tokens).
+-- Deployed: ai-support v30, agent-assistant v3, store-chat-ai v5.

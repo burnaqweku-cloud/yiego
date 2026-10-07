@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import AdminStatStrip from "@/components/admin/AdminStatStrip";
 import AgentAssistantPanel from "@/components/admin/AgentAssistantPanel";
+import AiProviderCard from "@/components/admin/AiProviderCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -86,6 +87,8 @@ export default function AdminAISupport() {
     ]} />
 
     <Card><CardContent><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div className="flex gap-3"><span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${connection === "ready" ? "bg-success/[0.1] text-success" : "bg-amber/[0.1] text-amber"}`}>{connection === "ready" ? <CheckCircle2 size={20} /> : <TriangleAlert size={20} />}</span><div><h2 className="font-display text-lg font-semibold text-white">AI connection</h2><p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{connection === "checking" ? "Testing the secure server connection." : connection === "ready" ? `Connected securely${model ? ` using ${model}` : ""}. The API key stays on the server.` : errorMessage || "AI support is unavailable."}</p></div></div><Button variant="ghost" size="sm" onClick={() => void checkConnection()} disabled={connection === "checking"}>{connection === "checking" ? <Loader2 className="animate-spin" /> : <RefreshCw />}Test connection</Button></div></CardContent></Card>
+
+    <AiProviderCard onChanged={() => void checkConnection()} />
 
     <Card><CardContent>
       <div className="flex items-center gap-2"><MessageSquareText className="text-primary-glow" /><h2 className="font-display text-lg font-semibold text-white">Voice &amp; greeting</h2></div>
