@@ -1,0 +1,12 @@
+-- Applied via Supabase MCP on 2026-10-07 (migration "agent_assistant").
+-- "Ask DataYego": the assistant inside the agent dashboard.
+-- Tables: phase1.agent_assistant_conversations (per agent), phase1.agent_assistant_messages (sender agent|assistant), RLS: agent/staff read own.
+-- Functions: agent_assistant_agent_for(uuid) → (agent_id, role owner|staff), service_role only;
+--            agent_assistant_rate_check(uuid, int) → allowed/used/limit over 24h (80/day), service_role only;
+--            admin_agent_assistant_threads(int), admin_agent_assistant_messages(uuid): caller_is_admin().
+-- Edge function agent-assistant v1 (verify_jwt false, validates the user JWT): actions ask / threads / history / suggest.
+--   Read-only tools scoped to the agent: my_store, my_earnings (owner only), my_orders, order_detail (with timeline), my_prices,
+--   my_marketing, delivery_speed, check_mtn_number, agent_plan. Knowledge: ai_knowledge (Agents, How to, How orders work,
+--   Payments and wallet) + help_articles (agents) + a dashboard map. Gemini; never names suppliers.
+-- UI: floating "Ask" button on every dashboard page (AgentShell → AskDataYegoLauncher), page /agent/ask (More → Ask DataYego),
+--   per-page suggested questions, past chats, WhatsApp hand-off. Admin → AI support: Agent assistant panel (threads + messages).

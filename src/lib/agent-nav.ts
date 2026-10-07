@@ -53,6 +53,7 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "staff", label: "Staff", to: "/agent/team/staff", sections: ["team"] },
   ] },
   { id: "more", label: "More", icon: LifeBuoy, pages: [
+    { id: "ask", label: "Ask DataYego", to: "/agent/ask" },
     { id: "invite", label: "Invite & earn", to: "/account" },
     { id: "help", label: "Help Center", to: "/agent/help" },
   ] },
@@ -65,7 +66,7 @@ export const STAFF_GROUPS: AgentNavGroup[] = [
     { id: "customers", label: "Customers", to: "/agent/customers" },
     { id: "check-mtn", label: "Check MTN numbers", to: "/agent/check-mtn" },
   ] },
-  { id: "more", label: "More", icon: LifeBuoy, pages: [{ id: "help", label: "Help Center", to: "/agent/help" }] },
+  { id: "more", label: "More", icon: LifeBuoy, pages: [{ id: "ask", label: "Ask DataYego", to: "/agent/ask" }, { id: "help", label: "Help Center", to: "/agent/help" }] },
 ];
 
 /* Which sections a route shows. Keyed by pathname; undefined means "all, collapsible". */

@@ -7,6 +7,7 @@ import { formatGHS } from "@/lib/format";
 import { loadPhase1Networks, loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
 import { planQuote, type PlanQuote } from "@/lib/agents";
 import { AGENT_GROUPS, STAFF_GROUPS as STAFF_NAV, groupForPath, LEGACY_REDIRECTS } from "@/lib/agent-nav";
+import AskDataYegoLauncher from "@/components/agent/AskDataYego";
 import { ChevronDown } from "lucide-react";
 import { useAuth } from "@/store/auth-context";
 import NotificationBell from "@/components/notifications/NotificationBell";
@@ -141,6 +142,7 @@ export default function AgentShell() {
             </main>
           </div>
         </div>
+        <AskDataYegoLauncher />
         {renew && (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={() => setRenew(false)}>
             <div className="onyx-panel w-full max-w-md rounded-t-3xl p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
