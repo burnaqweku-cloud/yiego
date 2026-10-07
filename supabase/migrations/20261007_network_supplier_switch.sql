@@ -11,3 +11,8 @@
 -- Data: networks.mtn.preferred_supplier_id set to databundleshub (was null → fell back to display_order).
 -- Code: fulfillOrder routes ONLY by networks.preferred_supplier_id (customer choice + display-order fallbacks removed);
 --       the customer-facing supplier choice ("Zola"/"Duva") is removed from the shop.
+-- 13:40 Ghana: all 7 edge functions that import _shared/fulfillment.ts redeployed with the new routing
+--   (admin-order-action, create-wallet-data-order, datamartgh-webhook, order-payment-action, paystack-webhook,
+--    reconcile-guest-order, sync-dbh-order-status). Shop: useSupplierChoices removed; BuyDataFlow and
+--   BundleCatalogue load bundles from data_products only. Admin → Suppliers: "Delivered by" lists every
+--   supplier with float and known/total bundles, confirm modal before switching, no "Default" option.

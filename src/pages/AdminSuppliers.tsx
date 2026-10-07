@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pause, Play, RefreshCw, RotateCcw, Store, Wifi } from "lucide-react";
+import { ArrowRightLeft, Pause, Play, RefreshCw, RotateCcw, Store, Wifi } from "lucide-react";
 import { toast } from "sonner";
 import AdminListPagination from "@/components/admin/AdminListPagination";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -19,6 +19,7 @@ interface Supplier { id: string; code: string; name: string; status: "active" | 
 interface Network { id: string; code: string; name: string; is_paused: boolean; pause_reason: string | null; preferred_supplier_id: string | null }
 interface Product { id: string; name: string; capacity_gb: number; customer_price: number; is_active: boolean; is_paused: boolean; pause_reason: string | null; network_id: string }
 interface Mapping { product_id: string; supplier_id: string; supplier_price: number | null; is_active: boolean }
+interface Readiness { network: string; supplier: string; known: number; total: number; missing: string[] }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> };
 
@@ -28,6 +29,8 @@ export default function AdminSuppliers() {
   const [networks, setNetworks] = useState<Network[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [mappings, setMappings] = useState<Mapping[]>([]);
+  const [readiness, setReadiness] = useState<Readiness[]>([]);
+  const [switching, setSwitching] = useState<{ network: Network; supplier: Supplier } | null>(null);
   const [logs, setLogs] = useState<SupplierLogRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [openNetwork, setOpenNetwork] = useState<string | null>(null);
@@ -36,21 +39,37 @@ export default function AdminSuppliers() {
   const [page, setPage] = useState(1); const [pageSize, setPageSize] = useState(25);
 
   const load = useCallback(async () => {
-    const [s, n, p, m, l] = await Promise.all([
+    const [s, n, p, m, l, r] = await Promise.all([
       db().from("suppliers").select("id, code, name, status, balance, last_balance_checked_at, low_balance_threshold, metadata").order("display_order"),
       db().from("networks").select("id, code, name, is_paused, pause_reason, preferred_supplier_id").order("display_order"),
       db().from("data_products").select("id, name, capacity_gb, customer_price, is_active, is_paused, pause_reason, network_id").eq("is_active", true).order("capacity_gb"),
       db().from("supplier_product_mappings").select("product_id, supplier_id, supplier_price, is_active").eq("is_active", true),
       db().from("supplier_api_logs").select("action, endpoint, http_status, call_status, supplier_reference, error_message, duration_ms, created_at").order("created_at", { ascending: false }).limit(300),
+      db().rpc("admin_network_supplier_readiness", { p_actor: actor }),
     ]);
-    setSuppliers(s.data ?? []); setNetworks(n.data ?? []); setProducts(p.data ?? []); setMappings(m.data ?? []); setLogs(l.data ?? []); setLoading(false);
-  }, []);
+    setSuppliers(s.data ?? []); setNetworks(n.data ?? []); setProducts(p.data ?? []); setMappings(m.data ?? []); setLogs(l.data ?? []); setReadiness(Array.isArray(r.data) ? (r.data as Readiness[]) : []); setLoading(false);
+  }, [actor]);
   useEffect(() => { void load(); }, [load]);
 
   const call = async (fn: string, args: Record<string, unknown>, ok: string) => { const { error } = await db().rpc(fn, { p_actor: actor, ...args }); if (error) toast.error(error.message.replace(/_/g, " ")); else { toast.success(ok); void load(); } };
-  const suppliersFor = (networkId: string) => suppliers.filter((s) => mappings.some((m) => m.supplier_id === s.id && products.some((p) => p.id === m.product_id && p.network_id === networkId)));
   const costFor = (productId: string, supplierId: string | null) => mappings.find((m) => m.product_id === productId && (supplierId ? m.supplier_id === supplierId : true))?.supplier_price ?? null;
   const routedSupplier = (n: Network) => suppliers.find((s) => s.id === n.preferred_supplier_id) ?? null;
+  const readyFor = (networkCode: string, supplierCode: string) => readiness.find((r) => r.network === networkCode && r.supplier === supplierCode) ?? null;
+  const lowBalance = (s: Supplier) => s.balance != null && Number(s.balance) < Number(s.low_balance_threshold ?? 100);
+  /** One line on whether a supplier can take a network right now: status, float, bundles it knows. */
+  const readinessNote = (n: Network, s: Supplier) => {
+    const r = readyFor(n.code, s.code); const parts: string[] = [];
+    if (s.status !== "active") parts.push(`${s.status}: orders will be held until it is activated`);
+    if (lowBalance(s)) parts.push(`float is low (${formatGHS(Number(s.balance ?? 0))})`);
+    if (r && r.missing.length) parts.push(r.missing.length === r.total ? `does not sell ${n.name} at all` : `no ${r.missing.join(", ")} at ${s.name}: those orders would be held`);
+    return parts;
+  };
+  const confirmSwitch = async () => {
+    if (!switching) return;
+    const { network: n, supplier: s } = switching;
+    await call("admin_set_network_supplier", { p_network_code: n.code, p_supplier_code: s.code }, `${n.name} is now delivered by ${s.name}`);
+    setSwitching(null);
+  };
   const visibleLogs = useMemo(() => logs.slice((page - 1) * pageSize, page * pageSize), [logs, page, pageSize]);
 
   const confirmPause = async () => {
@@ -75,7 +94,7 @@ export default function AdminSuppliers() {
       <Panel title="Networks" icon={Wifi} note="tap a network to manage its bundles">
         <Rows empty={loading ? "Loading…" : "No networks."}>
           {networks.map((n) => {
-            const routed = routedSupplier(n); const options = suppliersFor(n.id); const open = openNetwork === n.id;
+            const routed = routedSupplier(n); const open = openNetwork === n.id;
             const nProducts = products.filter((p) => p.network_id === n.id); const pausedCount = nProducts.filter((p) => p.is_paused).length;
             return (
               <li key={n.id} className="py-2">
@@ -86,9 +105,9 @@ export default function AdminSuppliers() {
                   </button>
                   <div className="flex flex-wrap items-center gap-2">
                   <label className="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-faint-foreground">Delivered by
-                    <select value={routed?.code ?? ""} onChange={(e) => void call("admin_set_network_supplier", { p_network_code: n.code, p_supplier_code: e.target.value }, `${n.name} now delivered by ${suppliers.find((s) => s.code === e.target.value)?.name ?? "default"}`)} className={`${inputCls} h-8 w-auto py-0 text-[12px]`}>
-                      <option value="">Default (priority)</option>
-                      {options.map((s) => <option key={s.id} value={s.code}>{s.name}{s.status !== "active" ? ` (${s.status})` : ""}</option>)}
+                    <select value={routed?.code ?? ""} onChange={(e) => { const s = suppliers.find((x) => x.code === e.target.value); if (s && s.id !== n.preferred_supplier_id) setSwitching({ network: n, supplier: s }); }} className={`${inputCls} h-8 w-auto py-0 text-[12px]`}>
+                      {!routed && <option value="">Not set: orders are held</option>}
+                      {suppliers.map((s) => { const r = readyFor(n.code, s.code); return <option key={s.id} value={s.code}>{s.name} · {s.balance == null ? "no balance" : formatGHS(Number(s.balance))}{r ? ` · ${r.known}/${r.total} bundles` : ""}{s.status !== "active" ? ` · ${s.status}` : ""}</option>; })}
                     </select>
                   </label>
                   {n.is_paused
@@ -97,7 +116,8 @@ export default function AdminSuppliers() {
                   <Button size="sm" variant="quiet" title="Shows 'delivering normally' and ignores all earlier orders; the next order starts the live figure afresh." onClick={async () => { if (!window.confirm(`Reset ${n.name} delivery speed? The pill shows "delivering normally" until the next order comes in.`)) return; const { error } = await db().rpc("admin_reset_delivery_speed", { p_network: n.name }); if (error) toast.error(error.message.replace(/_/g, " ")); else toast.success(`${n.name} delivery speed reset.`); }}><RotateCcw size={13} />Reset speed</Button>
                   </div>
                 </div>
-                {routed && routed.status !== "active" && <p className="mt-1 text-[11px] text-amber">{routed.name} is {routed.status} — orders fall back to the next available supplier until it is activated.</p>}
+                {!routed && <p className="mt-1 text-[11px] text-danger">No supplier set. Every {n.name} order is held for review until you pick one.</p>}
+                {routed && readinessNote(n, routed).map((t) => <p key={t} className="mt-1 text-[11px] text-amber">{routed.name}: {t}.</p>)}
                 {open && (
                   <ul className="mt-2 divide-y divide-white/[0.05] border-t border-white/[0.06]">
                     {nProducts.map((p) => { const cost = costFor(p.id, routed?.id ?? null); const margin = cost != null ? Number(p.customer_price) - Number(cost) : null; return (
@@ -121,6 +141,20 @@ export default function AdminSuppliers() {
         </Rows>
         <AdminListPagination page={page} pageSize={pageSize} totalItems={logs.length} onPageChange={setPage} onPageSizeChange={setPageSize} itemLabel="calls" />
       </Panel>
+
+      <Modal open={switching !== null} onClose={() => setSwitching(null)} label="Switch supplier">
+        {switching && (() => { const notes = readinessNote(switching.network, switching.supplier); const r = readyFor(switching.network.code, switching.supplier.code); return (
+          <div className="w-[min(92vw,440px)] p-5">
+            <h2 className="flex items-center gap-2 text-[16px] font-semibold text-foreground"><ArrowRightLeft size={16} className="text-primary-glow" />Deliver {switching.network.name} with {switching.supplier.name}?</h2>
+            <p className="mt-1.5 text-[12.5px] leading-5 text-muted-foreground">From the next order, every {switching.network.name} bundle is sent to {switching.supplier.name}. Prices customers and agents see do not change; the real cost is recorded per order from what {switching.supplier.name} charges.</p>
+            <ul className="mt-3 space-y-1 text-[12.5px]">
+              <li className="text-muted-foreground">Float: <b className="text-foreground">{switching.supplier.balance == null ? "unknown" : formatGHS(Number(switching.supplier.balance))}</b>{switching.supplier.last_balance_checked_at ? ` · checked ${formatAdminDate(switching.supplier.last_balance_checked_at)}` : ""}</li>
+              <li className="text-muted-foreground">Bundles it knows: <b className="text-foreground">{r ? `${r.known} of ${r.total}` : "unknown"}</b></li>
+              {notes.map((t) => <li key={t} className="text-amber">{t}.</li>)}
+            </ul>
+            <div className="mt-4 flex justify-end gap-2"><Button variant="quiet" onClick={() => setSwitching(null)}>Cancel</Button><Button onClick={() => void confirmSwitch()}>Switch</Button></div>
+          </div>); })()}
+      </Modal>
 
       <Modal open={pausing !== null} onClose={() => setPausing(null)} label="Pause">
         <div className="w-[min(92vw,400px)] p-5">

@@ -3,7 +3,6 @@ import { ArrowRight, RotateCw, Search, X } from "lucide-react";
 import { NETWORKS, type Network, type NetworkId } from "@/data/bundles";
 import { formatGHS } from "@/lib/format";
 import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
-import { useSupplierChoices, type SupplierBundle, type SupplierChoice } from "@/hooks/useSupplierChoices";
 import { useFlows } from "@/store/flows";
 import { useReveal } from "@/hooks/useReveal";
 import { cn } from "@/lib/utils";
@@ -17,12 +16,9 @@ import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
 /**
  * The shop floor: every live bundle, on the page itself.
  *
- * The catalogue is one shop with, sometimes, several counters. When two or
- * more suppliers are customer-visible, tabs at the top swap the entire
- * catalogue — each supplier's own list at its own prices. With one visible
- * supplier the tabs hide. With none, the shop sells the base catalogue at the
- * base prices and each order routes behind the scenes to whichever supplier
- * stocks that bundle — the shopper never sees or chooses a supplier.
+ * The shop sells the catalogue at the catalogue prices and each order routes
+ * behind the scenes to the network's supplier. The shopper never sees or
+ * chooses a supplier.
  *
  * With no filter on, bundles are grouped by network in catalogue order — MTN
  * first — rather than interleaved by price, so a shopper who came for one
@@ -31,7 +27,7 @@ import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
  * short one.
  *
  * Tapping a card opens the existing BuyDataFlow on the recipient step with
- * both the bundle and the supplier tab the shopper was on already chosen.
+ * the bundle already chosen.
  */
 
 type Filter = "all" | NetworkId;
@@ -69,22 +65,6 @@ function toRowFromProduct(product: Phase1Product): Row | null {
     size,
     validity: product.validity,
     price: Number(product.customer_price),
-    haystack: `${size} ${network.name}`.toLowerCase().replace(/\s+/g, ""),
-  };
-}
-
-/** A supplier's offer, shaped for the grid. */
-function toRow(offer: SupplierBundle): Row | null {
-  const network = NETWORKS.find((n) => n.id === offer.networkId) ?? networkForCode(offer.productCode);
-  if (!network) return null;
-  const size = offer.size.trim() || offer.productCode;
-  return {
-    id: offer.productCode,
-    code: offer.productCode,
-    network,
-    size,
-    validity: offer.validity,
-    price: Number(offer.price),
     haystack: `${size} ${network.name}`.toLowerCase().replace(/\s+/g, ""),
   };
 }
@@ -179,74 +159,6 @@ function SkeletonGrid() {
   );
 }
 
-/* ── Supplier tabs ───────────────────────────────────────────────── */
-
-/** The counters of the shop. Each supplier is its own tab; switching swaps
- *  the whole catalogue below, prices included. Renders nothing when there is
- *  only one supplier — a choice of one is not a choice. */
-function SupplierTabs({
-  suppliers,
-  activeId,
-  onPick,
-}: {
-  suppliers: SupplierChoice[];
-  activeId: string;
-  onPick: (id: string) => void;
-}) {
-  if (suppliers.length < 2) return null;
-  return (
-    <div role="tablist" aria-label="Choose a plan" className="mt-5 flex flex-wrap items-center gap-2">
-      {suppliers.map((supplier) => {
-        const on = supplier.id === activeId;
-        return (
-          <button
-            key={supplier.id}
-            type="button"
-            role="tab"
-            aria-selected={on}
-            onClick={() => onPick(supplier.id)}
-            className={cn("onyx-pill !px-4 !text-[13.5px]", on && "onyx-pill-on")}
-          >
-            {supplier.name}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/** The selected supplier's delivery wording, straight from the admin panel /
- *  live measurement. Slow days show in amber; normal days read plainly. */
-function SupplierBanner({ supplier }: { supplier: SupplierChoice }) {
-  if (!supplier.banner && !supplier.blurb) return null;
-  return (
-    <div className="mt-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] px-4 py-3.5">
-      {supplier.banner && (
-        <p
-          className={cn(
-            "flex items-start gap-2.5 text-[13px] leading-5",
-            supplier.banner.tone === "slow" ? "text-amber" : "text-foreground",
-          )}
-        >
-          <span
-            className={cn(
-              "mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full",
-              supplier.banner.tone === "slow" ? "bg-amber" : "bg-primary-glow",
-            )}
-            aria-hidden="true"
-          />
-          {supplier.banner.text}
-        </p>
-      )}
-      {supplier.blurb && (
-        <p className={cn("text-[12.5px] leading-5 text-muted-foreground", supplier.banner && "mt-1.5 pl-4")}>
-          {supplier.blurb}
-        </p>
-      )}
-    </div>
-  );
-}
-
 /* ── Section ─────────────────────────────────────────────────────── */
 
 export default function BundleCatalogue() {
@@ -254,25 +166,16 @@ export default function BundleCatalogue() {
   const { isAdmin } = useAdminAccess(); // the error detail is for the team, not customers
   const [checkInfoOpen, setCheckInfoOpen] = useState(false);
   const { openBuyData } = useFlows();
-  const { suppliers, loading: choicesLoading, error: choicesError, reload } = useSupplierChoices();
-  const [supplierId, setSupplierId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [attempt, setAttempt] = useState(0);
 
-  // The first supplier the backend ranks is the default counter; the shopper
-  // can flick to any other. A stale pick (supplier withdrawn) falls back.
-  const supplier: SupplierChoice | null =
-    suppliers.find((s) => s.id === supplierId) ?? suppliers[0] ?? null;
-
-  // No customer-visible suppliers: the shop sells the base catalogue and each
-  // order routes behind the scenes. Loaded only when that mode is in effect.
-  const baseMode = !choicesLoading && !choicesError && suppliers.length === 0;
+  // Bundles and prices come straight from the catalogue; each order routes to
+  // the network's supplier behind the scenes.
   const [products, setProducts] = useState<Phase1Product[]>([]);
   const [productsState, setProductsState] = useState<LoadState>("loading");
   const [productsError, setProductsError] = useState<string | null>(null);
   useEffect(() => {
-    if (!baseMode) return;
     let mounted = true;
     setProductsState("loading");
     // A slow or dropped request shouldn't show the "not loading" card straight away:
@@ -290,23 +193,11 @@ export default function BundleCatalogue() {
     };
     tryLoad(0);
     return () => { mounted = false; if (timer) clearTimeout(timer); };
-  }, [baseMode, attempt]);
+  }, [attempt]);
 
-  const state: LoadState = choicesLoading
-    ? "loading"
-    : choicesError
-      ? "error"
-      : baseMode
-        ? productsState
-        : "ready";
+  const state: LoadState = productsState;
 
-  const rows = useMemo(
-    () =>
-      supplier
-        ? supplier.bundles.map(toRow).filter((row): row is Row => row !== null)
-        : products.map(toRowFromProduct).filter((row): row is Row => row !== null),
-    [supplier, products],
-  );
+  const rows = useMemo(() => products.map(toRowFromProduct).filter((row): row is Row => row !== null), [products]);
 
   const term = query.trim().toLowerCase().replace(/\s+/g, "");
   const matching = useMemo(
@@ -343,7 +234,7 @@ export default function BundleCatalogue() {
   ];
 
   const buy = (row: Row) =>
-    openBuyData({ kind: "bundle", networkId: row.network.id, productCode: row.code, supplierId: supplier?.id });
+    openBuyData({ kind: "bundle", networkId: row.network.id, productCode: row.code });
 
   return (
     <section aria-labelledby="catalogue-title" className="scroll-mt-24" id="bundles">
@@ -385,43 +276,6 @@ export default function BundleCatalogue() {
         )}
       </div>
 
-      {/* Suppliers: pick a counter, then everything below is theirs —
-          catalogue, prices and delivery wording. */}
-      {state === "ready" && supplier && (
-        <>
-          <SupplierTabs
-            suppliers={suppliers}
-            activeId={supplier.id}
-            onPick={(id) => { setSupplierId(id); setFilter("all"); setQuery(""); }}
-          />
-          <SupplierBanner supplier={supplier} />
-        </>
-      )}
-
-      {/* Filters */}
-      {state === "ready" && (
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          {filters.map((f) => {
-            const on = filter === f.id;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilter(f.id)}
-                aria-pressed={on}
-                className={cn("onyx-pill", on && "onyx-pill-on")}
-              >
-                {f.label}
-                <span className={cn("ml-1.5 tnum text-[11.5px]", on ? "opacity-60" : "opacity-45")}>
-                  {counts.get(f.id) ?? 0}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Body */}
       <div className="mt-6">
         {state === "loading" && (
           <>
@@ -441,11 +295,11 @@ export default function BundleCatalogue() {
               <p className="mt-1.5 text-[13.5px] leading-6 text-muted-foreground">
                 This is usually a brief network hiccup. Nothing has been charged — try again in a moment.
               </p>
-              {isAdmin && (choicesError || productsError) && <p className="mt-2 break-words text-[11.5px] leading-5 text-faint-foreground">Details: {choicesError ?? productsError}</p>}
+              {isAdmin && productsError && <p className="mt-2 break-words text-[11.5px] leading-5 text-faint-foreground">Details: {productsError}</p>}
             </div>
             <button
               type="button"
-              onClick={() => { reload(); setAttempt((n) => n + 1); }}
+              onClick={() => setAttempt((n) => n + 1)}
               className="onyx-btn-ghost w-full shrink-0 sm:w-auto"
             >
               <RotateCw size={16} />
