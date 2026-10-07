@@ -3,12 +3,13 @@ import { Copy, Download, Image as ImageIcon, Share2, Sparkles } from "lucide-rea
 import { toast } from "sonner";
 import { p1, useAgent } from "@/components/agent/AgentShell";
 import { formatGHS } from "@/lib/format";
-import { networkOf, sizeOf, statusCaption, statusImage, type StatusBundle, type StatusInput, type StatusKind, type StatusTemplate } from "@/lib/statusImage";
+import { bundlesFor, networkOf, sizeOf, statusCaption, statusImage, type StatusBundle, type StatusInput, type StatusKind, type StatusTemplate } from "@/lib/statusImage";
 
-/* Status maker: a WhatsApp-status image for one bundle, a promo or a whole network,
-   in the store's own template look, drawn from live prices. Download, share, caption. */
+/* Status maker: a WhatsApp-status image for one bundle, two or three bundles (fixed
+   layouts), a promo or a whole network, in the store's own template look, drawn from
+   live prices. Download, share, caption. */
 interface Promo { id: string; product_id: string; promo_price: number; ends_at: string }
-const KINDS: Array<{ id: StatusKind; label: string }> = [{ id: "bundle", label: "One bundle" }, { id: "promo", label: "Promo" }, { id: "network", label: "Whole network" }];
+const KINDS: Array<{ id: StatusKind; label: string }> = [{ id: "bundle", label: "One bundle" }, { id: "two", label: "Two bundles" }, { id: "three", label: "Three bundles" }, { id: "promo", label: "Promo" }, { id: "network", label: "Whole network" }];
 const LOOKS: Array<{ id: StatusTemplate; label: string }> = [{ id: "market", label: "Market" }, { id: "studio", label: "Studio" }, { id: "classic", label: "Classic" }];
 const NETS = ["MTN", "Telecel", "AirtelTigo"];
 
@@ -34,15 +35,32 @@ export default function AgentStatus() {
   useEffect(() => { if (!byNet.some((p) => p.id === productId)) setProductId(byNet.find((p) => Number(p.capacity_gb) === 10)?.id ?? byNet[0]?.id ?? ""); }, [byNet, productId]);
   useEffect(() => { if (kind === "promo" && !promos.some((p) => p.id === promoId)) setPromoId(promos[0]?.id ?? ""); }, [kind, promos, promoId]);
 
+  // Two/three bundles: pick exactly N from the network's grid. Starts around 10GB
+  // (small + big for two; small, 10GB, big for three) and resets when the network changes.
+  const need = bundlesFor(kind);
+  const [picked, setPicked] = useState<string[]>([]);
+  useEffect(() => {
+    if (need < 2) return;
+    const ok = picked.filter((id) => byNet.some((p) => p.id === id));
+    if (ok.length === need) { if (ok.length !== picked.length) setPicked(ok); return; }
+    const i10 = Math.max(byNet.findIndex((p) => Number(p.capacity_gb) >= 10), 0);
+    const idx = need === 2 ? [i10, i10 + 1 < byNet.length ? i10 + 1 : i10 - 1] : [i10 - 1, i10, i10 + 1 < byNet.length ? i10 + 1 : i10 - 2];
+    setPicked(Array.from(new Set(idx.filter((i) => i >= 0 && i < byNet.length).map((i) => byNet[i].id))).slice(0, need));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [need, byNet]);
+  const togglePick = (id: string) => setPicked((cur) => cur.includes(id) ? cur.filter((x) => x !== id) : cur.length >= need ? cur : [...cur, id]);
+  const pickedSorted = useMemo(() => byNet.filter((p) => picked.includes(p.id)), [byNet, picked]);
+
   const input: StatusInput | null = useMemo(() => {
     const store = { name: agent.store_name, link: storeUrl, logoUrl: agent.logo_url ?? null, accent: agent.accent_color ?? null, tagline: agent.tagline ?? null };
     let bundles: StatusBundle[] = [];
     if (kind === "bundle") { const p = products.find((x) => x.id === productId); if (!p) return null; bundles = [{ product: p, price: priceOf(p.id) }]; }
+    else if (kind === "two" || kind === "three") { if (pickedSorted.length !== need) return null; bundles = pickedSorted.map((p) => ({ product: p, price: priceOf(p.id) })); }
     else if (kind === "promo") { const pr = promos.find((x) => x.id === promoId); const p = pr && products.find((x) => x.id === pr.product_id); if (!pr || !p) return null; bundles = [{ product: p, price: Number(pr.promo_price), wasPrice: priceOf(p.id), endsAt: pr.ends_at }]; }
     else { bundles = byNet.map((p) => ({ product: p, price: priceOf(p.id) })); if (!bundles.length) return null; }
     return { template: look, kind, store, bundles, network: kind === "network" ? network : networkOf(bundles[0].product) };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agent, storeUrl, kind, look, productId, promoId, promos, byNet, products, prices, network]);
+  }, [agent, storeUrl, kind, look, productId, promoId, promos, byNet, products, prices, network, pickedSorted, need]);
 
   useEffect(() => {
     let alive = true; setBusy(true);
@@ -52,7 +70,8 @@ export default function AgentStatus() {
   }, [input]);
 
   const caption = input ? statusCaption(input) : "";
-  const fileName = () => `${agent.slug}-${kind === "network" ? network.toLowerCase() : input ? `${networkOf(input.bundles[0].product)}-${sizeOf(input.bundles[0].product)}`.toLowerCase().replace(/\s+/g, "") : "status"}.png`;
+  const fileName = () => `${agent.slug}-${kind === "network" ? network.toLowerCase() : input ? `${networkOf(input.bundles[0].product)}-${input.bundles.map((b) => sizeOf(b.product)).join("-")}`.toLowerCase().replace(/\s+/g, "") : "status"}.png`;
+  const pickHint = need >= 2 && picked.length < need ? `Pick ${need - picked.length} more bundle${need - picked.length === 1 ? "" : "s"}` : "";
   const share = async () => {
     if (!png) return;
     const file = new File([png], fileName(), { type: "image/png" });
@@ -81,6 +100,11 @@ export default function AgentStatus() {
               <p className="mt-4 text-[12px] font-semibold text-foreground">Bundle</p>
               <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">{byNet.map((p) => <button key={p.id} type="button" onClick={() => setProductId(p.id)} className={`rounded-xl border px-2 py-2 text-left ${productId === p.id ? "border-primary/50 bg-primary/10" : "border-white/[0.08]"}`}><span className="block text-[14px] font-semibold text-foreground">{sizeOf(p)}</span><span className="block text-[11.5px] text-muted-foreground">{formatGHS(priceOf(p.id))}</span></button>)}</div>
             </>}
+            {need >= 2 && <>
+              <div className="mt-4 flex items-center justify-between"><p className="text-[12px] font-semibold text-foreground">Pick {need} bundles</p><p className={`text-[11.5px] ${pickHint ? "text-amber-300" : "text-muted-foreground"}`}>{pickHint || `${need} picked · tap one to swap`}</p></div>
+              <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">{byNet.map((p) => { const on = picked.includes(p.id); const full = !on && picked.length >= need; return <button key={p.id} type="button" onClick={() => togglePick(p.id)} aria-pressed={on} className={`rounded-xl border px-2 py-2 text-left transition-opacity ${on ? "border-primary/50 bg-primary/10" : "border-white/[0.08]"} ${full ? "opacity-40" : ""}`}><span className="block text-[14px] font-semibold text-foreground">{sizeOf(p)}</span><span className="block text-[11.5px] text-muted-foreground">{formatGHS(priceOf(p.id))}</span></button>; })}</div>
+              {kind === "three" && <p className="mt-2 text-[11.5px] text-faint-foreground">The middle size gets a "Most popular" tag.</p>}
+            </>}
             {kind === "promo" && promos.length > 0 && <>
               <p className="mt-4 text-[12px] font-semibold text-foreground">Promo</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">{promos.map((pr) => { const p = products.find((x) => x.id === pr.product_id); if (!p) return null; return <button key={pr.id} type="button" onClick={() => setPromoId(pr.id)} className={`rounded-xl border px-3 py-2 text-left ${promoId === pr.id ? "border-primary/50 bg-primary/10" : "border-white/[0.08]"}`}><span className="block text-[14px] font-semibold text-foreground">{networkOf(p)} {sizeOf(p)} · {formatGHS(Number(pr.promo_price))}</span><span className="block text-[11.5px] text-muted-foreground">was {formatGHS(priceOf(p.id))} · ends {new Date(pr.ends_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span></button>; })}</div>
@@ -102,7 +126,7 @@ export default function AgentStatus() {
         </div>
 
         <div ref={canvasHost} className="onyx-panel flex items-start justify-center rounded-2xl p-3">
-          {url ? <img src={url} alt="Status preview" className={`w-full max-w-[300px] rounded-xl shadow-xl ${busy ? "opacity-60" : ""}`} style={{ aspectRatio: "9 / 16" }} /> : <div className="flex aspect-[9/16] w-full max-w-[300px] flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.1] text-muted-foreground"><ImageIcon size={26} /><p className="mt-2 text-[12.5px]">{busy ? "Drawing…" : "Pick something to post."}</p></div>}
+          {url ? <img src={url} alt="Status preview" className={`w-full max-w-[300px] rounded-xl shadow-xl ${busy ? "opacity-60" : ""}`} style={{ aspectRatio: "9 / 16" }} /> : <div className="flex aspect-[9/16] w-full max-w-[300px] flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.1] text-muted-foreground"><ImageIcon size={26} /><p className="mt-2 text-[12.5px]">{busy ? "Drawing…" : pickHint ? `${pickHint}.` : "Pick something to post."}</p></div>}
         </div>
       </div>
     </div>

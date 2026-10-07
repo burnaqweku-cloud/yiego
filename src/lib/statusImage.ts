@@ -14,7 +14,9 @@ import type { Phase1Product } from "@/lib/phase1-api";
    ══════════════════════════════════════════════════════════════ */
 
 export type StatusTemplate = "classic" | "market" | "studio";
-export type StatusKind = "bundle" | "promo" | "network";
+export type StatusKind = "bundle" | "two" | "three" | "promo" | "network";
+/** How many bundles each kind needs on the image (network = all of them). */
+export const bundlesFor = (k: StatusKind) => k === "two" ? 2 : k === "three" ? 3 : k === "network" ? 0 : 1;
 export interface StatusStore { name: string; link: string; logoUrl?: string | null; accent?: string | null; tagline?: string | null }
 export interface StatusBundle { product: Phase1Product; price: number; wasPrice?: number | null; endsAt?: string | null }
 export interface StatusInput { template: StatusTemplate; kind: StatusKind; store: StatusStore; bundles: StatusBundle[]; network: string }
@@ -55,6 +57,47 @@ function initial(x: CanvasRenderingContext2D, name: string, cx: number, cy: numb
   x.fillStyle = color; x.font = `900 ${px}px "${fam}", Arial, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(name.trim().slice(0, 1).toUpperCase(), cx, cy + px * 0.04); x.textAlign = "left"; x.textBaseline = "alphabetic";
 }
 
+/* ─────────────── TWO / THREE BUNDLE LAYOUTS (shared) ───────────────
+   Fixed layouts so the image never breaks: two bundles sit side by side
+   ("this or that"), three stack as rows with the middle one tagged. Each
+   template passes its own colours; geometry is the same. */
+interface MultiStyle { fam: string; card: string; size: string; sub: string; price: string; tagBg: string; tagInk: string; cardRadius: number; weightSize: number; weightPrice: number }
+function drawTwo(x: CanvasRenderingContext2D, bundles: StatusBundle[], y0: number, y1: number, st: MultiStyle) {
+  const left = 130, gap = 28, cw = Math.floor((W - 260 - gap) / 2), ch = y1 - y0; const rows = bundles.slice(0, 2);
+  // one size for all cards, so 45.65 and 88 don't come out different
+  const sz = Math.min(...rows.map((b) => fit(x, sizeOf(b.product), cw - 60, 150, st.weightSize, st.fam, 70)));
+  const pz = Math.min(...rows.map((b) => fit(x, money(b.price), cw - 50, 92, st.weightPrice, st.fam, 50)));
+  rows.forEach((b, i) => {
+    const cx = left + i * (cw + gap);
+    x.fillStyle = st.card; rr(x, cx, y0, cw, ch, st.cardRadius); x.fill();
+    x.fillStyle = st.size; x.font = `${st.weightSize} ${sz}px "${st.fam}", Arial, sans-serif`; x.textAlign = "center"; x.fillText(sizeOf(b.product), cx + cw / 2, y0 + ch * 0.36);
+    x.fillStyle = st.sub; x.font = `500 30px "${st.fam}", Arial, sans-serif`; x.fillText(b.product.validity ?? "No expiry", cx + cw / 2, y0 + ch * 0.36 + 56);
+    x.fillStyle = st.price; x.font = `${st.weightPrice} ${pz}px "${st.fam}", Arial, sans-serif`; x.fillText(money(b.price), cx + cw / 2, y0 + ch * 0.78);
+    x.textAlign = "left";
+  });
+  // "or" between the cards
+  const mx = left + cw + gap / 2, my = y0 + ch / 2;
+  x.fillStyle = st.tagBg; x.beginPath(); x.arc(mx, my, 40, 0, Math.PI * 2); x.fill();
+  x.fillStyle = st.tagInk; x.font = `900 30px "${st.fam}", Arial, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("or", mx, my + 2); x.textAlign = "left"; x.textBaseline = "alphabetic";
+}
+function drawThree(x: CanvasRenderingContext2D, bundles: StatusBundle[], y0: number, y1: number, st: MultiStyle) {
+  const rows = bundles.slice(0, 3); const gap = 26; const rh = Math.floor((y1 - y0 - gap * 2) / 3);
+  const sz = Math.min(...rows.map((b) => fit(x, sizeOf(b.product), 380, 108, st.weightSize, st.fam, 60)));
+  const pz = Math.min(...rows.map((b) => fit(x, money(b.price), 380, 92, st.weightPrice, st.fam, 50)));
+  rows.forEach((b, i) => {
+    const ry = y0 + i * (rh + gap); const popular = i === 1 && rows.length === 3;
+    x.fillStyle = st.card; rr(x, 130, ry, W - 260, rh, st.cardRadius); x.fill();
+    if (popular) { x.strokeStyle = st.tagBg; x.lineWidth = 4; rr(x, 132, ry + 2, W - 264, rh - 4, st.cardRadius - 2); x.stroke(); }
+    x.fillStyle = st.size; x.font = `${st.weightSize} ${sz}px "${st.fam}", Arial, sans-serif`; x.fillText(sizeOf(b.product), 170, ry + rh * 0.56);
+    x.fillStyle = st.sub; x.font = `500 28px "${st.fam}", Arial, sans-serif`; x.fillText(b.product.validity ?? "No expiry", 174, ry + rh * 0.56 + 48);
+    x.fillStyle = st.price; x.font = `${st.weightPrice} ${pz}px "${st.fam}", Arial, sans-serif`; x.textAlign = "right"; x.fillText(money(b.price), W - 170, ry + rh * 0.56 + 16); x.textAlign = "left";
+    if (popular) {
+      x.fillStyle = st.tagBg; rr(x, W - 170 - 250, ry - 24, 250, 50, 25); x.fill();
+      x.fillStyle = st.tagInk; x.font = `900 24px "${st.fam}", Arial, sans-serif`; x.textAlign = "center"; x.fillText("MOST POPULAR", W - 170 - 125, ry + 10); x.textAlign = "left";
+    }
+  });
+}
+
 /* ───────────────────────── MARKET ───────────────────────── */
 function drawMarket(x: CanvasRenderingContext2D, inp: StatusInput, logo: HTMLImageElement | null) {
   const fam = FAMILY.market; const accent = hex(inp.store.accent, "#ff5a3c"); const INK = "#1d2460", SUN = "#ffd23f", CHALK = "#fff8ec";
@@ -69,7 +112,14 @@ function drawMarket(x: CanvasRenderingContext2D, inp: StatusInput, logo: HTMLIma
   const top = 330, bh = 1180; x.fillStyle = accent; rr(x, 80 + 14, top + 14, W - 160, bh, 44); x.fill();
   x.fillStyle = INK; rr(x, 80, top, W - 160, bh, 44); x.fill();
   const b = inp.bundles[0];
-  if (inp.kind !== "network" && b) {
+  const multi = inp.kind === "two" || inp.kind === "three";
+  if (multi && b) {
+    x.save(); x.translate(150, top + 110); x.rotate(-0.06); x.fillStyle = SUN; rr(x, 0, -44, 300, 88, 20); x.fill(); x.fillStyle = INK; x.font = `900 40px "${fam}", Arial, sans-serif`; x.fillText(networkOf(b.product), 36, 14); x.restore();
+    x.fillStyle = "rgba(255,255,255,0.7)"; x.font = `500 36px "${fam}", Arial, sans-serif`; x.textAlign = "right"; x.fillText(inp.kind === "two" ? "Pick one" : "Pick your size", W - 130, top + 124); x.textAlign = "left";
+    const st: MultiStyle = { fam, card: "rgba(255,255,255,0.09)", size: "#fff", sub: "rgba(255,255,255,0.6)", price: accent, tagBg: SUN, tagInk: INK, cardRadius: 32, weightSize: 900, weightPrice: 900 };
+    if (inp.kind === "two") drawTwo(x, inp.bundles, top + 220, top + 920, st); else drawThree(x, inp.bundles, top + 230, top + 940, st);
+    x.fillStyle = SUN; rr(x, 130, top + 1010, W - 260, 110, 55); x.fill(); x.fillStyle = INK; x.font = `900 44px "${fam}", Arial, sans-serif`; x.textAlign = "center"; x.fillText("BUY NOW  →", W / 2, top + 1082); x.textAlign = "left";
+  } else if (inp.kind !== "network" && b) {
     // yellow network tag, tilted
     x.save(); x.translate(150, top + 110); x.rotate(-0.06); x.fillStyle = SUN; rr(x, 0, -44, 300, 88, 20); x.fill(); x.fillStyle = INK; x.font = `900 40px "${fam}", Arial, sans-serif`; x.fillText(networkOf(b.product), 36, 14); x.restore();
     if (inp.kind === "promo") { x.save(); x.translate(W - 150, top + 110); x.rotate(0.08); x.fillStyle = accent; rr(x, -270, -44, 270, 88, 20); x.fill(); x.fillStyle = "#fff"; x.font = `900 40px "${fam}", Arial, sans-serif`; x.textAlign = "right"; x.fillText("PROMO", -32, 14); x.textAlign = "left"; x.restore(); }
@@ -112,7 +162,14 @@ function drawStudio(x: CanvasRenderingContext2D, inp: StatusInput, logo: HTMLIma
   const nameSize = fit(x, inp.store.name, W - 300 - 80, 56, 800, fam, 34); x.fillStyle = INK; x.font = `800 ${nameSize}px "${fam}", Arial, sans-serif`; x.fillText(inp.store.name, 260, 142);
   x.fillStyle = SLATE; x.font = `500 28px "${fam}", Arial, sans-serif`; x.fillText(inp.store.tagline || "MTN · Telecel · AirtelTigo", 260, 190);
   const b = inp.bundles[0];
-  if (inp.kind !== "network" && b) {
+  const multi = inp.kind === "two" || inp.kind === "three";
+  if (multi && b) {
+    x.fillStyle = accent; rr(x, 120, 420, 220, 64, 32); x.fill(); x.fillStyle = "#fff"; x.font = `700 30px "${fam}", Arial, sans-serif`; x.textAlign = "center"; x.fillText(networkOf(b.product), 230, 462); x.textAlign = "left";
+    x.fillStyle = SLATE; x.font = `600 34px "${fam}", Arial, sans-serif`; x.textAlign = "right"; x.fillText(inp.kind === "two" ? "Pick one" : "Pick your size", W - 120, 466); x.textAlign = "left";
+    const st: MultiStyle = { fam, card: MIST, size: INK, sub: SLATE, price: accent, tagBg: accent, tagInk: "#fff", cardRadius: 32, weightSize: 800, weightPrice: 800 };
+    if (inp.kind === "two") drawTwo(x, inp.bundles, 560, 1280, st); else drawThree(x, inp.bundles, 570, 1300, st);
+    x.fillStyle = accent; rr(x, 120, 1380, W - 240, 112, 24); x.fill(); x.fillStyle = "#fff"; x.font = `700 40px "${fam}", Arial, sans-serif`; x.textAlign = "center"; x.fillText("Buy now", W / 2, 1452); x.textAlign = "left";
+  } else if (inp.kind !== "network" && b) {
     // pill
     x.fillStyle = accent; rr(x, 120, 420, 220, 64, 32); x.fill(); x.fillStyle = "#fff"; x.font = `700 30px "${fam}", Arial, sans-serif`; x.textAlign = "center"; x.fillText(networkOf(b.product), 230, 462); x.textAlign = "left";
     if (inp.kind === "promo") { x.fillStyle = "#fff1e6"; rr(x, 360, 420, 220, 64, 32); x.fill(); x.fillStyle = "#c2410c"; x.font = `700 30px "${fam}", Arial, sans-serif`; x.textAlign = "center"; x.fillText("PROMO", 470, 462); x.textAlign = "left"; }
@@ -154,7 +211,15 @@ function drawClassic(x: CanvasRenderingContext2D, inp: StatusInput, logo: HTMLIm
   const nameSize = fit(x, inp.store.name, W - 300 - 80, 60, 800, fam, 34); x.fillStyle = "#fff"; x.font = `800 ${nameSize}px "${fam}", Arial, sans-serif`; x.fillText(inp.store.name, 270, 182);
   x.fillStyle = MUTED; x.font = `500 28px "${fam}", Arial, sans-serif`; x.fillText(inp.store.tagline || "MTN · Telecel · AirtelTigo", 270, 232);
   const b = inp.bundles[0];
-  if (inp.kind !== "network" && b) {
+  const multi = inp.kind === "two" || inp.kind === "three";
+  if (multi && b) {
+    x.fillStyle = accent + "33"; rr(x, 110, 430, 240, 66, 33); x.fill(); x.fillStyle = accent; x.font = `700 30px "${fam}", Arial, sans-serif`; x.textAlign = "center"; x.fillText(networkOf(b.product), 230, 473); x.textAlign = "left";
+    x.fillStyle = MUTED; x.font = `600 34px "${fam}", Arial, sans-serif`; x.textAlign = "right"; x.fillText(inp.kind === "two" ? "Pick one" : "Pick your size", W - 110, 476); x.textAlign = "left";
+    const st: MultiStyle = { fam, card: "rgba(255,255,255,0.07)", size: "#fff", sub: MUTED, price: accent, tagBg: accent, tagInk: "#ffffff", cardRadius: 32, weightSize: 800, weightPrice: 800 };
+    if (inp.kind === "two") drawTwo(x, inp.bundles, 570, 1270, st); else drawThree(x, inp.bundles, 570, 1290, st);
+    x.fillStyle = accent; rr(x, 110, 1360, W - 220, 116, 28); x.fill();
+    x.fillStyle = "#ffffff"; x.font = `700 42px "${fam}", Arial, sans-serif`; x.textAlign = "center"; x.fillText("Buy now", W / 2, 1434); x.textAlign = "left";
+  } else if (inp.kind !== "network" && b) {
     x.fillStyle = accent + "33"; rr(x, 110, 430, 240, 66, 33); x.fill(); x.fillStyle = accent; x.font = `700 30px "${fam}", Arial, sans-serif`; x.textAlign = "center"; x.fillText(networkOf(b.product), 230, 473); x.textAlign = "left";
     if (inp.kind === "promo") { x.fillStyle = "#f59e0b33"; rr(x, 370, 430, 220, 66, 33); x.fill(); x.fillStyle = "#fbbf24"; x.font = `700 30px "${fam}", Arial, sans-serif`; x.textAlign = "center"; x.fillText("PROMO", 480, 473); x.textAlign = "left"; }
     const size = sizeOf(b.product); const sz = fit(x, size, W - 220, 250, 800, fam, 120);
@@ -197,6 +262,7 @@ export function statusCaption(inp: StatusInput): string {
   const b = inp.bundles[0];
   if (inp.kind === "network") return `${inp.network} data at ${inp.store.name}. Buy at ${link}`;
   if (!b) return `Buy data at ${link}`;
+  if (inp.kind === "two" || inp.kind === "three") return `${networkOf(b.product)} ${inp.bundles.map((r) => `${sizeOf(r.product)} ${money(r.price)}`).join(" · ")}. Buy at ${link}`;
   const line = `${networkOf(b.product)} ${sizeOf(b.product)} for ${money(b.price)}${b.product.validity ? ` · ${b.product.validity}` : ""}`;
   return inp.kind === "promo" && b.wasPrice ? `🔥 ${line} (was ${money(b.wasPrice)})${b.endsAt ? ` ${until(b.endsAt)}` : ""}. Buy at ${link}` : `${line}. Buy at ${link}`;
 }
