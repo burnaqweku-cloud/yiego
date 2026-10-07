@@ -17,8 +17,23 @@ export default function AgentHome() {
   const [perPage, setPerPageState] = useState<number>(() => { try { const v = Number(localStorage.getItem(PAGE_KEY)); return [5, 10, 20].includes(v) ? v : 5; } catch { return 5; } });
   const setPerPage = (n: number) => { setPerPageState(n); setPage(0); try { localStorage.setItem(PAGE_KEY, String(n)); } catch { /* ignore */ } };
   const [page, setPage] = useState(0);
-  const pages = Math.max(1, Math.ceil(orders.length / perPage));
-  const pageRows = orders.slice(page * perPage, page * perPage + perPage);
+  type SortKey = "newest" | "oldest" | "profit" | "progress";
+  const SORT_KEY = "yg-agent-home-orders-sort";
+  const SORTS: Array<{ id: SortKey; label: string }> = [{ id: "newest", label: "Newest" }, { id: "oldest", label: "Oldest" }, { id: "profit", label: "Highest profit" }, { id: "progress", label: "In progress first" }];
+  const [sort, setSortState] = useState<SortKey>(() => { try { const v = localStorage.getItem(SORT_KEY) as SortKey | null; return v && SORTS.some((x) => x.id === v) ? v : "newest"; } catch { return "newest"; } });
+  const setSort = (k: SortKey) => { setSortState(k); setPage(0); try { localStorage.setItem(SORT_KEY, k); } catch { /* ignore */ } };
+  const sorted = useMemo(() => {
+    const at = (o: typeof orders[number]) => o.paid_at ?? o.created_at;
+    const rank = (o: typeof orders[number]) => (o.status === "delivered" ? 2 : o.status === "refunded" || o.status === "cancelled" ? 3 : o.admin_resolution_status === "awaiting_verification" ? 1 : 0);
+    const list = orders.slice();
+    if (sort === "oldest") list.sort((a, b) => at(a).localeCompare(at(b)));
+    else if (sort === "profit") list.sort((a, b) => Number(b.agent_margin ?? 0) - Number(a.agent_margin ?? 0) || at(b).localeCompare(at(a)));
+    else if (sort === "progress") list.sort((a, b) => rank(a) - rank(b) || at(b).localeCompare(at(a)));
+    else list.sort((a, b) => at(b).localeCompare(at(a)));
+    return list;
+  }, [orders, sort]);
+  const pages = Math.max(1, Math.ceil(sorted.length / perPage));
+  const pageRows = sorted.slice(page * perPage, page * perPage + perPage);
   // Messages from the network this store belongs to (sub-agents only)
   const [netAnns, setNetAnns] = useState<Array<{ id: string; title: string; body: string; created_at: string }>>([]);
   useEffect(() => { if (!isSub) return; void p1().from("network_announcements").select("id, title, body, created_at").order("created_at", { ascending: false }).limit(5).then(({ data }) => setNetAnns(data ?? [])); }, [isSub]);
@@ -98,7 +113,7 @@ export default function AgentHome() {
         <ArrowRight size={16} className="text-primary-glow" />
       </Link>
       <div className="onyx-panel rounded-2xl p-3">
-        <div className="flex items-center justify-between px-1"><p className="text-[13px] font-semibold text-foreground">Latest orders</p><Link to="/agent/orders" className="text-[12px] text-primary-glow">All orders</Link></div>
+        <div className="flex items-center justify-between gap-2 px-1"><p className="text-[13px] font-semibold text-foreground">Latest orders</p><span className="flex items-center gap-3">{orders.length > 1 && <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Sort orders" className="rounded-lg border border-white/[0.1] bg-transparent px-2 py-1 text-[12px] text-muted-foreground">{SORTS.map((x) => <option key={x.id} value={x.id} className="bg-background text-foreground">{x.label}</option>)}</select>}<Link to="/agent/orders" className="text-[12px] text-primary-glow">All orders</Link></span></div>
         <ul className="mt-1 divide-y divide-white/[0.06]">{orders.length === 0 && <li className="py-6 text-center text-[13px] text-muted-foreground">No orders yet. Share your link.</li>}{pageRows.map((o) => <li key={o.order_reference} className="flex items-center justify-between py-2"><div><p className="text-[13px] font-medium text-foreground">{o.networks?.name} {o.data_products?.name?.replace(/^.*?—\s*/, "")} → {o.recipient_phone}</p><p className="text-[11px] text-faint-foreground">{fmt(o.paid_at ?? o.created_at)} · <span className={toneClass(stageOf(o).tone)}>{stageOf(o).label}</span></p></div><p className="text-[12.5px] font-semibold text-primary-glow">+{formatGHS(Number(o.agent_margin ?? 0))}</p></li>)}</ul>
         {orders.length > 5 && (
           <div className="mt-2 flex items-center justify-between border-t border-white/[0.06] pt-2.5 text-[12px] text-muted-foreground">
