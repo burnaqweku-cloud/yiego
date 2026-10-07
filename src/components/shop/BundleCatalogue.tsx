@@ -271,12 +271,20 @@ export default function BundleCatalogue() {
     if (!baseMode) return;
     let mounted = true;
     setProductsState("loading");
-    void loadPhase1Products().then((result) => {
-      if (!mounted) return;
-      setProducts(result.data);
-      setProductsState(result.error || result.data.length === 0 ? "error" : "ready");
-    });
-    return () => { mounted = false; };
+    // A slow or dropped request shouldn't show the "not loading" card straight away:
+    // try three times (0s, 2s, 5s) before giving up.
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const tryLoad = (n: number) => {
+      void loadPhase1Products().then((result) => {
+        if (!mounted) return;
+        const ok = !result.error && result.data.length > 0;
+        if (ok) { setProducts(result.data); setProductsState("ready"); return; }
+        if (n < 2) { timer = setTimeout(() => tryLoad(n + 1), n === 0 ? 2000 : 5000); return; }
+        setProducts(result.data); setProductsState("error");
+      });
+    };
+    tryLoad(0);
+    return () => { mounted = false; if (timer) clearTimeout(timer); };
   }, [baseMode, attempt]);
 
   const state: LoadState = choicesLoading
