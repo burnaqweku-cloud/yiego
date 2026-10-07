@@ -8,6 +8,7 @@ import { useFlows } from "@/store/flows";
 import { useReveal } from "@/hooks/useReveal";
 import { cn } from "@/lib/utils";
 import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { Info } from "lucide-react";
 import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
@@ -249,6 +250,7 @@ function SupplierBanner({ supplier }: { supplier: SupplierChoice }) {
 
 export default function BundleCatalogue() {
   const speeds = useDeliverySpeed();
+  const { isAdmin } = useAdminAccess(); // the error detail is for the team, not customers
   const [checkInfoOpen, setCheckInfoOpen] = useState(false);
   const { openBuyData } = useFlows();
   const { suppliers, loading: choicesLoading, error: choicesError, reload } = useSupplierChoices();
@@ -437,7 +439,7 @@ export default function BundleCatalogue() {
               <p className="mt-1.5 text-[13.5px] leading-6 text-muted-foreground">
                 This is usually a brief network hiccup. Nothing has been charged — try again in a moment.
               </p>
-              {(choicesError || productsError) && <p className="mt-2 break-words text-[11.5px] leading-5 text-faint-foreground">Details: {choicesError ?? productsError}</p>}
+              {isAdmin && (choicesError || productsError) && <p className="mt-2 break-words text-[11.5px] leading-5 text-faint-foreground">Details: {choicesError ?? productsError}</p>}
             </div>
             <button
               type="button"
