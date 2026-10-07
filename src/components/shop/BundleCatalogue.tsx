@@ -267,6 +267,7 @@ export default function BundleCatalogue() {
   const baseMode = !choicesLoading && !choicesError && suppliers.length === 0;
   const [products, setProducts] = useState<Phase1Product[]>([]);
   const [productsState, setProductsState] = useState<LoadState>("loading");
+  const [productsError, setProductsError] = useState<string | null>(null);
   useEffect(() => {
     if (!baseMode) return;
     let mounted = true;
@@ -278,9 +279,9 @@ export default function BundleCatalogue() {
       void loadPhase1Products().then((result) => {
         if (!mounted) return;
         const ok = !result.error && result.data.length > 0;
-        if (ok) { setProducts(result.data); setProductsState("ready"); return; }
+        if (ok) { setProducts(result.data); setProductsState("ready"); setProductsError(null); return; }
         if (n < 2) { timer = setTimeout(() => tryLoad(n + 1), n === 0 ? 2000 : 5000); return; }
-        setProducts(result.data); setProductsState("error");
+        setProducts(result.data); setProductsState("error"); setProductsError(result.error ?? "No bundles were returned.");
       });
     };
     tryLoad(0);
@@ -436,6 +437,7 @@ export default function BundleCatalogue() {
               <p className="mt-1.5 text-[13.5px] leading-6 text-muted-foreground">
                 This is usually a brief network hiccup. Nothing has been charged — try again in a moment.
               </p>
+              {(choicesError || productsError) && <p className="mt-2 break-words text-[11.5px] leading-5 text-faint-foreground">Details: {choicesError ?? productsError}</p>}
             </div>
             <button
               type="button"

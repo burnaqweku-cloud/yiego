@@ -54,7 +54,7 @@ export function useSupplierChoices() {
       // catalogue and routing happens behind the scenes.
       const list = (data?.suppliers ?? []).filter((s) => s.bundles?.length);
       setSuppliers(list);
-      setError(invokeError ? "Plans are temporarily unavailable." : null);
+      setError(invokeError ? `Plans are temporarily unavailable. (${invokeError.message ?? String(invokeError)})` : null);
       setLoading(false);
     })();
     return () => { cancelled = true; };
