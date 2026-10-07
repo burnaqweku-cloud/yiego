@@ -31,7 +31,7 @@ export default function AdminMasterBalance() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastConfirmed, setLastConfirmed] = useState<string | null>(null);
-  const [pot, setPot] = useState<{ partner_money: number; payouts: number; topups: number; pot: number } | null>(null);
+  const [pot, setPot] = useState<{ partner_money: number; payouts: number; topups: number; agent_payouts?: number; adjustments?: number; pot: number } | null>(null);
   const [adding, setAdding] = useState(false); const [topping, setTopping] = useState(false);
   const [isMaster, setIsMaster] = useState(false);
 
@@ -56,13 +56,14 @@ export default function AdminMasterBalance() {
   const suppliersTotal = suppliers.reduce((a, s) => a + confirmedFloat(s.code), 0);
   const staleHours = lastConfirmed ? (Date.now() - +new Date(lastConfirmed)) / 3600000 : Infinity;
   const partnerMoney = Number(pot?.partner_money ?? 0), payouts = Number(pot?.payouts ?? 0), topups = Number(pot?.topups ?? 0);
+  const agentPayouts = Number(pot?.agent_payouts ?? 0), adjustments = Number(pot?.adjustments ?? 0);
   const master = Number(pot?.pot ?? 0);
   const netWorth = master + atPaystack + suppliersTotal - owed;
   const made = netWorth - partnerMoney;
 
   return (
     <div className="space-y-5">
-      <AdminPageHeader title="Master balance" description="The pot: money partners put in, plus every Paystack payout, minus every top-up. It's the cash in the account." action={<div className="flex gap-2"><Link to="/admin/finance"><Button variant="ghost" size="sm"><ArrowLeft size={14} />Finance</Button></Link><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={14} /></Button>{isMaster && <Button variant="soft" size="sm" onClick={() => setAdding(true)}>Partner put in</Button>}<Button size="sm" onClick={() => setTopping(true)}>Record top-up</Button></div>} />
+      <AdminPageHeader title="Master balance" description="The pot: money partners put in, plus every Paystack payout, minus top-ups, agent payouts and anything spent from it. It's the cash in the account." action={<div className="flex gap-2"><Link to="/admin/finance"><Button variant="ghost" size="sm"><ArrowLeft size={14} />Finance</Button></Link><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={14} /></Button>{isMaster && <Button variant="soft" size="sm" onClick={() => setAdding(true)}>Partner put in</Button>}<Button size="sm" onClick={() => setTopping(true)}>Record top-up</Button></div>} />
 
       <Panel title="Master balance" icon={Landmark} note={lastConfirmed ? `suppliers as reported ${formatAdminDate(lastConfirmed)}` : "waiting for supplier readings"}>
         {staleHours > 24 && <p className="mb-2 text-[11.5px] text-amber">One supplier hasn't reported for {Math.floor(staleHours / 24)} day{Math.floor(staleHours / 24) === 1 ? "" : "s"} — its figure may be out of date.</p>}
@@ -71,6 +72,8 @@ export default function AdminMasterBalance() {
           <span className="text-ink-emerald">Partners put in {formatGHS(partnerMoney)}</span><span className="text-faint-foreground">+</span>
           <span className="text-ink-emerald">Payouts received {formatGHS(payouts)}</span><span className="text-faint-foreground">−</span>
           <span className="text-ink-rose">Top-ups paid {formatGHS(topups)}</span>
+          {agentPayouts > 0 && <><span className="text-faint-foreground">−</span><span className="text-ink-rose">Agent payouts {formatGHS(agentPayouts)}</span></>}
+          {adjustments !== 0 && <><span className="text-faint-foreground">{adjustments < 0 ? "−" : "+"}</span><span className={adjustments < 0 ? "text-ink-rose" : "text-ink-emerald"}>{adjustments < 0 ? "Spent" : "Added"} {formatGHS(Math.abs(adjustments))}</span></>}
         </p>
         <p className="mt-1.5 text-[12px] text-muted-foreground">Cash in the account now. {atPaystack > 0 ? `${formatGHS(atPaystack)} more is on its way from Paystack.` : ""}</p>
         <p className="mt-2 text-[12px] text-muted-foreground">Net worth {formatGHS(netWorth)} <span className="text-faint-foreground">(pot + Paystack {formatGHS(atPaystack)} + suppliers {formatGHS(suppliersTotal)} − customers' money {formatGHS(owed)})</span> · <span className={made >= 0 ? "text-ink-emerald" : "text-ink-rose"}>{made >= 0 ? "made" : "lost"} {formatGHS(Math.abs(made))}</span></p>
@@ -87,6 +90,8 @@ export default function AdminMasterBalance() {
           <Row primary="Partners put in" secondary="fresh money from partners' own pockets, starting with the first 800" right={formatGHS(partnerMoney)} tone="good" />
           <Row primary="Payouts received" secondary="every Paystack payout since launch, after their fees" right={`+ ${formatGHS(payouts)}`} tone="good" />
           <Row primary="Top-ups paid" secondary="every top-up to a supplier, charges included" right={`− ${formatGHS(topups)}`} tone="bad" />
+          {agentPayouts > 0 && <Row primary="Agent payouts" secondary="earnings paid out to agents' MoMo" right={`− ${formatGHS(agentPayouts)}`} tone="bad" />}
+          {adjustments !== 0 && <Row primary={adjustments < 0 ? "Spent from the pot" : "Added to the pot"} secondary="recorded here with Spend / Add (tools, services, other costs)" right={`${adjustments < 0 ? "−" : "+"} ${formatGHS(Math.abs(adjustments))}`} tone={adjustments < 0 ? "bad" : "good"} />}
           <Row primary="Master balance" secondary="the pot: cash in the account now" right={formatGHS(master)} tone={master >= 0 ? "good" : "bad"} />
           <Row primary="Held by Paystack" secondary="paid by customers, arriving with the next payout" right={`+ ${formatGHS(atPaystack)}`} tone="muted" />
           <Row primary="At suppliers" secondary={suppliers.map((s) => `${s.name} ${formatGHS(confirmedFloat(s.code))}`).join(" · ")} right={`+ ${formatGHS(suppliersTotal)}`} tone="warn" />

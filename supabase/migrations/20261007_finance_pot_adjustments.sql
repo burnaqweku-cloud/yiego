@@ -1,0 +1,4 @@
+-- Applied via Supabase MCP on 2026-10-07 (migration "finance_pot_adjustments").
+-- finance_pot_unchecked(): the Master balance now subtracts/adds master_adjustment entries (Spend / Add from the pot)
+-- and returns 'adjustments', so the Master balance page agrees with the ledger's bank account on the Finance page.
+-- Why: a GH₵156 "Api Payment" spend showed on Finance (1,381.70) but not on Master balance (1,537.70).
