@@ -9,6 +9,7 @@ import { useReveal } from "@/hooks/useReveal";
 import { cn } from "@/lib/utils";
 import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { reportClientError } from "@/lib/client-errors";
 import { Info } from "lucide-react";
 import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
@@ -284,6 +285,7 @@ export default function BundleCatalogue() {
         if (ok) { setProducts(result.data); setProductsState("ready"); setProductsError(null); return; }
         if (n < 2) { timer = setTimeout(() => tryLoad(n + 1), n === 0 ? 2000 : 5000); return; }
         setProducts(result.data); setProductsState("error"); setProductsError(result.error ?? "No bundles were returned.");
+        reportClientError("products", result.error ?? "No bundles were returned.", { attempts: 3 });
       });
     };
     tryLoad(0);

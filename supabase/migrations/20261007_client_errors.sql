@@ -1,0 +1,5 @@
+-- Applied via Supabase MCP on 2026-10-07 (migration "client_errors").
+-- phase1.client_errors: front-end failures (bundles not loading, etc) so the team can see them on Admin → Status.
+-- phase1.log_client_error(page, source, message, context): anon + authenticated may call; capped at 300 rows/minute.
+-- phase1.admin_client_errors(hours): caller_is_admin(); last 300 rows in the window with the user's email.
+-- Why: "Bundles are not loading" on a customer's phone left no trace; the admin-only Details line is useless when the owner is signed in as a customer.

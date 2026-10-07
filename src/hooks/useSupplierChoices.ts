@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { reportClientError } from "@/lib/client-errors";
 import type { NetworkId } from "@/data/bundles";
 
 /* ══════════════════════════════════════════════════════════════
@@ -45,16 +46,37 @@ export function useSupplierChoices() {
     setLoading(true);
     setError(null);
     void (async () => {
-      const { data, error: invokeError } = await supabase.functions.invoke<{ suppliers?: SupplierChoice[] }>(
-        "supplier-delivery-status", { body: { action: "choices" } },
-      );
+      // On a slow phone connection this request is often dropped after the
+      // preflight. Try three times (0s, 2s, 5s); if it still fails, the shop
+      // sells from the base catalogue rather than showing an error, and the
+      // failure is reported so the team can see it on Admin → Status.
+      let lastError: string | null = null;
+      for (let n = 0; n < 3; n++) {
+        if (n > 0) await new Promise((r) => setTimeout(r, n === 1 ? 2000 : 5000));
+        if (cancelled) return;
+        try {
+          const { data, error: invokeError } = await supabase.functions.invoke<{ suppliers?: SupplierChoice[] }>(
+            "supplier-delivery-status", { body: { action: "choices" } },
+          );
+          if (cancelled) return;
+          if (!invokeError) {
+            // Suppliers with nothing to sell are not worth offering. An empty list
+            // is a valid state: no public plans means the shop sells from the base
+            // catalogue and routing happens behind the scenes.
+            setSuppliers((data?.suppliers ?? []).filter((s) => s.bundles?.length));
+            setError(null);
+            setLoading(false);
+            return;
+          }
+          lastError = invokeError.message ?? String(invokeError);
+        } catch (e) {
+          lastError = e instanceof Error ? e.message : String(e);
+        }
+      }
       if (cancelled) return;
-      // Suppliers with nothing to sell are not worth offering. An empty list
-      // is a valid state — no public plans means the shop sells from the base
-      // catalogue and routing happens behind the scenes.
-      const list = (data?.suppliers ?? []).filter((s) => s.bundles?.length);
-      setSuppliers(list);
-      setError(invokeError ? `Plans are temporarily unavailable. (${invokeError.message ?? String(invokeError)})` : null);
+      reportClientError("supplier_choices", lastError ?? "unknown", { attempts: 3 });
+      setSuppliers([]);
+      setError(null);
       setLoading(false);
     })();
     return () => { cancelled = true; };

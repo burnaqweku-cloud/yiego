@@ -17,3 +17,10 @@ export async function setProcessingDelay(on: boolean): Promise<string | null> {
   const { error } = await rpc("admin_set_ops_status", { p_processing_delay: on });
   return error ? error.message : null;
 }
+
+/* Front-end failures reported by phase1.log_client_error (see src/lib/client-errors.ts). */
+export interface ClientError { id: number; at: string; page: string; source: string; message: string; email: string | null; context: Record<string, unknown> }
+export async function loadClientErrors(hours = 48): Promise<ClientError[]> {
+  const { data } = await rpc("admin_client_errors", { p_hours: hours });
+  return Array.isArray(data) ? (data as ClientError[]) : [];
+}
