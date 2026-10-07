@@ -48,12 +48,12 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "agent-messages", label: "Message your agents", to: "/agent/network/messages", sections: ["message-your-agents"] },
   ] },
   { id: "team", label: "Team & support", icon: UserCog, pages: [
-    { id: "assistant", label: "Store assistant", to: "/agent/assistant" },
+    { id: "assistant", label: "Chat assistant", to: "/agent/assistant" },
     { id: "support-settings", label: "Support buttons", to: "/agent/team/support", sections: ["buttons-on-your-store"] },
     { id: "staff", label: "Staff", to: "/agent/team/staff", sections: ["team"] },
   ] },
   { id: "more", label: "More", icon: LifeBuoy, pages: [
-    { id: "ask", label: "Ask DataYego", to: "/agent/ask" },
+    { id: "ask", label: "Store assistant", to: "/agent/ask" },
     { id: "invite", label: "Invite & earn", to: "/account" },
     { id: "help", label: "Help Center", to: "/agent/help" },
   ] },
@@ -66,7 +66,7 @@ export const STAFF_GROUPS: AgentNavGroup[] = [
     { id: "customers", label: "Customers", to: "/agent/customers" },
     { id: "check-mtn", label: "Check MTN numbers", to: "/agent/check-mtn" },
   ] },
-  { id: "more", label: "More", icon: LifeBuoy, pages: [{ id: "ask", label: "Ask DataYego", to: "/agent/ask" }, { id: "help", label: "Help Center", to: "/agent/help" }] },
+  { id: "more", label: "More", icon: LifeBuoy, pages: [{ id: "ask", label: "Store assistant", to: "/agent/ask" }, { id: "help", label: "Help Center", to: "/agent/help" }] },
 ];
 
 /* Which sections a route shows. Keyed by pathname; undefined means "all, collapsible". */

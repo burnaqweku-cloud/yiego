@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { assistantHtml } from "@/lib/assistantMarkdown";
 import { useContactSettings } from "@/hooks/useContactSettings";
 
-/* "Ask DataYego": the assistant inside the agent dashboard. One component, two homes:
+/* Store assistant: the assistant inside the agent dashboard. One component, two homes:
    a floating button that opens it as a sheet on every dashboard page (AgentShell), and the
    full page under Help (AgentAsk). Suggested questions follow the page the agent is on. */
 
@@ -28,7 +28,7 @@ export function AskDataYegoPanel({ onClose, full = false }: { onClose?: () => vo
   const { pathname } = useLocation();
   const { whatsappUrl } = useContactSettings();
   const [messages, setMessages] = useState<Msg[]>([]);
-  const [convId, setConvId] = useState<string | null>(() => { try { return sessionStorage.getItem("yg-ask-conv"); } catch { return null; } });
+  const [convId, setConvId] = useState<string | null>(() => { try { return sessionStorage.getItem("yg-assistant-conv"); } catch { return null; } });
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [suggested, setSuggested] = useState<string[]>([]);
@@ -42,8 +42,8 @@ export function AskDataYegoPanel({ onClose, full = false }: { onClose?: () => vo
   useEffect(() => { scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" }); }, [messages, sending]);
 
   const loadThreads = useCallback(async () => { const r = await call<{ threads: Thread[] }>({ action: "threads" }); setThreads(r.data?.threads ?? []); }, []);
-  const openThread = (id: string) => { setConvId(id); try { sessionStorage.setItem("yg-ask-conv", id); } catch { /* ignore */ } setShowThreads(false); };
-  const newChat = () => { setConvId(null); setMessages([]); try { sessionStorage.removeItem("yg-ask-conv"); } catch { /* ignore */ } setShowThreads(false); };
+  const openThread = (id: string) => { setConvId(id); try { sessionStorage.setItem("yg-assistant-conv", id); } catch { /* ignore */ } setShowThreads(false); };
+  const newChat = () => { setConvId(null); setMessages([]); try { sessionStorage.removeItem("yg-assistant-conv"); } catch { /* ignore */ } setShowThreads(false); };
 
   const send = async (e: FormEvent | null, preset?: string) => {
     e?.preventDefault();
@@ -53,7 +53,7 @@ export function AskDataYegoPanel({ onClose, full = false }: { onClose?: () => vo
     const r = await call<{ conversation_id: string; message: string; remaining: number | null }>({ action: "ask", message: text, conversation_id: convId ?? undefined });
     setSending(false);
     if (r.error || !r.data) { setMessages((m) => [...m, { role: "assistant", body: r.error ?? "I couldn't answer that right now. Try again in a moment." }]); return; }
-    if (r.data.conversation_id && r.data.conversation_id !== convId) { setConvId(r.data.conversation_id); try { sessionStorage.setItem("yg-ask-conv", r.data.conversation_id); } catch { /* ignore */ } }
+    if (r.data.conversation_id && r.data.conversation_id !== convId) { setConvId(r.data.conversation_id); try { sessionStorage.setItem("yg-assistant-conv", r.data.conversation_id); } catch { /* ignore */ } }
     setRemaining(r.data.remaining);
     setMessages((m) => [...m, { role: "assistant", body: r.data!.message }]);
   };
@@ -61,7 +61,7 @@ export function AskDataYegoPanel({ onClose, full = false }: { onClose?: () => vo
   return (
     <div className={`flex flex-col ${full ? "min-h-[70dvh]" : "h-full"}`}>
       <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
-        <div className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary-glow"><MessageCircleQuestion size={16} /></span><div><p className="text-[14px] font-semibold text-foreground">Ask DataYego</p><p className="text-[11.5px] text-muted-foreground">Knows your store, your orders and your money</p></div></div>
+        <div className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary-glow"><MessageCircleQuestion size={16} /></span><div><p className="text-[14px] font-semibold text-foreground">Store assistant</p><p className="text-[11.5px] text-muted-foreground">Knows your store, your orders and your money</p></div></div>
         <div className="flex items-center gap-1">
           <button type="button" onClick={() => { setShowThreads((v) => !v); if (!threads) void loadThreads(); }} aria-label="Past chats" className={`flex h-8 w-8 items-center justify-center rounded-full ${showThreads ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:text-foreground"}`}><History size={15} /></button>
           <button type="button" onClick={newChat} aria-label="New chat" className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"><Plus size={16} /></button>
@@ -108,17 +108,17 @@ export function AskDataYegoPanel({ onClose, full = false }: { onClose?: () => vo
   );
 }
 
-/** Floating "Ask" button + sheet, mounted once in the agent shell. */
+/** Floating "Assistant" button + sheet, mounted once in the agent shell. */
 export default function AskDataYegoLauncher() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   if (pathname.startsWith("/agent/ask")) return null; // the full page is open
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-label="Ask DataYego" className="fixed bottom-5 right-5 z-40 flex h-12 items-center gap-2 rounded-full bg-primary pl-3.5 pr-4 text-[13.5px] font-semibold text-primary-foreground shadow-[0_8px_30px_rgba(60,240,170,0.35)] sm:bottom-6 sm:right-6"><MessageCircleQuestion size={18} />Ask</button>
+      <button type="button" onClick={() => setOpen(true)} aria-label="Store assistant" className="fixed bottom-5 right-5 z-40 flex h-12 items-center gap-2 rounded-full bg-primary pl-3.5 pr-4 text-[13.5px] font-semibold text-primary-foreground shadow-[0_8px_30px_rgba(60,240,170,0.35)] sm:bottom-6 sm:right-6"><MessageCircleQuestion size={18} />Assistant</button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4" onClick={() => setOpen(false)}>
-          <div role="dialog" aria-label="Ask DataYego" onClick={(e) => e.stopPropagation()} className="onyx-panel flex h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl sm:h-[640px] sm:max-w-[480px] sm:rounded-3xl">
+          <div role="dialog" aria-label="Store assistant" onClick={(e) => e.stopPropagation()} className="onyx-panel flex h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl sm:h-[640px] sm:max-w-[480px] sm:rounded-3xl">
             <AskDataYegoPanel onClose={() => setOpen(false)} />
           </div>
         </div>

@@ -2,7 +2,7 @@ import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { chat as llmChat, LlmError, pickRelevant, type LlmMsg } from "../_shared/llm.ts";
 
-/* "Ask DataYego": the assistant inside the agent dashboard.
+/* Store assistant: the assistant inside the agent dashboard.
    Login required; the agent (or an accepted staff member) only. Read-only tools scoped to that
    agent's own data; never changes anything, points to the exact page and button for actions.
    Threads stored per agent (agent_assistant_conversations / _messages). 80 questions per agent per day.
@@ -31,10 +31,10 @@ const DASHBOARD_MAP = `DASHBOARD MAP (datayego.com/agent; say "menu → page" ex
 - Customers → Support inbox: chats from your store; reply here. Customers → Orders: every order, search, filters, CSV, WhatsApp the customer. Customers → Customers: who bought. Customers → Check MTN numbers: single or bulk check, submit for verification.
 - Money → Earnings & payouts: Available and Pending, Withdraw (min GH₵ 20, fee 1% min GH₵ 1), payout history.
 - Marketing → Announcements, Promos, Status maker, Analytics, Pop-ups, Form submissions.
-- Team & support → Store assistant (what it knows, your own knowledge, test box), Support buttons (WhatsApp / chat on or off), Staff (invite by email, remove).
-- More → Invite & earn, Help Center. Renew or extend your plan from Home (the plan box).`;
+- Team & support → Chat assistant (the assistant that answers your customers in the store chat: what it knows, your own knowledge, test box), Support buttons (WhatsApp / chat on or off), Staff (invite by email, remove).
+- More → Store assistant (this chat), Invite & earn, Help Center. Renew or extend your plan from Home (the plan box).`;
 
-const PERSONA = `You are DataYego's assistant inside an agent's dashboard. You are talking to the owner of a DataYego store (or their staff). Call them "you". Be warm, direct and quick, like a sharp colleague who knows the product inside out.
+const PERSONA = `You are the Store assistant inside a DataYego agent's dashboard. You are talking to the owner of a DataYego store (or their staff). Call them "you". Be warm, direct and quick, like a sharp colleague who knows the product inside out.
 
 HOW TO ANSWER
 - Short: one to three short paragraphs or a numbered list of steps. Under about 120 words unless a procedure needs more.
@@ -189,7 +189,7 @@ const SUGGEST: Array<[RegExp, string[]]> = [
   [/\/agent\/domain/, ["How do I connect my own domain?", "What happens to my datayego.com link if I use my domain?", "Can my emails come from my domain?"]],
   [/\/agent\/marketing|\/agent\/status|\/agent\/popups|\/agent\/analytics/, ["How do I run a promo?", "What is the Status maker?", "How do I email my customers?", "What is running on my store right now?"]],
   [/\/agent\/check-mtn/, ["Why do some MTN orders get held?", "What does not approved mean?", "How do I submit numbers in bulk?"]],
-  [/\/agent\/team|\/agent\/assistant|\/agent\/support/, ["What can staff do and not do?", "How does the store assistant hand over to me?", "How do I turn the WhatsApp button off?"]],
+  [/\/agent\/team|\/agent\/assistant|\/agent\/support/, ["What can staff do and not do?", "How does the chat assistant hand over to me?", "How do I turn the WhatsApp button off?"]],
   [/\/agent\/customers/, ["Who are my repeat customers?", "Can customers keep a wallet on my store?", "How do I message a customer about their order?"]],
 ];
 function suggestFor(path: string) { for (const [re, qs] of SUGGEST) if (re.test(path)) return qs; return ["How do I share my store link?", "What is my available balance?", "How do I run a promo?", "Where do I change my prices?"]; }

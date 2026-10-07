@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { assistantHtml } from "@/lib/assistantMarkdown";
 
-/* Admin → AI support → Agent assistant: what agents are asking "Ask DataYego" and what it answered. */
+/* Admin → AI support → Agent assistant: what agents are asking their Store assistant and what it answered. */
 interface Thread { id: string; agent: string; slug: string; title: string | null; last_at: string; preview: string | null; messages: number }
 interface Msg { id: string; sender: "agent" | "assistant"; body: string; at: string; tools: string[] | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,7 +24,7 @@ export default function AgentAssistantPanel() {
   return (
     <Card><CardContent>
       <div className="flex items-start justify-between gap-4">
-        <div><div className="flex items-center gap-2"><MessageCircleQuestion className="text-primary-glow" /><h2 className="font-display text-lg font-semibold text-white">Agent assistant (Ask DataYego)</h2></div>
+        <div><div className="flex items-center gap-2"><MessageCircleQuestion className="text-primary-glow" /><h2 className="font-display text-lg font-semibold text-white">Store assistant (agent dashboard)</h2></div>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">The assistant inside the agent dashboard. It reads the Agents and How-to knowledge plus the agent Help Center, and each agent's own store, orders and earnings. {threads ? `${threads.length} recent chats, ${today} active in the last 24h.` : ""}</p></div>
         <Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={15} /></Button>
       </div>

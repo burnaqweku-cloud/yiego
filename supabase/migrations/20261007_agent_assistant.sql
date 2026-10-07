@@ -10,3 +10,7 @@
 --   Payments and wallet) + help_articles (agents) + a dashboard map. Gemini; never names suppliers.
 -- UI: floating "Ask" button on every dashboard page (AgentShell → AskDataYegoLauncher), page /agent/ask (More → Ask DataYego),
 --   per-page suggested questions, past chats, WhatsApp hand-off. Admin → AI support: Agent assistant panel (threads + messages).
+-- 20:45 Ghana: renamed. Dashboard assistant = "Store assistant" (More → Store assistant, floating "Assistant" button);
+--   the customer-facing one under Team & support = "Chat assistant". agent-assistant v4. Knowledge: new entry
+--   "Store assistant (dashboard) vs Chat assistant (store)"; "Customers, support inbox..." entry updated.
+--   TODO (approval prompt cancelled it): in 'Agent help and where to find things' change "Team & support (Store assistant, ...)" to "Chat assistant" and add "Store assistant" under More.

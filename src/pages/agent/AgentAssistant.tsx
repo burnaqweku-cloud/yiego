@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { p1, useAgent } from "@/components/agent/AgentShell";
 
-/* The agent's store assistant: what it already knows (platform facts, read-only), the agent's own
+/* The agent's chat assistant (answers customers in the store chat): what it already knows (platform facts, read-only), the agent's own
    knowledge (typed or uploaded), and a test box. Platform facts always win on orders, delivery, prices. */
 interface Entry { id: string; title: string; content: string; is_active: boolean; source: string | null; updated_at: string }
 const PLATFORM = [
@@ -60,7 +60,7 @@ export default function AgentAssistant() {
 
   return (
     <div className="space-y-5">
-      <div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Support</p><h1 className="font-display text-[24px] font-semibold text-foreground">Your store assistant</h1><p className="mt-1 text-[13px] text-muted-foreground">It answers customers in {agent.store_name}'s name, in seconds. Teach it what's specific to your business.</p></div>
+      <div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Support</p><h1 className="font-display text-[24px] font-semibold text-foreground">Chat assistant</h1><p className="mt-1 text-[13px] text-muted-foreground">It answers customers in {agent.store_name}'s name, in seconds. Teach it what's specific to your business.</p></div>
 
       <section className="onyx-panel rounded-[22px] p-5">
         <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary-glow"><ShieldCheck size={16} /></span><div><h2 className="text-[15px] font-semibold text-foreground">What it already knows</h2><p className="mt-0.5 text-[12.5px] text-muted-foreground">Built in and always accurate: orders, delivery and payments come straight from the system. Your knowledge adds to this; it never replaces it.</p></div></div>
