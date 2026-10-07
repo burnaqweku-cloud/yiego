@@ -34,6 +34,7 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
   { id: "grow", label: "Marketing", icon: Megaphone, pages: [
     { id: "announcements", label: "Announcements", to: "/agent/marketing/announcements", sections: ["announcement"] },
     { id: "promos", label: "Promos", to: "/agent/marketing/promos", sections: ["promo"] },
+    { id: "status", label: "Status maker", to: "/agent/status" },
     { id: "analytics", label: "Analytics", to: "/agent/analytics" },
     { id: "popups", label: "Pop-ups", to: "/agent/popups/popups", sections: ["new-pop-up", "your-pop-ups"] },
     { id: "forms", label: "Form submissions", to: "/agent/popups/forms", sections: ["form-submissions"] },
