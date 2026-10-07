@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowRight, CalendarCheck, Copy, HelpCircle, Info, LifeBuoy, Lock, Share2, ShoppingBag, Wallet } from "lucide-react";
+import { ArrowRight, CalendarCheck, ChevronLeft, ChevronRight, Copy, HelpCircle, Info, LifeBuoy, Lock, Share2, ShoppingBag, Wallet } from "lucide-react";
 import { useWallet } from "@/store/wallet";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/format";
@@ -12,6 +12,13 @@ import { longDate } from "@/components/agent/subscription";
 export default function AgentHome() {
   const { agent, orders, products, prices, storeUrl, plan, reload, sub, openRenew, isSub } = useAgent();
   const { balance: walletBalance } = useWallet();
+  // Latest orders: rows per page is remembered on this device; Prev/Next page through all loaded orders.
+  const PAGE_KEY = "yg-agent-home-orders-per-page";
+  const [perPage, setPerPageState] = useState<number>(() => { try { const v = Number(localStorage.getItem(PAGE_KEY)); return [5, 10, 20].includes(v) ? v : 5; } catch { return 5; } });
+  const setPerPage = (n: number) => { setPerPageState(n); setPage(0); try { localStorage.setItem(PAGE_KEY, String(n)); } catch { /* ignore */ } };
+  const [page, setPage] = useState(0);
+  const pages = Math.max(1, Math.ceil(orders.length / perPage));
+  const pageRows = orders.slice(page * perPage, page * perPage + perPage);
   // Messages from the network this store belongs to (sub-agents only)
   const [netAnns, setNetAnns] = useState<Array<{ id: string; title: string; body: string; created_at: string }>>([]);
   useEffect(() => { if (!isSub) return; void p1().from("network_announcements").select("id, title, body, created_at").order("created_at", { ascending: false }).limit(5).then(({ data }) => setNetAnns(data ?? [])); }, [isSub]);
@@ -92,7 +99,17 @@ export default function AgentHome() {
       </Link>
       <div className="onyx-panel rounded-2xl p-3">
         <div className="flex items-center justify-between px-1"><p className="text-[13px] font-semibold text-foreground">Latest orders</p><Link to="/agent/orders" className="text-[12px] text-primary-glow">All orders</Link></div>
-        <ul className="mt-1 divide-y divide-white/[0.06]">{orders.length === 0 && <li className="py-6 text-center text-[13px] text-muted-foreground">No orders yet. Share your link.</li>}{orders.slice(0, 5).map((o) => <li key={o.order_reference} className="flex items-center justify-between py-2"><div><p className="text-[13px] font-medium text-foreground">{o.networks?.name} {o.data_products?.name?.replace(/^.*?—\s*/, "")} → {o.recipient_phone}</p><p className="text-[11px] text-faint-foreground">{fmt(o.paid_at ?? o.created_at)} · <span className={toneClass(stageOf(o).tone)}>{stageOf(o).label}</span></p></div><p className="text-[12.5px] font-semibold text-primary-glow">+{formatGHS(Number(o.agent_margin ?? 0))}</p></li>)}</ul>
+        <ul className="mt-1 divide-y divide-white/[0.06]">{orders.length === 0 && <li className="py-6 text-center text-[13px] text-muted-foreground">No orders yet. Share your link.</li>}{pageRows.map((o) => <li key={o.order_reference} className="flex items-center justify-between py-2"><div><p className="text-[13px] font-medium text-foreground">{o.networks?.name} {o.data_products?.name?.replace(/^.*?—\s*/, "")} → {o.recipient_phone}</p><p className="text-[11px] text-faint-foreground">{fmt(o.paid_at ?? o.created_at)} · <span className={toneClass(stageOf(o).tone)}>{stageOf(o).label}</span></p></div><p className="text-[12.5px] font-semibold text-primary-glow">+{formatGHS(Number(o.agent_margin ?? 0))}</p></li>)}</ul>
+        {orders.length > 5 && (
+          <div className="mt-2 flex items-center justify-between border-t border-white/[0.06] pt-2.5 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1.5">Show{[5, 10, 20].map((n) => <button key={n} type="button" onClick={() => setPerPage(n)} className={`rounded-md px-1.5 py-0.5 ${perPage === n ? "bg-primary/15 font-semibold text-primary-glow" : "hover:text-foreground"}`}>{n}</button>)}</span>
+            <span className="flex items-center gap-1">
+              <button type="button" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} aria-label="Previous" className="grid h-7 w-7 place-items-center rounded-md border border-white/[0.08] disabled:opacity-40"><ChevronLeft size={14} /></button>
+              <span className="px-1 tabular-nums">{page + 1} / {pages}</span>
+              <button type="button" disabled={page >= pages - 1} onClick={() => setPage((p) => Math.min(pages - 1, p + 1))} aria-label="Next" className="grid h-7 w-7 place-items-center rounded-md border border-white/[0.08] disabled:opacity-40"><ChevronRight size={14} /></button>
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

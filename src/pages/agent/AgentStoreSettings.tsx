@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { formatGHS } from "@/lib/format";
 import { p1, useAgent } from "@/components/agent/AgentShell";
 import StoreBrandingEditor from "@/components/agent/StoreBrandingEditor";
+import StoreLinkEditor from "@/components/agent/StoreLinkEditor";
 import Section from "@/components/agent/Section";
 import { Store, Wallet, Mail } from "lucide-react";
 
@@ -23,25 +24,7 @@ export default function AgentStoreSettings() {
     }
     toast.success("Saved."); void reload();
   };
-  const [link, setLink] = useState(agent.slug); const [editingLink, setEditingLink] = useState(false);
-  const [check, setCheck] = useState<{ slug: string; problem: string | null; next_change_at: string | null } | null>(null);
-  const [savingLink, setSavingLink] = useState(false);
-  useEffect(() => {
-    if (!editingLink) return;
-    const t = setTimeout(() => { void p1().rpc("agent_slug_check", { p_slug: link }).then(({ data }: { data: typeof check }) => setCheck(data)); }, 350);
-    return () => clearTimeout(t);
-  }, [link, editingLink]);
   const addresses = [...(agent.custom_domain && agent.custom_domain_status === "active" ? [`https://${agent.custom_domain}`] : []), `https://${agent.slug}.datayego.com`];
-  const origin = storeUrl.replace(/\/s\/.*$/, "").replace(/^https?:\/\//, "");
-  const LINK_MSG: Record<string, string> = { too_short: "Use at least 3 letters or numbers.", too_long: "Keep it to 30 characters or fewer.", reserved: "That name is reserved. Try another.", taken: "Someone already has that link.", same: "That's your current link." };
-  const cooldownUntil = check?.next_change_at ? new Date(check.next_change_at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : null;
-  const canSaveLink = !!check && !check.problem && !cooldownUntil && check.slug === link.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  const saveLink = async () => {
-    setSavingLink(true); const { data, error } = await p1().rpc("agent_change_slug", { p_slug: link }); setSavingLink(false);
-    if (error) return toast.error(error.message.includes("cooldown") ? "You can change your link once every 30 days." : error.message.includes("taken") ? "Someone just took that link. Try another." : "Couldn't change your link. Try another name.");
-    toast.success(`Your store is now at ${origin}/s/${(data as { slug: string }).slug}. The old link still works for 90 days.`);
-    setEditingLink(false); setCheck(null); void reload();
-  };
   const field = (k: keyof typeof f, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => <label className="block"><span className="mb-1 block text-[12px] text-muted-foreground">{label}</span><input value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} className="onyx-field w-full" {...props} /></label>;
   return (
     <div className="space-y-3">
@@ -52,21 +35,7 @@ export default function AgentStoreSettings() {
           {addresses.map((u) => <div key={u} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2"><a href={u} target="_blank" rel="noreferrer" className="inline-flex min-w-0 items-center gap-1 truncate text-[12.5px] text-primary-glow">{u.replace(/^https?:\/\//, "")}<ExternalLink size={12} className="shrink-0" /></a><button type="button" onClick={() => { void navigator.clipboard.writeText(u); toast.success("Copied."); }} className="shrink-0 text-faint-foreground" aria-label="Copy link"><Copy size={13} /></button></div>)}
         </div>
         <p className="mt-1.5 text-[11.5px] text-faint-foreground">{agent.custom_domain && agent.custom_domain_status === "active" ? "Your own domain is the main address; the free one keeps working too." : "This is your store's address. Share it anywhere; previews on WhatsApp show your store's name and logo."}</p>
-        {!editingLink ? (
-          <button type="button" onClick={() => { setLink(agent.slug); setEditingLink(true); }} className="mt-1 block text-[12px] font-medium text-primary-glow">Change link</button>
-        ) : (
-          <div className="mt-3 space-y-2">
-            <label className="block"><span className="mb-1 block text-[12px] text-muted-foreground">Store link</span>
-              <div className="flex items-center gap-1"><span className="shrink-0 text-[12.5px] text-muted-foreground">{origin}/s/</span><input value={link} onChange={(e) => setLink(e.target.value)} autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={40} className="onyx-field w-full min-w-0" placeholder="your-store-name" /></div>
-            </label>
-            {check && check.slug !== link.trim().toLowerCase() && check.slug && <p className="text-[12px] text-muted-foreground">Will be saved as <b className="text-foreground">{check.slug}</b></p>}
-            {check && (cooldownUntil ? <p className="text-[12px] text-amber">You changed your link recently. You can change it again from {cooldownUntil}.</p>
-              : check.problem ? <p className="flex items-center gap-1 text-[12px] text-danger"><X size={13} />{LINK_MSG[check.problem] ?? "Not available."}</p>
-              : <p className="flex items-center gap-1 text-[12px] text-primary-glow"><Check size={13} />Available</p>)}
-            <p className="text-[11.5px] text-muted-foreground">Your old link keeps working for 90 days. You can change your link once every 30 days.</p>
-            <div className="flex justify-end gap-2"><button type="button" onClick={() => { setEditingLink(false); setCheck(null); }} className="px-3 py-2 text-[13px] text-muted-foreground">Cancel</button><button type="button" disabled={!canSaveLink || savingLink} onClick={() => void saveLink()} className="onyx-btn-primary px-4 py-2 text-[13px] disabled:opacity-50">{savingLink ? "Saving…" : "Use this link"}</button></div>
-          </div>
-        )}
+        <StoreLinkEditor />
         <p className="mt-2 flex items-center gap-1 text-[12px] text-muted-foreground"><BadgeCheck size={13} className="text-primary-glow" />Plan active until {agent.paid_until}{quote ? ` · next month ${formatGHS(quote.pay_now)}` : ""}</p>
       </div>}
       <Section page="store" id="details" title="Store details" icon={<Store size={15} />} subtitle={`${agent.store_name}${agent.tagline ? " · " + agent.tagline : ""}`} defaultOpen>

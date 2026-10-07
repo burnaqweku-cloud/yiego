@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { p1, useAgent } from "@/components/agent/AgentShell";
 import Section from "@/components/agent/Section";
+import StoreLinkEditor from "@/components/agent/StoreLinkEditor";
 import EmailDomain from "@/components/agent/EmailDomain";
 import { Mail, Sparkles } from "lucide-react";
 
@@ -41,6 +42,7 @@ export default function AgentDomain() {
           {[`https://${sub}`].map((u) => <div key={u} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2.5"><a href={u} target="_blank" rel="noreferrer" className="truncate text-[13.5px] text-foreground">{u.replace("https://", "")}</a><button type="button" onClick={() => copy(u)} className="shrink-0 text-faint-foreground" aria-label="Copy"><Copy size={14} /></button></div>)}
         </div>
         <p className="mt-2 text-[11.5px] text-faint-foreground">Free, no setup, and when it's shared on WhatsApp the preview shows your store's name and logo. Every page of your store lives on it: {sub}/track, /sign-in, and so on.</p>
+        <div className="mt-2"><StoreLinkEditor /></div>
       </Section>
       <Section page="domain" id="your-own-domain" title="Your own domain">
         {!agent.custom_domain ? (<>
