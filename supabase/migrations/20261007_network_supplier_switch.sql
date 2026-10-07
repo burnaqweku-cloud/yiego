@@ -1,0 +1,13 @@
+-- Applied via Supabase MCP on 2026-10-07 (migration "network_supplier_switch" + two follow-up CREATE OR REPLACE).
+-- One rule per network: the supplier chosen in Admin → Suppliers delivers it.
+--
+-- phase1.admin_set_network_supplier(p_actor, network_code, supplier_code)
+--   * no longer accepts '' (a network must always have a supplier)
+--   * switches ON the chosen supplier's supplier_product_mappings for that network (they exist for all
+--     three suppliers on every network but were inactive for DBH-AT/Telecel and Datamart-MTN, which made
+--     the old dropdown a trap: picking them held every order as "needs review")
+--   * returns known/total/missing so the UI can warn about bundles the supplier doesn't map
+-- phase1.admin_network_supplier_readiness(p_actor): per network × supplier, known/total/missing, for the dropdown.
+-- Data: networks.mtn.preferred_supplier_id set to databundleshub (was null → fell back to display_order).
+-- Code: fulfillOrder routes ONLY by networks.preferred_supplier_id (customer choice + display-order fallbacks removed);
+--       the customer-facing supplier choice ("Zola"/"Duva") is removed from the shop.

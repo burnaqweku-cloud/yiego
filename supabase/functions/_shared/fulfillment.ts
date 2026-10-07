@@ -77,11 +77,11 @@ export async function applySupplierStatusToOrder(
 /**
  * Sends a paid order to its supplier.
  *
- * The supplier is whichever the customer chose (orders.supplier_id); with no
- * choice recorded it falls back to the lowest display_order among the active
- * suppliers that stock the bundle. That ordering is what keeps routing
- * deterministic once more than one supplier can serve the same product —
- * previously this took the first row the database happened to return.
+ * One rule: the network's supplier (networks.preferred_supplier_id, set from
+ * Admin → Suppliers → "Delivered by") delivers every order on that network.
+ * There is no customer choice and no priority fallback; if the network has no
+ * supplier, or the supplier doesn't map the bundle, the order is held for a
+ * person (failed_needs_review) rather than quietly sent somewhere else.
  *
  * Every supplier-specific detail lives behind an adapter, so a new supplier is
  * an entry in supplierAdapters.ts and no change here.
@@ -100,44 +100,33 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
     return { skipped: true, reason: "already_sent_to_supplier", order };
   }
 
-  let query = supabase
+  // One rule: the network's supplier (Admin → Suppliers → "Delivered by")
+  // delivers every order on that network. No customer choice, no priority
+  // fallback. If the network has no supplier or the supplier can't take the
+  // bundle, the order waits for a person rather than being re-routed.
+  const { data: network } = await supabase.from("networks").select("name, preferred_supplier_id").eq("id", order.network_id).maybeSingle();
+  const routedSupplierId: string | null = network?.preferred_supplier_id ?? null;
+  const hold = async (why: string, reason: string) => {
+    await supabase.from("orders").update({ status: "failed_needs_review", failure_reason: `Not sent: ${why}. Set the network's supplier under Admin → Suppliers and resend, or refund.`, updated_at: new Date().toISOString() }).eq("id", order.id);
+    await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.fulfillment_blocked", from_status: order.status, to_status: "failed_needs_review", message: `Not sent: ${why}`, metadata: { routedSupplierId, reason } });
+    return { skipped: true, reason, orderId: order.id, status: "failed_needs_review" };
+  };
+  if (!routedSupplierId) return await hold(`${network?.name ?? "this network"} has no supplier set`, "network_has_no_supplier");
+
+  const { data: candidates, error: mappingError } = await supabase
     .from("supplier_product_mappings")
-    .select("*, suppliers!inner(id, code, name, status, display_order)")
+    .select("*, suppliers!inner(id, code, name, status)")
     .eq("product_id", order.product_id)
+    .eq("supplier_id", routedSupplierId)
     .eq("is_active", true)
     .eq("suppliers.status", "active");
-
-  // Routing, in order: the network's preferred supplier (the admin's switch),
-  // then the customer's recorded choice, then a stable priority order.
-  const { data: network } = await supabase.from("networks").select("preferred_supplier_id").eq("id", order.network_id).maybeSingle();
-  const routedSupplierId: string | null = network?.preferred_supplier_id ?? order.supplier_id ?? null;
-  if (routedSupplierId) query = query.eq("supplier_id", routedSupplierId);
-
-  // Ordering by a column on an embedded table does not reorder the parent rows,
-  // so asking the database for the best row and taking limit(1) silently
-  // returned an arbitrary supplier. Fetch the candidates and rank them here,
-  // where the comparison is explicit and testable.
-  const { data: candidates, error: mappingError } = await query;
   if (mappingError) throw new Error(mappingError.message);
-  // No silent re-routing. Prices are set per bundle against the supplier the
-  // admin chose; sending the order elsewhere could sell below cost. If the
-  // chosen supplier cannot take it, the order waits for a person.
-  if (routedSupplierId && (!candidates || candidates.length === 0)) {
+  const mapping = (candidates ?? []).slice().sort((a: any, b: any) => String(a.id).localeCompare(String(b.id)))[0];
+  if (!mapping) {
     const { data: routed } = await supabase.from("suppliers").select("name, status").eq("id", routedSupplierId).maybeSingle();
-    const why = routed ? (routed.status === "active" ? `${routed.name} has no price for this bundle` : `${routed.name} is ${routed.status}`) : "chosen supplier not found";
-    await supabase.from("orders").update({ status: "failed_needs_review", failure_reason: `Not sent: ${why}. Resend after switching the network's supplier, or refund.`, updated_at: new Date().toISOString() }).eq("id", order.id);
-    await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.fulfillment_blocked", from_status: order.status, to_status: "failed_needs_review", message: `Not sent: ${why}`, metadata: { routedSupplierId, reason: "routed_supplier_unavailable" } });
-    return { skipped: true, reason: "routed_supplier_unavailable", orderId: order.id, status: "failed_needs_review" };
+    const why = routed ? (routed.status === "active" ? `${routed.name} doesn't know this bundle` : `${routed.name} is ${routed.status}`) : "chosen supplier not found";
+    return await hold(why, "routed_supplier_unavailable");
   }
-
-  const mapping = (candidates ?? [])
-    .slice()
-    .sort((a: any, b: any) => {
-      const byPriority = (a.suppliers?.display_order ?? 100) - (b.suppliers?.display_order ?? 100);
-      if (byPriority !== 0) return byPriority;
-      return String(a.id).localeCompare(String(b.id));
-    })[0];
-  if (!mapping) throw new Error("supplier_mapping_not_found");
 
   const supplier = mapping.suppliers as { id: string; code: string; name: string };
   const adapter = adapterFor(supplier.code);
