@@ -33,6 +33,8 @@ const TOKEN_KEY = "yiego-support-conversation";
 const FALLBACK_GREETING = "Hi! I'm DataYego AI. Ask me anything about buying data, payments, your wallet or an order — I'm here all day, every day.";
 const FAILURE_REPLY = "AI support is temporarily unavailable. Please use Contact Support or Track Order while we restore it.";
 
+/* First-tap questions for an empty chat: the four things people ask most. */
+const QUICK_QUESTIONS = ["How do I buy data?", "Track my order", "Check my MTN number", "How do I become an agent?"];
 const senderToRole = { customer: "user", assistant: "assistant", admin: "team" } as const;
 
 /** Assistant replies arrive as a small markdown subset; assistantHtml escapes
@@ -101,9 +103,9 @@ export default function AISupport() {
     return () => { cancelled = true; clearInterval(timer); };
   }, [status]);
 
-  const send = async (event: FormEvent) => {
-    event.preventDefault();
-    const text = input.trim();
+  const send = async (event: FormEvent | null, preset?: string) => {
+    event?.preventDefault();
+    const text = (preset ?? input).trim();
     if (!text || sending || booting) return;
     setMessages((current) => [...current, { role: "user", content: text }]);
     setInput("");
@@ -147,6 +149,11 @@ export default function AISupport() {
           ? <div className="flex justify-start"><div className="rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3"><Loader2 className="animate-spin text-primary-glow" size={18} /></div></div>
           : <>
             <div className="flex justify-start"><div className="max-w-[88%] rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-sm leading-6 text-foreground">{greeting}</div></div>
+            {messages.length === 0 && (
+              <div className="flex flex-wrap gap-2 pl-1">
+                {QUICK_QUESTIONS.map((q) => <button key={q} type="button" onClick={() => void send(null, q)} className="rounded-full border border-primary/30 bg-primary/[0.08] px-3 py-1.5 text-[12.5px] font-medium text-primary-glow hover:bg-primary/[0.14]">{q}</button>)}
+              </div>
+            )}
             {messages.map((message, index) => message.role === "user"
               ? <div key={message.id ?? index} className="flex justify-end"><div className="max-w-[88%] whitespace-pre-wrap rounded-2xl bg-primary px-4 py-3 text-sm leading-6 text-primary-foreground">{message.content}</div></div>
               : <div key={message.id ?? index} className="flex justify-start"><div className="max-w-[88%] rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-foreground">

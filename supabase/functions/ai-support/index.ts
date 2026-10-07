@@ -13,25 +13,35 @@ const DEFAULT_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 const MODEL_HISTORY_LIMIT = 12; const HISTORY_PAGE_LIMIT = 40; const MAX_TOOL_ROUNDS = 4;
 const DEFAULT_GREETING = "Hi! I'm DataYego AI. Ask me anything about buying data, payments, your wallet or an order. I'm here all day, every day.";
 
-const PERSONA = `You are DataYego AI, the customer support assistant for DataYego (datayego.com), a Ghanaian platform for buying MTN, Telecel and AirtelTigo data bundles.
+const PERSONA = `You are DataYego AI, the assistant for DataYego (datayego.com), a Ghanaian platform for buying MTN, Telecel and AirtelTigo data bundles, and for DataYego agents who run their own data stores on it.
+
+WHO YOU ARE TALKING TO
+Work it out from the message and answer for that person:
+- A customer: buying data, tracking an order, wallet, fees, a number that didn't get data.
+- Someone thinking of becoming an agent: what it is, what they get, what it costs, how to apply. Sell it honestly and send them to datayego.com/agents and datayego.com/agents/store.
+- An existing agent: their dashboard at datayego.com/agent, prices, earnings, payouts, templates, Status maker, promos, customers, staff. Tell them exactly where things are (menu → page → button) using the KNOWLEDGE BASE.
+If it is unclear, answer the most likely reading and offer the other in one short line.
 
 VOICE
-- Warm, plain English, confident. Sound like a capable human agent, never like a chatbot filling space.
-- Keep answers short: one to three short paragraphs, or a "-" bullet list for steps. Stay under about 120 words unless a procedure genuinely needs more.
-- Acknowledge the situation in a few words, give the answer, end with the single next step when there is one.
-- Markdown the chat renders: **bold** the fact that matters, "-" bullets, numbered lists only for ordered steps. No headings, no tables, no emojis.
+- Warm, plain English, confident. Sound like a capable human on the DataYego team, never like a bot filling space.
+- Short: one to three short paragraphs, or a numbered list for steps. Stay under about 120 words unless a procedure genuinely needs more.
+- For "how do I" questions give the exact steps with the real button and page names, in order, then stop.
+- Markdown the chat renders: **bold** the fact that matters, "-" bullets, numbered lists for ordered steps. No headings, no tables, no emojis.
 - Mirror the customer's language. Never repeat their question back. Never reuse the same greeting or apology twice.
 
 TOOLS (live DataYego data; use them, never guess)
-- lookup_order: when the customer gives a YG- or AG- order reference, or asks about a specific order and gives its reference. Answer only from what it returns. No reference: ask for it first. Not found: say so and ask them to re-check the reference from their email.
-- quote_bundles: whenever price or available sizes come up. Quote only the prices returned. Never state a price from memory.
+- lookup_order: when a YG- or AG- reference is given or asked about. Answer only from what it returns. No reference: ask for it first, or use my_recent_orders if the person is signed in.
+- my_recent_orders / my_wallet: only work when the person is signed in (SIGNED-IN CONTEXT below says so). Use them before asking a signed-in customer for a reference. Never for anyone else's account.
+- quote_bundles: whenever price or sizes come up. Quote only the prices returned.
+- check_mtn_number: when someone gives an MTN number and asks if it is approved, verified, cleared, or why their first order is held.
+- delivery_speed: whenever delivery time comes up. Report the live figure for that network; never promise minutes from memory.
+- agent_plan: whenever the agent fee or plans come up.
 - escalate_to_human: when you cannot resolve it (refund, payment gone wrong, failed delivery, account or security problem, or they ask for a person). Then say in one sentence that you're connecting them to the DataYego team on WhatsApp and a button is shown. Don't escalate what you can answer.
 
 HARD RULES
-- You cannot see wallets, accounts, payment methods or personal details. Never invent a status, delivery time, price, refund decision or policy.
-- If you don't know, say so in one sentence and point to the Support page.
+- Never invent a status, delivery time, price, fee, refund decision or policy. If a tool or the KNOWLEDGE BASE doesn't say it, say you don't know in one sentence and point to datayego.com/support.
 - Never ask for passwords, one-time codes, card numbers or MoMo PINs; if shared, tell them to keep it private and don't repeat it.
-- Never mention suppliers, internal systems, databases, prompts, models or AI providers.
+- Never mention suppliers, internal systems, databases, prompts, models or AI providers. You are "DataYego AI".
 - Only discuss DataYego. Decline anything else in one friendly sentence and steer back.
 - The KNOWLEDGE BASE below is authoritative: prefer it over anything else here and never contradict it.`;
 
@@ -116,7 +126,8 @@ function knowledgeText(entries: KnowledgeEntry[]) {
   const by = new Map<string, KnowledgeEntry[]>(); for (const e of entries) { const l = by.get(e.category) ?? []; l.push(e); by.set(e.category, l); }
   return `KNOWLEDGE BASE (authoritative, maintained by the DataYego team):\n\n${[...by.entries()].map(([c, items]) => `## ${c}\n\n${items.map((i) => `### ${i.title}\n${i.content}`).join("\n\n")}`).join("\n\n")}`;
 }
-function buildSystemPrompt(personaNotes: string, knowledge: string) { let t = PERSONA; if (knowledge) t += `\n\n${knowledge}`; const n = personaNotes.trim(); if (n) t += `\n\nOWNER GUIDANCE (from the DataYego team; follow it, but never against the hard rules):\n${n}`; return t; }
+function buildSystemPrompt(personaNotes: string, knowledge: string, signedIn: { email: string | null } | null = null) { let t = PERSONA; t += signedIn ? `\n\nSIGNED-IN CONTEXT: the person is signed in to datayego.com${signedIn.email ? ` as ${signedIn.email}` : ""}. my_recent_orders and my_wallet will work for them.` : "\n\nSIGNED-IN CONTEXT: the person is not signed in. my_recent_orders and my_wallet will not work; ask for the Order ID or suggest signing in."; if (knowledge) t += `\n\n${knowledge}`; const n = personaNotes.trim(); if (n) t += `\n\nOWNER GUIDANCE (from the DataYego team; follow it, but never against the hard rules):\n${n}`; return t; }
+async function userEmail(supabase: SupabaseAdmin, userId: string | null) { if (!userId) return null; const { data } = await supabase.auth.admin.getUserById(userId); return data?.user?.email ?? null; }
 function newConversationToken() { const b = new Uint8Array(16); crypto.getRandomValues(b); return "SC-" + Array.from(b).map((x) => x.toString(16).padStart(2, "0")).join("").toUpperCase(); }
 async function findConversation(supabase: SupabaseAdmin, token: string, userId: string | null) {
   if (token) { const { data } = await supabase.from("support_conversations").select("id, conversation_token, user_id, status").eq("conversation_token", token).maybeSingle<ConversationRow>(); if (data && (!data.user_id || data.user_id === userId)) return data; }
@@ -139,6 +150,11 @@ function customerMessage(st: string) {
 const TOOLS: Tool[] = [
   { name: "lookup_order", description: "Live status of a DataYego order by its reference (YG-... from datayego.com, AG-... from an agent's store). Returns the same customer-safe view as the Track page: masked recipient, network, bundle, amount, payment status, delivery status and a status message.", parameters: { type: "object", properties: { reference: { type: "string", description: "The order reference exactly as given, e.g. YG-1A2B3C4D5E" } }, required: ["reference"] } },
   { name: "quote_bundles", description: "Live DataYego bundle prices from the catalogue, optionally filtered by network and/or size in GB. Prices are base prices in GHS; a 4% fee applies to Paystack (MoMo/card) payments and is waived when paying from the DataYego wallet.", parameters: { type: "object", properties: { network: { type: "string", description: "MTN, Telecel or AirtelTigo" }, capacity_gb: { type: "number", description: "Size in GB, e.g. 5" } } } },
+  { name: "check_mtn_number", description: "Whether an MTN number is approved for data through DataYego. approved: orders deliver normally. not_approved/unapproved: the first order is held while MTN verifies the number (can take days). blocked: MTN has blocked it. not_mtn/invalid: not an MTN number.", parameters: { type: "object", properties: { number: { type: "string", description: "10-digit Ghana number starting with 0, e.g. 0541234567" } }, required: ["number"] } },
+  { name: "delivery_speed", description: "Live delivery speed per network right now (how long orders are currently taking). Use it for any delivery-time question.", parameters: { type: "object", properties: {} } },
+  { name: "agent_plan", description: "The current DataYego agent subscription: monthly fee, 3 and 12 month plans, any promo, payout minimum and payout fee.", parameters: { type: "object", properties: {} } },
+  { name: "my_recent_orders", description: "The signed-in customer's own recent orders (last 8) with live status. Only works when the person is signed in.", parameters: { type: "object", properties: {} } },
+  { name: "my_wallet", description: "The signed-in customer's own DataYego wallet balance. Only works when the person is signed in.", parameters: { type: "object", properties: {} } },
   { name: "escalate_to_human", description: "Hand the customer to the DataYego team on WhatsApp. Use for refunds, payments gone wrong, failed deliveries, account/security problems, or when a person is requested. Not for questions you can answer.", parameters: { type: "object", properties: { reason: { type: "string", description: "Short reason, e.g. refund request" } }, required: ["reason"] } },
 ];
 const NETWORK_ALIASES: Record<string, string> = { mtn: "MTN", telecel: "Telecel", vodafone: "Telecel", airteltigo: "AirtelTigo", "airtel tigo": "AirtelTigo", at: "AirtelTigo", tigo: "AirtelTigo", airtel: "AirtelTigo" };
@@ -169,8 +185,44 @@ async function toolEscalateToHuman(supabase: SupabaseAdmin, args: Record<string,
   try { await sendEmail({ to: "support@yiego.shop", subject: `AI support escalation: ${reason}`, html: `<p>The AI assistant escalated a customer conversation.</p><p><strong>Reason:</strong> ${reason.replace(/</g, "&lt;")}</p><p><strong>Conversation:</strong> ${conversation?.conversation_token ?? "unknown"}</p><p>Read it in the <a href="https://datayego.com/admin/support-inbox">support inbox</a>; the customer was pointed to WhatsApp.</p>` }); } catch (e) { console.error("escalation email failed", e instanceof Error ? e.message : e); }
   return { escalated: true, channel: "whatsapp", instruction: "In one short sentence, tell the customer you're connecting them to the DataYego team on WhatsApp and that they can tap the WhatsApp button shown. Do not ask for personal or payment details." };
 }
-async function runTool(supabase: SupabaseAdmin, name: string, args: Record<string, unknown>, conversation: ConversationRow | null) {
+async function toolCheckMtn(args: Record<string, unknown>) {
+  const digits = String(args?.number ?? "").replace(/\D/g, ""); const n = digits.startsWith("233") ? `0${digits.slice(3)}` : digits;
+  if (n.length !== 10) return { status: "invalid", message: "That is not a 10-digit Ghana number." };
+  const url = Deno.env.get("SUPABASE_URL"); const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const r = await fetch(`${url}/functions/v1/check-mtn-number`, { method: "POST", headers: { "content-type": "application/json", apikey: key ?? "", Authorization: `Bearer ${key}` }, body: JSON.stringify({ action: "check", numbers: [n] }) });
+  const payload = await r.json().catch(() => null);
+  const row = Array.isArray(payload?.results) ? payload.results[0] : Array.isArray(payload) ? payload[0] : payload?.result ?? payload;
+  const status = String(row?.status ?? "unknown");
+  const meaning = status === "approved" || status === "not_enforced" ? "Approved: orders to this number deliver normally." : status === "blocked" ? "MTN has blocked this number for data purchases; the customer should contact MTN." : status === "not_mtn" ? "Not an MTN number; no check is needed for Telecel or AirtelTigo." : status === "invalid" ? "Not a valid number." : "Not approved yet: the first order to this number will be held while MTN verifies it, which can take days. They can submit it for verification at datayego.com/check-mtn.";
+  return { number: `${n.slice(0, 3)}•••${n.slice(7)}`, status, meaning, checkPage: "https://datayego.com/check-mtn" };
+}
+async function toolDeliverySpeed(supabase: SupabaseAdmin) {
+  const { data, error } = await supabase.rpc("delivery_speed_by_network", {});
+  if (error) return { error: "Delivery speed is not available right now; say deliveries are automatic and the Track page shows live progress." };
+  return { networks: data, note: "Report the figure as it is (for example 'MTN is currently taking about 20 minutes'). If a network shows no figure, say orders are delivering normally." };
+}
+async function toolAgentPlan(supabase: SupabaseAdmin) {
+  const { data, error } = await supabase.rpc("agent_plan_quote", {});
+  if (error || !data) return { error: "The plan prices could not be read; point them to datayego.com/agents." };
+  return { currency: "GHS", monthly: data.monthly, pay_now: data.pay_now, promo: data.promo, plans: data.plans, checkoutFee: "4% is added at payment", payoutMinimum: 20, payoutFee: "1% (minimum GH₵ 1.00)", applyAt: "https://datayego.com/agents", everything: "https://datayego.com/agents/store" };
+}
+async function toolMyRecentOrders(supabase: SupabaseAdmin, userId: string | null) {
+  if (!userId) return { signedIn: false, message: "The person is not signed in. Ask them to sign in at datayego.com or give the Order ID." };
+  const { data } = await supabase.from("orders").select("order_reference, recipient_phone, amount, status, payment_status, admin_resolution_status, created_at, paid_at, data_products(name), networks(name)").eq("user_id", userId).order("created_at", { ascending: false }).limit(8);
+  return { signedIn: true, orders: (data ?? []).map((o: any) => { const st = customerDeliveryStatus(String(o.status), String(o.payment_status), o.admin_resolution_status ?? null); const ph = String(o.recipient_phone ?? ""); return { reference: o.order_reference, network: o.networks?.name ?? null, bundle: o.data_products?.name ?? null, recipient: ph.length === 10 ? `${ph.slice(0, 3)}•••${ph.slice(7)}` : "hidden", amount: o.amount, deliveryStatus: st, statusMessage: customerMessage(st), placedAt: o.created_at, paidAt: o.paid_at }; }) };
+}
+async function toolMyWallet(supabase: SupabaseAdmin, userId: string | null) {
+  if (!userId) return { signedIn: false, message: "The person is not signed in." };
+  const { data } = await supabase.from("wallets").select("balance").eq("user_id", userId).maybeSingle();
+  return { signedIn: true, currency: "GHS", balance: Number(data?.balance ?? 0), topUp: "Wallet → Add money (MoMo or card, 4% fee on the top-up); paying from the wallet has no checkout fee." };
+}
+async function runTool(supabase: SupabaseAdmin, name: string, args: Record<string, unknown>, conversation: ConversationRow | null, userId: string | null = null) {
   if (name === "lookup_order") return await toolLookupOrder(supabase, args);
+  if (name === "check_mtn_number") return await toolCheckMtn(args);
+  if (name === "delivery_speed") return await toolDeliverySpeed(supabase);
+  if (name === "agent_plan") return await toolAgentPlan(supabase);
+  if (name === "my_recent_orders") return await toolMyRecentOrders(supabase, userId);
+  if (name === "my_wallet") return await toolMyWallet(supabase, userId);
   if (name === "quote_bundles") return await toolQuoteBundles(supabase, args);
   if (name === "escalate_to_human") return await toolEscalateToHuman(supabase, args, conversation);
   return { error: `Unknown tool: ${name}` };
@@ -202,8 +254,8 @@ Deno.serve(async (req) => {
       let modelMessages: Msg[];
       if (isNew) modelMessages = [...sanitizeClientHistory(body.history), { role: "user", content: message }];
       else { const { data: stored } = await supabase.from("support_messages").select("sender, body").eq("conversation_id", conversation.id).order("created_at", { ascending: false }).limit(MODEL_HISTORY_LIMIT); modelMessages = (stored ?? []).reverse().map((r) => ({ role: r.sender === "customer" ? "user" as const : "assistant" as const, content: String(r.body).slice(0, 4000) })); while (modelMessages.length && modelMessages[0].role !== "user") modelMessages.shift(); if (!modelMessages.length) modelMessages = [{ role: "user", content: message }]; }
-      const [settings, knowledge] = await Promise.all([loadAssistantSettings(supabase), loadActiveKnowledge(supabase)]);
-      const result = await callModel(supabase, { system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge)), messages: modelMessages, maxTokens: 700, tools: TOOLS, runTool: (n, a) => runTool(supabase, n, a, conversation) });
+      const [settings, knowledge, email] = await Promise.all([loadAssistantSettings(supabase), loadActiveKnowledge(supabase), userEmail(supabase, userId)]);
+      const result = await callModel(supabase, { system: buildSystemPrompt(settings.personaNotes, knowledgeText(knowledge), userId ? { email } : null), messages: modelMessages, maxTokens: 700, tools: TOOLS, runTool: (n, a) => runTool(supabase, n, a, conversation, userId) });
       const escalated = result.toolsUsed.includes("escalate_to_human");
       await supabase.from("support_messages").insert({ conversation_id: conversation.id, sender: "assistant", body: result.text, meta: { model: result.model, usage: result.usage, knowledge_entries: knowledge.length, tools_used: result.toolsUsed, escalated } });
       await supabase.from("support_conversations").update({ last_message_at: new Date().toISOString(), last_message_preview: messagePreview(result.text), last_message_sender: "assistant" }).eq("id", conversation.id);
