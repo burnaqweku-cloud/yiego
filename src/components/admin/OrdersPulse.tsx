@@ -40,13 +40,14 @@ export default function OrdersPulse() {
   const agentOrders = allRows.filter((r) => r.agent_id != null).length;
   const [loading, setLoading] = useState(true);
   const [start, end] = useMemo(() => rangeFor(preset, from, to), [preset, from, to]);
-  // Net profit for the range: same figure as the Overview (delivered orders, dated by purchase day, checkout fee included).
+  // Profit on the range's delivered orders only (bundle margin after agents' share + the checkout fees on
+  // those orders), dated by purchase day. Running costs (top-up fees, subscriptions, other spending) live on Finance.
   const [profit, setProfit] = useState<number | null>(null);
   useEffect(() => {
     let mounted = true; setProfit(null);
-    (db() as unknown as { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: { period?: { net?: number | string } } | null }> })
+    (db() as unknown as { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: { period?: { gross_profit?: number | string; fee_income?: number | string } } | null }> })
       .rpc("finance_overview", { p_from: iso(startOfDay(start)), p_to: iso(new Date(endOfDay(end).getTime() + 1)) })
-      .then((r) => { if (mounted) setProfit(r.data?.period?.net == null ? null : Number(r.data.period.net)); })
+      .then((r) => { const p = r.data?.period; if (mounted) setProfit(p?.gross_profit == null ? null : Number(p.gross_profit) + Number(p.fee_income ?? 0)); })
       .catch(() => { if (mounted) setProfit(null); });
     return () => { mounted = false; };
   }, [start, end]);

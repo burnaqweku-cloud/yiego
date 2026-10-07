@@ -15,7 +15,7 @@ const PERIODS = [{ value: "today" as const, label: "Today" }, { value: "7d" as c
 const since = (p: Period) => { if (p === "all") return "2026-09-12T00:00:00Z"; const d = new Date(); d.setUTCHours(0, 0, 0, 0); if (p !== "today") d.setUTCDate(d.getUTCDate() - (p === "7d" ? 7 : 30)); return d.toISOString(); };
 
 interface OrderRow { order_reference: string; recipient_phone: string; amount: number; status: string; payment_status: string; admin_resolution_status: string | null; supplier_retry_after: string | null; created_at: string; networks: { name: string } | null; data_products: { name: string } | null }
-interface Overview { period: { revenue: number; net: number; fee_income: number }; owed: { undelivered: number; undelivered_count: number }; cash: { supplier_float: Record<string, number> } }
+interface Overview { period: { revenue: number; net: number; fee_income: number; gross_profit: number }; owed: { undelivered: number; undelivered_count: number }; cash: { supplier_float: Record<string, number> } }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown }> };
 const statusTone = (s: string) => s === "delivered" ? "good" : s.startsWith("failed") ? "bad" : s === "processing" || s === "pending_supplier" ? "warn" : "muted";
@@ -57,7 +57,7 @@ export default function Admin() {
         <Stat loading={loading} label="In progress" value={inFlightCount} note={cooldown ? `${cooldown} waiting on supplier cooldown` : "with the supplier"} icon={Clock3} tone={inFlightCount ? "warn" : "default"} to="/admin/orders?status=pending" />
         <Stat loading={loading} label="Needs a human" value={failed + verification + wrongNetwork} note={`${failed} failed · ${verification} MTN verification${wrongNetwork ? ` · ${wrongNetwork} wrong network` : ""}`} icon={AlertTriangle} tone={failed ? "bad" : verification ? "warn" : "default"} to="/admin/orders?status=failed" />
         <Stat loading={loading} label="Revenue" value={<Money value={p?.revenue} />} note="delivered bundles" icon={TrendingUp} to="/admin/finance" />
-        <Stat loading={loading} label="Net profit" value={<Money value={p?.net} tone={Number(p?.net) < 0 ? "bad" : "good"} />} note={`incl. ${formatGHS(Number(p?.fee_income ?? 0))} checkout fee`} icon={Receipt} tone={Number(p?.net) < 0 ? "bad" : "good"} to="/admin/finance" />
+        <Stat loading={loading} label="Order profit" value={<Money value={Number(p?.gross_profit ?? 0) + Number(p?.fee_income ?? 0)} tone="good" />} note={`delivered orders · incl. ${formatGHS(Number(p?.fee_income ?? 0))} checkout fee · net on Finance`} icon={Receipt} tone="good" to="/admin/finance" />
       </StatGrid>
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
