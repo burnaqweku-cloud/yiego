@@ -72,6 +72,7 @@ const AdminGiveaways = lazy(() => import("./pages/AdminGiveaways"));
 const AdminSupplierBalance = lazy(() => import("./pages/AdminSupplierBalance"));
 const AdminAgentDetail = lazy(() => import("./pages/AdminAgentDetail"));
 const AgentsApply = lazy(() => import("./pages/AgentsApply"));
+const AgentsStore = lazy(() => import("./pages/AgentsStore"));
 const StoreShell = lazy(() => import("./components/store/StoreShell"));
 const StoreHome = lazy(() => import("./pages/store/StoreHome"));
 const StudioHome = lazy(() => import("./pages/store/StudioHome"));
@@ -147,7 +148,7 @@ const App = () => isStoreHost() ? <StoreHostGate /> : (
     <Route path="/agent" element={<AgentShell />}><Route index element={<AgentHome />} /><Route path="buy" element={<AgentBuy />} /><Route path="help" element={<AgentHelp />} /><Route path="check-mtn" element={<AgentCheckMtn />} /><Route path="customers" element={<AgentCustomers />} /><Route path="marketing" element={<AgentMarketing />} /><Route path="analytics" element={<AgentAnalytics />} /><Route path="support" element={<AgentSupport />} /><Route path="team" element={<AgentTeam />} /><Route path="domain" element={<AgentDomain />} /><Route path="network" element={<AgentNetwork />} /><Route path="popups" element={<AgentPopups />} /><Route path="status" element={<AgentStatus />} /><Route path="orders" element={<AgentOrdersPage />} /><Route path="prices" element={<AgentPrices />} /><Route path="earnings" element={<AgentEarnings />} /><Route path="store" element={<AgentStoreSettings />} /><Route path="store/:view" element={<AgentStoreSettings />} /><Route path="domain/:view" element={<AgentDomain />} /><Route path="marketing/:view" element={<AgentMarketing />} /><Route path="popups/:view" element={<AgentPopups />} /><Route path="network/:view" element={<AgentNetwork />} /><Route path="team/:view" element={<AgentTeam />} /><Route path="assistant" element={<AgentAssistant />} /></Route>
     <Route element={<PublicShell />}>
       {/* Marketing pages lay out their own full-bleed sections. */}
-      <Route path="/" element={<Home />} /><Route path="/agents" element={<AgentsApply />} />
+      <Route path="/" element={<Home />} /><Route path="/agents" element={<AgentsApply />} /><Route path="/agents/store" element={<AgentsStore />} />
       <Route path="/about" element={<About />} />
       {/* SEO landing pages: live prices per network + the comparison page. */}
       <Route path="/prices" element={<Prices />} />

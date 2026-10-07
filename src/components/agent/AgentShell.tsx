@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { AppWindow, BarChart3, CreditCard, ExternalLink, Gift, Globe, Home, Network, LifeBuoy, LogOut, Megaphone, Menu, MessagesSquare, Package, PhoneForwarded, Settings, ShoppingBag, Tags, UserCog, Users, Wallet } from "lucide-react";
+import { AppWindow, ArrowRight, BarChart3, CreditCard, ExternalLink, Gift, Globe, Home, Network, LifeBuoy, LogOut, Megaphone, Menu, MessagesSquare, Package, PhoneForwarded, Settings, ShoppingBag, Tags, UserCog, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
@@ -235,7 +235,8 @@ function PayScreen({ agent, quote }: { agent: Agent; quote: PlanQuote | null }) 
         <ul className="mt-5 space-y-2 text-left text-[13px] text-muted-foreground">
           {[["Buy data cheaper", cheaperLine], ["Free online store", "Your own link. You set the prices and keep the profit on every sale."], ["No deposit needed", "Your customers pay through your store; your profit is saved for you and paid to MoMo from 20.00."], ["We do the rest", "Delivery, payment and support are handled by DataYego."]].map(([t, d]) => <li key={t} className="flex gap-2"><span className="mt-0.5 text-primary-glow">✓</span><span><b className="text-foreground">{t}.</b> {d}</span></li>)}
         </ul>
-        <Link to="/" className="mt-4 block text-center text-[12px] text-muted-foreground">Back to DataYego</Link>
+        {!suspended && <Link to="/agents/store" className="mt-4 flex items-center justify-center gap-1 text-[13px] font-semibold text-primary-glow hover:underline">See everything your store comes with<ArrowRight size={14} /></Link>}
+        <Link to="/" className="mt-3 block text-center text-[12px] text-muted-foreground">Back to DataYego</Link>
       </div>
     </div>
   );

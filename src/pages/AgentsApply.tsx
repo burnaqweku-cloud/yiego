@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BadgeCheck, CheckCircle2, ChevronRight, Link2, Store, Wallet } from "lucide-react";
+import { ArrowRight, BadgeCheck, CheckCircle2, ChevronRight, Link2, Store, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import Seo from "@/components/seo/Seo";
 import { Button } from "@/components/ui/button";
 import { agentsStatus, applyAsAgent, myAgentStatus, planQuote, previewRequested, rememberPreview, type MyAgentStatus, type PlanQuote } from "@/lib/agents";
 import { formatGHS } from "@/lib/format";
+import { headlineSavings, useAgentSavings } from "@/hooks/useAgentSavings";
 import { useAuth } from "@/store/auth-context";
 
 /* Become an agent: the pitch, the price, then a proper form. */
@@ -19,6 +20,7 @@ export default function AgentsApply() {
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false); const [done, setDone] = useState(false);
   const [me, setMe] = useState<MyAgentStatus | null>(null);
+  const savings = headlineSavings(useAgentSavings(), 2);
   useEffect(() => { rememberPreview(); void agentsStatus().then(({ launched }) => setVisible(launched || previewRequested())); void planQuote().then(setQuote); void myAgentStatus().then(setMe); }, [user]);
   if (visible === null) return null;
   if (!visible) return <div className="mk-wrap py-16 text-center text-muted-foreground">This page isn't available yet.</div>;
@@ -33,7 +35,7 @@ export default function AgentsApply() {
     return e;
   };
   const submit = async () => {
-    if (!user) { toast.message("Sign in first — we'll bring you back here."); navigate(`/auth?next=${encodeURIComponent("/agents")}`); return; }
+    if (!user) { toast.message("Sign in first. We'll bring you back here."); navigate(`/auth?next=${encodeURIComponent("/agents")}`); return; }
     const e = validate(); setErrors(e); if (Object.keys(e).length) return;
     setBusy(true);
     const { error } = await applyAsAgent({ ...form, phone: form.phone.replace(/\D/g, ""), whatsapp: form.whatsapp.replace(/\D/g, "") });
@@ -57,27 +59,28 @@ export default function AgentsApply() {
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11.5px] font-semibold uppercase tracking-[0.12em] text-primary-glow"><Store size={12} />Agents</span>
           <h1 className="mt-3 font-display text-[28px] font-semibold leading-[1.1] tracking-tight text-foreground sm:text-[36px]">Start your own<br />data business.</h1>
           <p className="mx-auto mt-2 max-w-md text-[14px] leading-6 text-muted-foreground">Buy data cheaper, get a free online store, set your prices, keep the profit. No deposit needed.</p>
+          <Link to="/agents/store" className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold text-primary-glow hover:underline">See everything in your store<ArrowRight size={14} /></Link>
         </div>
         {/* Form, or where they already are */}
         {me?.is_agent ? (
           <div className="onyx-panel mt-6 rounded-2xl p-6 text-center">
             <CheckCircle2 size={32} className="mx-auto text-primary-glow" />
             <p className="mt-3 text-[18px] font-semibold text-foreground">You're already an agent</p>
-            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">{me.agent_status === "active" ? "Your store is open. Manage prices, orders and earnings from your dashboard." : me.agent_status === "paused" ? "Your store is paused until this month's fee is paid." : "You're approved — pay the monthly fee to open your store."}</p>
+            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">{me.agent_status === "active" ? "Your store is open. Manage prices, orders and earnings from your dashboard." : me.agent_status === "paused" ? "Your store is paused until this month's fee is paid." : "You're approved. Pay the monthly fee to open your store."}</p>
             <Link to="/agent" className="onyx-btn-primary mt-5 inline-block px-5 py-2.5 text-[13.5px]">{me.agent_status === "active" ? "Open my dashboard" : "Pay and open my store"}</Link>
           </div>
         ) : me?.application?.status === "pending" ? (
           <div className="onyx-panel mt-6 rounded-2xl p-6 text-center">
             <CheckCircle2 size={32} className="mx-auto text-amber" />
             <p className="mt-3 text-[18px] font-semibold text-foreground">Your application is being reviewed</p>
-            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">You sent it on {new Date(me.application.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}. We'll email {user?.email} with the decision — usually within a day. One application at a time, so there's nothing more to do for now.</p>
+            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">You sent it on {new Date(me.application.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}. We'll email {user?.email} with the decision, usually within a day. One application at a time, so there's nothing more to do for now.</p>
             <Link to="/shop" className="mt-5 inline-block text-[13px] font-medium text-primary-glow">Back to the shop</Link>
           </div>
         ) : done ? (
           <div className="onyx-panel mt-6 rounded-2xl p-6 text-center">
             <CheckCircle2 size={32} className="mx-auto text-primary-glow" />
             <p className="mt-3 text-[18px] font-semibold text-foreground">Application sent</p>
-            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">We read every one. You'll get an email as soon as it's reviewed — usually within a day. Nothing to pay until then.</p>
+            <p className="mx-auto mt-1 max-w-sm text-[13px] leading-5 text-muted-foreground">We read every one. You'll get an email as soon as it's reviewed, usually within a day. Nothing to pay until then.</p>
             <Link to="/shop" className="mt-5 inline-block text-[13px] font-medium text-primary-glow">Back to the shop</Link>
           </div>
         ) : (
@@ -95,7 +98,7 @@ export default function AgentsApply() {
               {field("pitch", "How will you sell?", { placeholder: "WhatsApp groups at my school, my shop's customers…" }, "one line")}
             </div>
             <div className="mt-5 flex items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
-              <p className="flex items-center gap-1.5 text-[11.5px] text-faint-foreground"><Link2 size={12} />Your store link is created when you're approved.</p>
+              <p className="flex items-center gap-1.5 text-[11.5px] text-faint-foreground"><Link2 size={12} />Your store name is reserved when you're approved. Your store opens when you pay the monthly fee.</p>
               <Button onClick={() => void submit()} disabled={busy}>{busy ? "Sending…" : user ? "Send application" : "Sign in & apply"}</Button>
             </div>
           </div>
@@ -104,11 +107,11 @@ export default function AgentsApply() {
         <h2 className="mt-10 text-center text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">What you get</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {[
-            { icon: BadgeCheck, t: "Buy data cheaper", d: "MTN 1GB at 4.00, not 4.15. 10GB at 40.00, not 43.44. Every bundle, every network — for you or to sell." },
-            { icon: Store, t: "Free online store", d: "datayego.com/s/yourname. You set the prices. Share the link on WhatsApp, anywhere." },
-            { icon: Wallet, t: "No deposit needed", d: "Your customers pay, your profit is saved for you. Withdraw to MoMo any time from 20.00." },
-          ].map(({ icon: Icon, t, d }) => (
-            <div key={t} className="onyx-panel rounded-2xl p-4"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/12 text-primary-glow"><Icon size={17} /></span><p className="mt-3 text-[14.5px] font-semibold text-foreground">{t}</p><p className="mt-1 text-[12.5px] leading-5 text-muted-foreground">{d}</p></div>))}
+            { icon: BadgeCheck, t: "Buy data cheaper", d: savings.length ? `${savings.map((x) => `${x.network} ${x.gb}GB at ${x.agent.toFixed(2)}, not ${x.pub.toFixed(2)}`).join(". ")}. Every bundle, every network, for you or to sell.` : "Agent prices on every bundle, every network, for you or to sell.", link: null },
+            { icon: Store, t: "Free online store", d: "yourname.datayego.com with 3 templates, your logo, your prices, customer accounts, chat, promos and a status maker. Share the link on WhatsApp, anywhere.", link: "/agents/store" },
+            { icon: Wallet, t: "No deposit needed", d: "Your customers pay, your profit is saved for you. Withdraw to MoMo any time from 20.00.", link: null },
+          ].map(({ icon: Icon, t, d, link }) => (
+            <div key={t} className="onyx-panel rounded-2xl p-4"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/12 text-primary-glow"><Icon size={17} /></span><p className="mt-3 text-[14.5px] font-semibold text-foreground">{t}</p><p className="mt-1 text-[12.5px] leading-5 text-muted-foreground">{d}</p>{link && <Link to={link} className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-semibold text-primary-glow hover:underline">See everything in your store<ArrowRight size={13} /></Link>}</div>))}
         </div>
 
         {/* Price */}
@@ -118,12 +121,12 @@ export default function AgentsApply() {
             {quote ? (quote.promo ? <p className="mt-0.5 text-[26px] font-semibold leading-none text-foreground">{formatGHS(quote.pay_now)}<span className="ml-2 text-[14px] font-normal text-faint-foreground line-through">{formatGHS(quote.monthly)}</span></p> : <p className="mt-0.5 text-[26px] font-semibold leading-none text-foreground">{formatGHS(quote.monthly)}</p>) : <p className="mt-0.5 text-[26px] font-semibold leading-none text-foreground">…</p>}
           </div>
           {quote?.promo && <span className="rounded-full bg-primary/12 px-3 py-1 text-[11.5px] font-semibold text-primary-glow">{quote.promo.percent_off}% off · {quote.promo.name}</span>}
-          <p className="w-full text-[12px] text-faint-foreground">Plus the usual 4% checkout fee. Only after you're approved. If a month isn't paid your store pauses until you pay — your money and earnings stay safe.</p>
+          <p className="w-full text-[12px] text-faint-foreground">Plus the usual 4% checkout fee. Only after you're approved. If a month isn't paid your store pauses until you pay. Your money and earnings stay safe.</p>
         </div>
 
         {/* How it works */}
         <ol className="mt-6 grid gap-2 sm:grid-cols-4">
-          {["Apply below", "We review and email you", "Pay the monthly fee", "Set prices and share your link"].map((s, i) => <li key={s} className="flex items-center gap-2 text-[12.5px] text-muted-foreground"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-[11px] font-semibold text-foreground">{i + 1}</span>{s}{i < 3 && <ChevronRight size={13} className="ml-auto hidden text-faint-foreground sm:block" />}</li>)}
+          {["Apply above", "We review and email you", "Pay the monthly fee", "Set prices and share your link"].map((s, i) => <li key={s} className="flex items-center gap-2 text-[12.5px] text-muted-foreground"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-[11px] font-semibold text-foreground">{i + 1}</span>{s}{i < 3 && <ChevronRight size={13} className="ml-auto hidden text-faint-foreground sm:block" />}</li>)}
         </ol>
 
       </div>
