@@ -1,50 +1,72 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, BarChart3, Bell, BotMessageSquare, Check, Globe, Image as ImageIcon, LayoutTemplate, Megaphone, MessageCircle, Network, Palette, PhoneForwarded, Receipt, ShieldCheck, ShoppingBag, Sparkles, Store, Tag, Users, Wallet, Zap } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import Seo from "@/components/seo/Seo";
 import { headlineSavings, useAgentSavings } from "@/hooks/useAgentSavings";
 import { planQuote, type PlanQuote } from "@/lib/agents";
 import { formatGHS } from "@/lib/format";
 
-/* Everything in a DataYego store, laid out to sell it. Linked from the agents
-   page (hero + "Free online store" card) and from the pay screen approved
-   agents see, so the fee is never a question of "what do I get?". */
+/* Everything in a DataYego store, written to sell it. Dense on purpose: no
+   boxes, one tight row per feature with real detail, so a reader who scrolls
+   once has actually read something. Linked from the agents page (hero and
+   store card) and the pay screen approved agents see. */
 
-interface Feature { icon: typeof Store; title: string; body: string; tag?: string }
-interface Group { id: string; kicker: string; title: string; lead: string; features: Feature[] }
+interface Item { t: string; d: string }
+interface Section { id: string; kicker: string; title: string; pitch: string; items: Item[] }
 
-const GROUPS: Group[] = [
-  { id: "store", kicker: "Your store", title: "A real website, not a WhatsApp list", lead: "Your customers open a link and see a proper store with your name on it. Nobody sees DataYego inside it. It is yours.", features: [
-    { icon: Globe, title: "Your own address", body: "yourname.datayego.com from day one. Want a real domain like mystore.com? Connect one you own or buy one from your dashboard. Your emails can come from it too." },
-    { icon: LayoutTemplate, title: "3 full templates", body: "Classic, Market and Studio. Each one is a completely different design with its own home page, bundle pages and checkout. Switch any time." },
-    { icon: Palette, title: "Make it yours", body: "Your logo, your colour, your banner, your about text, opening hours, a notice bar, your socials and your own FAQ. Even the payment screen matches your look." },
-    { icon: Tag, title: "You set every price", body: "Every bundle on every network has a price you choose. Raise it, lower it, run a promo. Customers only ever see your price." },
-    { icon: ShieldCheck, title: "WhatsApp preview with your name", body: "Share your link anywhere and the preview shows your store name and logo. Not ours." },
-  ] },
-  { id: "sell", kicker: "Selling", title: "Customers pay, you keep the profit", lead: "Buy at agent prices and sell at yours. No float, no deposit, no chasing people for money.", features: [
-    { icon: Zap, title: "Agent prices on everything", body: "MTN, Telecel and AirtelTigo at prices below the public price, for yourself or to sell. The exact numbers are on this page, live.", tag: "Live" },
-    { icon: Wallet, title: "No deposit, ever", body: "Your customer pays through your store with MoMo or card. Your profit is saved for you on every sale and paid to your MoMo from GH₵20." },
-    { icon: ShoppingBag, title: "Buy data from your wallet", body: "Top up once and buy for yourself or walk-in customers from your dashboard, with no checkout fee." },
-    { icon: Receipt, title: "Every order tracked", body: "Order ID, paid time, delivery stage and the customer's number, all in one list. Search it, filter it, export it to CSV. One tap to WhatsApp the customer." },
-    { icon: PhoneForwarded, title: "Check MTN numbers", body: "See if a number is cleared for data before you sell to it, from your dashboard or your store." },
-  ] },
-  { id: "customers", kicker: "Customers", title: "They come back because it is easy", lead: "Accounts, wallets, order history, support. Everything a serious shop has.", features: [
-    { icon: Users, title: "Customer accounts", body: "Your customers sign up on your store, see their orders and keep a wallet so paying next time takes seconds." },
-    { icon: MessageCircle, title: "WhatsApp and live chat", body: "A WhatsApp button and a live chat on every page. Reply from your Support inbox on any device." },
-    { icon: BotMessageSquare, title: "A store assistant that answers for you", body: "It knows your prices and your store and replies to customers day and night, then hands over to you when it matters." },
-    { icon: Bell, title: "Sale alerts", body: "An email the moment someone buys, so you never miss a sale or a stuck order." },
-  ] },
-  { id: "marketing", kicker: "Marketing", title: "Tools that bring the next sale", lead: "Built-in, free, and made for how people actually buy data in Ghana: on WhatsApp.", features: [
-    { icon: ImageIcon, title: "Status maker", body: "Your store draws your WhatsApp status for you, in your store's look, with your logo, your link and today's prices. One bundle, two, three, a promo or your whole price list. Preview it, share it, done.", tag: "New" },
-    { icon: Tag, title: "Promos", body: "Put any bundle on promo with an end date. Your store shows the old price crossed out and the countdown." },
-    { icon: Megaphone, title: "Announcements and pop-ups", body: "Post news on your store, email it to your customers, and put a pop-up on any page with a button, a form or a link." },
-    { icon: BarChart3, title: "Analytics", body: "Visits per day, orders, sales and your best sellers. Know what sells and when." },
-  ] },
-  { id: "team", kicker: "Team and growth", title: "Grow past one phone", lead: "When it gets busy, add people. When it gets big, build your own network.", features: [
-    { icon: Users, title: "Staff accounts", body: "Give a sibling or a shop assistant their own login to reply to customers and watch orders, without touching your money." },
-    { icon: Network, title: "Your own agents", body: "Recruit agents under your store with your own fee, your own application form and coupons. Your network, your rules.", tag: "By invitation" },
-    { icon: Sparkles, title: "Help Center and updates", body: "A help centre inside your dashboard, announcements from us, and new features added almost every week. Your store keeps getting better without you lifting a finger." },
-  ] },
+const SECTIONS: Section[] = [
+  {
+    id: "store", kicker: "Your store", title: "A real website with your name on it.", pitch: "Not a link to our site and not a price list on WhatsApp. Your customers open your address and land on a full store: your name, your logo, your colours, your prices. DataYego is not mentioned anywhere inside it. People who buy from you think it is yours, because it is.",
+    items: [
+      { t: "Your own address from day one.", d: "yourname.datayego.com, live the moment you pay. Change the name any time from your dashboard; the old link keeps working for 90 days so nobody you already sent it to is lost." },
+      { t: "Want mystore.com? Have it.", d: "Connect a domain you already own, or buy a .com straight from your dashboard and we set it up for you. Your store, your emails and your WhatsApp previews all carry it." },
+      { t: "Three complete templates.", d: "Classic, Market and Studio. Not three colour schemes: three different designs, each with its own home page, bundle pages, menu, footer and checkout. Switch in one tap, switch back in one tap." },
+      { t: "Your logo, your colour, your words.", d: "Upload a logo, pick an accent colour, write your about text, set opening hours, add a notice bar for the top of every page, link your socials, write your own FAQ. Even the payment screen takes your look." },
+      { t: "A proper home page.", d: "A headline, a Buy data button, your networks, your featured bundles, how it works, about and FAQ. Pick which bundles sit at the top as your picks." },
+      { t: "Previews that look like you.", d: "Share your link anywhere and the WhatsApp or Facebook preview shows your store name and your logo. Not ours." },
+    ],
+  },
+  {
+    id: "sell", kicker: "Selling", title: "You set the prices. You keep the profit.", pitch: "Every bundle on MTN, Telecel and AirtelTigo has an agent price below the public price. You sell at whatever you like. The customer pays through your store, the data is delivered, and the difference is yours. No float to top up. No deposit. No chasing anyone for money.",
+    items: [
+      { t: "Agent prices on everything.", d: "Every bundle, every network, priced below the public price for you. The live numbers are at the top of this page and they follow the catalogue, so what you see is what you get." },
+      { t: "One price list, yours.", d: "Set every price yourself from the Prices page. Round it, push it, undercut the shop next door. Customers only ever see your number." },
+      { t: "No deposit, ever.", d: "Your customer pays with MoMo or card on your store. Your profit on that sale is saved for you straight away, and you withdraw to your MoMo whenever you like from GH₵20. If a bundle fails, the customer is refunded and your profit on it is reversed. Nothing comes out of your pocket." },
+      { t: "Buy from your wallet too.", d: "Top up a wallet once and buy data for yourself or for walk-in customers from your dashboard at the agent price, with no checkout fee. Separate from your earnings, so your profit stays untouched." },
+      { t: "Every order in one list.", d: "Order ID, paid time, bundle, number, amount, your profit and the live delivery stage. Search by number or ID, filter by stage or network, group by day, export to CSV. One tap to WhatsApp the customer about their order." },
+      { t: "Check MTN numbers first.", d: "MTN verifies a number the first time it receives a bundle. Check any number from your dashboard or your store before you sell to it, and submit new numbers for verification in bulk." },
+    ],
+  },
+  {
+    id: "customers", kicker: "Customers", title: "They come back because it is easy.", pitch: "A store people return to needs accounts, a wallet, order history and someone to answer when they ask. Yours has all of it built in, and most of it answers for you.",
+    items: [
+      { t: "Customer accounts on your store.", d: "Your customers sign up on your store, see every order they have placed with you, and track the ones in progress. Signed up on your store means your customer, not ours." },
+      { t: "A wallet for repeat buyers.", d: "Customers top up once and pay from their wallet next time, so the second purchase takes seconds. Faster checkout, more repeat sales." },
+      { t: "WhatsApp button and live chat.", d: "A WhatsApp button and a live chat sit on every page of your store. Messages land in your Support inbox and you reply from any device. Turn either one on or off." },
+      { t: "An assistant that answers for you.", d: "Your store assistant knows your prices, your bundles and your store details and replies to customers day and night. When a question needs you, it hands the chat over with the full history." },
+      { t: "Sale alerts.", d: "An email the moment someone buys, so you know about every sale and every order that needs a look." },
+    ],
+  },
+  {
+    id: "marketing", kicker: "Marketing", title: "Tools that bring the next sale.", pitch: "Most data in Ghana is sold on WhatsApp. Your store is built for that: it makes the status, it runs the promo, it posts the news and it tells you what sold.",
+    items: [
+      { t: "Status maker.", d: "Your store draws your WhatsApp status image for you, in your template's look, with your logo, your link and today's prices pulled live from your store. One bundle, two bundles side by side, three bundles with a Most popular tag, a promo with the old price crossed out, or your whole price list for a network. Preview it in your dashboard, share it straight to WhatsApp or download it, and the caption is written for you." },
+      { t: "Promos with an end date.", d: "Put any bundle on promo. Your store shows the old price crossed out, the promo price and how long it lasts. When it ends, the normal price comes back by itself." },
+      { t: "Announcements.", d: "Post news on your store and email it to every customer who has an account with you. New prices, a new network, a holiday notice, whatever you want them to know." },
+      { t: "Pop-ups on any page.", d: "A pop-up with a title, a message and a button, a link or a form. Show it once per visit, choose which pages, see how many people saw it and how many tapped." },
+      { t: "Analytics.", d: "Visits per day, orders, sales and your best sellers. See what sells, when people buy, and which bundle to push next." },
+      { t: "Invite and earn.", d: "Share your invite link with customers and earn free data when they buy. On top of your profit." },
+    ],
+  },
+  {
+    id: "team", kicker: "Team and growth", title: "Grow past one phone.", pitch: "When it gets busy, add people. When it gets big, build your own network of agents under your store.",
+    items: [
+      { t: "Staff accounts.", d: "Give a sibling or a shop assistant their own login. They can reply to customers, watch orders and check numbers. They cannot touch your prices, your earnings or your payouts." },
+      { t: "Your own agents.", d: "By invitation. Recruit agents under your store with your own monthly fee, your own application form and coupons on that fee. They sell from their own stores, you earn on every sale they make." },
+      { t: "Help Center in your dashboard.", d: "How earnings, payouts, orders, prices and plans work, written out and searchable, plus the same answers on a public page you can send to anyone." },
+      { t: "Something new almost every week.", d: "The Status maker, the two and three bundle layouts, customer wallets, the assistant, the order list, header names, all added in the last weeks. Your store keeps getting better and you pay nothing extra for any of it." },
+    ],
+  },
 ];
 
 export default function AgentsStore() {
@@ -52,73 +74,59 @@ export default function AgentsStore() {
   const [quote, setQuote] = useState<PlanQuote | null>(null);
   useEffect(() => { void planQuote().then(setQuote); }, []);
   const fee = quote ? (quote.promo ? quote.pay_now : quote.monthly) : null;
+  const feeText = fee !== null ? formatGHS(fee) : "one small fee";
 
   return (
     <div className="mk-wrap py-8 sm:py-14">
-      <Seo path="/agents/store" title="Everything in your DataYego store" description="Your own data store with templates, your prices, customer accounts, chat, promos, a status maker and more. No deposit." />
-      <div className="mx-auto max-w-3xl">
+      <Seo path="/agents/store" title="Everything in your DataYego store" description="Your own data store: templates, your prices, customer accounts, chat, promos, a status maker and more. No deposit." />
+      <div className="mx-auto max-w-2xl">
         {/* Hero */}
-        <div className="text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11.5px] font-semibold uppercase tracking-[0.12em] text-primary-glow"><Store size={12} />Your store</span>
-          <h1 className="mt-3 font-display text-[30px] font-semibold leading-[1.08] tracking-tight text-foreground sm:text-[42px]">Everything you get<br />the day you open your store.</h1>
-          <p className="mx-auto mt-3 max-w-lg text-[14.5px] leading-6 text-muted-foreground">Not a link to our site. A full online data business with your name on it, built for WhatsApp selling, and it keeps getting new tools every week.</p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-            <Link to="/agents" className="onyx-btn-primary inline-flex items-center gap-1.5 px-5 py-2.5 text-[13.5px]">Apply now<ArrowRight size={15} /></Link>
-            {fee !== null && <span className="text-[12.5px] text-muted-foreground">{formatGHS(fee)} a month{quote?.promo ? ` (${quote.promo.percent_off}% off)` : ""} · no deposit</span>}
-          </div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agents</p>
+        <h1 className="mt-2 font-display text-[32px] font-semibold leading-[1.05] tracking-tight text-foreground sm:text-[44px]">Everything you get the day you open your store.</h1>
+        <p className="mt-4 text-[15px] leading-7 text-muted-foreground">For {feeText} a month you get a complete online data business: a real website with your name on it, agent prices on every bundle, customers who pay first so you never need a deposit, and the marketing tools to sell on WhatsApp every day. This page is the whole list. Read it once and decide.</p>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <Link to="/agents" className="onyx-btn-primary inline-flex items-center gap-1.5 px-5 py-2.5 text-[13.5px]">Apply now<ArrowRight size={15} /></Link>
+          <span className="text-[12.5px] text-muted-foreground">{feeText} a month{quote?.promo ? ` (${quote.promo.percent_off}% off)` : ""} · no deposit · cancel any time</span>
         </div>
 
-        {/* Live savings */}
+        {/* Live prices: one tight strip */}
         {savings.length > 0 && (
-          <div className="onyx-panel mt-8 rounded-2xl p-4 sm:p-5">
-            <div className="flex items-center justify-between"><p className="text-[13px] font-semibold text-foreground">Agent prices right now</p><span className="rounded-full bg-primary/12 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-primary-glow">Live</span></div>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {savings.map((s) => (
-                <div key={`${s.network}${s.gb}`} className="rounded-xl bg-white/[0.03] px-3 py-2.5">
-                  <p className="text-[12px] text-muted-foreground">{s.network} {s.gb}GB</p>
-                  <p className="mt-0.5 text-[18px] font-semibold leading-none text-foreground">{formatGHS(s.agent)}</p>
-                  <p className="mt-1 text-[11.5px] text-faint-foreground">public <span className="line-through">{formatGHS(s.pub)}</span> · you keep <span className="text-primary-glow">{formatGHS(s.pub - s.agent)}</span></p>
-                </div>
-              ))}
+          <div className="mt-8 border-y border-white/[0.08] py-3">
+            <div className="flex items-baseline justify-between"><p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Agent prices right now</p><span className="text-[10.5px] font-semibold uppercase tracking-wide text-primary-glow">Live</span></div>
+            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-4">
+              {savings.map((s) => <p key={`${s.network}${s.gb}`} className="text-[13px] text-foreground"><span className="font-semibold">{s.network} {s.gb}GB</span> {formatGHS(s.agent)} <span className="text-faint-foreground line-through">{formatGHS(s.pub)}</span> <span className="text-primary-glow">+{formatGHS(s.pub - s.agent)}</span></p>)}
             </div>
-            <p className="mt-2.5 text-[11.5px] text-faint-foreground">That is the saving at the public price. Set your own price and the profit is yours.</p>
+            <p className="mt-1.5 text-[11.5px] text-faint-foreground">The green figure is what you keep per sale at the public price. Sell higher and keep more.</p>
           </div>
         )}
 
-        {/* Groups */}
-        {GROUPS.map((g) => (
-          <section key={g.id} className="mt-12">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{g.kicker}</p>
-            <h2 className="mt-1 font-display text-[22px] font-semibold leading-tight text-foreground sm:text-[26px]">{g.title}</h2>
-            <p className="mt-1.5 max-w-xl text-[13.5px] leading-6 text-muted-foreground">{g.lead}</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {g.features.map(({ icon: Icon, title, body, tag }) => (
-                <div key={title} className="onyx-panel rounded-2xl p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary-glow"><Icon size={17} /></span>
-                    {tag && <span className="rounded-full border border-primary/30 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-primary-glow">{tag}</span>}
-                  </div>
-                  <p className="mt-3 text-[14.5px] font-semibold text-foreground">{title}</p>
-                  <p className="mt-1 text-[12.5px] leading-5 text-muted-foreground">{body}</p>
-                </div>
+        {/* Sections: headline, pitch, tight rows */}
+        {SECTIONS.map((s) => (
+          <section key={s.id} className="mt-12">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{s.kicker}</p>
+            <h2 className="mt-1.5 font-display text-[24px] font-semibold leading-tight tracking-tight text-foreground sm:text-[28px]">{s.title}</h2>
+            <p className="mt-3 text-[14px] leading-[1.65] text-muted-foreground">{s.pitch}</p>
+            <ul className="mt-4 divide-y divide-white/[0.07] border-t border-white/[0.07]">
+              {s.items.map((it) => (
+                <li key={it.t} className="flex gap-3 py-3">
+                  <Check size={16} className="mt-[3px] shrink-0 text-primary-glow" />
+                  <p className="text-[13.5px] leading-6 text-muted-foreground"><span className="font-semibold text-foreground">{it.t}</span> {it.d}</p>
+                </li>
               ))}
-            </div>
+            </ul>
           </section>
         ))}
 
         {/* The deal */}
-        <div className="onyx-panel mt-12 rounded-2xl p-5 sm:p-6">
+        <section className="mt-12 border-t border-white/[0.08] pt-8">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">The deal</p>
-          <h2 className="mt-1 font-display text-[22px] font-semibold text-foreground">All of this for {fee !== null ? formatGHS(fee) : "one small fee"} a month</h2>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {["No deposit and no float. Your customers pay first.", "Agent prices on every bundle, every network.", "Your profit saved on every sale, paid to MoMo from GH₵20.", "Delivery, payment and support handled for you.", "Your store, your name, your customers. We stay invisible.", "New tools added almost every week, free."].map((t) => <li key={t} className="flex gap-2 text-[13px] text-muted-foreground"><Check size={15} className="mt-0.5 shrink-0 text-primary-glow" />{t}</li>)}
-          </ul>
+          <h2 className="mt-1.5 font-display text-[24px] font-semibold leading-tight tracking-tight text-foreground sm:text-[28px]">All of it for {feeText} a month.</h2>
+          <p className="mt-3 text-[14px] leading-[1.65] text-muted-foreground">One fee, every feature on this page, and everything we add after it. Plus the usual 4% checkout fee on each sale, which your customer pays at checkout. The fee is only due once you are approved. If a month is not paid your store pauses until you pay; your money, your earnings and your customers stay exactly where they are.</p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <Link to="/agents" className="onyx-btn-primary inline-flex items-center gap-1.5 px-5 py-2.5 text-[13.5px]">Apply to be an agent<ArrowRight size={15} /></Link>
-            <Link to="/help/agents" className="text-[12.5px] text-muted-foreground hover:text-foreground">Read how earnings and payouts work</Link>
+            <Link to="/help/agents" className="text-[12.5px] text-muted-foreground hover:text-foreground">How earnings and payouts work</Link>
           </div>
-          <p className="mt-3 text-[11.5px] text-faint-foreground">Plus the usual 4% checkout fee on each sale. The fee is only due after you are approved. If a month is not paid your store pauses until you pay; your money and earnings stay safe.</p>
-        </div>
+        </section>
       </div>
     </div>
   );
