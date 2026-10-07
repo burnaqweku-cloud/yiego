@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronDown, LogOut, Menu, Search, ShieldCheck, Store, UserRound, X } from "lucide-react";
+import { ArrowRight, ChevronDown, LogOut, Menu, PhoneForwarded, Search, ShieldCheck, Store, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import Wordmark from "@/components/brand/Wordmark";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -171,6 +171,7 @@ export default function PublicNav() {
     <>
       <MenuItem to="/account" icon={UserRound} label="Account settings" />
       <MenuItem to="/track-order" icon={Search} label="Track an order" />
+      <MenuItem to="/check-mtn" icon={PhoneForwarded} label="Check MTN number" />
       {agentLink && <MenuItem to={agentLink.to} icon={Store} label={agentLink.label === "My store" ? "Agent dashboard" : agentLink.label} />}
       {isAdmin && <MenuItem to="/admin" icon={ShieldCheck} label="Admin panel" />}
     </>
@@ -341,6 +342,7 @@ export default function PublicNav() {
               <div className="mt-6 flex flex-col gap-1 border-t border-white/[0.07] pt-4">
                 <SheetLink to="/account" icon={UserRound} label="Account settings" onClick={close} />
                 <SheetLink to="/track-order" icon={Search} label="Track an order" onClick={close} />
+                <SheetLink to="/check-mtn" icon={PhoneForwarded} label="Check MTN number" onClick={close} />
                 {agentLink && <SheetLink to={agentLink.to} icon={Store} label={agentLink.label === "My store" ? "Agent dashboard" : agentLink.label} onClick={close} />}
                 {isAdmin && <SheetLink to="/admin" icon={ShieldCheck} label="Admin panel" onClick={close} />}
                 <button
@@ -356,6 +358,7 @@ export default function PublicNav() {
               <>
                 <div className="mt-6 flex flex-col gap-1 border-t border-white/[0.07] pt-4">
                   <SheetLink to="/track-order" icon={Search} label="Track an order" onClick={close} />
+                  <SheetLink to="/check-mtn" icon={PhoneForwarded} label="Check MTN number" onClick={close} />
                   {agentLink && <SheetLink to={agentLink.to} icon={Store} label={agentLink.label} onClick={close} />}
                 </div>
                 <div className="mt-6 flex flex-col gap-3" style={{ "--d": "280ms" } as CSSProperties}>
