@@ -40,6 +40,16 @@ export default function OrdersPulse() {
   const agentOrders = allRows.filter((r) => r.agent_id != null).length;
   const [loading, setLoading] = useState(true);
   const [start, end] = useMemo(() => rangeFor(preset, from, to), [preset, from, to]);
+  // Net profit for the range: same figure as the Overview (delivered orders, dated by purchase day, checkout fee included).
+  const [profit, setProfit] = useState<number | null>(null);
+  useEffect(() => {
+    let mounted = true; setProfit(null);
+    (db() as unknown as { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: { period?: { net?: number | string } } | null }> })
+      .rpc("finance_overview", { p_from: iso(startOfDay(start)), p_to: iso(new Date(endOfDay(end).getTime() + 1)) })
+      .then((r) => { if (mounted) setProfit(r.data?.period?.net == null ? null : Number(r.data.period.net)); })
+      .catch(() => { if (mounted) setProfit(null); });
+    return () => { mounted = false; };
+  }, [start, end]);
 
   useEffect(() => {
     let mounted = true; setLoading(true);
@@ -77,7 +87,7 @@ export default function OrdersPulse() {
       <StatGrid cols={4}>
         <Stat loading={loading} label="Orders" value={String(n)} note={days > 1 ? `${(n / days).toFixed(1)} a day` : "paid"} tone="good" to={drill("all")} />
         <Stat loading={loading} label="Sales" value={<Money value={revenue} />} note={source === "agents" ? `${gb} GB · agents earn ${formatGHS(rows.reduce((a, r) => a + Number(r.agent_margin ?? 0), 0))}` : `${gb} GB`} to={drill("all")} />
-        <Stat loading={loading} label="Delivered" value={String(delivered)} note={n ? `${Math.round((delivered / n) * 100)}%` : "—"} tone="good" to={drill("delivered")} />
+        <Stat loading={loading} label="Delivered" value={String(delivered)} note={`${n ? `${Math.round((delivered / n) * 100)}%` : "—"}${profit != null && source === "all" ? ` · profit ${formatGHS(profit)}` : ""}`} tone="good" to={drill("delivered")} />
         <Stat loading={loading} label="Waiting / refunded" value={`${waiting} / ${refunded}`} note={waiting ? "still to deliver" : "all settled"} tone={waiting ? "warn" : "default"} to={drill("waiting")} />
       </StatGrid>
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
