@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useEffect as useAlertsEffect } from "react";
+import { startSupportAlerts, stopSupportAlerts } from "@/lib/supportAlerts";
 import { Outlet, useLocation } from "react-router-dom";
 import { Menu, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/store/theme";
@@ -11,6 +13,7 @@ import { groupForPath, pageForPath } from "@/lib/admin-nav";
    mobile, and a compact 56px top bar that names the page. All navigation
    lives in AdminSidebar; all page data lives in the routed page. */
 export default function AdminShell() {
+  useAlertsEffect(() => { startSupportAlerts(); return () => stopSupportAlerts(); }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
   const location = useLocation();

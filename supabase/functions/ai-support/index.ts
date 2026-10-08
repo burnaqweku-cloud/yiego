@@ -285,6 +285,10 @@ Deno.serve(async (req) => {
       if (conversation.user_id) { const { data: p } = await supabase.from("profiles").select("full_name, email").eq("id", conversation.user_id).maybeSingle(); customer = p ?? null; }
       return jsonResponse({ status: "success", conversation: { ...conversation, customer }, messages: (messages ?? []).reverse() });
     }
+    if (action === "mark_handled") {
+      if (!body.id) return jsonResponse({ error: "id is required" }, { status: 400 });
+      const { data, error } = await createSupabaseAdmin().from("support_conversations").update({ handoff_reason: null, admin_last_seen_at: new Date().toISOString() }).eq("id", String(body.id)).select("id, status, assigned_admin").maybeSingle(); if (error || !data) throw new Error("The conversation could not be updated."); return jsonResponse({ status: "success", conversation: data });
+    }
     if (action === "take_over" || action === "return_to_ai" || action === "admin_close") {
       if (!body.id) return jsonResponse({ error: "id is required" }, { status: 400 });
       const patch = action === "take_over" ? { status: "human", assigned_admin: auth.userId } : action === "return_to_ai" ? { status: "ai", assigned_admin: null } : { status: "closed" };

@@ -1,0 +1,3 @@
+-- Applied via Supabase MCP on 2026-10-08.
+-- phase1.admin_support_needs(): caller_is_admin(); chats that need a person and are unread, open escalations, latest escalation time.
+-- Used by the admin shell every 20s for the Support inbox badge and a toast when a new escalation lands. ai-support v32 adds action mark_handled.

@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronDown, Clock3, LogOut, Search, Star, X, type LucideIcon } from "lucide-react";
 import Wordmark from "@/components/brand/Wordmark";
 import { cn } from "@/lib/utils";
+import { useSupportNeeds } from "@/lib/supportAlerts";
 import { ADMIN_GROUPS, ADMIN_PAGES, groupForPath, pageForPath, pushRecent, readPins, readRecent, searchPages, syncPrefsFromAccount, togglePin, type AdminPage } from "@/lib/admin-nav";
 import { useAuth } from "@/store/auth-context";
 import { useProfile } from "@/store/profile";
@@ -182,11 +183,14 @@ function GroupIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }
 }
 
 function PageRow({ page, pinned, onPin, onNavigate, flush }: { page: AdminPage; pinned: boolean; onPin: () => void; onNavigate?: () => void; flush?: boolean }) {
+  const needs = useSupportNeeds();
+  const badge = page.id === "support-inbox" && needs.needs > 0 ? needs.needs : 0;
   return (
     <li className="flex items-center">
       <NavLink to={page.to} end={page.end} onClick={onNavigate} className={({ isActive }) => cn("flex min-w-0 flex-1 items-center gap-3 rounded-md py-1 text-[12px]", flush ? "px-3" : "px-2.5", isActive ? "font-semibold text-foreground" : "text-muted-foreground hover:text-foreground")}>
         <page.icon size={13} className="shrink-0 opacity-80" />
         <span className="truncate">{page.label}</span>
+        {badge > 0 && <span className="ml-auto rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{badge}</span>}
       </NavLink>
       <button type="button" onClick={onPin} aria-label={pinned ? `Unpin ${page.label}` : `Pin ${page.label}`} aria-pressed={pinned} className={cn("mr-0.5 shrink-0 rounded-md p-1", pinned ? "text-primary-glow" : "text-faint-foreground/60 hover:text-muted-foreground")}>
         <Star size={13} fill={pinned ? "currentColor" : "none"} />
