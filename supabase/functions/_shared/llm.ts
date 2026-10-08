@@ -10,7 +10,7 @@ type Db = any;
 export type LlmMsg = { role: "user" | "assistant"; content: string };
 export type LlmTool = { name: string; description: string; parameters: Record<string, unknown> };
 export type LlmResult = { text: string; model: string; provider: string; usage: unknown; toolsUsed: string[] };
-export class LlmError extends Error { code: string; providerStatus: number; constructor(message: string, code: string, providerStatus = 0) { super(message); this.code = code; this.providerStatus = providerStatus; } }
+export class LlmError extends Error { code: string; providerStatus: number; retryAfter: number | null = null; constructor(message: string, code: string, providerStatus = 0) { super(message); this.code = code; this.providerStatus = providerStatus; } }
 
 const DEFAULTS: Record<string, { url: string; model: string }> = {
   groq: { url: "https://api.groq.com/openai/v1/chat/completions", model: "openai/gpt-oss-120b" },
@@ -19,11 +19,30 @@ const DEFAULTS: Record<string, { url: string; model: string }> = {
   gemini: { url: "https://generativelanguage.googleapis.com/v1beta/models", model: "gemini-2.5-flash" },
 };
 
-export async function llmConfig(db: Db): Promise<{ provider: string; model: string; key: string | null }> {
+export async function llmConfig(db: Db): Promise<{ provider: string; model: string; key: string | null; keyId: string | null }> {
   const { data: s } = await db.from("site_settings").select("value").eq("key", "ai_provider").maybeSingle();
   const provider = String(s?.value?.provider ?? "groq"); const model = String(s?.value?.model ?? DEFAULTS[provider]?.model ?? DEFAULTS.groq.model);
+  const picked = await pickKey(db, provider);
+  return { provider, model, key: picked?.key ?? null, keyId: picked?.id ?? null };
+}
+/* Key pool: several keys per provider (phase1.ai_provider_keys), least-recently-used first, a key that hit
+   a rate limit cools down for the seconds the provider asked for. One limit-hit retries at once on the next key. */
+async function pickKey(db: Db, provider: string): Promise<{ id: string; key: string } | null> {
+  const { data } = await db.rpc("ai_key_pick", { p_provider: provider });
+  const row = Array.isArray(data) ? data[0] : data;
+  if (row?.key) return { id: String(row.id), key: String(row.key) };
   const { data: k } = await db.from("internal_secrets").select("value").eq("key", provider).maybeSingle();
-  return { provider, model, key: k?.value ?? (provider === "gemini" ? Deno.env.get("GEMINI_API_KEY") ?? null : null) };
+  return k?.value ? { id: "", key: String(k.value) } : null;
+}
+async function reportKey(db: Db, id: string | null, ok: boolean, cooldownSeconds: number | null = null, error: string | null = null) {
+  if (!id) return;
+  try { await db.rpc("ai_key_report", { p_id: id, p_ok: ok, p_cooldown_seconds: cooldownSeconds, p_error: error }); } catch { /* bookkeeping only */ }
+}
+function retryAfterSeconds(r: Response, raw: string) {
+  const h = Number(r.headers.get("retry-after")); if (Number.isFinite(h) && h > 0) return Math.ceil(h);
+  const m = raw.match(/try again in\s+(?:(\d+)m)?\s*([\d.]+)s/i); if (m) return Math.ceil(Number(m[1] ?? 0) * 60 + Number(m[2]));
+  const d = raw.match(/retry in\s+(\d+)h(\d+)m/i); if (d) return Number(d[1]) * 3600 + Number(d[2]) * 60;
+  return /per day|TPD|RPD|daily/i.test(raw) ? 3600 : 60;
 }
 
 function classify(status: number, raw: string) {
@@ -36,10 +55,25 @@ function classify(status: number, raw: string) {
 
 /** Run one chat turn with optional tool calling. runTool executes a tool and returns its JSON result. */
 export async function chat(db: Db, input: { system: string; messages: LlmMsg[]; maxTokens?: number; temperature?: number; tools?: LlmTool[]; runTool?: (name: string, args: Record<string, unknown>) => Promise<unknown>; maxToolRounds?: number }): Promise<LlmResult> {
-  const cfg = await llmConfig(db);
-  if (!cfg.key) throw new LlmError("The assistant is not configured.", "missing_api_key");
-  const maxRounds = input.maxToolRounds ?? 4;
-  if (cfg.provider === "gemini") return await geminiChat(cfg, input, maxRounds);
+  // Up to 3 keys tried per request: a key that answers 429 is cooled down and the next one is used at once.
+  let lastErr: LlmError | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const cfg = await llmConfig(db);
+    if (!cfg.key) throw lastErr ?? new LlmError("The assistant is not configured.", "missing_api_key");
+    try {
+      const r = cfg.provider === "gemini" ? await geminiChat(cfg, input, input.maxToolRounds ?? 4) : await openaiChat(cfg, input, input.maxToolRounds ?? 4);
+      await reportKey(db, cfg.keyId, true);
+      return r;
+    } catch (e) {
+      if (e instanceof LlmError && e.code === "provider_limit") { await reportKey(db, cfg.keyId, false, e.retryAfter ?? 60, e.message); lastErr = e; continue; }
+      if (e instanceof LlmError && (e.code === "invalid_api_key" || e.code === "provider_billing")) { await reportKey(db, cfg.keyId, false, 86400, e.message); lastErr = e; continue; }
+      throw e;
+    }
+  }
+  throw lastErr ?? new LlmError("The assistant is busy right now. Try again in a little while.", "provider_limit");
+}
+
+async function openaiChat(cfg: { provider: string; model: string; key: string | null }, input: Parameters<typeof chat>[1], maxRounds: number): Promise<LlmResult> {
 
   const url = DEFAULTS[cfg.provider]?.url ?? DEFAULTS.groq.url;
   const messages: Array<Record<string, unknown>> = [{ role: "system", content: input.system }, ...input.messages.map((m) => ({ role: m.role, content: m.content }))];
@@ -53,7 +87,7 @@ export async function chat(db: Db, input: { system: string; messages: LlmMsg[]; 
     if (cfg.provider === "openrouter") { headers["HTTP-Referer"] = "https://datayego.com"; headers["X-Title"] = "DataYego"; }
     const r = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
     const p = await r.json().catch(() => null);
-    if (!r.ok) { const c = classify(r.status, String(p?.error?.message ?? "")); console.error("llm provider error", { provider: cfg.provider, status: r.status, code: c.code, message: String(p?.error?.message ?? "").slice(0, 200) }); throw new LlmError(c.message, c.code, r.status); }
+    if (!r.ok) { const raw = String(p?.error?.message ?? ""); const c = classify(r.status, raw); console.error("llm provider error", { provider: cfg.provider, status: r.status, code: c.code, message: raw.slice(0, 200) }); const err = new LlmError(c.message, c.code, r.status); if (c.code === "provider_limit") err.retryAfter = retryAfterSeconds(r, raw); throw err; }
     usage = p?.usage ?? usage;
     const msg = p?.choices?.[0]?.message ?? {};
     // deno-lint-ignore no-explicit-any
@@ -83,7 +117,7 @@ async function geminiChat(cfg: { model: string; key: string | null }, input: Par
     if (offer) body.tools = [{ functionDeclarations: input.tools }];
     const r = await fetch(`${DEFAULTS.gemini.url}/${cfg.model}:generateContent`, { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": cfg.key ?? "" }, body: JSON.stringify(body) });
     const p = await r.json().catch(() => null);
-    if (!r.ok) { const c = classify(r.status, String(p?.error?.message ?? "")); console.error("llm provider error", { provider: "gemini", status: r.status, code: c.code }); throw new LlmError(c.message, c.code, r.status); }
+    if (!r.ok) { const raw = String(p?.error?.message ?? ""); const c = classify(r.status, raw); console.error("llm provider error", { provider: "gemini", status: r.status, code: c.code }); const err = new LlmError(c.message, c.code, r.status); if (c.code === "provider_limit") err.retryAfter = retryAfterSeconds(r, raw); throw err; }
     usage = p?.usageMetadata ?? usage;
     // deno-lint-ignore no-explicit-any
     const parts: Array<Record<string, any>> = p?.candidates?.[0]?.content?.parts ?? [];

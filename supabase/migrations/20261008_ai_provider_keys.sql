@@ -1,0 +1,10 @@
+-- Applied via Supabase MCP on 2026-10-08 (execute_sql in three parts; apply_migration was cancelled by approval prompts).
+-- Key pool for the assistants.
+-- phase1.ai_provider_keys (provider, key, label, is_active, last_used_at, cooldown_until, uses, limit_hits, last_error); seeded from internal_secrets groq/gemini.
+-- ai_key_pick(provider) / ai_key_report(id, ok, cooldown_seconds, error): service_role; least-recently-used key not cooling down.
+-- master_ai_keys(provider), master_ai_key_add(provider, key, label), master_ai_key_remove(id): admin_role = master only (remove = deactivate).
+-- admin_ai_usage(): answers today across the three assistants, keys, keys resting. admin_ai_provider() now returns key counts + is_master;
+-- admin_set_ai_provider no longer takes a key from non-master admins.
+-- _shared/llm.ts: picks a key per request, on 429 cools it down for retry-after (or parsed "try again in", 1h for daily limits) and retries
+-- the next key at once (up to 3); invalid/billing errors rest the key for a day. Deployed ai-support v31, agent-assistant v5, store-chat-ai v6.
+-- Note: Groq limits are per organisation, so each key must be from a separate Groq account to add quota.
