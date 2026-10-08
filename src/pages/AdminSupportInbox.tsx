@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
+import ChatSourceBadge from "@/components/admin/ChatSourceBadge";
 import { assistantHtml, assistantPlain } from "@/lib/assistantMarkdown";
 import { formatGHS } from "@/lib/format";
 import { refreshSupportAlerts } from "@/lib/supportAlerts";
@@ -134,7 +135,7 @@ export default function AdminSupportInbox() {
   const pinned = Boolean(c && conversations.find((r) => r.id === c.id)?.admin_pinned_at);
 
   return <div className="space-y-5">
-    <AdminPageHeader eyebrow="Support" title="Support inbox" description="Every chat the assistant is having, live. Newest message first, pinned chats stay on top." />
+    <AdminPageHeader eyebrow="Support" title="Support inbox" description="Website chats: customers talking to the assistant on datayego.com, live. Newest message first, pinned chats stay on top. Agent dashboard and store chats are on their own pages." />
     <div className="grid gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
       {/* List */}
       <Card className={`min-w-0 overflow-hidden ${selectedId ? "hidden lg:block" : ""}`}><CardContent className="p-0">
@@ -164,7 +165,7 @@ export default function AdminSupportInbox() {
             <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setSelectedId(null)} aria-label="Back"><ArrowLeft size={16} /></Button>
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/[0.12] text-primary-glow"><UserRound size={18} /></span>
             <div className="min-w-0 flex-1 basis-40">
-              <p className="flex flex-wrap items-center gap-2 text-[14px] font-semibold text-white">{customerLabel(c)}<StatusChip row={c} /></p>
+              <p className="flex flex-wrap items-center gap-2 text-[14px] font-semibold text-white">{customerLabel(c)}<ChatSourceBadge kind="website" /><StatusChip row={c} /></p>
               <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground">{c.customer?.email && c.customer.full_name ? `${c.customer.email} · ` : ""}started {formatAdminDate(c.created_at)} · <span className="font-mono">{c.conversation_token}</span></p>
             </div>
             <div className="flex w-full flex-wrap gap-1.5 sm:ml-auto sm:w-auto">

@@ -57,8 +57,9 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "help", label: "Help Center", to: "/admin/help", icon: LifeBuoy, keywords: ["help", "article", "faq", "docs", "guide", "agents"] },
   ] },
   { id: "support", label: "Support", icon: LifeBuoy, pages: [
-    { id: "support-inbox", label: "Support inbox", to: "/admin/support-inbox", icon: Inbox, keywords: ["message", "ticket", "whatsapp"] },
-    { id: "agent-assistant", label: "Agent assistant", to: "/admin/agent-assistant", icon: MessageCircleQuestion, keywords: ["agents", "store assistant", "questions"] },
+    { id: "support-inbox", label: "Support inbox", to: "/admin/support-inbox", icon: Inbox, keywords: ["message", "ticket", "whatsapp", "website", "site assistant"] },
+    { id: "agent-assistant", label: "Agent assistant", to: "/admin/agent-assistant", icon: MessageCircleQuestion, keywords: ["agents", "store assistant", "dashboard", "questions"] },
+    { id: "storefront-chats", label: "Storefront chats", to: "/admin/storefront-chats", icon: Store, keywords: ["store", "chat assistant", "customers", "agent store", "storefront"] },
     { id: "ai-support", label: "AI assistant", to: "/admin/ai-support", icon: Bot, keywords: ["chatbot", "assistant"] },
     { id: "ai-knowledge", label: "Knowledge base", to: "/admin/ai-knowledge", icon: BookOpen, keywords: ["faq", "articles", "help"] },
   ] },

@@ -5,6 +5,7 @@ import AdminStatStrip from "@/components/admin/AdminStatStrip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
+import ChatSourceBadge from "@/components/admin/ChatSourceBadge";
 import { assistantHtml, assistantPlain } from "@/lib/assistantMarkdown";
 
 /* Admin → Support → Agent assistant: everything agents ask their Store assistant. Who uses it,
@@ -41,7 +42,7 @@ export default function AdminAgentAssistant() {
   const agentName = agentFilter ? ov?.by_agent.find((a) => a.agent_id === agentFilter)?.store : null;
 
   return <div className="space-y-5">
-    <AdminPageHeader eyebrow="Support" title="Agent assistant" description="What agents ask their Store assistant and what it answers. Read-only: it never changes anything in a store." action={<div className="flex items-center gap-2">
+    <AdminPageHeader eyebrow="Support" title="Agent assistant" description="Dashboard chats: what agents ask their own Store assistant inside the agent dashboard, and what it answers. Not the website, not store customers. Read-only." action={<div className="flex items-center gap-2">
       <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-lg border border-white/[0.1] bg-transparent px-2 py-1 text-[12px] text-foreground">{[1, 7, 30].map((d) => <option key={d} value={d} className="bg-[#0f1613]">{d === 1 ? "Today" : `Last ${d} days`}</option>)}</select>
       <Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={15} /></Button></div>} />
     <AdminStatStrip items={[
@@ -76,6 +77,7 @@ export default function AdminAgentAssistant() {
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/[0.12] text-primary-glow"><MessageCircleQuestion size={16} /></span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-2"><span className="truncate text-[13.5px] font-medium text-foreground">{t.agent}</span><span className="shrink-0 text-[11px] text-faint-foreground">{relTime(t.last_at)}</span></span>
+                  <span className="mt-0.5 block"><ChatSourceBadge kind="dashboard" /></span>
                   <span className="block truncate text-[12.5px] text-muted-foreground">{t.title || "Chat"}</span>
                   <span className="block truncate text-[11.5px] text-faint-foreground">{assistantPlain(t.preview ?? "", 80)} · {t.messages} messages</span>
                 </span>
@@ -86,7 +88,7 @@ export default function AdminAgentAssistant() {
           <div className="flex items-center gap-3 border-b border-white/[0.07] p-3.5">
             <Button variant="ghost" size="sm" onClick={() => setOpen(null)} aria-label="Back"><ArrowLeft size={16} /></Button>
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/[0.12] text-primary-glow"><Store size={18} /></span>
-            <div className="min-w-0 flex-1"><p className="truncate text-[14px] font-semibold text-white">{open.agent} <span className="font-normal text-faint-foreground">· {open.slug}.datayego.com</span></p><p className="truncate text-[11.5px] text-muted-foreground">{open.title || "Chat"} · {open.messages} messages · last {formatAdminDate(open.last_at)}</p></div>
+            <div className="min-w-0 flex-1"><p className="flex flex-wrap items-center gap-2 text-[14px] font-semibold text-white">{open.agent}<ChatSourceBadge kind="dashboard" /></p><p className="truncate text-[11.5px] text-muted-foreground">{open.title || "Chat"} · {open.messages} messages · last {formatAdminDate(open.last_at)}</p></div>
           </div>
           <div className="max-h-[64dvh] min-h-[320px] space-y-2.5 overflow-y-auto px-4 py-4">
             {msgs === null ? <p className="text-[12.5px] text-muted-foreground">Loading…</p> : msgs.map((m, i, arr) => { const newDay = i === 0 || dayLabel(arr[i - 1].at) !== dayLabel(m.at); return <div key={m.id}>

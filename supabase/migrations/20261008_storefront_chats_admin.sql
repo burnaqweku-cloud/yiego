@@ -1,0 +1,7 @@
+-- 2026-10-08 — Admin → Support → Storefront chats (read-only oversight of the Chat assistant on agent stores).
+-- Applied via execute_sql. All three are admin-gated with caller_is_admin(); execute granted to authenticated/service_role only.
+--   phase1.admin_storefront_chats_overview(p_days)        counts, answered-by split, chats per store
+--   phase1.admin_storefront_chats_threads(p_limit, p_agent) one row per visitor chat with first question + preview
+--   phase1.admin_storefront_chats_messages(p_conversation)  transcript (customer / ai / agent / system)
+-- Source tagging in the UI: Website = support_conversations, Dashboard = agent_assistant_conversations,
+-- Storefront = store_conversations (see src/components/admin/ChatSourceBadge.tsx).
