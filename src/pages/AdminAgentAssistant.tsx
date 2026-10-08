@@ -5,7 +5,7 @@ import AdminStatStrip from "@/components/admin/AdminStatStrip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
-import { assistantHtml } from "@/lib/assistantMarkdown";
+import { assistantHtml, assistantPlain } from "@/lib/assistantMarkdown";
 
 /* Admin → Support → Agent assistant: everything agents ask their Store assistant. Who uses it,
    what they ask, which tools it reaches for, and every transcript. Read-only oversight. */
@@ -14,7 +14,7 @@ interface Thread { id: string; agent_id: string; agent: string; slug: string; ti
 interface Msg { id: string; sender: "agent" | "assistant"; body: string; at: string; tools: string[] | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const rpc = (f: string, a: Record<string, unknown> = {}) => (adminDatabase() as unknown as { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: any }> }).rpc(f, a);
-const RICH = "text-sm leading-6 [&_p+p]:mt-2 [&_ul]:mt-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mt-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_li+li]:mt-1 [&_strong]:font-semibold [&_strong]:text-white";
+const RICH = "break-words text-sm leading-6 [&_p+p]:mt-2 [&_ul]:mt-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mt-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_li+li]:mt-1 [&_strong]:font-semibold [&_strong]:text-white";
 const TOOL_LABEL: Record<string, string> = { my_store: "store", my_earnings: "earnings", my_orders: "orders", order_detail: "order detail", my_prices: "prices", my_marketing: "marketing", delivery_speed: "delivery speed", check_mtn_number: "MTN check", agent_plan: "plan" };
 function relTime(iso: string) { const s = (Date.now() - new Date(iso).getTime()) / 1000; if (s < 60) return "just now"; if (s < 3600) return `${Math.floor(s / 60)} min ago`; if (s < 86400) return `${Math.floor(s / 3600)} h ago`; return formatAdminDate(iso); }
 const hhmm = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -53,7 +53,7 @@ export default function AdminAgentAssistant() {
 
     <div className="grid gap-4 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
       {/* Agents */}
-      <Card><CardContent className="p-0">
+      <Card className="min-w-0 overflow-hidden"><CardContent className="p-0">
         <p className="flex items-center gap-2 border-b border-white/[0.07] px-4 py-3 text-[13px] font-semibold text-foreground"><Store size={14} className="text-primary-glow" />Agents</p>
         <ul className="max-h-[60dvh] divide-y divide-white/[0.05] overflow-y-auto">
           <li><button type="button" onClick={() => { setAgentFilter(null); setOpen(null); }} className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-[13px] ${agentFilter === null ? "bg-primary/[0.08] text-primary-glow" : "text-foreground hover:bg-white/[0.03]"}`}>All agents<span className="text-[11px] text-faint-foreground">{ov?.agents_total ?? ""}</span></button></li>
@@ -64,11 +64,11 @@ export default function AdminAgentAssistant() {
       </CardContent></Card>
 
       {/* Threads or transcript */}
-      <Card><CardContent className="p-0">
+      <Card className="min-w-0 overflow-hidden"><CardContent className="p-0">
         {!open ? <>
           <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.07] p-3">
             <p className="text-[13px] font-semibold text-foreground">{agentName ? `${agentName}'s chats` : "All chats"}<span className="ml-1.5 text-[11.5px] font-normal text-faint-foreground">{filtered.length}</span></p>
-            <label className="ml-auto flex items-center gap-2 rounded-xl border border-white/[0.08] px-3 py-1.5"><Search size={14} className="text-faint-foreground" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Store, question or words" className="w-44 bg-transparent text-[13px] text-foreground outline-none placeholder:text-faint-foreground" />{q && <button type="button" onClick={() => setQ("")} aria-label="Clear"><X size={14} className="text-faint-foreground" /></button>}</label>
+            <label className="flex w-full items-center gap-2 rounded-xl border border-white/[0.08] px-3 py-1.5 sm:ml-auto sm:w-auto"><Search size={14} className="text-faint-foreground" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Store, question or words" className="w-full min-w-0 bg-transparent sm:w-44 text-[13px] text-foreground outline-none placeholder:text-faint-foreground" />{q && <button type="button" onClick={() => setQ("")} aria-label="Clear"><X size={14} className="text-faint-foreground" /></button>}</label>
           </div>
           {threads === null ? <p className="p-4 text-[12.5px] text-muted-foreground">Loading…</p> : filtered.length === 0 ? <p className="p-4 text-[12.5px] text-muted-foreground">No chats yet.</p> : (
             <ul className="max-h-[64dvh] divide-y divide-white/[0.05] overflow-y-auto">
@@ -77,7 +77,7 @@ export default function AdminAgentAssistant() {
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-2"><span className="truncate text-[13.5px] font-medium text-foreground">{t.agent}</span><span className="shrink-0 text-[11px] text-faint-foreground">{relTime(t.last_at)}</span></span>
                   <span className="block truncate text-[12.5px] text-muted-foreground">{t.title || "Chat"}</span>
-                  <span className="block truncate text-[11.5px] text-faint-foreground">{t.preview ?? ""} · {t.messages} messages</span>
+                  <span className="block truncate text-[11.5px] text-faint-foreground">{assistantPlain(t.preview ?? "", 80)} · {t.messages} messages</span>
                 </span>
               </button></li>)}
             </ul>
@@ -85,8 +85,8 @@ export default function AdminAgentAssistant() {
         </> : <>
           <div className="flex items-center gap-3 border-b border-white/[0.07] p-3.5">
             <Button variant="ghost" size="sm" onClick={() => setOpen(null)} aria-label="Back"><ArrowLeft size={16} /></Button>
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-primary/[0.12] text-primary-glow"><Store size={18} /></span>
-            <div className="min-w-0"><p className="truncate text-[14px] font-semibold text-white">{open.agent} <span className="font-normal text-faint-foreground">· {open.slug}.datayego.com</span></p><p className="text-[11.5px] text-muted-foreground">{open.title || "Chat"} · {open.messages} messages · last {formatAdminDate(open.last_at)}</p></div>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/[0.12] text-primary-glow"><Store size={18} /></span>
+            <div className="min-w-0 flex-1"><p className="truncate text-[14px] font-semibold text-white">{open.agent} <span className="font-normal text-faint-foreground">· {open.slug}.datayego.com</span></p><p className="truncate text-[11.5px] text-muted-foreground">{open.title || "Chat"} · {open.messages} messages · last {formatAdminDate(open.last_at)}</p></div>
           </div>
           <div className="max-h-[64dvh] min-h-[320px] space-y-2.5 overflow-y-auto px-4 py-4">
             {msgs === null ? <p className="text-[12.5px] text-muted-foreground">Loading…</p> : msgs.map((m, i, arr) => { const newDay = i === 0 || dayLabel(arr[i - 1].at) !== dayLabel(m.at); return <div key={m.id}>
@@ -104,7 +104,7 @@ export default function AdminAgentAssistant() {
       <Card><CardContent>
         <p className="text-[13px] font-semibold text-foreground">Latest questions</p>
         <ul className="mt-2 divide-y divide-white/[0.05]">
-          {ov.recent_questions.slice(0, 12).map((r, i) => <li key={i}><button type="button" onClick={() => { const t = (threads ?? []).find((x) => x.id === r.conversation_id); if (t) setOpen(t); }} className="flex w-full items-baseline gap-3 py-2 text-left hover:text-foreground"><span className="w-24 shrink-0 text-[11px] text-faint-foreground">{relTime(r.at)}</span><span className="w-36 shrink-0 truncate text-[12.5px] text-muted-foreground">{r.store}</span><span className="min-w-0 flex-1 truncate text-[13px] text-foreground">{r.q}</span></button></li>)}
+          {ov.recent_questions.slice(0, 12).map((r, i) => <li key={i}><button type="button" onClick={() => { const t = (threads ?? []).find((x) => x.id === r.conversation_id); if (t) setOpen(t); }} className="flex w-full flex-col gap-0.5 py-2 text-left hover:text-foreground sm:flex-row sm:items-baseline sm:gap-3"><span className="flex items-baseline gap-2 sm:contents"><span className="shrink-0 text-[11px] text-faint-foreground sm:w-24">{relTime(r.at)}</span><span className="truncate text-[12.5px] text-muted-foreground sm:w-36 sm:shrink-0">{r.store}</span></span><span className="min-w-0 flex-1 truncate text-[13px] text-foreground">{r.q}</span></button></li>)}
         </ul>
       </CardContent></Card>
     )}

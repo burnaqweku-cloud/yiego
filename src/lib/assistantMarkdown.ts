@@ -20,7 +20,9 @@ function escapeHtml(text: string) {
 
 function renderInline(escaped: string) {
   return escaped
-    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+    // bold may wrap an escaped asterisk (e.g. **\*138#**); allow it inside and drop the backslash after
+    .replace(/\*\*((?:\\\*|[^*\n])+)\*\*/g, (_m, inner: string) => `<strong>${inner.replace(/\\\*/g, "*")}</strong>`)
+    .replace(/\\\*/g, "*")
     .replace(/`([^`\n]+)`/g, "<code>$1</code>")
     .replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, (match, label: string, href: string) => {
       if (href.startsWith("/")) return `<a href="${href}">${label}</a>`;
@@ -31,6 +33,12 @@ function renderInline(escaped: string) {
 
 const BULLET = /^[-*]\s+/;
 const NUMBERED = /^\d+[.)]\s+/;
+
+/** One-line plain text of a reply (for list previews): markdown markers removed. */
+export function assistantPlain(text: string, max = 160): string {
+  const t = text.replace(/\*\*([^*\n]+)\*\*/g, "$1").replace(/\\\*/g, "*").replace(/`([^`\n]+)`/g, "$1").replace(/\[([^\]\n]+)\]\([^)\s]+\)/g, "$1").replace(/^\s*(?:[-*]|\d+[.)])\s+/gm, "").replace(/\s+/g, " ").trim();
+  return t.length > max ? t.slice(0, max - 1) + "…" : t;
+}
 
 export function assistantHtml(text: string): string {
   const blocks = escapeHtml(text.trim()).split(/\n{2,}/);

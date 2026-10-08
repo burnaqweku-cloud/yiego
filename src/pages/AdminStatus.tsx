@@ -63,7 +63,7 @@ export default function AdminStatus() {
         <p className="max-w-[60ch] text-[13px] leading-relaxed text-muted-foreground">Every time a page gives up loading (bundles not loading, plans unreachable) the phone reports it here, whoever was signed in. The connection column is what the phone itself reported.</p>
         {errs === null ? <p className="mt-3 text-[12.5px] text-faint-foreground">Loading…</p> : errs.length === 0 ? <p className="mt-3 text-[12.5px] text-faint-foreground">Nothing reported in this window.</p> : (
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-left text-[12.5px]">
+            <table className="w-full min-w-[760px] text-left text-[12.5px]">
               <thead><tr className="text-[11px] uppercase tracking-wide text-faint-foreground"><th className="py-1.5 pr-3">When</th><th className="py-1.5 pr-3">Page</th><th className="py-1.5 pr-3">What</th><th className="py-1.5 pr-3">Who</th><th className="py-1.5 pr-3">Connection</th><th className="py-1.5">Message</th></tr></thead>
               <tbody>{errs.map((e) => { const net = e.context?.net as { type?: string; downlink?: number; rtt?: number } | undefined; return (
                 <tr key={e.id} className="border-t border-white/[0.06] align-top">

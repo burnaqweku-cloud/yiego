@@ -11,7 +11,7 @@ import { useContactSettings } from "@/hooks/useContactSettings";
 
 interface Msg { id?: string; role: "agent" | "assistant"; body: string }
 interface Thread { id: string; title: string | null; last_message_at: string; last_message_preview: string | null }
-const RICH = "[&_p+p]:mt-2 [&_ul]:mt-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mt-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_li+li]:mt-1 [&_strong]:font-semibold [&_strong]:text-white [&_a]:font-semibold [&_a]:text-primary-glow [&_a]:underline";
+const RICH = "break-words [&_p+p]:mt-2 [&_ul]:mt-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mt-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_li+li]:mt-1 [&_strong]:font-semibold [&_strong]:text-white [&_a]:font-semibold [&_a]:text-primary-glow [&_a]:underline";
 
 async function call<T>(body: Record<string, unknown>): Promise<{ data: T | null; error: string | null }> {
   const { data, error } = await supabase.functions.invoke<T & { error?: string }>("agent-assistant", { body });
@@ -96,10 +96,10 @@ export function AskDataYegoPanel({ onClose, full = false }: { onClose?: () => vo
 
       <form onSubmit={(e) => void send(e)} className="border-t border-white/[0.07] p-3">
         <div className="flex gap-2">
-          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about your store…" maxLength={1500} className="onyx-field flex-1" />
+          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about your store…" maxLength={1500} className="onyx-field min-w-0 flex-1" />
           <button type="submit" disabled={!input.trim() || sending} aria-label="Send" className="onyx-btn-primary flex h-11 w-11 shrink-0 items-center justify-center p-0 disabled:opacity-50"><Send size={16} /></button>
         </div>
-        <div className="mt-2 flex items-center justify-between text-[11px] text-faint-foreground">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-faint-foreground">
           <span>{remaining !== null ? `${remaining} questions left today` : "Read-only: it never changes anything in your store."}</span>
           {whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noreferrer" className="text-primary-glow">Not solved? WhatsApp DataYego</a>}
         </div>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
-import { assistantHtml } from "@/lib/assistantMarkdown";
+import { assistantHtml, assistantPlain } from "@/lib/assistantMarkdown";
 import { formatGHS } from "@/lib/format";
 import { refreshSupportAlerts } from "@/lib/supportAlerts";
 
@@ -124,10 +124,10 @@ export default function AdminSupportInbox() {
     <AdminPageHeader eyebrow="Support" title="Support inbox" description="Every chat the assistant is having, live. Escalations and chats with you come first." />
     <div className="grid gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
       {/* List */}
-      <Card className={selectedId ? "hidden lg:block" : undefined}><CardContent className="p-0">
+      <Card className={`min-w-0 overflow-hidden ${selectedId ? "hidden lg:block" : ""}`}><CardContent className="p-0">
         <div className="border-b border-white/[0.07] p-3">
-          <div className="flex gap-1">{TABS.map((t) => <button key={t.key} type="button" onClick={() => setTab(t.key)} className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium ${tab === t.key ? "bg-primary/20 text-primary-glow" : "text-muted-foreground hover:text-foreground"}`}>{t.label}<span className={`rounded-full px-1.5 text-[10.5px] ${t.key === "needs" && counts.needs > 0 ? "bg-amber text-[#1a1200] font-bold" : "bg-white/[0.06] text-faint-foreground"}`}>{counts[t.key]}</span></button>)}</div>
-          <label className="mt-2.5 flex items-center gap-2 rounded-xl border border-white/[0.08] px-3 py-1.5"><Search size={14} className="text-faint-foreground" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, email, token or words" className="w-full bg-transparent text-[13px] text-foreground outline-none placeholder:text-faint-foreground" />{q && <button type="button" onClick={() => setQ("")} aria-label="Clear"><X size={14} className="text-faint-foreground" /></button>}</label>
+          <div className="flex gap-1 overflow-x-auto">{TABS.map((t) => <button key={t.key} type="button" onClick={() => setTab(t.key)} className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12px] font-medium ${tab === t.key ? "bg-primary/20 text-primary-glow" : "text-muted-foreground hover:text-foreground"}`}>{t.label}<span className={`rounded-full px-1.5 text-[10.5px] ${t.key === "needs" && counts.needs > 0 ? "bg-amber text-[#1a1200] font-bold" : "bg-white/[0.06] text-faint-foreground"}`}>{counts[t.key]}</span></button>)}</div>
+          <label className="mt-2.5 flex items-center gap-2 rounded-xl border border-white/[0.08] px-3 py-1.5"><Search size={14} className="text-faint-foreground" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, email, token or words" className="w-full min-w-0 bg-transparent text-[13px] text-foreground outline-none placeholder:text-faint-foreground" />{q && <button type="button" onClick={() => setQ("")} aria-label="Clear"><X size={14} className="text-faint-foreground" /></button>}</label>
         </div>
         {loadingList ? <div className="grid min-h-48 place-items-center"><Loader2 className="animate-spin text-primary-glow" /></div>
           : filtered.length === 0 ? <p className="p-5 text-sm text-muted-foreground">{tab === "needs" ? "Nothing needs you right now." : "Nothing here."}</p>
@@ -137,7 +137,7 @@ export default function AdminSupportInbox() {
                 <span className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-full text-[12px] font-bold ${row.handoff_reason && row.status !== "closed" ? "bg-danger/15 text-danger" : row.status === "human" ? "bg-amber/15 text-amber" : "bg-primary/[0.12] text-primary-glow"}`}>{initials(label)}{unread && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0f1613] bg-primary-glow" />}</span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-2"><span className={`truncate text-[13.5px] ${unread ? "font-semibold text-white" : "font-medium text-foreground"}`}>{label}</span><span className="shrink-0 text-[11px] text-faint-foreground">{relTime(row.last_message_at)}</span></span>
-                  <span className="mt-0.5 flex items-center justify-between gap-2"><span className={`truncate text-[12.5px] ${unread ? "text-foreground" : "text-muted-foreground"}`}>{row.last_message_sender === "admin" ? "You: " : row.last_message_sender === "assistant" ? "AI: " : ""}{row.last_message_preview ?? "…"}</span><StatusChip row={row} /></span>
+                  <span className="mt-0.5 flex items-center justify-between gap-2"><span className={`truncate text-[12.5px] ${unread ? "text-foreground" : "text-muted-foreground"}`}>{row.last_message_sender === "admin" ? "You: " : row.last_message_sender === "assistant" ? "AI: " : ""}{assistantPlain(row.last_message_preview ?? "…", 90)}</span><span className="shrink-0"><StatusChip row={row} /></span></span>
                 </span>
               </button>
             </li>; })}
@@ -145,16 +145,16 @@ export default function AdminSupportInbox() {
       </CardContent></Card>
 
       {/* Chat */}
-      <Card className={!selectedId ? "hidden lg:block" : undefined}><CardContent className="p-0">
+      <Card className={`min-w-0 overflow-hidden ${!selectedId ? "hidden lg:block" : ""}`}><CardContent className="p-0">
         {!c ? <div className="grid min-h-[480px] place-items-center p-8 text-center">{loadingTranscript ? <Loader2 className="animate-spin text-primary-glow" /> : <div><Inbox size={28} className="mx-auto text-faint-foreground" /><p className="mt-3 text-sm text-muted-foreground">Pick a chat to read it live.</p></div>}</div> : <>
           <div className="flex flex-wrap items-center gap-3 border-b border-white/[0.07] p-3.5">
             <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setSelectedId(null)} aria-label="Back"><ArrowLeft size={16} /></Button>
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-primary/[0.12] text-primary-glow"><UserRound size={18} /></span>
-            <div className="min-w-0">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/[0.12] text-primary-glow"><UserRound size={18} /></span>
+            <div className="min-w-0 flex-1 basis-40">
               <p className="flex flex-wrap items-center gap-2 text-[14px] font-semibold text-white">{customerLabel(c)}<StatusChip row={c} /></p>
-              <p className="mt-0.5 text-[11.5px] text-muted-foreground">{c.customer?.email && c.customer.full_name ? `${c.customer.email} · ` : ""}started {formatAdminDate(c.created_at)} · <span className="font-mono">{c.conversation_token}</span></p>
+              <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground">{c.customer?.email && c.customer.full_name ? `${c.customer.email} · ` : ""}started {formatAdminDate(c.created_at)} · <span className="font-mono">{c.conversation_token}</span></p>
             </div>
-            <div className="ml-auto flex flex-wrap gap-1.5">
+            <div className="flex w-full flex-wrap gap-1.5 sm:ml-auto sm:w-auto">
               {c.handoff_reason && c.status !== "closed" && <Button size="sm" variant="soft" onClick={() => void act("mark_handled", "Marked handled.")} disabled={acting}><CheckCheck size={15} />Mark handled</Button>}
               {c.status === "ai" && <Button size="sm" onClick={() => void act("take_over", "You have the chat. The assistant is silent until you hand it back.")} disabled={acting}><Users size={15} />Take over</Button>}
               {c.status === "human" && <Button variant="ghost" size="sm" onClick={() => void act("return_to_ai", "Handed back to the assistant.")} disabled={acting}><Undo2 size={15} />Hand back</Button>}

@@ -67,7 +67,7 @@ export default function AiProviderCard({ onChanged }: { onChanged?: () => void }
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><div className="flex items-center gap-2"><Cpu className="text-primary-glow" /><h2 className="font-display text-lg font-semibold text-white">Model provider</h2></div>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">One switch for all three assistants (site, agent dashboard, agent stores). Applies from the next message; nothing to redeploy.</p></div>
-        {usage && <div className="flex gap-4 rounded-xl border border-white/[0.08] px-4 py-2.5 text-[12px]"><span><b className="text-foreground">{usage.answers_today}</b> <span className="text-muted-foreground">answers today</span></span><span><b className="text-foreground">{usage.keys}</b> <span className="text-muted-foreground">key{usage.keys === 1 ? "" : "s"}</span></span>{usage.cooling > 0 && <span className="text-amber"><b>{usage.cooling}</b> resting</span>}</div>}
+        {usage && <div className="flex flex-wrap gap-x-4 gap-y-1 rounded-xl border border-white/[0.08] px-4 py-2.5 text-[12px]"><span><b className="text-foreground">{usage.answers_today}</b> <span className="text-muted-foreground">answers today</span></span><span><b className="text-foreground">{usage.keys}</b> <span className="text-muted-foreground">key{usage.keys === 1 ? "" : "s"}</span></span>{usage.cooling > 0 && <span className="text-amber"><b>{usage.cooling}</b> resting</span>}</div>}
       </div>
       {loading ? <p className="mt-4 text-sm text-muted-foreground">Loading…</p> : <>
         <div className="mt-4 flex flex-wrap gap-2">{PROVIDERS.map((p) => <button key={p.id} type="button" onClick={() => { setProvider(p.id); setModel(p.models[0]); }} className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium ${provider === p.id ? "bg-primary/20 text-primary-glow" : "border border-white/[0.08] text-muted-foreground hover:text-foreground"}`}>{p.label}{counts[p.id] ? ` · ${counts[p.id]} key${counts[p.id] === 1 ? "" : "s"}` : ""}</button>)}</div>
@@ -78,13 +78,13 @@ export default function AiProviderCard({ onChanged }: { onChanged?: () => void }
 
         {isMaster && (
           <div className="mt-6 border-t border-white/[0.07] pt-5">
-            <div className="flex items-center justify-between">
-              <div><p className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground"><KeyRound size={14} className="text-primary-glow" />{def.label} keys · {activeKeys.length}</p><p className="mt-0.5 text-[12px] text-muted-foreground">Rotated automatically. A key that hits its limit rests for the time the provider asks, and the next one takes over. Each key must come from a separate {def.label} account to count separately.</p></div>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 basis-56"><p className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground"><KeyRound size={14} className="text-primary-glow" />{def.label} keys · {activeKeys.length}</p><p className="mt-0.5 text-[12px] text-muted-foreground">Rotated automatically. A key that hits its limit rests for the time the provider asks, and the next one takes over. Each key must come from a separate {def.label} account to count separately.</p></div>
               <Button size="sm" variant="soft" onClick={() => setAdding(true)}><Plus size={14} />Add key</Button>
             </div>
             <div className="mt-3 overflow-x-auto">
               {keys === null ? <p className="text-[12.5px] text-muted-foreground">Loading…</p> : activeKeys.length === 0 ? <p className="text-[12.5px] text-muted-foreground">No keys yet for {def.label}.</p> : (
-                <table className="w-full text-left text-[12.5px]">
+                <table className="w-full min-w-[640px] text-left text-[12.5px]">
                   <thead><tr className="text-[11px] uppercase tracking-wide text-faint-foreground"><th className="py-1.5 pr-3">Key</th><th className="py-1.5 pr-3">Label</th><th className="py-1.5 pr-3">Status</th><th className="py-1.5 pr-3">Answers</th><th className="py-1.5 pr-3">Limit hits</th><th className="py-1.5 pr-3">Last used</th><th className="py-1.5" /></tr></thead>
                   <tbody>{activeKeys.map((k) => { const resting = k.cooling_until && new Date(k.cooling_until) > new Date(); return (
                     <tr key={k.id} className="border-t border-white/[0.06]">
