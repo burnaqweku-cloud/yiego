@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import AdminStatStrip from "@/components/admin/AdminStatStrip";
-import AgentAssistantPanel from "@/components/admin/AgentAssistantPanel";
 import AiProviderCard from "@/components/admin/AiProviderCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -103,8 +102,6 @@ export default function AdminAISupport() {
     </CardContent></Card>
 
     <Card><CardContent><div className="flex items-start justify-between gap-4"><div><div className="flex items-center gap-2"><Bot className="text-primary-glow" /><h2 className="font-display text-lg font-semibold text-white">Test customer assistant</h2></div><p className="mt-2 text-sm leading-6 text-muted-foreground">Runs the exact customer setup — persona, safety rules and your saved voice — without creating a real conversation.</p></div><Button variant="ghost" size="sm" asChild><Link to="/support/ai">Open live page</Link></Button></div><textarea className="onyx-field mt-5 min-h-24 resize-y" value={question} onChange={(event) => setQuestion(event.target.value)} /><Button className="mt-3" onClick={() => void testCustomerChat()} disabled={sending || !question.trim()}>{sending ? <Loader2 className="animate-spin" /> : <Send />}Send test</Button>{answer && <div className="mt-4 whitespace-pre-wrap rounded-2xl border border-primary-glow/15 bg-primary/[0.045] p-4 text-sm leading-6 text-foreground">{answer}</div>}</CardContent></Card>
-
-    <AgentAssistantPanel />
 
     <Card><CardContent><h2 className="font-display text-lg font-semibold text-white">Safety boundary</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">The assistant provides general guidance only. It cannot independently confirm payments, deliveries or refunds, and it never asks for passwords, OTPs, card details or Mobile Money PINs. Customers are sent to Track Order or human support when verified records are required. Tone notes cannot override these rules.</p></CardContent></Card>
   </div>;

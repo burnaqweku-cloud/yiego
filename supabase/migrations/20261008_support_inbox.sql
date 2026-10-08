@@ -1,3 +1,5 @@
 -- Applied via Supabase MCP on 2026-10-08.
 -- phase1.admin_support_needs(): caller_is_admin(); chats that need a person and are unread, open escalations, latest escalation time.
 -- Used by the admin shell every 20s for the Support inbox badge and a toast when a new escalation lands. ai-support v32 adds action mark_handled.
+-- admin_agent_assistant_overview(days): questions today/period, agents using it, tool usage, per-agent counts, latest questions.
+-- admin_agent_assistant_threads(limit, agent): now filters by agent. Both caller_is_admin(). Page: Admin → Support → Agent assistant.
