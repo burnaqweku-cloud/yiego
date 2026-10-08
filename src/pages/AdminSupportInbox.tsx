@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bot, CheckCheck, CheckCircle2, Flag, Inbox, Loader2, MessageCircle, Search, Send, ShoppingBag, Undo2, UserRound, Users, X } from "lucide-react";
+import { ArrowLeft, Bot, CheckCheck, CheckCircle2, Flag, Inbox, Loader2, MailOpen, MessageCircle, Pin, PinOff, Search, Send, ShoppingBag, Undo2, UserRound, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/button";
@@ -11,23 +11,24 @@ import { assistantHtml, assistantPlain } from "@/lib/assistantMarkdown";
 import { formatGHS } from "@/lib/format";
 import { refreshSupportAlerts } from "@/lib/supportAlerts";
 
-/* Support inbox: every chat the public assistant is having, live. Needs-you first, read along,
+/* Support inbox: every chat the public assistant is having, live. Newest first, pinned on top, read along,
    take over, hand back, mark handled, close. Order IDs in messages link to Orders; the customer's
    recent orders sit beside the chat. */
 type Status = "ai" | "human" | "closed";
 interface Customer { full_name: string | null; email: string | null }
-interface ConversationRow { id: string; conversation_token: string; user_id: string | null; status: Status; handoff_reason: string | null; assigned_admin: string | null; last_message_at: string; admin_last_seen_at: string | null; last_message_preview: string | null; last_message_sender: "customer" | "assistant" | "admin" | null; created_at: string; customer: Customer | null }
+interface ConversationRow { id: string; conversation_token: string; user_id: string | null; status: Status; handoff_reason: string | null; assigned_admin: string | null; last_message_at: string; admin_last_seen_at: string | null; admin_pinned_at?: string | null; last_message_preview: string | null; last_message_sender: "customer" | "assistant" | "admin" | null; created_at: string; customer: Customer | null }
 interface TranscriptMessage { id: string; sender: "customer" | "assistant" | "admin"; body: string; created_at: string; meta?: { tools_used?: string[]; escalated?: boolean } | null }
 interface InboxResponse { conversations?: ConversationRow[]; conversation?: ConversationRow; messages?: TranscriptMessage[]; message?: TranscriptMessage; error?: string }
 interface RecentOrder { order_reference: string; status: string; amount: number; recipient_phone: string; created_at: string; data_products: { name: string } | null }
 
-type Tab = "needs" | "ai" | "closed" | "all";
-const TABS: Array<{ key: Tab; label: string }> = [{ key: "needs", label: "Needs you" }, { key: "ai", label: "With AI" }, { key: "closed", label: "Closed" }, { key: "all", label: "All" }];
+type Tab = "needs" | "ai" | "read" | "closed" | "all";
+const TABS: Array<{ key: Tab; label: string }> = [{ key: "needs", label: "Needs you" }, { key: "ai", label: "With AI" }, { key: "read", label: "Read" }, { key: "closed", label: "Closed" }, { key: "all", label: "All" }];
 const LIST_POLL_MS = 15_000; const TRANSCRIPT_POLL_MS = 5_000;
 const REF_RE = /\b(YG|AG)-[A-Z0-9]{6,12}\b/g;
 
 const customerLabel = (row: { customer: Customer | null; user_id: string | null }) => row.customer?.full_name || row.customer?.email || (row.user_id ? "Customer" : "Guest");
 const isUnread = (row: ConversationRow) => row.status !== "closed" && (!row.admin_last_seen_at || new Date(row.last_message_at) > new Date(row.admin_last_seen_at));
+const isRead = (row: ConversationRow) => row.status !== "closed" && !isUnread(row);
 const needsYou = (row: ConversationRow) => row.status === "human" || (row.status !== "closed" && Boolean(row.handoff_reason));
 function relTime(iso: string) {
   const d = new Date(iso); const s = Math.max(0, (Date.now() - d.getTime()) / 1000);
@@ -95,15 +96,26 @@ export default function AdminSupportInbox() {
     return () => { alive = false; };
   }, [userId]);
 
-  const counts = useMemo(() => ({ needs: conversations.filter(needsYou).length, ai: conversations.filter((r) => r.status === "ai" && !r.handoff_reason).length, closed: conversations.filter((r) => r.status === "closed").length, all: conversations.length }), [conversations]);
+  const counts = useMemo(() => ({ needs: conversations.filter(needsYou).length, ai: conversations.filter((r) => r.status === "ai" && !r.handoff_reason).length, read: conversations.filter(isRead).length, closed: conversations.filter((r) => r.status === "closed").length, all: conversations.length }), [conversations]);
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    const base = conversations.filter((r) => tab === "all" ? true : tab === "needs" ? needsYou(r) : tab === "ai" ? r.status === "ai" && !r.handoff_reason : r.status === "closed");
+    const base = conversations.filter((r) => tab === "all" ? true : tab === "needs" ? needsYou(r) : tab === "ai" ? r.status === "ai" && !r.handoff_reason : tab === "read" ? isRead(r) : r.status === "closed");
     const hit = term ? base.filter((r) => [r.customer?.full_name, r.customer?.email, r.conversation_token, r.last_message_preview].some((v) => (v ?? "").toLowerCase().includes(term))) : base;
-    // escalations and unread first, then newest
-    return hit.slice().sort((a, b) => Number(needsYou(b)) - Number(needsYou(a)) || Number(isUnread(b)) - Number(isUnread(a)) || b.last_message_at.localeCompare(a.last_message_at));
+    // pinned chats first, then strictly newest message first. Read or unread never changes the order.
+    return hit.slice().sort((a, b) => Number(Boolean(b.admin_pinned_at)) - Number(Boolean(a.admin_pinned_at)) || (b.admin_pinned_at ?? "").localeCompare(a.admin_pinned_at ?? "") || b.last_message_at.localeCompare(a.last_message_at));
   }, [conversations, tab, q]);
 
+  const pinOrRead = async (action: "pin_chat" | "unpin_chat" | "mark_unread", success: string) => {
+    if (!transcript) return; setActing(true);
+    const id = transcript.conversation.id;
+    const { data, error } = await supabase.functions.invoke<InboxResponse>("ai-support", { body: { action, id } });
+    setActing(false);
+    if (error || data?.error) { toast.error(data?.error ?? error?.message ?? "That didn't work. Try again."); return; }
+    toast.success(success);
+    // Mark unread leaves the chat, otherwise the open transcript would mark it read again a few seconds later.
+    if (action === "mark_unread") setSelectedId(null);
+    await refreshList(); refreshSupportAlerts();
+  };
   const act = async (action: "take_over" | "return_to_ai" | "admin_close" | "mark_handled", success: string) => {
     if (!transcript) return; setActing(true);
     const { data, error } = await supabase.functions.invoke<InboxResponse>("ai-support", { body: { action, id: transcript.conversation.id } });
@@ -119,9 +131,10 @@ export default function AdminSupportInbox() {
     setReply(""); setTranscript((cur) => cur ? { conversation: { ...cur.conversation, status: "human" }, messages: [...cur.messages, data.message!] } : cur); void refreshList();
   };
   const c = transcript?.conversation;
+  const pinned = Boolean(c && conversations.find((r) => r.id === c.id)?.admin_pinned_at);
 
   return <div className="space-y-5">
-    <AdminPageHeader eyebrow="Support" title="Support inbox" description="Every chat the assistant is having, live. Escalations and chats with you come first." />
+    <AdminPageHeader eyebrow="Support" title="Support inbox" description="Every chat the assistant is having, live. Newest message first, pinned chats stay on top." />
     <div className="grid gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
       {/* List */}
       <Card className={`min-w-0 overflow-hidden ${selectedId ? "hidden lg:block" : ""}`}><CardContent className="p-0">
@@ -130,13 +143,13 @@ export default function AdminSupportInbox() {
           <label className="mt-2.5 flex items-center gap-2 rounded-xl border border-white/[0.08] px-3 py-1.5"><Search size={14} className="text-faint-foreground" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, email, token or words" className="w-full min-w-0 bg-transparent text-[13px] text-foreground outline-none placeholder:text-faint-foreground" />{q && <button type="button" onClick={() => setQ("")} aria-label="Clear"><X size={14} className="text-faint-foreground" /></button>}</label>
         </div>
         {loadingList ? <div className="grid min-h-48 place-items-center"><Loader2 className="animate-spin text-primary-glow" /></div>
-          : filtered.length === 0 ? <p className="p-5 text-sm text-muted-foreground">{tab === "needs" ? "Nothing needs you right now." : "Nothing here."}</p>
+          : filtered.length === 0 ? <p className="p-5 text-sm text-muted-foreground">{tab === "needs" ? "Nothing needs you right now." : tab === "read" ? "Chats you open show up here. A new message from the customer sends the chat back to unread." : "Nothing here."}</p>
           : <ul className="max-h-[70dvh] divide-y divide-white/[0.05] overflow-y-auto">
             {filtered.map((row) => { const label = customerLabel(row); const unread = isUnread(row); return <li key={row.id}>
               <button type="button" onClick={() => setSelectedId(row.id)} className={`flex w-full gap-3 px-3.5 py-3 text-left transition-colors hover:bg-white/[0.03] ${selectedId === row.id ? "bg-white/[0.05]" : ""}`}>
                 <span className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-full text-[12px] font-bold ${row.handoff_reason && row.status !== "closed" ? "bg-danger/15 text-danger" : row.status === "human" ? "bg-amber/15 text-amber" : "bg-primary/[0.12] text-primary-glow"}`}>{initials(label)}{unread && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0f1613] bg-primary-glow" />}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-baseline justify-between gap-2"><span className={`truncate text-[13.5px] ${unread ? "font-semibold text-white" : "font-medium text-foreground"}`}>{label}</span><span className="shrink-0 text-[11px] text-faint-foreground">{relTime(row.last_message_at)}</span></span>
+                  <span className="flex items-baseline justify-between gap-2"><span className={`truncate text-[13.5px] ${unread ? "font-semibold text-white" : "font-medium text-foreground"}`}>{label}</span><span className="flex shrink-0 items-center gap-1 text-[11px] text-faint-foreground">{row.admin_pinned_at && <Pin size={11} className="text-primary-glow" />}{relTime(row.last_message_at)}</span></span>
                   <span className="mt-0.5 flex items-center justify-between gap-2"><span className={`truncate text-[12.5px] ${unread ? "text-foreground" : "text-muted-foreground"}`}>{row.last_message_sender === "admin" ? "You: " : row.last_message_sender === "assistant" ? "AI: " : ""}{assistantPlain(row.last_message_preview ?? "…", 90)}</span><span className="shrink-0"><StatusChip row={row} /></span></span>
                 </span>
               </button>
@@ -159,6 +172,8 @@ export default function AdminSupportInbox() {
               {c.status === "ai" && <Button size="sm" onClick={() => void act("take_over", "You have the chat. The assistant is silent until you hand it back.")} disabled={acting}><Users size={15} />Take over</Button>}
               {c.status === "human" && <Button variant="ghost" size="sm" onClick={() => void act("return_to_ai", "Handed back to the assistant.")} disabled={acting}><Undo2 size={15} />Hand back</Button>}
               {c.status !== "closed" && <Button variant="ghost" size="sm" onClick={() => void act("admin_close", "Chat closed.")} disabled={acting}><CheckCircle2 size={15} />Close</Button>}
+              {pinned ? <Button variant="ghost" size="sm" onClick={() => void pinOrRead("unpin_chat", "Unpinned.")} disabled={acting}><PinOff size={15} />Unpin</Button> : <Button variant="ghost" size="sm" onClick={() => void pinOrRead("pin_chat", "Pinned to the top.")} disabled={acting}><Pin size={15} />Pin</Button>}
+              <Button variant="ghost" size="sm" onClick={() => void pinOrRead("mark_unread", "Marked unread.")} disabled={acting}><MailOpen size={15} />Mark unread</Button>
             </div>
           </div>
           {c.handoff_reason && c.status !== "closed" && <p className="flex items-center gap-2 border-b border-danger/20 bg-danger/[0.07] px-4 py-2.5 text-[12.5px] leading-5 text-danger"><Flag size={13} className="shrink-0" /><span><b>Escalated:</b> {c.handoff_reason}. The customer was pointed to WhatsApp.</span></p>}

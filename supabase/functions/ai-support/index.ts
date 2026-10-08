@@ -30,7 +30,8 @@ VOICE
 - Mirror the customer's language. Never repeat their question back. Never reuse the same greeting or apology twice.
 
 TOOLS (live DataYego data; use them, never guess)
-- lookup_order: when a YG- or AG- reference is given or asked about. Answer only from what it returns. No reference: ask for it first, or use my_recent_orders if the person is signed in.
+- lookup_order: when a YG- or AG- reference is given or asked about. Answer only from what it returns. No reference: use my_recent_orders if the person is signed in; otherwise offer both ways in one short message: the reference from their confirmation email or MoMo message, OR the phone number the bundle was bought for (you can look it up with lookup_order_by_phone).
+- lookup_order_by_phone: when the customer has no reference, or gives a number and asks where their data is. The number is the one that RECEIVES the data. Never insist on the reference once they give a number. It returns the latest paid order for that number. Say its status and what happens next. The reference only appears when the customer has proven it is theirs; if they want it, ask for the email they paid with and call the tool again with it. If found is false: the payment may not have completed, so ask for the MoMo transaction ID and time, then escalate_to_human with the number and those details.
 - my_recent_orders / my_wallet: only work when the person is signed in (SIGNED-IN CONTEXT below says so). Use them before asking a signed-in customer for a reference. Never for anyone else's account.
 - quote_bundles: whenever price or sizes come up. Quote only the prices returned.
 - check_mtn_number: when someone gives an MTN number and asks if it is approved, verified, cleared, or why their first order is held.
@@ -116,6 +117,7 @@ function customerMessage(st: string) {
 }
 const TOOLS: Tool[] = [
   { name: "lookup_order", description: "Live status of a DataYego order by its reference (YG-... from datayego.com, AG-... from an agent's store). Returns the same customer-safe view as the Track page: masked recipient, network, bundle, amount, payment status, delivery status and a status message.", parameters: { type: "object", properties: { reference: { type: "string", description: "The order reference exactly as given, e.g. YG-1A2B3C4D5E" } }, required: ["reference"] } },
+  { name: "lookup_order_by_phone", description: "Status of the latest paid order sent to a phone number (the number that receives the data), same view as the Track page's phone search. Use when the customer has no order reference. The reference is only returned when the optional email matches the order's owner.", parameters: { type: "object", properties: { number: { type: "string", description: "10-digit Ghana number starting with 0 that the bundle was bought for, e.g. 0541234567" }, email: { type: "string", description: "Email the customer paid with, only if they gave it" } }, required: ["number"] } },
   { name: "quote_bundles", description: "Live DataYego bundle prices from the catalogue, optionally filtered by network and/or size in GB. Prices are base prices in GHS; a 4% fee applies to Paystack (MoMo/card) payments and is waived when paying from the DataYego wallet.", parameters: { type: "object", properties: { network: { type: "string", description: "MTN, Telecel or AirtelTigo" }, capacity_gb: { type: "number", description: "Size in GB, e.g. 5" } } } },
   { name: "check_mtn_number", description: "Whether an MTN number is approved for data through DataYego. approved: orders deliver normally. not_approved/unapproved: the first order is held while MTN verifies the number (can take days). blocked: MTN has blocked it. not_mtn/invalid: not an MTN number.", parameters: { type: "object", properties: { number: { type: "string", description: "10-digit Ghana number starting with 0, e.g. 0541234567" } }, required: ["number"] } },
   { name: "delivery_speed", description: "Live delivery speed per network right now (how long orders are currently taking). Use it for any delivery-time question.", parameters: { type: "object", properties: {} } },
@@ -134,6 +136,17 @@ async function toolLookupOrder(supabase: SupabaseAdmin, args: Record<string, unk
   const phone = String(order.recipient_phone ?? ""); const recipient = phone.length === 10 ? `${phone.slice(0, 3)}•••${phone.slice(7)}` : "hidden";
   const st = customerDeliveryStatus(String(order.status), String(order.payment_status), order.admin_resolution_status ?? null);
   return { found: true, reference: order.order_reference, network: (order.networks as any)?.name ?? null, bundle: (order.data_products as any)?.name ?? null, recipient, amount: order.amount, currency: order.currency, paymentStatus: order.payment_status, deliveryStatus: st, statusMessage: customerMessage(st), boughtOn: (order.agents as any)?.store_name ? `the agent store "${(order.agents as any).store_name}"` : "datayego.com", paidAt: order.paid_at, createdAt: order.created_at };
+}
+const PHONE_STATUS: Record<string, string> = { completed: "completed", in_progress: "in_progress", awaiting_verification: "mtn_verifying_number", wrong_network: "wrong_network", needs_support: "needs_support", refunded: "refunded", cancelled: "cancelled" };
+async function toolLookupOrderByPhone(supabase: SupabaseAdmin, args: Record<string, unknown>) {
+  const digits = String(args?.number ?? "").replace(/\D/g, ""); const n = digits.startsWith("233") ? `0${digits.slice(3)}` : digits;
+  if (n.length !== 10) return { found: false, message: "That is not a 10-digit Ghana number. Ask for the number the bundle was bought for, starting with 0." };
+  const email = String(args?.email ?? "").trim().slice(0, 120) || null;
+  const { data, error } = await supabase.rpc("track_by_phone", { p_phone: n, p_email: email });
+  if (error) return { found: false, error: "The lookup is not available right now. Point the customer to the Track page and enter the number there." };
+  if (!data?.found) return { found: false, number: `${n.slice(0, 3)}•••${n.slice(7)}`, message: "No paid order was found for that number. The payment may not have completed, or the data was bought for a different number. Ask which number the bundle was for, or for the MoMo transaction ID and time, then escalate_to_human." };
+  const st = PHONE_STATUS[String(data.status)] ?? "in_progress";
+  return { found: true, number: `${n.slice(0, 3)}•••${n.slice(7)}`, network: data.network, bundle: data.product, boughtOn: data.store ? `the agent store "${data.store}"` : "datayego.com", deliveryStatus: st, statusMessage: customerMessage(st), paidAt: data.paid_at, updatedAt: data.updated_at, reference: data.owner ? data.reference : null, referenceNote: data.owner ? "Verified owner: you may share the reference." : "Not verified, so the reference is withheld. If they want it, ask for the email they paid with and call this tool again with it.", emailHint: data.owner ? null : data.email_hint ?? null };
 }
 async function toolQuoteBundles(supabase: SupabaseAdmin, args: Record<string, unknown>) {
   const { data, error } = await supabase.from("data_products").select("name, capacity_gb, customer_price, validity, is_paused, networks(name, display_order)").eq("is_active", true).order("display_order", { ascending: true });
@@ -185,6 +198,7 @@ async function toolMyWallet(supabase: SupabaseAdmin, userId: string | null) {
 }
 async function runTool(supabase: SupabaseAdmin, name: string, args: Record<string, unknown>, conversation: ConversationRow | null, userId: string | null = null) {
   if (name === "lookup_order") return await toolLookupOrder(supabase, args);
+  if (name === "lookup_order_by_phone") return await toolLookupOrderByPhone(supabase, args);
   if (name === "check_mtn_number") return await toolCheckMtn(args);
   if (name === "delivery_speed") return await toolDeliverySpeed(supabase);
   if (name === "agent_plan") return await toolAgentPlan(supabase);
@@ -271,7 +285,7 @@ Deno.serve(async (req) => {
     if (action === "delete_knowledge") { if (!body.id) return jsonResponse({ error: "id is required" }, { status: 400 }); const { error } = await createSupabaseAdmin().from("ai_knowledge").delete().eq("id", String(body.id)); if (error) throw new Error("Could not delete the knowledge entry."); return jsonResponse({ status: "success" }); }
     if (action === "preview_knowledge") { const entries = await loadActiveKnowledge(createSupabaseAdmin()); const text = knowledgeText(entries); return jsonResponse({ status: "success", text, active_entries: entries.length, approx_tokens: Math.round(text.length / 4) }); }
     if (action === "inbox_list") {
-      const supabase = createSupabaseAdmin(); const { data, error } = await supabase.from("support_conversations").select("id, conversation_token, user_id, status, handoff_reason, assigned_admin, last_message_at, admin_last_seen_at, last_message_preview, last_message_sender, created_at").order("last_message_at", { ascending: false }).limit(150);
+      const supabase = createSupabaseAdmin(); const { data, error } = await supabase.from("support_conversations").select("id, conversation_token, user_id, status, handoff_reason, assigned_admin, last_message_at, admin_last_seen_at, admin_pinned_at, last_message_preview, last_message_sender, created_at").order("last_message_at", { ascending: false }).limit(150);
       if (error) throw new Error("Could not load the inbox."); const conversations = data ?? [];
       const userIds = [...new Set(conversations.map((c) => c.user_id).filter(Boolean))] as string[]; const profiles = new Map<string, { full_name: string | null; email: string | null }>();
       if (userIds.length) { const { data: rows } = await supabase.from("profiles").select("id, full_name, email").in("id", userIds); for (const r of rows ?? []) profiles.set(r.id, { full_name: r.full_name, email: r.email }); }
@@ -286,6 +300,11 @@ Deno.serve(async (req) => {
       let customer: { full_name: string | null; email: string | null } | null = null;
       if (conversation.user_id) { const { data: p } = await supabase.from("profiles").select("full_name, email").eq("id", conversation.user_id).maybeSingle(); customer = p ?? null; }
       return jsonResponse({ status: "success", conversation: { ...conversation, customer }, messages: (messages ?? []).reverse() });
+    }
+    if (action === "pin_chat" || action === "unpin_chat" || action === "mark_unread") {
+      if (!body.id) return jsonResponse({ error: "id is required" }, { status: 400 });
+      const patch = action === "pin_chat" ? { admin_pinned_at: new Date().toISOString() } : action === "unpin_chat" ? { admin_pinned_at: null } : { admin_last_seen_at: null };
+      const { data, error } = await createSupabaseAdmin().from("support_conversations").update(patch).eq("id", String(body.id)).select("id, admin_pinned_at, admin_last_seen_at").maybeSingle(); if (error || !data) throw new Error("The conversation could not be updated."); return jsonResponse({ status: "success", conversation: data });
     }
     if (action === "mark_handled") {
       if (!body.id) return jsonResponse({ error: "id is required" }, { status: 400 });
