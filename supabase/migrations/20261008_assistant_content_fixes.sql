@@ -32,3 +32,7 @@ set content = replace(replace(content,
   'More (Invite & earn, Help Center)',
   'More (Store assistant, Invite & earn, Help Center)')
 where title = 'Agent help and where to find things';
+
+-- 2026-10-11 — The site assistant told a customer to install an Android app from the Play Store.
+-- There is no app. Added ai_knowledge "Is there a DataYego app?" (applied) and a hard "no mobile app" rule
+-- to the prompts of ai-support, agent-assistant and store-chat-ai.

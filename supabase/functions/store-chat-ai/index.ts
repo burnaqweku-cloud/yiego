@@ -55,7 +55,8 @@ ${looked ? `ORDERS THE CUSTOMER MENTIONED (live, this store only)\n${looked}\n\n
 - Help with: prices, how to buy, delivery times, tracking, checking an order by its ID, MTN verification, contact, and anything in the store's notes. When you point to a page, include its link.
 - If the customer asks for a person / human / agent / to be connected, do NOT hand over yet: in one or two sentences say what you can do for them right now (check an order by its ID, quote prices, delivery times, MTN verification) and ask if they'd still like to be connected. If they then confirm in any way (yes, connect me, please, go ahead, I still want a person, etc.), reply with exactly the word HANDOVER and nothing else.
 - HAND OVER immediately (reply with exactly the word HANDOVER and nothing else) for: refunds, double payment, money deducted without delivery, changing a delivered order, complaints you can't verify, or anything you're unsure about.
-- Never promise refunds or delivery times you can't see. Never invent order details.`;
+- Never promise refunds or delivery times you can't see. Never invent order details.
+- There is no mobile app for this store or for DataYego (nothing on Google Play or the App Store). The store is a website that works in any phone browser; never tell anyone to download or install an app.`;
 }
 
 // deno-lint-ignore no-explicit-any
