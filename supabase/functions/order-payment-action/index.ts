@@ -4,6 +4,7 @@ import { paystackSubaccount } from "../_shared/paystack.ts";
 import { sendOrderConfirmation } from "../_shared/email.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
 import { fulfillOrder } from "../_shared/fulfillment.ts";
+import { recordPrefixConfirmation } from "../_shared/numberPrefix.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
@@ -29,6 +30,8 @@ Deno.serve(async (req) => {
       const supplierId = /^[0-9a-f-]{36}$/i.test(supplierRaw) ? supplierRaw : null;
       // agentSelf: an active agent buying from their dashboard pays the agent price (checked in the database).
       const { data, error } = await supabase.rpc("prepare_data_order", { p_user_id: auth.user.id, p_product_code: String(body.productId ?? ""), p_recipient_phone: String(body.recipientPhone ?? ""), p_supplier_id: supplierId, p_agent_self: body?.agentSelf === true });
+      // Ported number: the customer ticked the confirmation. Saved only when the prefix really points elsewhere.
+      if (!error && body?.prefixMismatchConfirmed === true && data?.orderId) await recordPrefixConfirmation(supabase, String(data.orderId));
       return error ? json({ error: friendlyError(error.message, "We couldn't create this order. Please try again.") }, 400) : json({ status: "success", data });
     }
     if (action === "list_pending") {

@@ -28,6 +28,8 @@ export interface GuestDataPaymentInput {
   agentSelf?: boolean;
   /** A giveaway claim: the server prices the order from it (see campaign_claim). */
   campaignToken?: string;
+  /** The customer ticked "this number is on the network I picked" for a number whose prefix points elsewhere (ported SIM). */
+  prefixMismatchConfirmed?: boolean;
 }
 
 export interface WalletDepositInput {
@@ -42,6 +44,8 @@ export interface WalletDataOrderInput {
   supplierId?: string;
   /** An active agent buying from their dashboard: charged the agent price. */
   agentSelf?: boolean;
+  /** The customer ticked "this number is on the network I picked" for a number whose prefix points elsewhere (ported SIM). */
+  prefixMismatchConfirmed?: boolean;
 }
 
 export interface WalletDataOrderResponse {

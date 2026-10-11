@@ -3,6 +3,7 @@ import { initializePaystackTransaction, makePaystackReference } from "../_shared
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
+import { recordPrefixConfirmation } from "../_shared/numberPrefix.ts";
 
 function makeOrderReference(prefix = "YG") {
   return `${prefix}-${crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`;
@@ -170,6 +171,10 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Ported number: the customer ticked the confirmation. Saved only when the prefix really points elsewhere.
+    const prefixConfirmed = body?.prefixMismatchConfirmed === true;
+    if (existingOpen && prefixConfirmed) await recordPrefixConfirmation(supabase, existingOpen.id);
+
     if (existingOpen) {
       // Same bundle, still payable. Hand back the payment link we already issued
       // when one exists, so only a single live Paystack charge can target the order.
@@ -259,6 +264,8 @@ Deno.serve(async (req) => {
       order = inserted;
       if (campaignToken && campaignPrice != null) await supabase.rpc("campaign_attach_order", { p_token: campaignToken, p_order: inserted.id });
     }
+
+    if (prefixConfirmed) await recordPrefixConfirmation(supabase, order.id);
 
     const appUrl = Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL");
     // Store buyers come back to the store's own success page; everyone else to ours.
