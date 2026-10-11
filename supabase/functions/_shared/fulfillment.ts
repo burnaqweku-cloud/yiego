@@ -1,5 +1,6 @@
 import { mapDataMartGHStatusToYieGo } from "./datamartgh.ts";
 import { adapterFor, type PurchaseContext } from "./supplierAdapters.ts";
+import { sendOrderConfirmation } from "./email.ts";
 
 // Deliberately loose: these helpers are handed a real supabase-js client and
 // only need it to be chainable.
@@ -87,6 +88,13 @@ export async function applySupplierStatusToOrder(
  * an entry in supplierAdapters.ts and no change here.
  */
 export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: string) {
+  const result = await sendToSupplier(supabase, orderId);
+  // Email follows the real outcome: "on its way" once the supplier has it, "verifying" if held.
+  try { await sendOrderConfirmation(supabase, orderId); } catch { /* email is best-effort */ }
+  return result;
+}
+
+async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string) {
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select("*")
