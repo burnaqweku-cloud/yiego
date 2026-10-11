@@ -168,8 +168,21 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
   };
 
   // Refuse an order this supplier cannot serve before any money moves.
+  // Exception: a ported number the customer (or an admin) confirmed is on the
+  // network they picked. Only the prefix mismatch is waived; other checks still apply.
   const preflight = adapter.preflight(context);
-  if (!preflight.ok) {
+  const prefixWaived = !preflight.ok && order.prefix_mismatch_confirmed === true && preflight.reason.startsWith("number_prefix_is_");
+  if (prefixWaived) {
+    await supabase.from("order_events").insert({
+      order_id: order.id,
+      event_type: "supplier.prefix_mismatch_override",
+      from_status: order.status,
+      to_status: "processing",
+      message: "Prefix mismatch confirmed by customer, sent anyway",
+      metadata: { supplier: supplier.code, reason: (preflight as { reason: string }).reason },
+    });
+  }
+  if (!preflight.ok && !prefixWaived) {
     await supabase
       .from("orders")
       .update({
