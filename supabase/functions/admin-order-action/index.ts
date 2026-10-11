@@ -149,6 +149,20 @@ Deno.serve(async (req) => {
       const applied = await applySupplierStatusToOrder(supabase, order, normalised, `admin_recheck:${supplierCode}`);
       return jsonResponse({ status: "success", action, data: payload, applied });
     }
+    if (action === "release_ported") {
+      // Wrong-network hold on a ported number: admin confirms it's on the chosen network and re-sends.
+      if (order.admin_resolution_status !== "wrong_network" || order.status !== "failed_needs_review") {
+        return jsonResponse({ error: "Only wrong-network orders waiting for review can be released" }, { status: 409 });
+      }
+      if (order.payment_status !== "succeeded") return jsonResponse({ error: "Only successfully paid orders can be released" }, { status: 409 });
+      const at = new Date().toISOString();
+      await supabase.from("orders").update({ prefix_mismatch_confirmed: true, prefix_mismatch_confirmed_at: at, admin_resolution_status: null, admin_resolution_reason: null, admin_resolution_updated_at: at, supplier_purchase_id: null, supplier_order_reference: null, supplier_transaction_reference: null, supplier_status: null, supplier_retry_after: null, supplier_idempotency_key: null, failure_reason: null, updated_at: at }).eq("id", order.id);
+      await supabase.from("order_events").insert({ order_id: order.id, event_type: "admin.release_ported", from_status: order.status, to_status: order.status, message: `Released as ported by ${authData.user.email ?? authData.user.id} at ${at}`, created_by: authData.user.id, metadata: { releasedBy: authData.user.id, releasedByEmail: authData.user.email ?? null, releasedAt: at } });
+      const result = await fulfillOrderWithDataMartGH(supabase, order.id);
+      if (result.skipped) return jsonResponse({ status: "skipped", action, error: `Not sent: ${String(result.reason).replace(/_/g, " ")}`, result });
+      return jsonResponse({ status: "success", action, result });
+    }
+
     if (action === "retry") {
       const retryableStatuses = new Set(["failed", "failed_needs_review", "cancelled"]);
       // MTN verification orders may be re-sent too: once MTN approves the number the re-send goes through.
