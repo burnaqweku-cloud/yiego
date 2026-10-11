@@ -28,19 +28,29 @@ export async function sendWelcomeEmail(to: string, name: string) {
   return sendEmail({ to, subject: "Welcome to DataYego", html: frame(undefined, inner), replyTo: SUPPORT_EMAIL });
 }
 
-interface OrderEmailRow { id: string; order_reference: string; guest_email: string | null; user_id: string | null; recipient_phone: string | null; amount: number | string; currency: string | null; data_products: { name: string } | null; networks: { name: string } | null; agents: { slug: string; store_name: string } | null }
+interface OrderEmailRow { id: string; order_reference: string; guest_email: string | null; user_id: string | null; recipient_phone: string | null; amount: number | string; currency: string | null; status: string | null; admin_resolution_status: string | null; supplier_purchase_id: string | null; supplier_order_reference: string | null; data_products: { name: string } | null; networks: { name: string } | null; agents: { slug: string; store_name: string } | null }
 
-/** Order confirmation. Orders from an agent's store are branded as the store
- *  and link back to the store's own tracking page. */
+const HELD_STATUSES = new Set(["failed", "failed_needs_review"]);
+const CLOSED_STATUSES = new Set(["failed", "failed_needs_review", "cancelled", "refunded"]);
+
+/** Order email, chosen by where the order really is:
+ *  - handed to the supplier successfully -> "Your data order is on its way" (sent once)
+ *  - blocked / failed / held for review  -> "We received your payment and are verifying your order" (sent once)
+ *  - anything else (not sent yet)        -> nothing yet; the send step calls this again afterwards.
+ *  Orders from an agent's store are branded as the store and link to the store's tracking page. */
 // deno-lint-ignore no-explicit-any
 export async function sendOrderConfirmation(supabase: any, orderId: string) {
-  const { data: order } = await supabase.from("orders").select("id, order_reference, guest_email, user_id, recipient_phone, amount, currency, data_products(name), networks(name), agents(slug, store_name)").eq("id", orderId).maybeSingle();
+  const { data: order } = await supabase.from("orders").select("id, order_reference, guest_email, user_id, recipient_phone, amount, currency, status, admin_resolution_status, supplier_purchase_id, supplier_order_reference, data_products(name), networks(name), agents(slug, store_name)").eq("id", orderId).maybeSingle();
   const row = order as OrderEmailRow | null;
   if (!row) return { skipped: true, reason: "order_not_found" };
+  const handedOver = Boolean(row.supplier_purchase_id || row.supplier_order_reference) && !CLOSED_STATUSES.has(String(row.status));
+  const held = !handedOver && (HELD_STATUSES.has(String(row.status)) || ["wrong_network", "awaiting_verification"].includes(String(row.admin_resolution_status)));
+  if (!handedOver && !held) return { skipped: true, reason: "not_sent_to_supplier_yet" };
+  const eventType = handedOver ? "notification.email_sent" : "notification.verifying_email_sent";
   let to = row.guest_email;
   if (!to && row.user_id) { const { data: profile } = await supabase.from("profiles").select("email").eq("id", row.user_id).maybeSingle(); to = (profile?.email as string | undefined) ?? null; }
   if (!to) return { skipped: true, reason: "no_recipient_email" };
-  const { data: already } = await supabase.from("order_events").select("id").eq("order_id", orderId).eq("event_type", "notification.email_sent").limit(1).maybeSingle();
+  const { data: already } = await supabase.from("order_events").select("id").eq("order_id", orderId).eq("event_type", eventType).limit(1).maybeSingle();
   if (already) return { skipped: true, reason: "already_sent" };
   const siteUrl = (Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL") ?? "https://datayego.com").replace(/\/$/, "");
   const store = row.agents;
@@ -48,8 +58,13 @@ export async function sendOrderConfirmation(supabase: any, orderId: string) {
   const amount = `${row.currency ?? "GHS"} ${Number(row.amount).toFixed(2)}`;
   const product = row.data_products?.name ?? "Data bundle"; const network = row.networks?.name ?? "";
   const hint = store ? `Or open ${store.store_name} and use “Track an order” with <b>${row.order_reference}</b>.` : `Or go to datayego.com, choose “Track an order”, and enter <b>${row.order_reference}</b>.`;
-  const inner = `<p style="margin:0 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#22c387;">Order confirmed</p><h1 style="margin:0 0 14px;font-size:22px;line-height:1.25;">Your data order is on its way</h1><p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#3c4a46;">Keep this email — your Order ID is how you track this order any time.</p><table role="presentation" width="100%" style="border:1px solid #e2ebe7;border-radius:14px;"><tr><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:13px;color:#5a6864;">Order ID</td><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:15px;font-weight:700;text-align:right;">${row.order_reference}</td></tr><tr><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:13px;color:#5a6864;">Bundle</td><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:14px;font-weight:600;text-align:right;">${network} · ${product}</td></tr><tr><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:13px;color:#5a6864;">Recipient</td><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:14px;font-weight:600;text-align:right;">${row.recipient_phone ?? ""}</td></tr><tr><td style="padding:14px 16px;font-size:13px;color:#5a6864;">Amount</td><td style="padding:14px 16px;font-size:14px;font-weight:600;text-align:right;">${amount}</td></tr></table><a href="${trackUrl}" style="display:block;margin:22px 0 6px;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">Track this order</a><p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#8a968f;">${hint}</p>`;
+  const eyebrow = handedOver ? "Order confirmed" : "Payment received";
+  const title = handedOver ? "Your data order is on its way" : "We're verifying your order";
+  const intro = handedOver
+    ? "Keep this email — your Order ID is how you track this order any time."
+    : `We received your payment and are verifying your order. We will update you shortly. Your Order ID is <b>${row.order_reference}</b>.`;
+  const inner = `<p style="margin:0 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#22c387;">${eyebrow}</p><h1 style="margin:0 0 14px;font-size:22px;line-height:1.25;">${title}</h1><p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#3c4a46;">${intro}</p><table role="presentation" width="100%" style="border:1px solid #e2ebe7;border-radius:14px;"><tr><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:13px;color:#5a6864;">Order ID</td><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:15px;font-weight:700;text-align:right;">${row.order_reference}</td></tr><tr><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:13px;color:#5a6864;">Bundle</td><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:14px;font-weight:600;text-align:right;">${network} · ${product}</td></tr><tr><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:13px;color:#5a6864;">Recipient</td><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:14px;font-weight:600;text-align:right;">${row.recipient_phone ?? ""}</td></tr><tr><td style="padding:14px 16px;font-size:13px;color:#5a6864;">Amount</td><td style="padding:14px 16px;font-size:14px;font-weight:600;text-align:right;">${amount}</td></tr></table><a href="${trackUrl}" style="display:block;margin:22px 0 6px;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">Track this order</a><p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#8a968f;">${hint}</p>`;
   const result = await sendEmail({ to, subject: store ? `Your ${store.store_name} order ${row.order_reference}` : `Your DataYego order ${row.order_reference}`, replyTo: SUPPORT_EMAIL, html: frame(store?.store_name, inner) });
-  if (!result.skipped && result.ok) await supabase.from("order_events").insert({ order_id: orderId, event_type: "notification.email_sent", message: "Order confirmation email sent", metadata: { to, store: store?.slug ?? null } });
+  if (!result.skipped && result.ok) await supabase.from("order_events").insert({ order_id: orderId, event_type: eventType, message: handedOver ? "Order confirmation email sent" : "Payment received / verifying email sent", metadata: { to, store: store?.slug ?? null } });
   return result;
 }

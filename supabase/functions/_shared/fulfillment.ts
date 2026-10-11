@@ -1,5 +1,6 @@
 import { mapDataMartGHStatusToYieGo } from "./datamartgh.ts";
 import { adapterFor, type PurchaseContext } from "./supplierAdapters.ts";
+import { sendOrderConfirmation } from "./email.ts";
 
 // Deliberately loose: these helpers are handed a real supabase-js client and
 // only need it to be chainable.
@@ -87,6 +88,13 @@ export async function applySupplierStatusToOrder(
  * an entry in supplierAdapters.ts and no change here.
  */
 export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: string) {
+  const result = await sendToSupplier(supabase, orderId);
+  // Email follows the real outcome: "on its way" once the supplier has it, "verifying" if held.
+  try { await sendOrderConfirmation(supabase, orderId); } catch { /* email is best-effort */ }
+  return result;
+}
+
+async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string) {
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select("*")
@@ -168,8 +176,21 @@ export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: strin
   };
 
   // Refuse an order this supplier cannot serve before any money moves.
+  // Exception: a ported number the customer (or an admin) confirmed is on the
+  // network they picked. Only the prefix mismatch is waived; other checks still apply.
   const preflight = adapter.preflight(context);
-  if (!preflight.ok) {
+  const prefixWaived = !preflight.ok && order.prefix_mismatch_confirmed === true && preflight.reason.startsWith("number_prefix_is_");
+  if (prefixWaived) {
+    await supabase.from("order_events").insert({
+      order_id: order.id,
+      event_type: "supplier.prefix_mismatch_override",
+      from_status: order.status,
+      to_status: "processing",
+      message: "Prefix mismatch confirmed by customer, sent anyway",
+      metadata: { supplier: supplier.code, reason: (preflight as { reason: string }).reason },
+    });
+  }
+  if (!preflight.ok && !prefixWaived) {
     await supabase
       .from("orders")
       .update({
