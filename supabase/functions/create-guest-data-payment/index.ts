@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
-import { initializePaystackTransaction, makePaystackReference } from "../_shared/paystack.ts";
+import { makePaystackReference } from "../_shared/paystack.ts";
+import { startCheckout } from "../_shared/gateway.ts";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
@@ -283,7 +284,10 @@ Deno.serve(async (req) => {
     const feeAmount = paystackFee(baseAmount);
     const chargeAmount = paystackTotal(baseAmount);
 
-    const paystack = await initializePaystackTransaction({
+    // Paystack or Flutterwave, decided by the gateway switch (see _shared/gateway.ts). The reference is ours either way.
+    const paystack = await startCheckout(supabase, {
+      payerUserId: authenticatedUser?.id ?? null,
+      customerPhone: guestPhone,
       email: paymentEmail,
       amount: chargeAmount,
       reference: paystackReference,
@@ -303,27 +307,28 @@ Deno.serve(async (req) => {
       },
     });
 
-    if (!paystack.ok || !paystack.payload?.status) {
+    if (!paystack.ok || !paystack.authorizationUrl) {
       await supabase
         .from("orders")
         .update({
           status: "failed",
           payment_status: "failed",
-          failure_reason: paystack.payload?.message ?? "Could not initialize Paystack transaction",
+          failure_reason: paystack.message ?? "Could not start the payment",
         })
         .eq("id", order.id);
 
       return jsonResponse(
         {
-          error: paystack.payload?.message ?? "Could not initialize Paystack transaction",
+          error: paystack.message ?? "Could not start the payment",
           provider: paystack.payload,
         },
         { status: paystack.status || 502 },
       );
     }
 
+    await supabase.from("orders").update({ payment_provider: paystack.gateway }).eq("id", order.id);
     const { error: paymentError } = await supabase.from("payment_intents").insert({
-      provider: "paystack",
+      provider: paystack.gateway,
       purpose: "guest_data_purchase",
       status: "pending",
       user_id: authenticatedUser?.id ?? null,
@@ -331,9 +336,11 @@ Deno.serve(async (req) => {
       amount: chargeAmount,
       currency: "GHS",
       provider_reference: paystackReference,
-      authorization_url: paystack.payload.data.authorization_url,
+      authorization_url: paystack.authorizationUrl,
       metadata: {
-        accessCode: paystack.payload.data.access_code,
+        accessCode: paystack.accessCode,
+        gateway: paystack.gateway,
+        ...(paystack.test ? { test: true } : {}),
         orderReference,
         checkoutType: authenticatedUser ? "account_paystack" : "guest_paystack",
         baseAmount,
@@ -350,11 +357,10 @@ Deno.serve(async (req) => {
       event_type: "payment.created",
       from_status: "created",
       to_status: "awaiting_payment",
-      message: authenticatedUser
-        ? "Account Paystack payment initialized"
-        : "Guest Paystack payment initialized",
+      message: `${authenticatedUser ? "Account" : "Guest"} ${paystack.gateway === "flutterwave" ? "Flutterwave" : "Paystack"} payment initialized${paystack.test ? " (TEST key, admin only)" : ""}`,
       metadata: {
-        provider: "paystack",
+        provider: paystack.gateway,
+        test: paystack.test,
         reference: paystackReference,
         resumedExistingOrder: Boolean(existingOpen),
       },
@@ -365,8 +371,9 @@ Deno.serve(async (req) => {
       data: {
         orderId: order.id,
         orderReference,
-        authorizationUrl: paystack.payload.data.authorization_url,
-        accessCode: paystack.payload.data.access_code,
+        authorizationUrl: paystack.authorizationUrl,
+        accessCode: paystack.accessCode,
+        gateway: paystack.gateway,
         paymentReference: paystackReference,
       },
     });

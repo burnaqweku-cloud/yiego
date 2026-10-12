@@ -48,7 +48,7 @@ export default function PaymentSuccess() {
           setPhase("success");
         } else {
           setPhase("pending");
-          setMessage(data?.message ?? data?.error ?? error?.message ?? "Paystack is still confirming this top-up. Your balance will update shortly.");
+          setMessage(data?.message ?? data?.error ?? error?.message ?? "We're still confirming this top-up. Your balance will update shortly.");
         }
         return;
       }
@@ -77,7 +77,7 @@ export default function PaymentSuccess() {
             setPhase("success");
           } else {
             setPhase("pending");
-            setMessage("We're still confirming your payment with Paystack — this usually takes a few seconds.");
+            setMessage("We're still confirming your payment. This usually takes a few seconds.");
           }
         } else {
           setOrder({ reference });

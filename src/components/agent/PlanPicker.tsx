@@ -46,7 +46,7 @@ export default function PlanPicker({ quote, verb = "Pay", extending = false }: {
           <div className="mt-1.5 flex justify-between border-t border-white/[0.08] pt-1.5 text-[13px] font-semibold text-foreground"><span>You pay</span><span>{formatGHS(chosen.total)}</span></div>
         </div>
       )}
-      <button type="button" className="onyx-btn-primary mt-4 w-full py-3 text-[14px]" onClick={() => void pay()} disabled={busy || !chosen}>{busy ? "Opening Paystack…" : `${verb} ${chosen ? formatGHS(chosen.total) : ""} with Paystack`}</button>
+      <button type="button" className="onyx-btn-primary mt-4 w-full py-3 text-[14px]" onClick={() => void pay()} disabled={busy || !chosen}>{busy ? "Opening secure checkout…" : `${verb} ${chosen ? formatGHS(chosen.total) : ""} with Paystack`}</button>
       <p className="mt-2.5 text-center text-[11px] text-faint-foreground">{extending ? "Added to the end of your current plan. " : "Your plan starts the moment payment is confirmed. "}Card or mobile money. No refunds on 3 and 12-month plans.</p>
     </div>
   );

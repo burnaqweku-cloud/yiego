@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { verifyFlutterwaveByReference } from "../_shared/flutterwave.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -26,9 +27,25 @@ Deno.serve(async (req) => {
     const reference = String(body.reference ?? "").trim();
     if (!reference || reference.length > 100) return json({ error: "A valid payment reference is required" }, 400);
 
-    const { data: intent, error: intentError } = await supabase.from("payment_intents").select("id,user_id,wallet_id,amount,currency").eq("provider", "paystack").eq("provider_reference", reference).eq("purpose", "wallet_deposit").maybeSingle();
+    const { data: intent, error: intentError } = await supabase.from("payment_intents").select("id,user_id,wallet_id,amount,currency,provider,metadata").eq("provider_reference", reference).eq("purpose", "wallet_deposit").maybeSingle();
     if (intentError) return json({ error: intentError.message }, 500);
     if (!intent || intent.user_id !== authData.user.id) return json({ error: "Payment not found" }, 404);
+
+    if (intent.provider === "flutterwave") {
+      const fw = await verifyFlutterwaveByReference(reference);
+      if (!fw.ok) return json({ status: fw.status === "failed" ? "failed" : "pending", message: "Payment confirmation is still pending" }, 202);
+      if (String(fw.currency ?? "").toUpperCase() !== String(intent.currency).toUpperCase() || fw.amount < Number(intent.amount)) return json({ error: "Verified payment details do not match the deposit request" }, 409);
+      if (intent.metadata?.test === true) {
+        // TEST-key payment (admins only): record it, credit nothing.
+        await supabase.from("payment_intents").update({ status: "succeeded", verified_at: new Date().toISOString(), metadata: { ...(intent.metadata ?? {}), transactionId: fw.transactionId, testSettledAt: new Date().toISOString() } }).eq("id", intent.id);
+        return json({ status: "test_payment", message: "Flutterwave TEST payment recorded. Wallet not credited.", amount: Number(intent.amount), reference });
+      }
+      const { error: fwCreditError } = await supabase.rpc("credit_wallet_deposit", { p_payment_intent_id: intent.id, p_provider_reference: reference });
+      if (fwCreditError) return json({ error: fwCreditError.message }, 500);
+      const { data: fwWallet, error: fwWalletError } = await supabase.from("wallets").select("balance,currency").eq("id", intent.wallet_id).single();
+      if (fwWalletError) return json({ error: fwWalletError.message }, 500);
+      return json({ status: "success", balance: Number(fwWallet.balance), currency: fwWallet.currency, amount: Number(intent.amount), reference });
+    }
 
     const verification = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, { headers: { Authorization: `Bearer ${paystackKey}` } });
     const payload = await verification.json().catch(() => null);

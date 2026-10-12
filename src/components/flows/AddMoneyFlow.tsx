@@ -44,7 +44,7 @@ export default function AddMoneyFlow({ open, onClose }: { open: boolean; onClose
     const result = await createWalletDeposit({ amount: value });
 
     if (result.error || !result.data?.data?.authorizationUrl) {
-      toast.error(result.error ?? "Could not start Paystack payment");
+      toast.error(result.error ?? "Could not start the payment");
       setStep("amount");
       return;
     }
@@ -56,7 +56,7 @@ export default function AddMoneyFlow({ open, onClose }: { open: boolean; onClose
     <Modal open={open} onClose={onClose} label="Add money">
       {step === "amount" ? (
         <>
-          <FlowHeader title="Add money" subtitle="Fund your wallet with Paystack" onClose={onClose} />
+          <FlowHeader title="Add money" subtitle="Fund your wallet with MoMo or card" onClose={onClose} />
           <div className="space-y-5 px-5 pb-2 pt-5">
             <div className="onyx-amount-card rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-7 text-center">
               <div className="flex items-baseline justify-center gap-2">
@@ -86,15 +86,15 @@ export default function AddMoneyFlow({ open, onClose }: { open: boolean; onClose
                 <div className="flex items-center justify-between gap-4 border-t border-white/[0.08] px-3.5 py-3"><span className="text-[13px] font-semibold">You pay</span><span className="font-display text-[16px] font-semibold">{formatGHS(payTotal)}</span></div>
               </div>
             )}
-            <p className="text-xs leading-5 text-faint-foreground">Pay securely with Paystack. Your wallet will update automatically after the payment is confirmed.</p>
+            <p className="text-xs leading-5 text-faint-foreground">Pay securely with mobile money or card. Your wallet will update automatically after the payment is confirmed.</p>
           </div>
           <FlowFooter>
             <button type="button" className="onyx-btn-primary w-full disabled:pointer-events-none disabled:opacity-40" disabled={!valid || !hasWallet} onClick={startDeposit}>
-              Pay {formatGHS(payTotal)} with Paystack
+              Pay {formatGHS(payTotal)} with MoMo or card
             </button>
           </FlowFooter>
         </>
-      ) : <ProcessingView label="Opening Paystack…" />}
+      ) : <ProcessingView label="Opening secure checkout…" />}
     </Modal>
   );
 }

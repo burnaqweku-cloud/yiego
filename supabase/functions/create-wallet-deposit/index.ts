@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
-import { initializePaystackTransaction, makePaystackReference } from "../_shared/paystack.ts";
+import { makePaystackReference } from "../_shared/paystack.ts";
+import { startCheckout } from "../_shared/gateway.ts";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
@@ -68,7 +69,8 @@ Deno.serve(async (req) => {
     const feeAmount = paystackFee(amount);
     const chargeAmount = paystackTotal(amount);
 
-    const paystack = await initializePaystackTransaction({
+    const paystack = await startCheckout(supabase, {
+      payerUserId: authData.user.id,
       email,
       amount: chargeAmount,
       reference,
@@ -83,10 +85,10 @@ Deno.serve(async (req) => {
       },
     });
 
-    if (!paystack.ok || !paystack.payload?.status) {
+    if (!paystack.ok || !paystack.authorizationUrl) {
       return jsonResponse(
         {
-          error: paystack.payload?.message ?? "Could not initialize Paystack transaction",
+          error: paystack.message ?? "Could not start the payment",
           provider: paystack.payload,
         },
         { status: paystack.status || 502 },
@@ -94,7 +96,7 @@ Deno.serve(async (req) => {
     }
 
     const { error: insertError } = await supabase.from("payment_intents").insert({
-      provider: "paystack",
+      provider: paystack.gateway,
       purpose: "wallet_deposit",
       status: "pending",
       user_id: authData.user.id,
@@ -102,9 +104,11 @@ Deno.serve(async (req) => {
       amount,
       currency: "GHS",
       provider_reference: reference,
-      authorization_url: paystack.payload.data.authorization_url,
+      authorization_url: paystack.authorizationUrl,
       metadata: {
-        accessCode: paystack.payload.data.access_code,
+        accessCode: paystack.accessCode,
+        gateway: paystack.gateway,
+        ...(paystack.test ? { test: true } : {}),
         callbackUrl,
         chargedAmount: chargeAmount,
         feeAmount,
@@ -118,8 +122,9 @@ Deno.serve(async (req) => {
     return jsonResponse({
       status: "success",
       data: {
-        authorizationUrl: paystack.payload.data.authorization_url,
-        accessCode: paystack.payload.data.access_code,
+        authorizationUrl: paystack.authorizationUrl,
+        accessCode: paystack.accessCode,
+        gateway: paystack.gateway,
         reference,
         callbackUrl,
       },

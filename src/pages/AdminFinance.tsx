@@ -3,6 +3,7 @@ import { ArrowDownToLine, ArrowUpFromLine, Banknote, Download, Landmark, PiggyBa
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
+import PaymentGatewayCard from "@/components/admin/PaymentGatewayCard";
 import { RecordExpenseModal, RecordPayoutModal, RecordTopupModal, ReverseEntryModal } from "@/components/admin/FinanceForms";
 import { InlineAction, Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid, type Tone } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
@@ -101,6 +102,8 @@ export default function AdminFinance() {
     <div className="space-y-5">
       <AdminPageHeader title="Finance" description={o ? `Official books since ${new Date(o.start).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}. Balances are live; profit follows the period.` : "Loading the books…"}
         action={<div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => void load()} aria-label="Refresh"><RefreshCw size={15} /></Button><Button size="sm" onClick={() => setModal("topup")}>Record top-up</Button></div>} />
+
+      <PaymentGatewayCard />
 
       <Link to="/admin/finance/master" className="block">
         <Panel title="Master balance" icon={Landmark} note="the pot · tap for detail">

@@ -44,7 +44,7 @@ export default function Wallet() {
         setConfirmationMessage(data.message ?? "The payment was not completed.");
       } else {
         setConfirmation("pending");
-        setConfirmationMessage(data?.error ?? data?.message ?? verifyError?.message ?? "Paystack is still confirming this payment. Refresh shortly.");
+        setConfirmationMessage(data?.error ?? data?.message ?? verifyError?.message ?? "We're still confirming this payment. Refresh shortly.");
       }
       setConfirming(false);
       navigate("/wallet", { replace: true });
@@ -67,7 +67,7 @@ export default function Wallet() {
             {confirming ? <Loader2 className="animate-spin" size={17} /> : confirmation === "success" ? <CheckCircle2 className="text-success" size={17} /> : <Clock size={17} />}
             {confirming ? "Confirming your payment" : confirmation === "success" ? "Wallet credited" : confirmation === "failed" ? "Payment unsuccessful" : "Confirmation pending"}
           </p>
-          <p className="mt-1 text-muted-foreground">{confirming ? "DataYego is securely verifying the transaction with Paystack." : confirmationMessage}</p>
+          <p className="mt-1 text-muted-foreground">{confirming ? "DataYego is securely verifying the transaction." : confirmationMessage}</p>
           <Button className="mt-4" variant="ghost" onClick={() => navigate("/shop")}>Back to DataYego</Button>
         </div>
       )}

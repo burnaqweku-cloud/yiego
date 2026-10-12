@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
-import { paystackSubaccount } from "../_shared/paystack.ts";
+import { startCheckout } from "../_shared/gateway.ts";
 import { sendOrderConfirmation } from "../_shared/email.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
 import { fulfillOrder } from "../_shared/fulfillment.ts";
@@ -85,13 +85,14 @@ Deno.serve(async (req) => {
       const baseAmount = Number(order.amount);
       const feeAmount = paystackFee(baseAmount);
       const chargeAmount = paystackTotal(baseAmount);
-      const response = await fetch("https://api.paystack.co/transaction/initialize", { method: "POST", headers: { Authorization: `Bearer ${Deno.env.get("PAYSTACK_SECRET_KEY")}`, "Content-Type": "application/json" }, body: JSON.stringify({ email: auth.user.email, amount: Math.round(chargeAmount * 100), currency: "GHS", reference, ...(paystackSubaccount() ? { subaccount: paystackSubaccount(), bearer: "subaccount" } : {}), callback_url: `${(Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL") ?? "").replace(/\/$/, "")}/payment/success?reference=${encodeURIComponent(orderReference)}&type=order`, metadata: { purpose: "guest_data_purchase", checkoutType: "prepared_order", orderId: order.id, orderReference, payerUserId: auth.user.id, recipientPhone: order.recipient_phone, baseAmount, feeAmount } }) });
-      const payload = await response.json();
-      if (!response.ok || !payload?.status) return json({ error: payload?.message ?? "Could not initialize Paystack transaction" }, response.status || 502);
-      const { error } = await supabase.from("payment_intents").insert({ provider: "paystack", purpose: "guest_data_purchase", status: "pending", user_id: auth.user.id, order_id: order.id, amount: chargeAmount, currency: "GHS", provider_reference: reference, authorization_url: payload.data.authorization_url, metadata: { accessCode: payload.data.access_code, orderReference, checkoutType: "prepared_order", payerUserId: auth.user.id, baseAmount, feeAmount } });
+      const site = (Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL") ?? "").replace(/\/$/, "");
+      // Paystack or Flutterwave, decided by the gateway switch (see _shared/gateway.ts).
+      const checkout = await startCheckout(supabase, { payerUserId: auth.user.id, email: auth.user.email, amount: chargeAmount, reference, currency: "GHS", callbackUrl: `${site}/payment/success?reference=${encodeURIComponent(orderReference)}&type=order`, metadata: { purpose: "guest_data_purchase", checkoutType: "prepared_order", orderId: order.id, orderReference, payerUserId: auth.user.id, recipientPhone: order.recipient_phone, baseAmount, feeAmount } });
+      if (!checkout.ok || !checkout.authorizationUrl) return json({ error: checkout.message ?? "Could not start the payment" }, checkout.status || 502);
+      const { error } = await supabase.from("payment_intents").insert({ provider: checkout.gateway, purpose: "guest_data_purchase", status: "pending", user_id: auth.user.id, order_id: order.id, amount: chargeAmount, currency: "GHS", provider_reference: reference, authorization_url: checkout.authorizationUrl, metadata: { accessCode: checkout.accessCode, gateway: checkout.gateway, ...(checkout.test ? { test: true } : {}), orderReference, checkoutType: "prepared_order", baseAmount, feeAmount } });
       if (error) return json({ error: error.message }, 500);
-      await supabase.from("orders").update({ payment_arrangement: order.user_id === auth.user.id ? "self" : "shared", selected_payment_method: "paystack", paystack_reference: reference, updated_at: new Date().toISOString() }).eq("id", order.id);
-      return json({ status: "success", data: { authorizationUrl: payload.data.authorization_url, accessCode: payload.data.access_code, paymentReference: reference, orderReference } });
+      await supabase.from("orders").update({ payment_arrangement: order.user_id === auth.user.id ? "self" : "shared", selected_payment_method: "paystack", payment_provider: checkout.gateway, paystack_reference: reference, updated_at: new Date().toISOString() }).eq("id", order.id);
+      return json({ status: "success", data: { authorizationUrl: checkout.authorizationUrl, accessCode: checkout.accessCode, gateway: checkout.gateway, paymentReference: reference, orderReference } });
     }
     return json({ error: "Unsupported action" }, 400);
   } catch (e) { return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500); }
