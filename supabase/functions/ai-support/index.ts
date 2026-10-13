@@ -180,7 +180,7 @@ async function toolCheckMtn(args: Record<string, unknown>) {
 async function toolDeliverySpeed(supabase: SupabaseAdmin) {
   const { data, error } = await supabase.rpc("delivery_speed_by_network", {});
   if (error) return { error: "Delivery speed is not available right now; say deliveries are automatic and the Track page shows live progress." };
-  return { networks: data, note: "Report the figure as it is (for example 'MTN is currently taking about 20 minutes'). If a network shows no figure, say orders are delivering normally." };
+  return { networks: data, note: "Report the figure as it is (for example 'MTN is currently taking about 20 minutes'). If a network shows no figure, say orders are delivering fast right now." };
 }
 async function toolAgentPlan(supabase: SupabaseAdmin) {
   const { data, error } = await supabase.rpc("agent_plan_quote", {});

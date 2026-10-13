@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /* Per-network delivery speed for the catalogue. Middle value of: orders still waiting (time waited so far)
-   + orders delivered that were paid in the last hour (time taken). Nothing to measure -> "delivering normally". */
+   + orders delivered that were paid in the last hour (time taken). Nothing to measure -> "delivering fast" (the owner resets the figure when deliveries are quick). */
 export interface NetworkSpeed { window: "1h" | "none"; sample: number; median_minutes: number; at_least?: boolean; paused?: boolean }
 export function useDeliverySpeed() {
   const [speeds, setSpeeds] = useState<Record<string, NetworkSpeed>>({});
@@ -40,7 +40,7 @@ export function speedPhrase(s: NetworkSpeed | undefined): string | null {
 export function speedPill(s: NetworkSpeed | undefined, network = "MTN"): { text: string; slow: boolean; paused?: boolean } | null {
   if (!s) return null;
   if (s.paused) return { text: `${network} not taking orders right now · check back later`, slow: false, paused: true };
-  if (s.window === "none" || s.sample === 0) return { text: `${network} delivering normally`, slow: false };
+  if (s.window === "none" || s.sample === 0) return { text: `${network} delivering fast`, slow: false };
   const label = speedLabel(s); if (!label) return null;
   const slow = s.median_minutes > 30;
   return { text: `${network} delivering in ${label}`, slow };

@@ -153,7 +153,7 @@ async function tool(db: Db, agentId: string, role: string, name: string, args: R
     // deno-lint-ignore no-explicit-any
     return { promos: (promos ?? []).map((p: any) => ({ bundle: p.data_products?.name, promoPrice: Number(p.promo_price), endsAt: p.ends_at })), popups: popups ?? [], latestAnnouncements: ann ?? [], note: "Marketing → Promos / Pop-ups / Announcements / Status maker." };
   }
-  if (name === "delivery_speed") { const { data } = await db.rpc("delivery_speed_by_network"); return { networks: data, note: "Report the live figure as it is. No figure means orders are delivering normally." }; }
+  if (name === "delivery_speed") { const { data } = await db.rpc("delivery_speed_by_network"); return { networks: data, note: "Report the live figure as it is. No figure means orders are delivering fast right now." }; }
   if (name === "check_mtn_number") {
     const d = String(args?.number ?? "").replace(/\D/g, ""); const n = d.startsWith("233") ? `0${d.slice(3)}` : d;
     if (n.length !== 10) return { status: "invalid" };

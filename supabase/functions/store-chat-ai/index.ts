@@ -45,7 +45,7 @@ PRICES (what the customer pays here)
 ${prices}
 
 DELIVERY RIGHT NOW
-MTN: ${speed?.MTN ? (speed.MTN.sample === 0 ? "delivering normally" : `about ${Math.round(speed.MTN.median_minutes)} min${speed.MTN.at_least ? " or more" : ""}`) : "delivering normally"}. Telecel and AirtelTigo: usually minutes. MTN numbers receiving a bundle for the first time are verified by MTN first, which can take days; customers can check a number on the store's Check MTN page.
+MTN: ${speed?.MTN ? (speed.MTN.sample === 0 ? "delivering fast" : `about ${Math.round(speed.MTN.median_minutes)} min${speed.MTN.at_least ? " or more" : ""}`) : "delivering fast"}. Telecel and AirtelTigo: usually minutes. MTN numbers receiving a bundle for the first time are verified by MTN first, which can take days; customers can check a number on the store's Check MTN page.
 Payments: MoMo or card (Paystack) or the customer's wallet. A delivered bundle cannot be reversed even if the number was wrong.
 
 LINKS (give these when useful, as markdown links, e.g. [Track page](${url}/track))
