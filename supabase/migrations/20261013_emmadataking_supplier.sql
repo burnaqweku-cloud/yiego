@@ -32,3 +32,11 @@
 -- supplier by our reference (adapter.findByReference, EmmaDataKing only so far): held → keep it there
 -- (event supplier.recovered_after_timeout); refunded/unknown → failure, fallback allowed; lookup impossible or no
 -- lookup (DBH) → failure a person must check, NO fallback. Cause: YG-C3680ED132 was delivered by both EDK and DBH.
+-- Loophole sweep (13 Oct night), all in _shared/fulfillment.ts:
+--   * a thrown purchase (connection refused, DNS, our timeout) is an ambiguous outcome (http 0), logged, never a refusal;
+--   * before re-sending to a supplier already tried for the order, ask it by our reference (findByReference) and adopt
+--     the order if it is held (event supplier.already_held);
+--   * the idempotency key is reused when the last attempt at that supplier got no answer (admin Retry no longer clears it);
+--   * ambiguous + no lookup possible → order stays processing with supplier_retry_after +3 min (event supplier.no_answer),
+--     re-checked by that supplier's resend loop up to 3 times, then failed_needs_review.
+--   sync-instantdata-order-status gained the same resend loop as the DBH/EmmaDataKing syncs.

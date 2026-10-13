@@ -164,7 +164,13 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
   // as paid in the same instant; the read-then-act check above is not enough.
   // Only the caller whose update actually matches a row gets to purchase —
   // the other sees zero rows and stops. YG-E4B46D7A20 was sent twice this way.
-  const idempotencyKey = order.supplier_idempotency_key ?? crypto.randomUUID();
+  // Idempotency key: reused when the last attempt at THIS supplier got no answer (timeout, connection
+  // error, server error), so a supplier that did take the order recognises the repeat instead of selling
+  // twice. A fresh key only after a clear refusal, or when this supplier was never tried for the order.
+  const { data: lastTry } = await supabase.from("supplier_api_logs").select("http_status, call_status").eq("order_id", order.id).eq("supplier_id", supplier.id).eq("action", "purchase").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const triedBefore = Boolean(lastTry);
+  const lastWasAmbiguous = Boolean(lastTry) && lastTry.call_status !== "success" && (lastTry.http_status === 0 || lastTry.http_status === 408 || lastTry.http_status >= 500);
+  const idempotencyKey = (lastWasAmbiguous && order.supplier_idempotency_key) ? order.supplier_idempotency_key : crypto.randomUUID();
   const { data: claimed, error: claimError } = await supabase
     .from("orders")
     .update({
@@ -229,6 +235,20 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
     return { skipped: true, reason: preflight.reason, orderId: order.id, status: "failed_needs_review" };
   }
 
+  // Tried this supplier before (a retry or a resend): ask whether they already hold the order under our
+  // reference before buying again. If they do, adopt it; nothing is sent.
+  if (triedBefore && adapter.findByReference) {
+    try {
+      const look = await adapter.findByReference(order.order_reference);
+      if (look.found && look.held) {
+        const adopted = adapter.mapStatus(look.supplierStatus);
+        await supabase.from("orders").update({ status: adopted, supplier_order_reference: look.supplierReference, supplier_purchase_id: look.purchaseId, supplier_transaction_reference: look.transactionReference, supplier_status: look.supplierStatus, supplier_retry_after: null, failure_reason: null, updated_at: new Date().toISOString() }).eq("id", order.id);
+        await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.already_held", from_status: "processing", to_status: adopted, message: `${supplier.name} already has this order (${look.supplierStatus ?? "accepted"}); not sent again.`, metadata: { supplier: supplier.code, supplierReference: look.supplierReference, supplierStatus: look.supplierStatus } });
+        return { skipped: true, reason: "already_held_by_supplier", orderId: order.id, status: adopted };
+      }
+    } catch { /* lookup unavailable: fall through to a normal send, which the ambiguity handling below still guards */ }
+  }
+
   await supabase.from("order_events").insert({
     order_id: order.id,
     event_type: "supplier.fulfillment_started",
@@ -238,13 +258,19 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
     metadata: { supplier: supplier.code, idempotencyKey },
   });
 
-  let outcome: PurchaseOutcome = await adapter.purchase(context);
+  let outcome: PurchaseOutcome;
+  try {
+    outcome = await adapter.purchase(context);
+  } catch (e) {
+    // No reply at all (connection refused, DNS, our 30s timeout). The supplier may still have it.
+    outcome = { ok: false, httpStatus: 0, durationMs: 0, endpoint: "purchase", requestPayload: { recipientPhone: context.recipientPhone, orderReference: context.orderReference }, responsePayload: null, supplierReference: null, purchaseId: null, transactionReference: null, supplierStatus: null, message: `${supplier.name}: ${e instanceof Error ? e.message : "no response"}` };
+  }
 
   // No answer (timeout, gateway or server error) is NOT a refusal: the supplier may have taken the order
   // and simply not replied in time. Ask them by our reference before deciding anything. Found and held →
   // carry on as an accepted order; found but refunded/failed or not found → it is a real failure (fallback
   // allowed); lookup impossible → a failure that a person must check, never a fallback (no double sends).
-  let fallbackAllowed = true;
+  let fallbackAllowed = true; let parkForRecheck = false;
   if (isAmbiguousOutcome(outcome)) {
     fallbackAllowed = false;
     if (adapter.findByReference) {
@@ -259,11 +285,27 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
           outcome = { ...outcome, message: look.found ? `${supplier.name} did not answer in time and then reported ${look.supplierStatus ?? "failed"}` : `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) and has no record of this order` };
         }
       } catch (e) {
-        outcome = { ...outcome, message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) and could not be asked whether it has the order (${e instanceof Error ? e.message : "lookup failed"}). Check with the supplier before re-sending.` };
+        outcome = { ...outcome, message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) and could not be asked whether it has the order (${e instanceof Error ? e.message : "lookup failed"}).` };
+        parkForRecheck = true;
       }
     } else {
-      outcome = { ...outcome, message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}). It may still have the order: check with the supplier before re-sending.` };
+      outcome = { ...outcome, message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}). It may still have the order.` };
+      parkForRecheck = true;
     }
+  }
+  // The supplier may have the order and we cannot tell yet: keep it "processing" and let this supplier's
+  // resend loop come back in a few minutes (it looks the order up, or re-sends under the same idempotency
+  // key). Only after MAX_COOLDOWN_RETRIES unanswered attempts does a person get it.
+  if (parkForRecheck) {
+    const attempt = (order.supplier_retry_count ?? 0) + 1;
+    await supabase.from("supplier_api_logs").insert({ supplier_id: supplier.id, order_id: order.id, action: "purchase", endpoint: outcome.endpoint, request_payload: outcome.requestPayload, response_payload: outcome.responsePayload, http_status: outcome.httpStatus, call_status: "error", idempotency_key: idempotencyKey, error_message: outcome.message, duration_ms: outcome.durationMs });
+    if (attempt <= MAX_COOLDOWN_RETRIES) {
+      const retryAt = new Date(Date.now() + 3 * 60 * 1000).toISOString();
+      await supabase.from("orders").update({ status: "processing", supplier_retry_after: retryAt, supplier_retry_count: attempt, failure_reason: null, updated_at: new Date().toISOString() }).eq("id", order.id).is("supplier_purchase_id", null).is("supplier_order_reference", null);
+      await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.no_answer", from_status: "processing", to_status: "processing", message: `${outcome.message} Checking again at ${retryAt.slice(11, 16)} UTC (attempt ${attempt} of ${MAX_COOLDOWN_RETRIES}).`, metadata: { supplier: supplier.code, httpStatus: outcome.httpStatus, attempt, retryAt } });
+      return { skipped: true, reason: "retry_scheduled", orderId: order.id, status: "processing", retryAt };
+    }
+    outcome = { ...outcome, message: `${outcome.message} No answer after ${MAX_COOLDOWN_RETRIES} attempts: check with the supplier before re-sending or refunding.` };
   }
 
   // DBH "recent order already exists": either a concurrent attempt of ours
