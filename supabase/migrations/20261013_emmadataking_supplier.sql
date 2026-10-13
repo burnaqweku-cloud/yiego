@@ -21,3 +21,8 @@
 --   after acceptance: main supplier reports refunded/failed (DBH silent MTN refund incl.) → order reset and queued
 --   for the fallback's resend loop (sync-dbh-order-status / sync-emmadataking-order-status, which now resend by their own supplier id).
 -- verify-mtn-numbers re-sends DBH-approved numbers through DBH again (the approval is on DBH's channel).
+
+-- Finance: EmmaDataKing float account (was missing, so Record top-up could not be saved against it):
+--   insert into phase1.finance_accounts (code,name,kind,supplier_id,sort_order)
+--   values ('float_emmadataking','Supplier float · EmmaDataKing','asset',<emmadataking id>,23);
+-- First top-up recorded via finance_record_topup('emmadataking', 200, 2026-10-13 20:21Z, 'bank') → fee 6 (3%).
