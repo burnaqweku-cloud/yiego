@@ -7,7 +7,7 @@ import { amountFromSubunit, verifyPaystackTransaction } from "../_shared/paystac
 import { fulfillOrderWithDataMartGH } from "../_shared/fulfillment.ts";
 import { sendOrderConfirmation } from "../_shared/email.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { verifyFlutterwaveByReference } from "../_shared/flutterwave.ts";
+import { verifyWithGateway } from "../_shared/gateway.ts";
 import { settlePaymentIntent } from "../_shared/paymentSettlement.ts";
 
 Deno.serve(async (req) => {
@@ -50,17 +50,18 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "No payment reference on this order" }, { status: 409 });
     }
 
-    // Flutterwave-paid order: verify with Flutterwave and settle through the shared path
+    // Flutterwave / Kora-paid order: verify with that gateway and settle through the shared path
     // (which also knows a TEST-key payment must deliver nothing).
-    if (intent?.provider === "flutterwave") {
-      const fw = await verifyFlutterwaveByReference(providerReference);
-      if (!fw.ok) return jsonResponse({ status: "not_paid", orderReference, gateway: "flutterwave", flutterwaveStatus: fw.status });
-      await supabase.from("payment_events").upsert({ provider: "flutterwave", event_type: "charge.completed.reconciled", provider_reference: providerReference, payload: fw.payload, processed_at: new Date().toISOString() }, { onConflict: "provider,event_type,provider_reference" });
-      const settled = await settlePaymentIntent(supabase, { provider: "flutterwave", providerReference, paidAmount: fw.amount, transactionId: fw.transactionId, source: "reconcile" });
+    if (intent?.provider === "flutterwave" || intent?.provider === "kora") {
+      const gw = intent.provider as "flutterwave" | "kora";
+      const v = await verifyWithGateway(gw, providerReference);
+      if (!v.ok) return jsonResponse({ status: "not_paid", orderReference, gateway: gw, gatewayStatus: v.status });
+      await supabase.from("payment_events").upsert({ provider: gw, event_type: "charge.success.reconciled", provider_reference: providerReference, payload: v.payload, processed_at: new Date().toISOString() }, { onConflict: "provider,event_type,provider_reference" });
+      const settled = await settlePaymentIntent(supabase, { provider: gw, providerReference, paidAmount: v.amount, transactionId: v.transactionId, source: "reconcile" });
       if (settled.status === "error") return jsonResponse({ error: settled.error }, { status: 400 });
-      if (settled.test) return jsonResponse({ status: "test_payment", orderReference, message: "Flutterwave TEST payment: recorded, nothing delivered." });
+      if (settled.test) return jsonResponse({ status: "test_payment", orderReference, message: "TEST payment: recorded, nothing delivered." });
       const { data: fresh } = await supabase.from("orders").select("status, supplier_status, supplier_order_reference").eq("id", order.id).maybeSingle();
-      return jsonResponse({ status: "reconciled", orderReference, gateway: "flutterwave", orderStatus: fresh?.status ?? null, supplierStatus: fresh?.supplier_status ?? null });
+      return jsonResponse({ status: "reconciled", orderReference, gateway: gw, orderStatus: fresh?.status ?? null, supplierStatus: fresh?.supplier_status ?? null });
     }
 
     // The gate: ask Paystack directly whether this reference was actually paid.

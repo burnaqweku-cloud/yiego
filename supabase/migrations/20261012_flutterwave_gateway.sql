@@ -13,3 +13,10 @@ insert into phase1.site_settings(key, value) values ('payment_gateway', '{"provi
 -- Guards: TEST key (FLWSECK_TEST…) => Flutterwave only for admin accounts, and test payments settle nothing.
 -- Follow-ups before relying on Flutterwave live: refund-order (deployed only, not in repo) is Paystack-only;
 -- sync-paystack-settlements / Finance are Paystack-only; the 4% checkout fee is still the Paystack rate.
+
+-- 2026-10-13 — Kora (Korapay) as a third gateway, same guards. Applied via execute_sql:
+alter type phase1.payment_provider add value if not exists 'kora';
+-- master_set_payment_gateway now accepts 'kora'. New edge function kora-webhook; _shared/kora.ts; gateway.ts
+-- generalised (gatewayConfigured / gatewayIsTestKey / verifyWithGateway). Secret: KORA_SECRET_KEY (sk_test_… / sk_live_…).
+-- Kora signs webhooks with the secret key (x-korapay-signature = HMAC-SHA256 of the data object), so no hash secret.
+-- The webhook URL is passed per charge as notification_url, so no dashboard setup is required.

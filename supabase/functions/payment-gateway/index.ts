@@ -3,8 +3,7 @@
    nothing delivered"). Changing the switch is a database RPC (master_set_payment_gateway). */
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { configuredGateway } from "../_shared/gateway.ts";
-import { flutterwaveConfigured, flutterwaveIsTestKey } from "../_shared/flutterwave.ts";
+import { configuredGateway, gatewayConfigured, gatewayIsTestKey, type Gateway } from "../_shared/gateway.ts";
 
 Deno.serve(async (req) => {
   const options = handleOptions(req);
@@ -20,18 +19,20 @@ Deno.serve(async (req) => {
     if (!role) return jsonResponse({ error: "Admin access required" }, { status: 403 });
 
     const provider = await configuredGateway(supabase);
-    const fwConfigured = flutterwaveConfigured();
-    const fwTest = fwConfigured && flutterwaveIsTestKey();
-    const webhookHashSet = Boolean(Deno.env.get("FLUTTERWAVE_WEBHOOK_HASH")?.trim());
     const base = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
-    // Who is actually being charged through Flutterwave right now, given the guards in gateway.ts.
-    const effective = provider === "flutterwave" && fwConfigured ? (fwTest ? "admins_only_test" : "everyone") : "nobody";
+    const describe = (g: Gateway) => {
+      const configured = gatewayConfigured(g); const test = configured && gatewayIsTestKey(g);
+      // Who is actually being charged through this gateway right now, given the guards in gateway.ts.
+      const effective = provider === g && configured ? (test ? "admins_only_test" : "everyone") : "nobody";
+      return { configured, test_key: test, effective, webhook_url: g === "paystack" ? null : `${base}/functions/v1/${g}-webhook` };
+    };
     return jsonResponse({
       status: "success",
       provider,
       is_master: role === "master",
-      paystack: { configured: Boolean(Deno.env.get("PAYSTACK_SECRET_KEY")?.trim()) },
-      flutterwave: { configured: fwConfigured, test_key: fwTest, webhook_hash_set: webhookHashSet, webhook_url: `${base}/functions/v1/flutterwave-webhook`, effective },
+      paystack: describe("paystack"),
+      flutterwave: { ...describe("flutterwave"), webhook_hash_set: Boolean(Deno.env.get("FLUTTERWAVE_WEBHOOK_HASH")?.trim()) },
+      kora: describe("kora"),
     });
   } catch (e) {
     return jsonResponse({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 });

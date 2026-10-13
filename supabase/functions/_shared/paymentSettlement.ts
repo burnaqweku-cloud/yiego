@@ -2,7 +2,7 @@
    paystack-webhook/index.ts does inline (that file is deliberately left as it is); the Flutterwave
    webhook and the reconcile paths call this.
 
-   `test` = the intent was started with a Flutterwave TEST key (admins only, see gateway.ts). A test
+   `test` = the intent was started with a TEST key (Flutterwave or Kora) (admins only, see gateway.ts). A test
    payment settles nothing real: the intent is marked succeeded with metadata.test, an event is
    written, and no wallet is credited, no plan activated, no order paid or sent to a supplier. */
 import { fulfillOrderWithDataMartGH } from "./fulfillment.ts";
@@ -10,7 +10,8 @@ import { sendOrderConfirmation } from "./email.ts";
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
-export type Provider = "paystack" | "flutterwave";
+export type Provider = "paystack" | "flutterwave" | "kora";
+const LABEL: Record<Provider, string> = { paystack: "Paystack", flutterwave: "Flutterwave", kora: "Kora" };
 
 export interface SettleInput {
   provider: Provider;
@@ -37,7 +38,7 @@ export async function settlePaymentIntent(supabase: Db, input: SettleInput): Pro
     // Prove the pipe, move nothing.
     await supabase.from("payment_intents").update({ status: "succeeded", verified_at: now, metadata: { ...meta, test: true, testSettledAt: now } }).eq("id", intent.id);
     if (intent.order_id) {
-      await supabase.from("order_events").insert({ order_id: intent.order_id, event_type: "payment.test_received", from_status: "awaiting_payment", to_status: "awaiting_payment", message: "Flutterwave TEST payment received. Nothing delivered, order left unpaid.", metadata: { provider: input.provider, reference: input.providerReference, amount: input.paidAmount, test: true } });
+      await supabase.from("order_events").insert({ order_id: intent.order_id, event_type: "payment.test_received", from_status: "awaiting_payment", to_status: "awaiting_payment", message: `${LABEL[input.provider]} TEST payment received. Nothing delivered, order left unpaid.`, metadata: { provider: input.provider, reference: input.providerReference, amount: input.paidAmount, test: true } });
     }
     return { status: "test_settled", purpose: intent.purpose, test: true };
   }
@@ -61,7 +62,7 @@ export async function settlePaymentIntent(supabase: Db, input: SettleInput): Pro
     if (orderError) return { status: "error", purpose: intent.purpose, error: orderError.message };
     if (order && order.payment_status !== "succeeded") {
       await supabase.from("orders").update({ payment_status: "succeeded", status: order.status === "awaiting_payment" ? "paid" : order.status, paid_by_user_id: intent.user_id ?? null, paid_at: now, updated_at: now, payment_provider: input.provider }).eq("id", order.id);
-      await supabase.from("order_events").insert({ order_id: order.id, event_type: "payment.succeeded", from_status: order.status, to_status: "paid", message: `${input.provider === "flutterwave" ? "Flutterwave" : "Paystack"} confirmed data purchase payment${input.source === "reconcile" ? " (reconciled)" : ""}`, metadata: { provider: input.provider, reference: input.providerReference, amount: input.paidAmount, paidByUserId: intent.user_id ?? null } });
+      await supabase.from("order_events").insert({ order_id: order.id, event_type: "payment.succeeded", from_status: order.status, to_status: "paid", message: `${LABEL[input.provider]} confirmed data purchase payment${input.source === "reconcile" ? " (reconciled)" : ""}`, metadata: { provider: input.provider, reference: input.providerReference, amount: input.paidAmount, paidByUserId: intent.user_id ?? null } });
     }
     if (order && !order.supplier_order_reference) {
       try { await fulfillOrderWithDataMartGH(supabase, order.id); } catch (e) {
