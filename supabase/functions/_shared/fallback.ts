@@ -6,8 +6,8 @@
    - after acceptance (the status syncs): the main supplier later reports refunded / failed
      (DBH's silent MTN refund, EmmaDataKing's REFUNDED), so the order is reset and queued for the
      fallback's resend loop.
-   An order is given the fallback once. The marker is the order event `supplier.fallback`; a second
-   refusal ends up where it always did (verification queue or Needs review). */
+   An order is given the fallback once per attempt (marker: order event `supplier.fallback`, counted since the
+   last admin.retry). A second refusal in the same attempt ends up where it always did (verification queue or Needs review). */
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -21,7 +21,12 @@ export async function fallbackFor(supabase: Db, order: { id: string; network_id:
   const { data: network } = await supabase.from("networks").select("fallback_supplier_id").eq("id", order.network_id).maybeSingle();
   const fallbackId: string | null = network?.fallback_supplier_id ?? null;
   if (!fallbackId || fallbackId === excludeSupplierId) return null;
-  const { count } = await supabase.from("order_events").select("id", { count: "exact", head: true }).eq("order_id", order.id).eq("event_type", FALLBACK_EVENT);
+  // Once per attempt, not once for ever: an admin Retry starts a fresh attempt, so only fallback hand-offs
+  // since the latest retry count. (Stops automatic ping-pong, never blocks a person re-sending the order.)
+  const { data: lastRetry } = await supabase.from("order_events").select("created_at").eq("order_id", order.id).eq("event_type", "admin.retry").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  let used = supabase.from("order_events").select("id", { count: "exact", head: true }).eq("order_id", order.id).eq("event_type", FALLBACK_EVENT);
+  if (lastRetry?.created_at) used = used.gt("created_at", lastRetry.created_at);
+  const { count } = await used;
   if ((count ?? 0) > 0) return null;
   const { data: mapping } = await supabase.from("supplier_product_mappings").select("supplier_price, suppliers!inner(id, code, name, status)").eq("product_id", order.product_id).eq("supplier_id", fallbackId).eq("is_active", true).eq("suppliers.status", "active").limit(1).maybeSingle();
   if (!mapping) return null;

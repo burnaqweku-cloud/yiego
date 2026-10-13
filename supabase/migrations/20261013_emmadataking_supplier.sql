@@ -26,3 +26,5 @@
 --   insert into phase1.finance_accounts (code,name,kind,supplier_id,sort_order)
 --   values ('float_emmadataking','Supplier float · EmmaDataKing','asset',<emmadataking id>,23);
 -- First top-up recorded via finance_record_topup('emmadataking', 200, 2026-10-13 20:21Z, 'bank') → fee 6 (3%).
+-- Fallback is once per ATTEMPT: supplier.fallback events are counted only since the latest admin.retry event,
+-- so a manual Retry (both suppliers were empty, main still is) can still hand the order to the fallback.
