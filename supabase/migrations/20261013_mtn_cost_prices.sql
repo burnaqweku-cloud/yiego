@@ -1,0 +1,5 @@
+-- 2026-10-13 — MTN cost prices corrected to DataBundlesHub's real dashboard prices (owner supplied).
+-- Applied via execute_sql. Affects profit reporting from the next order on; past orders keep their recorded cost.
+-- 1GB 3.95, 2GB 7.90, 3GB 11.85, 4GB 15.80, 5GB 19.75, 6GB 23.70, 8GB 31.60, 10GB 39.50,
+-- 15GB 58.50, 20GB 78.00, 25GB 97.50, 30GB 117.00, 40GB 156.00, 50GB 195.00
+-- (previously 4.00, 8.00, 12.00, 16.00, 20.00, 24.00, 32.00, 39.00, 57.00, 76.50, 96.00, 115.00, 157.00, 185.00)
