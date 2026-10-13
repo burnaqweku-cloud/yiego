@@ -3,6 +3,7 @@ import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { requireCronSecret } from "../_shared/internal.ts";
 import { fulfillOrder } from "../_shared/fulfillment.ts";
 import { checkOrderStatus, mapStatus } from "../_shared/emmadataking.ts";
+import { rerouteToFallback } from "../_shared/fallback.ts";
 
 /* EmmaDataKing, every minute from cron:
    1. Re-send orders parked with a retry time (verification-queue orders whose number got approved,
@@ -27,11 +28,11 @@ Deno.serve(async (req) => {
       .is("supplier_purchase_id", null).is("supplier_order_reference", null)
       .lte("supplier_retry_after", new Date().toISOString()).order("supplier_retry_after", { ascending: true }).limit(MAX_RESENDS_PER_RUN);
     for (const row of due ?? []) {
-      try { const r = await fulfillOrder(supabase, row.id); resent.push({ reference: row.order_reference, outcome: r.skipped ? `skipped_${r.reason}` : r.status }); }
+      try { const r = await fulfillOrder(supabase, row.id, { supplierId: supplier.id }); resent.push({ reference: row.order_reference, outcome: r.skipped ? `skipped_${r.reason}` : r.status }); }
       catch (error) { resent.push({ reference: row.order_reference, outcome: "exception", message: error instanceof Error ? error.message : String(error) }); }
     }
 
-    const { data: orders } = await supabase.from("orders").select("id, order_reference, status, supplier_status, supplier_purchase_id")
+    const { data: orders } = await supabase.from("orders").select("id, order_reference, status, supplier_status, supplier_purchase_id, network_id, product_id, supplier_id")
       .eq("supplier_id", supplier.id).in("status", ["processing", "pending_supplier"]).not("supplier_purchase_id", "is", null)
       .or("admin_resolution_status.is.null,admin_resolution_status.neq.awaiting_verification")
       .order("updated_at", { ascending: true }).limit(MAX_PER_RUN);
@@ -45,6 +46,11 @@ Deno.serve(async (req) => {
         if (!r.ok || !supplierStatus) { results.push({ reference: order.order_reference, outcome: "status_unavailable" }); continue; }
         const next = mapStatus(supplierStatus);
         if (next === "processing") { if (order.supplier_status !== supplierStatus) await supabase.from("orders").update({ supplier_status: supplierStatus, updated_at: new Date().toISOString() }).eq("id", order.id); results.push({ reference: order.order_reference, outcome: "still_processing", supplierStatus }); continue; }
+        if (next === "failed_needs_review") {
+          // They gave the money back (REFUNDED/FAILED/REJECTED): the network's fallback supplier gets the order first.
+          const fb = await rerouteToFallback(supabase, order, "EmmaDataKing", supplierStatus);
+          if (fb) { results.push({ reference: order.order_reference, outcome: `rerouted_to_${fb.code}`, supplierStatus }); continue; }
+        }
         await supabase.from("orders").update({ status: next, supplier_status: supplierStatus, failure_reason: next === "delivered" ? null : `Supplier ${supplierStatus} — money returned to our float; customer not yet refunded or re-sent`, updated_at: new Date().toISOString() }).eq("id", order.id);
         await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.status_update", from_status: order.status, to_status: next, message: `EmmaDataKing reported ${supplierStatus} (status sync)`, metadata: { supplier: "emmadataking", supplierStatus } });
         results.push({ reference: order.order_reference, outcome: next, supplierStatus });

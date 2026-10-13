@@ -11,3 +11,13 @@
 -- Owner: no EXPRESS_YELLO at all. The 40/50GB EXPRESS rows are switched off with metadata.disabled, and
 -- admin_set_network_supplier no longer re-activates rows carrying metadata.disabled (and counts/missing use active
 -- rows only). With MTN on EmmaDataKing, 40GB and 50GB have no active mapping and would be held for review.
+
+-- Fallback supplier per network (applied via execute_sql):
+--   alter table phase1.networks add column fallback_supplier_id uuid references phase1.suppliers(id);
+--   phase1.admin_set_network_fallback(p_actor, p_network_code, p_supplier_code|null): must differ from the main supplier;
+--   activates the fallback's non-disabled mappings for that network.
+-- Behaviour (_shared/fallback.ts): an order gets the fallback ONCE (marker event supplier.fallback).
+--   at purchase: main supplier refuses / does not know the bundle → sent to fallback immediately (fulfillment.ts);
+--   after acceptance: main supplier reports refunded/failed (DBH silent MTN refund incl.) → order reset and queued
+--   for the fallback's resend loop (sync-dbh-order-status / sync-emmadataking-order-status, which now resend by their own supplier id).
+-- verify-mtn-numbers re-sends DBH-approved numbers through DBH again (the approval is on DBH's channel).

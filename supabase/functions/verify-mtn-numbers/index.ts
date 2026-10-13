@@ -16,10 +16,9 @@ Deno.serve(async (req) => {
     const supabase = createSupabaseAdmin();
     const denied = await requireCronSecret(req, supabase); if (denied) return denied;
     const { data: dbh } = await supabase.from("suppliers").select("id").eq("code", "databundleshub").maybeSingle();
-    // Approved numbers are re-sent through whichever supplier delivers MTN now (Admin → Suppliers), not always DBH.
-    const { data: mtn } = await supabase.from("networks").select("preferred_supplier_id, suppliers:preferred_supplier_id(id, code, name)").eq("name", "MTN").maybeSingle();
-    const target = (mtn?.suppliers as { id: string; code: string; name: string } | null) ?? null;
-    const targetId = target?.id ?? dbh?.id ?? null; const targetName = target?.name ?? "DataBundlesHub";
+    // The approval is on DBH's channel, so the re-send goes through DBH (its resend loop sends by its own supplier id,
+    // whichever supplier is "main" for MTN at the time).
+    const targetId = dbh?.id ?? null; const targetName = "DataBundlesHub";
     const { data: queue } = await supabase.from("orders").select("id, order_reference, recipient_phone, supplier_purchase_id").eq("admin_resolution_status", "awaiting_verification").eq("status", "processing").eq("payment_status", "succeeded");
     const { data: submitted } = await supabase.from("submitted_numbers").select("msisdn").eq("status", "pending");
     const numbers = [...new Set([...(queue ?? []).map((o: { recipient_phone: string }) => normalize(o.recipient_phone)), ...(submitted ?? []).map((s: { msisdn: string }) => s.msisdn)])];

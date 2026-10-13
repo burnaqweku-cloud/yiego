@@ -1,6 +1,7 @@
 import { mapDataMartGHStatusToYieGo } from "./datamartgh.ts";
 import { adapterFor, type PurchaseContext } from "./supplierAdapters.ts";
 import { sendOrderConfirmation } from "./email.ts";
+import { FALLBACK_EVENT, fallbackFor } from "./fallback.ts";
 
 // Deliberately loose: these helpers are handed a real supabase-js client and
 // only need it to be chainable.
@@ -87,14 +88,21 @@ export async function applySupplierStatusToOrder(
  * Every supplier-specific detail lives behind an adapter, so a new supplier is
  * an entry in supplierAdapters.ts and no change here.
  */
-export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: string) {
-  const result = await sendToSupplier(supabase, orderId);
+export interface FulfillOptions {
+  /** Send through this supplier instead of the network's main one (the resend loops pass their own). */
+  supplierId?: string;
+  /** Already the second attempt: no further fallback. */
+  viaFallback?: boolean;
+}
+
+export async function fulfillOrder(supabase: SupabaseAdminClient, orderId: string, opts: FulfillOptions = {}) {
+  const result = await sendToSupplier(supabase, orderId, opts);
   // Email follows the real outcome: "on its way" once the supplier has it, "verifying" if held.
   try { await sendOrderConfirmation(supabase, orderId); } catch { /* email is best-effort */ }
   return result;
 }
 
-async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string) {
+async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, opts: FulfillOptions = {}): Promise<any> {
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select("*")
@@ -112,8 +120,16 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string) {
   // delivers every order on that network. No customer choice, no priority
   // fallback. If the network has no supplier or the supplier can't take the
   // bundle, the order waits for a person rather than being re-routed.
-  const { data: network } = await supabase.from("networks").select("name, preferred_supplier_id").eq("id", order.network_id).maybeSingle();
-  const routedSupplierId: string | null = network?.preferred_supplier_id ?? null;
+  const { data: network } = await supabase.from("networks").select("name, preferred_supplier_id, fallback_supplier_id").eq("id", order.network_id).maybeSingle();
+  const routedSupplierId: string | null = opts.supplierId ?? network?.preferred_supplier_id ?? null;
+  /** Hand the order to the network's fallback supplier (once). Returns null when there is none. */
+  const tryFallback = async (fromName: string, why: string) => {
+    if (opts.viaFallback) return null;
+    const fb = await fallbackFor(supabase, order, routedSupplierId);
+    if (!fb) return null;
+    await supabase.from("order_events").insert({ order_id: order.id, event_type: FALLBACK_EVENT, from_status: order.status, to_status: "processing", message: `${fromName} could not take this order (${why}). Sending to ${fb.name} instead.`, metadata: { from: fromName, to: fb.code, why, stage: "at_purchase" } });
+    return await sendToSupplier(supabase, orderId, { supplierId: fb.id, viaFallback: true });
+  };
   const hold = async (why: string, reason: string) => {
     await supabase.from("orders").update({ status: "failed_needs_review", failure_reason: `Not sent: ${why}. Set the network's supplier under Admin → Suppliers and resend, or refund.`, updated_at: new Date().toISOString() }).eq("id", order.id);
     await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.fulfillment_blocked", from_status: order.status, to_status: "failed_needs_review", message: `Not sent: ${why}`, metadata: { routedSupplierId, reason } });
@@ -133,6 +149,8 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string) {
   if (!mapping) {
     const { data: routed } = await supabase.from("suppliers").select("name, status").eq("id", routedSupplierId).maybeSingle();
     const why = routed ? (routed.status === "active" ? `${routed.name} doesn't know this bundle` : `${routed.name} is ${routed.status}`) : "chosen supplier not found";
+    const viaFb = await tryFallback(routed?.name ?? "The main supplier", why);
+    if (viaFb) return viaFb;
     return await hold(why, "routed_supplier_unavailable");
   }
 
@@ -279,6 +297,17 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string) {
       return { skipped: true, reason: "retry_scheduled", orderId: order.id, status: "processing", retryAt };
     }
     // Out of retries — fall through and record it as a real failure.
+  }
+
+  // Refused outright by this supplier (not approved, no stock, rejected): give the fallback supplier the
+  // order now, before anything is held or marked failed. The refusal is still logged.
+  if (!outcome.ok) {
+    const fb = opts.viaFallback ? null : await fallbackFor(supabase, order, supplier.id);
+    if (fb) {
+      await supabase.from("supplier_api_logs").insert({ supplier_id: supplier.id, order_id: order.id, action: "purchase", endpoint: outcome.endpoint, request_payload: outcome.requestPayload, response_payload: outcome.responsePayload, http_status: outcome.httpStatus, call_status: "error", idempotency_key: idempotencyKey, error_message: outcome.message, duration_ms: outcome.durationMs });
+      await supabase.from("order_events").insert({ order_id: order.id, event_type: FALLBACK_EVENT, from_status: "processing", to_status: "processing", message: `${supplier.name} refused this order (${outcome.message ?? "no reason given"}). Sending to ${fb.name} instead.`, metadata: { from: supplier.code, to: fb.code, why: outcome.message, httpStatus: outcome.httpStatus, stage: "at_purchase" } });
+      return await sendToSupplier(supabase, orderId, { supplierId: fb.id, viaFallback: true });
+    }
   }
 
   const nextStatus = outcome.ok ? adapter.mapStatus(outcome.supplierStatus) : "failed_needs_review";

@@ -16,7 +16,7 @@ import { useAuth } from "@/store/auth-context";
    who did it. The shop reads the same flags, so a pause is immediate. */
 
 interface Supplier { id: string; code: string; name: string; status: "active" | "paused" | "disabled"; balance: number | null; last_balance_checked_at: string | null; low_balance_threshold: number | null; metadata: Record<string, unknown> | null }
-interface Network { id: string; code: string; name: string; is_paused: boolean; pause_reason: string | null; preferred_supplier_id: string | null }
+interface Network { id: string; code: string; name: string; is_paused: boolean; pause_reason: string | null; preferred_supplier_id: string | null; fallback_supplier_id?: string | null }
 interface Product { id: string; name: string; capacity_gb: number; customer_price: number; is_active: boolean; is_paused: boolean; pause_reason: string | null; network_id: string }
 interface Mapping { product_id: string; supplier_id: string; supplier_price: number | null; is_active: boolean }
 interface Readiness { network: string; supplier: string; known: number; total: number; missing: string[] }
@@ -41,7 +41,7 @@ export default function AdminSuppliers() {
   const load = useCallback(async () => {
     const [s, n, p, m, l, r] = await Promise.all([
       db().from("suppliers").select("id, code, name, status, balance, last_balance_checked_at, low_balance_threshold, metadata").order("display_order"),
-      db().from("networks").select("id, code, name, is_paused, pause_reason, preferred_supplier_id").order("display_order"),
+      db().from("networks").select("id, code, name, is_paused, pause_reason, preferred_supplier_id, fallback_supplier_id").order("display_order"),
       db().from("data_products").select("id, name, capacity_gb, customer_price, is_active, is_paused, pause_reason, network_id").eq("is_active", true).order("capacity_gb"),
       db().from("supplier_product_mappings").select("product_id, supplier_id, supplier_price, is_active").eq("is_active", true),
       db().from("supplier_api_logs").select("action, endpoint, http_status, call_status, supplier_reference, error_message, duration_ms, created_at").order("created_at", { ascending: false }).limit(300),
@@ -108,6 +108,12 @@ export default function AdminSuppliers() {
                     <select value={routed?.code ?? ""} onChange={(e) => { const s = suppliers.find((x) => x.code === e.target.value); if (s && s.id !== n.preferred_supplier_id) setSwitching({ network: n, supplier: s }); }} className={`${inputCls} h-8 w-auto py-0 text-[12px]`}>
                       {!routed && <option value="">Not set: orders are held</option>}
                       {suppliers.map((s) => { const r = readyFor(n.code, s.code); return <option key={s.id} value={s.code}>{s.name} · {s.balance == null ? "no balance" : formatGHS(Number(s.balance))}{r ? ` · ${r.known}/${r.total} bundles` : ""}{s.status !== "active" ? ` · ${s.status}` : ""}</option>; })}
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-faint-foreground" title="If the main supplier refuses an order or later refunds it, the order is sent here once instead of being held.">Fallback
+                    <select value={suppliers.find((x) => x.id === n.fallback_supplier_id)?.code ?? ""} onChange={(e) => { const code = e.target.value; const s = suppliers.find((x) => x.code === code); void call("admin_set_network_fallback", { p_network_code: n.code, p_supplier_code: code || null }, code ? `${n.name}: ${s?.name ?? code} is the fallback` : `${n.name}: no fallback`); }} className={`${inputCls} h-8 w-auto py-0 text-[12px]`}>
+                      <option value="">None</option>
+                      {suppliers.filter((s) => s.id !== n.preferred_supplier_id).map((s) => { const r = readyFor(n.code, s.code); return <option key={s.id} value={s.code}>{s.name}{r ? ` · ${r.known}/${r.total} bundles` : ""}{s.status !== "active" ? ` · ${s.status}` : ""}</option>; })}
                     </select>
                   </label>
                   {n.is_paused
