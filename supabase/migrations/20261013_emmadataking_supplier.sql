@@ -8,3 +8,6 @@
 -- Secret: EMMADATAKING_API_KEY (X-API-Key). Their webhook (HMAC with whsec_…) not wired yet; polling covers delivery.
 -- verify-mtn-numbers now re-sends approved numbers through MTN's current preferred supplier, not always DBH.
 -- Observed: their /verify-number is a live MTN line check (numbers DBH holds as unapproved came back verified).
+-- Owner: no EXPRESS_YELLO at all. The 40/50GB EXPRESS rows are switched off with metadata.disabled, and
+-- admin_set_network_supplier no longer re-activates rows carrying metadata.disabled (and counts/missing use active
+-- rows only). With MTN on EmmaDataKing, 40GB and 50GB have no active mapping and would be held for review.
