@@ -46,12 +46,13 @@ Deno.serve(async (req) => {
         if (!r.ok || !supplierStatus) { results.push({ reference: order.order_reference, outcome: "status_unavailable" }); continue; }
         const next = mapStatus(supplierStatus);
         if (next === "processing") { if (order.supplier_status !== supplierStatus) await supabase.from("orders").update({ supplier_status: supplierStatus, updated_at: new Date().toISOString() }).eq("id", order.id); results.push({ reference: order.order_reference, outcome: "still_processing", supplierStatus }); continue; }
-        if (next === "failed_needs_review") {
-          // They gave the money back (REFUNDED/FAILED/REJECTED): the network's fallback supplier gets the order first.
+        if (next === "failed_needs_review" && supplierStatus === "REFUNDED") {
+          // Only REFUNDED (money confirmed back) may go to the fallback. FAILED/REJECTED is not refunded and they
+          // could still re-run it, so it waits for a person.
           const fb = await rerouteToFallback(supabase, order, "EmmaDataKing", supplierStatus);
           if (fb) { results.push({ reference: order.order_reference, outcome: `rerouted_to_${fb.code}`, supplierStatus }); continue; }
         }
-        await supabase.from("orders").update({ status: next, supplier_status: supplierStatus, failure_reason: next === "delivered" ? null : `Supplier ${supplierStatus} — money returned to our float; customer not yet refunded or re-sent`, updated_at: new Date().toISOString() }).eq("id", order.id);
+        await supabase.from("orders").update({ status: next, supplier_status: supplierStatus, failure_reason: next === "delivered" ? null : supplierStatus === "REFUNDED" ? "Supplier REFUNDED — money returned to our float; customer not yet refunded or re-sent" : `Supplier ${supplierStatus} — NOT refunded yet; confirm with EmmaDataKing before re-sending or refunding`, updated_at: new Date().toISOString() }).eq("id", order.id);
         await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.status_update", from_status: order.status, to_status: next, message: `EmmaDataKing reported ${supplierStatus} (status sync)`, metadata: { supplier: "emmadataking", supplierStatus } });
         results.push({ reference: order.order_reference, outcome: next, supplierStatus });
       } catch (error) { results.push({ reference: order.order_reference, outcome: "exception", message: error instanceof Error ? error.message : String(error) }); }

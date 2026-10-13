@@ -40,3 +40,6 @@
 --   * ambiguous + no lookup possible → order stays processing with supplier_retry_after +3 min (event supplier.no_answer),
 --     re-checked by that supplier's resend loop up to 3 times, then failed_needs_review.
 --   sync-instantdata-order-status gained the same resend loop as the DBH/EmmaDataKing syncs.
+-- Fallback moves an order ONLY on a confirmed refund (EmmaDataKing REFUNDED, DBH refunded/refund), never on FAILED/REJECTED:
+-- "failed" is not "money back" and the supplier could still re-run it. FAILED orders wait in Needs review with a
+-- "NOT refunded yet; confirm with the supplier" reason. (Fallback is switched OFF by the owner for now.)

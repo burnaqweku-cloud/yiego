@@ -43,6 +43,9 @@ export interface ReferenceLookup {
   found: boolean;
   /** found and not refunded/failed: the supplier is holding (or has delivered) the order. */
   held: boolean;
+  /** found and the supplier says the money is back (REFUNDED). FAILED is NOT refunded: they may still
+   *  re-run it, so it is never handed to another supplier until this is true. */
+  refunded: boolean;
   supplierReference: string | null;
   purchaseId: string | null;
   transactionReference: string | null;
@@ -243,10 +246,10 @@ const emmaDataKing: SupplierAdapter = {
   async findByReference(orderReference) {
     const r = await edk.checkOrderStatus(orderReference);
     const data = r.payload?.data ?? {};
-    if (r.status === 404 || (r.ok && !data.id && !data.reference)) return { found: false, held: false, supplierReference: null, purchaseId: null, transactionReference: null, supplierStatus: null };
+    if (r.status === 404 || (r.ok && !data.id && !data.reference)) return { found: false, held: false, refunded: false, supplierReference: null, purchaseId: null, transactionReference: null, supplierStatus: null };
     if (!r.ok) throw new Error(`EmmaDataKing lookup failed (${r.status})`);
     const status = String(data.status ?? "").toUpperCase();
-    return { found: true, held: edk.mapStatus(status) !== "failed_needs_review", supplierReference: data.id ?? null, purchaseId: data.reference ?? orderReference, transactionReference: data.transaction_code ?? null, supplierStatus: status || null };
+    return { found: true, held: edk.mapStatus(status) !== "failed_needs_review", refunded: status === "REFUNDED", supplierReference: data.id ?? null, purchaseId: data.reference ?? orderReference, transactionReference: data.transaction_code ?? null, supplierStatus: status || null };
   },
 };
 

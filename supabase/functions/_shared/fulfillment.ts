@@ -281,8 +281,10 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
           await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.recovered_after_timeout", from_status: "processing", to_status: "processing", message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) but has the order (${look.supplierStatus ?? "accepted"}). Keeping it there.`, metadata: { supplier: supplier.code, httpStatus: outcome.httpStatus, supplierReference: look.supplierReference, supplierStatus: look.supplierStatus } });
           outcome = { ...outcome, ok: true, supplierReference: look.supplierReference, purchaseId: look.purchaseId, transactionReference: look.transactionReference, supplierStatus: look.supplierStatus, message: null };
         } else {
-          fallbackAllowed = true;
-          outcome = { ...outcome, message: look.found ? `${supplier.name} did not answer in time and then reported ${look.supplierStatus ?? "failed"}` : `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) and has no record of this order` };
+          // Another supplier may take it only when this one has no record of it or has given the money back.
+          // FAILED/REJECTED is not refunded: they could still re-run it, so it waits for a person.
+          fallbackAllowed = !look.found || look.refunded;
+          outcome = { ...outcome, message: look.found ? `${supplier.name} did not answer in time and then reported ${look.supplierStatus ?? "failed"}${look.refunded ? " (money returned)" : " — NOT refunded yet; confirm with them before re-sending anywhere"}` : `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) and has no record of this order` };
         }
       } catch (e) {
         outcome = { ...outcome, message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) and could not be asked whether it has the order (${e instanceof Error ? e.message : "lookup failed"}).` };

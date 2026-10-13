@@ -171,8 +171,10 @@ Deno.serve(async (req) => {
     const unmatched: OrderRow[] = [];
 
     const writeTerminal = async (order: OrderRow, report: SupplierReport, terminal: { nextStatus: string; failureReason: string | null }, source: string) => {
-      // DBH gave the money back: let the network's fallback supplier have the order before it lands in Needs review.
-      if (terminal.nextStatus === "failed_needs_review") {
+      // Only a confirmed refund (DBH status "refunded"/"refund") may go to the fallback. A plain "failed" is not
+      // refunded and DBH could still re-run it, so it waits for a person in Needs review.
+      const refunded = ["refunded", "refund"].includes(String(report.status ?? "").toLowerCase());
+      if (terminal.nextStatus === "failed_needs_review" && refunded) {
         const fb = await rerouteToFallback(supabase, order, "DataBundlesHub", `${report.status}${report.errorCode != null && String(report.errorCode) !== "" ? ` errorCode ${report.errorCode}` : ""} · ${source}`);
         if (fb) { results.push({ reference: order.order_reference, outcome: `rerouted_to_${fb.code}`, supplierStatus: report.status }); return; }
       }
