@@ -18,8 +18,11 @@ Deno.serve(async (req) => {
     const payload = await req.json().catch(() => null);
     if (!payload) return jsonResponse({ error: "Bad payload" }, { status: 400 });
     const supabase = createSupabaseAdmin();
+    // Two shapes arrive depending on the "Enable v3 webhooks" toggle in their dashboard:
+    //   v3:     { event: "charge.completed", data: { tx_ref, status, id, amount, currency } }
+    //   legacy: { "event.type": "MOBILEMONEYGH_TRANSACTION", txRef, status, id, amount, currency }
     const eventType = String(payload.event ?? payload["event.type"] ?? "unknown");
-    const data = payload.data ?? {};
+    const data = payload.data ?? payload;
     const reference: string | null = data.tx_ref ?? data.txRef ?? null;
 
     await supabase.from("payment_events").upsert({ provider: "flutterwave", event_type: eventType, provider_reference: reference, payload }, { onConflict: "provider,event_type,provider_reference" });
