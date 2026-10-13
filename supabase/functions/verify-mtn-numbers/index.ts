@@ -16,6 +16,10 @@ Deno.serve(async (req) => {
     const supabase = createSupabaseAdmin();
     const denied = await requireCronSecret(req, supabase); if (denied) return denied;
     const { data: dbh } = await supabase.from("suppliers").select("id").eq("code", "databundleshub").maybeSingle();
+    // Approved numbers are re-sent through whichever supplier delivers MTN now (Admin → Suppliers), not always DBH.
+    const { data: mtn } = await supabase.from("networks").select("preferred_supplier_id, suppliers:preferred_supplier_id(id, code, name)").eq("name", "MTN").maybeSingle();
+    const target = (mtn?.suppliers as { id: string; code: string; name: string } | null) ?? null;
+    const targetId = target?.id ?? dbh?.id ?? null; const targetName = target?.name ?? "DataBundlesHub";
     const { data: queue } = await supabase.from("orders").select("id, order_reference, recipient_phone, supplier_purchase_id").eq("admin_resolution_status", "awaiting_verification").eq("status", "processing").eq("payment_status", "succeeded");
     const { data: submitted } = await supabase.from("submitted_numbers").select("msisdn").eq("status", "pending");
     const numbers = [...new Set([...(queue ?? []).map((o: { recipient_phone: string }) => normalize(o.recipient_phone)), ...(submitted ?? []).map((s: { msisdn: string }) => s.msisdn)])];
@@ -34,8 +38,8 @@ Deno.serve(async (req) => {
     for (const o of (queue ?? []) as Array<{ id: string; order_reference: string; recipient_phone: string; supplier_purchase_id: string | null }>) {
       const s = status.get(normalize(o.recipient_phone));
       if (!s || (s.status !== "approved" && s.status !== "not_enforced")) continue;
-      await supabase.from("orders").update({ supplier_purchase_id: null, supplier_order_reference: null, supplier_transaction_reference: null, supplier_status: null, supplier_idempotency_key: null, failure_reason: null, supplier_id: dbh?.id ?? null, supplier_retry_after: now, supplier_retry_count: 0, updated_at: now }).eq("id", o.id);
-      await supabase.from("order_events").insert({ order_id: o.id, event_type: "supplier.number_approved", from_status: "processing", to_status: "processing", message: "MTN has approved this number. Re-sending to DataBundlesHub now." + (o.supplier_purchase_id ? ` Previous attempt ${o.supplier_purchase_id} set aside.` : ""), metadata: { source: "verify-mtn-numbers" } });
+      await supabase.from("orders").update({ supplier_purchase_id: null, supplier_order_reference: null, supplier_transaction_reference: null, supplier_status: null, supplier_idempotency_key: null, failure_reason: null, supplier_id: targetId, supplier_retry_after: now, supplier_retry_count: 0, updated_at: now }).eq("id", o.id);
+      await supabase.from("order_events").insert({ order_id: o.id, event_type: "supplier.number_approved", from_status: "processing", to_status: "processing", message: `MTN has approved this number. Re-sending to ${targetName} now.` + (o.supplier_purchase_id ? ` Previous attempt ${o.supplier_purchase_id} set aside.` : ""), metadata: { source: "verify-mtn-numbers" } });
       resent.push(o.order_reference);
     }
     const approvedSubmitted: string[] = [];

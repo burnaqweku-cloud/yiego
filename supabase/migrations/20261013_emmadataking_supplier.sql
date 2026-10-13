@@ -1,0 +1,10 @@
+-- 2026-10-13 — EmmaDataKing (emmadataking.com) as an MTN supplier. Applied via execute_sql.
+-- suppliers: code emmadataking, display_order 15, metadata.topup_fee_rate 0.03 (they charge 3% on top-ups).
+-- supplier_product_mappings (inactive until MTN is switched to them in Admin → Suppliers):
+--   MTN 1..30GB → list YELLO (normal queue), supplier_price = their price; 40/50GB → EXPRESS_YELLO (165/200).
+-- Trigger orders_dbh_mtn_approval widened: any supplier's "not approved / unapproved / pending approval" refusal
+--   on a paid MTN order becomes the awaiting_verification hold (was DBH's exact wording only).
+-- cron job 14 'sync-emmadataking-order-status' every minute (resend loop + /order-status poll).
+-- Secret: EMMADATAKING_API_KEY (X-API-Key). Their webhook (HMAC with whsec_…) not wired yet; polling covers delivery.
+-- verify-mtn-numbers now re-sends approved numbers through MTN's current preferred supplier, not always DBH.
+-- Observed: their /verify-number is a live MTN line check (numbers DBH holds as unapproved came back verified).

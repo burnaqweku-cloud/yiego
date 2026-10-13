@@ -1,6 +1,7 @@
 import { callDataMartGH, mapDataMartGHStatusToYieGo } from "./datamartgh.ts";
 import * as hub from "./databundleshub.ts";
 import * as instant from "./instantdatagh.ts";
+import * as edk from "./emmadataking.ts";
 
 /* ══════════════════════════════════════════════════════════════
    One shape for every supplier.
@@ -185,10 +186,48 @@ const instantDataGH: SupplierAdapter = {
   mapStatus: (supplierStatus) => instant.mapStatus(supplierStatus),
 };
 
+/* ── EmmaDataKing ───────────────────────────────────────────── */
+
+const emmaDataKing: SupplierAdapter = {
+  code: "emmadataking",
+  isConfigured: edk.isConfigured,
+  /** Their list code says the network (YELLO = MTN). Same prefix guard as the others; a confirmed
+   *  ported number is waived by fulfillment.ts, not here. */
+  preflight(context) {
+    const detected = hub.networkFromPrefix(context.recipientPhone);
+    if (!detected) return { ok: false, reason: "unrecognised_number_prefix" };
+    const expected = edk.NETWORK_OF_CODE[context.supplierNetworkCode ?? ""] ?? (context.supplierNetworkCode ?? "").toUpperCase();
+    if (expected && expected !== detected) return { ok: false, reason: `number_prefix_is_${detected.toLowerCase()}_not_${expected.toLowerCase()}` };
+    return { ok: true };
+  },
+  async purchase(context) {
+    const requestPayload = { network: context.supplierNetworkCode ?? "YELLO", capacity: String(context.supplierCapacity ?? ""), phoneNumber: context.recipientPhone, ref: context.orderReference };
+    const result = await edk.purchase(requestPayload);
+    const data = result.payload?.data ?? {};
+    // Their id (EDK-…) is the receipt; our own reference is what /order-status reads, so keep both.
+    const accepted = result.ok && Boolean(data.id || data.reference);
+    return {
+      ok: accepted,
+      httpStatus: result.status,
+      durationMs: result.durationMs,
+      endpoint: "/api/v1/purchase",
+      requestPayload,
+      responsePayload: result.payload,
+      supplierReference: data.id ?? null,
+      purchaseId: data.reference ?? context.orderReference,
+      transactionReference: data.transaction_code ?? null,
+      supplierStatus: data.status ?? null,
+      message: accepted ? null : result.payload?.message ?? result.payload?.error ?? "EmmaDataKing purchase failed",
+    };
+  },
+  mapStatus: (supplierStatus) => edk.mapStatus(supplierStatus),
+};
+
 const ADAPTERS: Record<string, SupplierAdapter> = {
   [dataMartGH.code]: dataMartGH,
   [dataBundlesHub.code]: dataBundlesHub,
   [instantDataGH.code]: instantDataGH,
+  [emmaDataKing.code]: emmaDataKing,
 };
 
 export function adapterFor(supplierCode: string): SupplierAdapter | null {

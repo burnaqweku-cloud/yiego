@@ -23,6 +23,11 @@ const PROBES: Record<string, { base: string; auth: () => HeadersInit; paths: Pro
     auth: () => ({ "x-api-key": Deno.env.get("INSTANTDATAGH_API_KEY") ?? "", Accept: "application/json" }),
     paths: [{ path: "/balance", pick: (p) => num(p?.data?.balance_raw ?? p?.balance_raw ?? String(p?.data?.balance ?? p?.balance ?? "").replace(/[^\d.-]/g, "")) }],
   },
+  emmadataking: {
+    base: (Deno.env.get("EMMADATAKING_BASE_URL") ?? "https://emmadataking.com").replace(/\/$/, ""),
+    auth: () => ({ "X-API-Key": Deno.env.get("EMMADATAKING_API_KEY") ?? "", Accept: "application/json" }),
+    paths: [{ path: "/api/v1/balance", pick: (p) => num(p?.data?.balance ?? p?.balance) }],
+  },
   datamartgh: {
     base: (Deno.env.get("DATAMARTGH_BASE_URL") ?? "https://api.datamartgh.shop/api/developer").replace(/\/$/, ""),
     auth: () => ({ "X-API-Key": Deno.env.get("DATAMARTGH_API_KEY") ?? "", Accept: "application/json" }),
