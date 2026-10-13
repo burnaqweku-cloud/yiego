@@ -6,6 +6,7 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Field, Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import CopyRef from "@/components/admin/CopyRef";
+import SupplierBadge, { useFallbackOrigins } from "@/components/admin/SupplierBadge";
 import Modal from "@/components/ui/modal";
 import AdminRecordModal from "@/components/admin/AdminRecordModal";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
@@ -15,7 +16,7 @@ import { useAuth } from "@/store/auth-context";
 /* One agent, in full: who they are, their plan, every order through them
    (store sale vs their own purchase), earnings, payouts, free months. */
 interface Agent { id: string; user_id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; created_at: string }
-interface Ord { id: string; order_reference: string; recipient_phone: string; amount: number; agent_price: number | null; agent_margin: number | null; status: string; supplier_status: string | null; admin_resolution_status: string | null; paid_at: string; user_id: string | null; guest_email: string | null; data_products: { name: string; capacity_gb: number } | null; networks: { name: string } | null }
+interface Ord { id: string; order_reference: string; recipient_phone: string; amount: number; agent_price: number | null; agent_margin: number | null; status: string; supplier_status: string | null; admin_resolution_status: string | null; paid_at: string; user_id: string | null; guest_email: string | null; data_products: { name: string; capacity_gb: number } | null; networks: { name: string } | null; suppliers: { code: string; name: string } | null }
 interface Payout { id: string; amount: number; fee: number; net: number; status: string; created_at: string; paid_at: string | null }
 interface Grant { id: string; months: number; from_date: string; until_date: string; note: string | null; created_at: string }
 interface Ledger { id: string; direction: string; type: string; amount: number; balance_after: number; reference: string; note: string | null; created_at: string }
@@ -27,7 +28,8 @@ const since = (r: Range) => r === "all" ? "2026-09-12" : new Date(Date.now() - (
 export default function AdminAgentDetail() {
   const { id = "" } = useParams(); const { user } = useAuth(); const actor = user?.id ?? "";
   const [a, setA] = useState<Agent | null | undefined>(undefined); const [email, setEmail] = useState("");
-  const [orders, setOrders] = useState<Ord[]>([]); const [payouts, setPayouts] = useState<Payout[]>([]); const [grants, setGrants] = useState<Grant[]>([]); const [ledger, setLedger] = useState<Ledger[]>([]);
+  const [orders, setOrders] = useState<Ord[]>([]);
+  const origins = useFallbackOrigins(orders); const [payouts, setPayouts] = useState<Payout[]>([]); const [grants, setGrants] = useState<Grant[]>([]); const [ledger, setLedger] = useState<Ledger[]>([]);
   const [range, setRange] = useState<Range>("30d"); const [source, setSource] = useState<Source>("all"); const [isMaster, setIsMaster] = useState(false);
   const [granting, setGranting] = useState(false); const [viewing, setViewing] = useState<Ord | null>(null); const [months, setMonths] = useState("1"); const [note, setNote] = useState("");
   const load = useCallback(async () => {
@@ -35,7 +37,7 @@ export default function AdminAgentDetail() {
     if (!g) { setA(null); return; } setA(g);
     const [p, o, py, gr, lg, r] = await Promise.all([
       db().from("profiles").select("email").eq("id", g.user_id).maybeSingle(),
-      db().from("orders").select("id, order_reference, recipient_phone, amount, agent_price, agent_margin, status, supplier_status, admin_resolution_status, paid_at, user_id, guest_email, data_products(name, capacity_gb), networks(name)").eq("agent_id", g.id).eq("payment_status", "succeeded").gte("paid_at", `${since(range)}T00:00:00`).order("paid_at", { ascending: false }).limit(2000),
+      db().from("orders").select("id, order_reference, recipient_phone, amount, agent_price, agent_margin, status, supplier_status, admin_resolution_status, paid_at, user_id, guest_email, data_products(name, capacity_gb), networks(name), suppliers(code, name)").eq("agent_id", g.id).eq("payment_status", "succeeded").gte("paid_at", `${since(range)}T00:00:00`).order("paid_at", { ascending: false }).limit(2000),
       db().from("agent_payouts").select("*").eq("agent_id", g.id).order("created_at", { ascending: false }),
       db().from("agent_subscription_grants").select("*").eq("agent_id", g.id).order("created_at", { ascending: false }),
       db().from("agent_ledger_entries").select("*").eq("agent_id", g.id).order("created_at", { ascending: false }).limit(100),
@@ -98,7 +100,7 @@ export default function AdminAgentDetail() {
           {shown.slice(0, 200).map((o) => { const self = isSelf(o); const st = stage(o); return (
             <li key={o.id} className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-white/[0.02]" onClick={() => setViewing(o)}>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[12.5px] text-foreground"><CopyRef value={o.order_reference} className="font-semibold" /> <span className="text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB · {o.recipient_phone}</span></p>
+                <p className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-foreground"><SupplierBadge supplier={o.suppliers} from={origins[o.id]} /><CopyRef value={o.order_reference} className="font-semibold" /> <span className="truncate text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB · {o.recipient_phone}</span></p>
                 <p className="truncate text-[11px] text-faint-foreground">{formatAdminDate(o.paid_at)} · {self ? "own purchase" : `share ${formatGHS(Number(o.agent_margin ?? 0))}`}</p>
               </div>
               <span className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</span>

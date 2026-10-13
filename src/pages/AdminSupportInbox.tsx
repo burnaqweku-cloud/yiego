@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
+import SupplierBadge from "@/components/admin/SupplierBadge";
 import ChatSourceBadge from "@/components/admin/ChatSourceBadge";
 import { assistantHtml, assistantPlain } from "@/lib/assistantMarkdown";
 import { formatGHS } from "@/lib/format";
@@ -20,7 +21,7 @@ interface Customer { full_name: string | null; email: string | null }
 interface ConversationRow { id: string; conversation_token: string; user_id: string | null; status: Status; handoff_reason: string | null; assigned_admin: string | null; last_message_at: string; admin_last_seen_at: string | null; admin_pinned_at?: string | null; last_message_preview: string | null; last_message_sender: "customer" | "assistant" | "admin" | null; created_at: string; customer: Customer | null }
 interface TranscriptMessage { id: string; sender: "customer" | "assistant" | "admin"; body: string; created_at: string; meta?: { tools_used?: string[]; escalated?: boolean } | null }
 interface InboxResponse { conversations?: ConversationRow[]; conversation?: ConversationRow; messages?: TranscriptMessage[]; message?: TranscriptMessage; error?: string }
-interface RecentOrder { order_reference: string; status: string; amount: number; recipient_phone: string; created_at: string; data_products: { name: string } | null }
+interface RecentOrder { order_reference: string; status: string; amount: number; recipient_phone: string; created_at: string; data_products: { name: string } | null; suppliers: { code: string; name: string } | null }
 
 type Tab = "needs" | "ai" | "read" | "closed" | "all";
 const TABS: Array<{ key: Tab; label: string }> = [{ key: "needs", label: "Needs you" }, { key: "ai", label: "With AI" }, { key: "read", label: "Read" }, { key: "closed", label: "Closed" }, { key: "all", label: "All" }];
@@ -93,7 +94,7 @@ export default function AdminSupportInbox() {
     if (!userId) { setOrders(null); return; }
     let alive = true;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    void (adminDatabase() as unknown as { from: (t: string) => any }).from("orders").select("order_reference, status, amount, recipient_phone, created_at, data_products(name)").eq("user_id", userId).order("created_at", { ascending: false }).limit(5).then((r: { data: RecentOrder[] | null }) => { if (alive) setOrders(r.data ?? []); });
+    void (adminDatabase() as unknown as { from: (t: string) => any }).from("orders").select("order_reference, status, amount, recipient_phone, created_at, data_products(name), suppliers(code, name)").eq("user_id", userId).order("created_at", { ascending: false }).limit(5).then((r: { data: RecentOrder[] | null }) => { if (alive) setOrders(r.data ?? []); });
     return () => { alive = false; };
   }, [userId]);
 
@@ -178,7 +179,7 @@ export default function AdminSupportInbox() {
             </div>
           </div>
           {c.handoff_reason && c.status !== "closed" && <p className="flex items-center gap-2 border-b border-danger/20 bg-danger/[0.07] px-4 py-2.5 text-[12.5px] leading-5 text-danger"><Flag size={13} className="shrink-0" /><span><b>Escalated:</b> {c.handoff_reason}. The customer was pointed to WhatsApp.</span></p>}
-          {orders && orders.length > 0 && <div className="flex items-center gap-2 overflow-x-auto border-b border-white/[0.07] px-4 py-2"><ShoppingBag size={13} className="shrink-0 text-faint-foreground" /><span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-faint-foreground">Recent orders</span>{orders.map((o) => <Link key={o.order_reference} to={`/admin/orders?q=${o.order_reference}`} className="shrink-0 rounded-lg border border-white/[0.08] px-2 py-1 text-[11.5px] text-foreground hover:border-primary/40"><span className="font-mono text-primary-glow">{o.order_reference}</span> · {o.data_products?.name?.replace(/^.*?—\s*/, "") ?? "bundle"} · {formatGHS(Number(o.amount))} · <span className={o.status === "delivered" ? "text-ink-emerald" : o.status === "refunded" ? "text-faint-foreground" : "text-amber"}>{o.status.replace(/_/g, " ")}</span></Link>)}</div>}
+          {orders && orders.length > 0 && <div className="flex items-center gap-2 overflow-x-auto border-b border-white/[0.07] px-4 py-2"><ShoppingBag size={13} className="shrink-0 text-faint-foreground" /><span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-faint-foreground">Recent orders</span>{orders.map((o) => <Link key={o.order_reference} to={`/admin/orders?q=${o.order_reference}`} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/[0.08] px-2 py-1 text-[11.5px] text-foreground hover:border-primary/40"><SupplierBadge supplier={o.suppliers} /><span className="font-mono text-primary-glow">{o.order_reference}</span> · {o.data_products?.name?.replace(/^.*?—\s*/, "") ?? "bundle"} · {formatGHS(Number(o.amount))} · <span className={o.status === "delivered" ? "text-ink-emerald" : o.status === "refunded" ? "text-faint-foreground" : "text-amber"}>{o.status.replace(/_/g, " ")}</span></Link>)}</div>}
           <div ref={scrollRef} className="max-h-[56dvh] min-h-[360px] space-y-2.5 overflow-y-auto px-4 py-4">
             {transcript!.messages.map((m, i, arr) => { const newDay = i === 0 || dayLabel(arr[i - 1].created_at) !== dayLabel(m.created_at); return <div key={m.id}>
               {newDay && <p className="my-3 text-center text-[10.5px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">{dayLabel(m.created_at)}</p>}

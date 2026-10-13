@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, ClipboardList, Clock3, Receipt, ShieldCheck, Store, TrendingUp, Users, Wallet } from "lucide-react";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { InlineAction, Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid } from "@/components/admin/ui";
+import SupplierBadge, { useFallbackOrigins } from "@/components/admin/SupplierBadge";
 import { adminDatabase, formatAdminDate, readableStatus } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 
@@ -14,7 +15,7 @@ const PERIODS = [{ value: "today" as const, label: "Today" }, { value: "7d" as c
 // Days are Ghana days (GMT, no daylight saving), whatever clock the admin's phone is on.
 const since = (p: Period) => { if (p === "all") return "2026-09-12T00:00:00Z"; const d = new Date(); d.setUTCHours(0, 0, 0, 0); if (p !== "today") d.setUTCDate(d.getUTCDate() - (p === "7d" ? 7 : 30)); return d.toISOString(); };
 
-interface OrderRow { order_reference: string; recipient_phone: string; amount: number; status: string; payment_status: string; admin_resolution_status: string | null; supplier_retry_after: string | null; created_at: string; networks: { name: string } | null; data_products: { name: string } | null }
+interface OrderRow { id: string; order_reference: string; recipient_phone: string; amount: number; status: string; payment_status: string; admin_resolution_status: string | null; supplier_retry_after: string | null; created_at: string; networks: { name: string } | null; data_products: { name: string } | null; suppliers: { code: string; name: string } | null }
 interface Overview { period: { revenue: number; net: number; fee_income: number; gross_profit: number }; owed: { undelivered: number; undelivered_count: number }; cash: { supplier_float: Record<string, number> } }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown }> };
@@ -24,6 +25,7 @@ export default function Admin() {
   const navigate = useNavigate();
   const [period, setPeriod] = useState<Period>("today");
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const origins = useFallbackOrigins(orders);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
   const [suppliers, setSuppliers] = useState<{ code: string; name: string; balance: number | null }[]>([]);
@@ -31,7 +33,7 @@ export default function Admin() {
 
   const load = useCallback(async () => {
     const [o, ov, su, c] = await Promise.all([
-      db().from("orders").select("order_reference, recipient_phone, amount, status, payment_status, admin_resolution_status, supplier_retry_after, created_at, networks(name), data_products(name)").gte("created_at", since(period)).order("created_at", { ascending: false }).limit(50),
+      db().from("orders").select("id, order_reference, recipient_phone, amount, status, payment_status, admin_resolution_status, supplier_retry_after, created_at, networks(name), data_products(name), suppliers(code, name)").gte("created_at", since(period)).order("created_at", { ascending: false }).limit(50),
       db().rpc("finance_overview", { p_from: since(period), p_to: null }),
       db().from("suppliers").select("code, name, balance").neq("status", "disabled").order("display_order"),
       db().rpc("admin_overview_counts", { p_from: since(period) }),
@@ -65,7 +67,7 @@ export default function Admin() {
           <Rows empty="No orders in this period.">
             {orders.slice(0, 8).map((x) => (
               <Row key={x.order_reference} onClick={() => navigate(`/admin/orders?q=${x.order_reference}`)}
-                primary={<span className="font-mono text-[13px]">{x.order_reference}</span>}
+                primary={<span className="inline-flex items-center gap-1.5"><SupplierBadge supplier={x.suppliers} from={origins[x.id]} /><span className="font-mono text-[13px]">{x.order_reference}</span></span>}
                 secondary={`${x.recipient_phone} · ${x.networks?.name ?? ""} ${x.data_products?.name ?? ""} · ${formatAdminDate(x.created_at)}`}
                 right={formatGHS(Number(x.amount))}
                 rightNote={<Pill tone={statusTone(x.status)}>{x.admin_resolution_status === "awaiting_verification" ? "Awaiting verification" : x.supplier_retry_after ? "Cooldown" : readableStatus(x.status)}</Pill>} />

@@ -7,6 +7,7 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Money, Panel, Pill, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import CopyRef from "@/components/admin/CopyRef";
+import SupplierBadge, { useFallbackOrigins } from "@/components/admin/SupplierBadge";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 
@@ -18,7 +19,7 @@ type Stage = "all" | "in_progress" | "verification" | "review" | "no_float";
 const NO_FLOAT = /insufficient (wallet )?balance|insufficient funds|low balance/i;
 const stageOf = (o: Row): Exclude<Stage, "all"> => o.admin_resolution_status === "awaiting_verification" ? "verification" : o.status.startsWith("failed") ? (NO_FLOAT.test(o.failure_reason ?? "") ? "no_float" : "review") : "in_progress";
 const STAGE_LABEL: Record<Stage, string> = { all: "All", in_progress: "In progress", verification: "Verification", review: "Needs review", no_float: "Supplier no money" };
-interface Row { id: string; order_reference: string; recipient_phone: string; amount: number; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { name: string } | null }
+interface Row { id: string; order_reference: string; recipient_phone: string; amount: number; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { code: string; name: string } | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any };
 const startOfDay = (d: Date) => { const x = new Date(d); x.setUTCHours(0, 0, 0, 0); return x; };
@@ -33,6 +34,7 @@ export default function AdminOrdersReceived() {
   const from = params.get("from") ?? new Date().toISOString().slice(0, 10);
   const to = params.get("to") ?? from;
   const [rows, setRows] = useState<Row[]>([]);
+  const origins = useFallbackOrigins(rows);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const stage = (params.get("stage") as Stage) || "all";
@@ -51,7 +53,7 @@ export default function AdminOrdersReceived() {
   };
   useEffect(() => {
     let mounted = true; setLoading(true);
-    db().from("orders").select("id, order_reference, recipient_phone, amount, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(name)")
+    db().from("orders").select("id, order_reference, recipient_phone, amount, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(code, name)")
       .eq("payment_status", "succeeded").gte("paid_at", startOfDay(new Date(from)).toISOString()).lte("paid_at", endOfDay(new Date(to)).toISOString()).order("paid_at", { ascending: false }).limit(5000)
       .then((r: { data: Row[] | null }) => { if (mounted) { setRows(r.data ?? []); setLoading(false); } });
     return () => { mounted = false; };
@@ -96,7 +98,7 @@ export default function AdminOrdersReceived() {
           {list.map((o) => (
             <li key={o.id} className="flex items-start gap-2.5 py-2">
               <div className="min-w-0 flex-1">
-                <p className="text-[12.5px] font-semibold text-foreground"><CopyRef value={o.order_reference} /> <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
+                <p className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-foreground"><SupplierBadge supplier={o.suppliers} from={origins[o.id]} /><CopyRef value={o.order_reference} /> <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
                 <p className="text-[11px] text-faint-foreground">paid {formatAdminDate(o.paid_at)} · {age(o.paid_at)} ago · {reasonOf(o)}</p>
               </div>
               <div className="flex flex-col items-end gap-1.5 text-right"><p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</p><Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status === "refunded" ? "refunded" : o.admin_resolution_status === "awaiting_verification" ? "verification" : o.admin_resolution_status === "wrong_network" ? "wrong network" : o.status.startsWith("failed") ? "review" : "in progress"}</Pill>{stageOf(o) === "no_float" && <button type="button" disabled={retrying === o.id} onClick={() => void retry(o)} className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-[11.5px] font-medium text-foreground disabled:opacity-50"><RotateCcw size={11} />{retrying === o.id ? "Sending…" : "Retry"}</button>}</div>
