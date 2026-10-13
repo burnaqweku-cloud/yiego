@@ -38,6 +38,17 @@ export interface PurchaseOutcome {
   message: string | null;
 }
 
+/** What a supplier says when asked "do you have our order <reference>?" after a timeout. */
+export interface ReferenceLookup {
+  found: boolean;
+  /** found and not refunded/failed: the supplier is holding (or has delivered) the order. */
+  held: boolean;
+  supplierReference: string | null;
+  purchaseId: string | null;
+  transactionReference: string | null;
+  supplierStatus: string | null;
+}
+
 export interface SupplierAdapter {
   code: string;
   /** Refuse impossible orders before spending money. */
@@ -45,6 +56,14 @@ export interface SupplierAdapter {
   purchase(context: PurchaseContext): Promise<PurchaseOutcome>;
   mapStatus(supplierStatus?: string | null): OrderStatus;
   isConfigured(): boolean;
+  /** Optional: look an order up by OUR reference. Used after a timeout, before any fallback, because a
+   *  supplier that did not answer may still have taken the order. Throws when the lookup itself fails. */
+  findByReference?(orderReference: string): Promise<ReferenceLookup>;
+}
+
+/** A purchase reply that is not a "no": no answer, gateway timeout, server error. The supplier may have the order. */
+export function isAmbiguousOutcome(outcome: PurchaseOutcome) {
+  return !outcome.ok && (outcome.httpStatus === 0 || outcome.httpStatus === 408 || outcome.httpStatus >= 500);
 }
 
 /* ── DataMartGH ─────────────────────────────────────────────── */
@@ -221,6 +240,14 @@ const emmaDataKing: SupplierAdapter = {
     };
   },
   mapStatus: (supplierStatus) => edk.mapStatus(supplierStatus),
+  async findByReference(orderReference) {
+    const r = await edk.checkOrderStatus(orderReference);
+    const data = r.payload?.data ?? {};
+    if (r.status === 404 || (r.ok && !data.id && !data.reference)) return { found: false, held: false, supplierReference: null, purchaseId: null, transactionReference: null, supplierStatus: null };
+    if (!r.ok) throw new Error(`EmmaDataKing lookup failed (${r.status})`);
+    const status = String(data.status ?? "").toUpperCase();
+    return { found: true, held: edk.mapStatus(status) !== "failed_needs_review", supplierReference: data.id ?? null, purchaseId: data.reference ?? orderReference, transactionReference: data.transaction_code ?? null, supplierStatus: status || null };
+  },
 };
 
 const ADAPTERS: Record<string, SupplierAdapter> = {

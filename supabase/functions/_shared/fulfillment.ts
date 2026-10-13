@@ -1,5 +1,5 @@
 import { mapDataMartGHStatusToYieGo } from "./datamartgh.ts";
-import { adapterFor, type PurchaseContext } from "./supplierAdapters.ts";
+import { adapterFor, isAmbiguousOutcome, type PurchaseContext, type PurchaseOutcome } from "./supplierAdapters.ts";
 import { sendOrderConfirmation } from "./email.ts";
 import { FALLBACK_EVENT, fallbackFor } from "./fallback.ts";
 
@@ -238,7 +238,33 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
     metadata: { supplier: supplier.code, idempotencyKey },
   });
 
-  const outcome = await adapter.purchase(context);
+  let outcome: PurchaseOutcome = await adapter.purchase(context);
+
+  // No answer (timeout, gateway or server error) is NOT a refusal: the supplier may have taken the order
+  // and simply not replied in time. Ask them by our reference before deciding anything. Found and held →
+  // carry on as an accepted order; found but refunded/failed or not found → it is a real failure (fallback
+  // allowed); lookup impossible → a failure that a person must check, never a fallback (no double sends).
+  let fallbackAllowed = true;
+  if (isAmbiguousOutcome(outcome)) {
+    fallbackAllowed = false;
+    if (adapter.findByReference) {
+      try {
+        let look = await adapter.findByReference(order.order_reference);
+        if (!look.found) { await new Promise((r) => setTimeout(r, 5000)); look = await adapter.findByReference(order.order_reference); }
+        if (look.found && look.held) {
+          await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.recovered_after_timeout", from_status: "processing", to_status: "processing", message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) but has the order (${look.supplierStatus ?? "accepted"}). Keeping it there.`, metadata: { supplier: supplier.code, httpStatus: outcome.httpStatus, supplierReference: look.supplierReference, supplierStatus: look.supplierStatus } });
+          outcome = { ...outcome, ok: true, supplierReference: look.supplierReference, purchaseId: look.purchaseId, transactionReference: look.transactionReference, supplierStatus: look.supplierStatus, message: null };
+        } else {
+          fallbackAllowed = true;
+          outcome = { ...outcome, message: look.found ? `${supplier.name} did not answer in time and then reported ${look.supplierStatus ?? "failed"}` : `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) and has no record of this order` };
+        }
+      } catch (e) {
+        outcome = { ...outcome, message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) and could not be asked whether it has the order (${e instanceof Error ? e.message : "lookup failed"}). Check with the supplier before re-sending.` };
+      }
+    } else {
+      outcome = { ...outcome, message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}). It may still have the order: check with the supplier before re-sending.` };
+    }
+  }
 
   // DBH "recent order already exists": either a concurrent attempt of ours
   // won the race (keep it), or the customer bought twice within DBH's
@@ -301,7 +327,7 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
 
   // Refused outright by this supplier (not approved, no stock, rejected): give the fallback supplier the
   // order now, before anything is held or marked failed. The refusal is still logged.
-  if (!outcome.ok) {
+  if (!outcome.ok && fallbackAllowed) {
     const fb = opts.viaFallback ? null : await fallbackFor(supabase, order, supplier.id);
     if (fb) {
       await supabase.from("supplier_api_logs").insert({ supplier_id: supplier.id, order_id: order.id, action: "purchase", endpoint: outcome.endpoint, request_payload: outcome.requestPayload, response_payload: outcome.responsePayload, http_status: outcome.httpStatus, call_status: "error", idempotency_key: idempotencyKey, error_message: outcome.message, duration_ms: outcome.durationMs });

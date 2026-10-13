@@ -28,3 +28,7 @@
 -- First top-up recorded via finance_record_topup('emmadataking', 200, 2026-10-13 20:21Z, 'bank') → fee 6 (3%).
 -- Fallback is once per ATTEMPT: supplier.fallback events are counted only since the latest admin.retry event,
 -- so a manual Retry (both suppliers were empty, main still is) can still hand the order to the fallback.
+-- 13 Oct late: a purchase that gets NO answer (HTTP 0/408/5xx) is ambiguous, not a refusal. fulfillment.ts now asks the
+-- supplier by our reference (adapter.findByReference, EmmaDataKing only so far): held → keep it there
+-- (event supplier.recovered_after_timeout); refunded/unknown → failure, fallback allowed; lookup impossible or no
+-- lookup (DBH) → failure a person must check, NO fallback. Cause: YG-C3680ED132 was delivered by both EDK and DBH.
