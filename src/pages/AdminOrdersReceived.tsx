@@ -22,7 +22,7 @@ const FAILED_STATUSES = new Set(["failed", "rejected", "cancelled", "canceled"])
 const awaitingRefund = (o: Row) => o.status === "processing" && FAILED_STATUSES.has((o.supplier_status ?? "").toLowerCase());
 const stageOf = (o: Row): Exclude<Stage, "all"> => o.admin_resolution_status === "awaiting_verification" ? "verification" : o.status.startsWith("failed") ? (NO_FLOAT.test(o.failure_reason ?? "") ? "no_float" : "review") : awaitingRefund(o) ? "awaiting_refund" : "in_progress";
 const STAGE_LABEL: Record<Stage, string> = { all: "All", in_progress: "In progress", awaiting_refund: "Awaiting refund", verification: "Verification", review: "Needs review", no_float: "Supplier no money" };
-interface Row { id: string; order_reference: string; recipient_phone: string; amount: number; cost_amount: number | null; supplier_order_reference: string | null; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { code: string; name: string } | null }
+interface Row { id: string; order_reference: string; product_id?: string | null; recipient_phone: string; amount: number; cost_amount: number | null; supplier_order_reference: string | null; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { code: string; name: string } | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any };
 const startOfDay = (d: Date) => { const x = new Date(d); x.setUTCHours(0, 0, 0, 0); return x; };
@@ -46,6 +46,24 @@ export default function AdminOrdersReceived() {
 
   const [tick, setTick] = useState(0);
   const [retrying, setRetrying] = useState<string | null>(null);
+  // "Try another supplier" on a row: every active supplier that sells that order's bundle, other than the current one.
+  const [supplierOptions, setSupplierOptions] = useState<{ code: string; name: string; product_ids: Set<string> }[]>([]);
+  useEffect(() => {
+    void Promise.all([db().from("suppliers").select("id, code, name, status").eq("status", "active"), db().from("supplier_product_mappings").select("supplier_id, product_id").eq("is_active", true)])
+      .then(([su, m]: [{ data: { id: string; code: string; name: string }[] | null }, { data: { supplier_id: string; product_id: string }[] | null }]) => {
+        setSupplierOptions((su.data ?? []).map((x) => ({ code: x.code, name: x.name, product_ids: new Set((m.data ?? []).filter((r) => r.supplier_id === x.id).map((r) => r.product_id)) })));
+      });
+  }, []);
+  const canTryElsewhere = (o: Row) => { const st = (o.supplier_status ?? "").toLowerCase(); return !["delivered", "refunded", "cancelled"].includes(o.status) && (["refunded", "refund", "not_approved"].includes(st) || o.admin_resolution_status === "awaiting_verification" || (!o.supplier_order_reference && !o.supplier_status)); };
+  const trySupplier = async (o: Row, code: string, name: string) => {
+    if (!window.confirm(`Send ${o.order_reference} to ${name} now? The previous supplier has not charged us for it, so this is a fresh send.`)) return;
+    setRetrying(o.id);
+    const r = await supabase.functions.invoke<{ error?: string; result?: { status?: string; reason?: string } }>("admin-order-action", { body: { action: "try_supplier", orderReference: o.order_reference, supplierCode: code } });
+    setRetrying(null);
+    if (r.error || r.data?.error) return toast.error(r.data?.error ?? r.error?.message ?? "Could not send.");
+    if (r.data?.result?.status === "failed_needs_review") return toast.error(`Not sent: ${(r.data.result.reason ?? "supplier refused").replace(/_/g, " ")}`);
+    toast.success(`${o.order_reference} sent to ${name}.`); setTick((t) => t + 1);
+  };
   // Same retry as the order page: re-sends a failed paid order to the supplier.
   const retry = async (o: Row) => {
     setRetrying(o.id);
@@ -59,7 +77,7 @@ export default function AdminOrdersReceived() {
     let mounted = true; setLoading(true);
     // The API returns at most 1000 rows per read. A date range fits; "All time" would not, so it fetches only the
     // orders still waiting (the other buckets are per-range anyway) in pages of 1000.
-    const cols = "id, order_reference, recipient_phone, amount, cost_amount, supplier_order_reference, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(code, name)";
+    const cols = "id, order_reference, product_id, recipient_phone, amount, cost_amount, supplier_order_reference, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(code, name)";
     const fetchAll = async () => {
       if (!allTime) { const r = await db().from("orders").select(cols).eq("payment_status", "succeeded").gte("paid_at", startOfDay(new Date(from)).toISOString()).lte("paid_at", endOfDay(new Date(to)).toISOString()).order("paid_at", { ascending: false }).limit(1000); return (r.data ?? []) as Row[]; }
       const out: Row[] = []; for (let page = 0; page < 20; page++) { const r = await db().from("orders").select(cols).eq("payment_status", "succeeded").not("status", "in", "(delivered,refunded,cancelled)").order("paid_at", { ascending: false }).range(page * 1000, page * 1000 + 999); const batch = (r.data ?? []) as Row[]; out.push(...batch); if (batch.length < 1000) break; }
@@ -118,7 +136,7 @@ export default function AdminOrdersReceived() {
                 <p className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-foreground"><SupplierBadge supplier={o.suppliers} from={origins[o.id]} /><CopyRef value={o.order_reference} /> <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
                 <p className="text-[11px] text-faint-foreground">paid {formatAdminDate(o.paid_at)} · {age(o.paid_at)} ago · {reasonOf(o)}</p>
               </div>
-              <div className="flex flex-col items-end gap-1.5 text-right"><p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</p><Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status === "refunded" ? "refunded" : o.admin_resolution_status === "awaiting_verification" ? "verification" : o.admin_resolution_status === "wrong_network" ? "wrong network" : o.status.startsWith("failed") ? "review" : awaitingRefund(o) ? "awaiting refund" : "in progress"}</Pill>{stageOf(o) === "no_float" && <button type="button" disabled={retrying === o.id} onClick={() => void retry(o)} className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-[11.5px] font-medium text-foreground disabled:opacity-50"><RotateCcw size={11} />{retrying === o.id ? "Sending…" : "Retry"}</button>}</div>
+              <div className="flex flex-col items-end gap-1.5 text-right"><p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</p><Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status === "refunded" ? "refunded" : o.admin_resolution_status === "awaiting_verification" ? "verification" : o.admin_resolution_status === "wrong_network" ? "wrong network" : o.status.startsWith("failed") ? "review" : awaitingRefund(o) ? "awaiting refund" : "in progress"}</Pill>{canTryElsewhere(o) && (() => { const others = supplierOptions.filter((x) => x.code !== o.suppliers?.code && x.product_ids.has(o.product_id ?? "")); return others.length ? <select value="" disabled={retrying === o.id} onChange={(e) => { const x = others.find((y) => y.code === e.target.value); if (x) void trySupplier(o, x.code, x.name); }} className="rounded-full border border-white/10 bg-transparent px-2 py-1 text-[11.5px] text-foreground disabled:opacity-50" aria-label={`Try another supplier for ${o.order_reference}`}><option value="">{retrying === o.id ? "Sending…" : "Try another supplier…"}</option>{others.map((x) => <option key={x.code} value={x.code}>{x.name}</option>)}</select> : null; })()}{stageOf(o) === "no_float" && <button type="button" disabled={retrying === o.id} onClick={() => void retry(o)} className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-[11.5px] font-medium text-foreground disabled:opacity-50"><RotateCcw size={11} />{retrying === o.id ? "Sending…" : "Retry"}</button>}</div>
             </li>))}
         </ul>
       </Panel>
