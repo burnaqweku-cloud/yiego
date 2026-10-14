@@ -36,7 +36,7 @@ export default function AdminOrdersReceived() {
   const source = (params.get("source") as Source) || "all";
   const from = params.get("from") ?? new Date().toISOString().slice(0, 10);
   const to = params.get("to") ?? from;
-  const allTime = params.get("all") === "1"; // off by default: the date range rules unless the admin switches it on
+  const allTime = params.get("all") === "1"; // off by default: the date range rules unless the admin switches it on; loads only waiting orders
   const [rows, setRows] = useState<Row[]>([]);
   const origins = useFallbackOrigins(rows);
   const [loading, setLoading] = useState(true);
@@ -57,9 +57,15 @@ export default function AdminOrdersReceived() {
   };
   useEffect(() => {
     let mounted = true; setLoading(true);
-    db().from("orders").select("id, order_reference, recipient_phone, amount, cost_amount, supplier_order_reference, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(code, name)")
-      .eq("payment_status", "succeeded").gte("paid_at", allTime ? "2000-01-01" : startOfDay(new Date(from)).toISOString()).lte("paid_at", allTime ? "2100-01-01" : endOfDay(new Date(to)).toISOString()).order("paid_at", { ascending: false }).limit(5000)
-      .then((r: { data: Row[] | null }) => { if (mounted) { setRows(r.data ?? []); setLoading(false); } });
+    // The API returns at most 1000 rows per read. A date range fits; "All time" would not, so it fetches only the
+    // orders still waiting (the other buckets are per-range anyway) in pages of 1000.
+    const cols = "id, order_reference, recipient_phone, amount, cost_amount, supplier_order_reference, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(code, name)";
+    const fetchAll = async () => {
+      if (!allTime) { const r = await db().from("orders").select(cols).eq("payment_status", "succeeded").gte("paid_at", startOfDay(new Date(from)).toISOString()).lte("paid_at", endOfDay(new Date(to)).toISOString()).order("paid_at", { ascending: false }).limit(1000); return (r.data ?? []) as Row[]; }
+      const out: Row[] = []; for (let page = 0; page < 20; page++) { const r = await db().from("orders").select(cols).eq("payment_status", "succeeded").not("status", "in", "(delivered,refunded,cancelled)").order("paid_at", { ascending: false }).range(page * 1000, page * 1000 + 999); const batch = (r.data ?? []) as Row[]; out.push(...batch); if (batch.length < 1000) break; }
+      return out;
+    };
+    void fetchAll().then((data) => { if (mounted) { setRows(data); setLoading(false); } });
     return () => { mounted = false; };
   }, [from, to, allTime, tick]);
 
@@ -89,7 +95,7 @@ export default function AdminOrdersReceived() {
         <Stat loading={loading} label="Refunded" value={String(counts.refunded)} tone={bucket === "refunded" ? "bad" : "default"} onClick={() => set("bucket", "refunded")} />
       </StatGrid>
       <Panel title={BUCKET_TITLE[bucket]} note={`${list.length} orders · ${formatGHS(total)}${allTime ? " · all time" : ""}`} action={<div className="flex items-center gap-1.5">
-        <Button size="sm" variant={allTime ? "primary" : "ghost"} onClick={() => set("all", allTime ? "0" : "1")} title="Ignore the dates and show every order since launch"><InfinityIcon size={14} />All time</Button>
+        {bucket === "waiting" && <Button size="sm" variant={allTime ? "primary" : "ghost"} onClick={() => set("all", allTime ? "0" : "1")} title="Ignore the dates and show every waiting order since launch"><InfinityIcon size={14} />All time</Button>}
         {bucket === "waiting" && stage === "awaiting_refund" && list.length > 0 && <Button size="sm" variant="ghost" title="Copy these orders in a form you can paste to the supplier's support" onClick={() => {
           const bySupplier = new Map<string, Row[]>(); for (const o of list) { const k = o.suppliers?.name ?? "Supplier"; bySupplier.set(k, [...(bySupplier.get(k) ?? []), o]); }
           const text = [...bySupplier.entries()].map(([name, rows]) => `${name} — ${rows.length} order${rows.length === 1 ? "" : "s"} marked ${[...new Set(rows.map((o) => o.supplier_status))].join("/")} but not yet refunded:\n` + rows.map((o, i) => `${i + 1}. Ref ${o.order_reference}${o.supplier_order_reference ? ` (your ID ${o.supplier_order_reference})` : ""} · ${o.networks?.name ?? ""} ${o.data_products?.capacity_gb ?? ""}GB · ${o.recipient_phone} · charged GH₵${Number(o.cost_amount ?? 0).toFixed(2)} · ${formatAdminDate(o.paid_at)} · status ${o.supplier_status}`).join("\n") + "\nPlease refund these to our balance or confirm their status. Thank you.").join("\n\n");
