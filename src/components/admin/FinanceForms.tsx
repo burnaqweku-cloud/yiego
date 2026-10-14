@@ -47,6 +47,7 @@ export function RecordTopupModal({ open, onClose, actorId, suppliers, onDone }: 
   const fee = via === "paystack" ? Math.round(Number(amount || 0) * rate * 100) / 100 : Math.round(Number(momoFee || 0) * 100) / 100;
   const submit = async () => {
     if (!supplier || !(Number(amount) > 0)) return toast.error("Enter the amount of float the supplier credited.");
+    if (via === "momo" && !(Number(momoFee) > 0)) return toast.error("Enter the MoMo charge (there is always one, even if small).");
     setBusy(true);
     const { error } = await rpc("finance_record_topup", { p_actor: actorId, p_supplier_code: supplier, p_amount: Number(amount), p_occurred_at: toIso(when), p_paid_from: paidFrom, p_fee: via === "paystack" ? null : fee, p_note: `${via === "momo" ? "via MoMo" : "via Paystack"}${note ? ` · ${note}` : ""}`, p_reference: null });
     setBusy(false);
@@ -56,9 +57,9 @@ export function RecordTopupModal({ open, onClose, actorId, suppliers, onDone }: 
   return (
     <Shell open={open} onClose={onClose} title="Record supplier top-up" onSubmit={submit} busy={busy} submitLabel="Record top-up">
       <Field label="Supplier"><select value={supplier} onChange={(e) => setSupplier(e.target.value)} className={inputCls}>{suppliers.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}</select></Field>
-      <Field label="Paid via"><div className="flex gap-2">{(["paystack", "momo"] as const).map((v) => <button key={v} type="button" onClick={() => setVia(v)} className={`flex-1 rounded-xl border px-3 py-2 text-[13px] ${via === v ? "border-primary/40 bg-primary/[0.1] text-foreground" : "border-white/[0.1] text-muted-foreground"}`}>{v === "paystack" ? `Paystack · ${Math.round(rate * 100)}% charge` : "MoMo · no charge"}</button>)}</div></Field>
-      <Field label="Float credited (GH₵)" hint={via === "paystack" ? (amount ? `Charge ${Math.round(rate * 100)}% = ${formatGHS(fee)} · you paid ${formatGHS(Number(amount) + fee)}` : `The supplier's charge (${Math.round(rate * 100)}%) is added on top`) : (fee ? `MoMo charge ${formatGHS(fee)} · you paid ${formatGHS(Number(amount) + fee)}` : "Sent by MoMo; what you sent is what they credited")}><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="500" className={inputCls} /></Field>
-      {via === "momo" && <Field label="MoMo charge, if any (GH₵)" hint="Leave empty when there was none"><input inputMode="decimal" value={momoFee} onChange={(e) => setMomoFee(e.target.value)} placeholder="0" className={inputCls} /></Field>}
+      <Field label="Paid via"><div className="flex gap-2">{(["paystack", "momo"] as const).map((v) => <button key={v} type="button" onClick={() => setVia(v)} className={`flex-1 rounded-xl border px-3 py-2 text-[13px] ${via === v ? "border-primary/40 bg-primary/[0.1] text-foreground" : "border-white/[0.1] text-muted-foreground"}`}>{v === "paystack" ? `Paystack · ${Math.round(rate * 100)}% charge` : "MoMo · charge as shown on the transfer"}</button>)}</div></Field>
+      <Field label="Float credited (GH₵)" hint={via === "paystack" ? (amount ? `Charge ${Math.round(rate * 100)}% = ${formatGHS(fee)} · you paid ${formatGHS(Number(amount) + fee)}` : `The supplier's charge (${Math.round(rate * 100)}%) is added on top`) : (fee ? `MoMo charge ${formatGHS(fee)} · you paid ${formatGHS(Number(amount) + fee)}` : "Type the MoMo charge below")}><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="500" className={inputCls} /></Field>
+      {via === "momo" && <Field label="MoMo charge (GH₵)" hint="The transfer fee MoMo took, e.g. 1.50"><input inputMode="decimal" value={momoFee} onChange={(e) => setMomoFee(e.target.value)} placeholder="1.50" className={inputCls} /></Field>}
       <Field label="When"><input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className={inputCls} /></Field>
       <Field label="Note (optional)"><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. MoMo ref 1234" className={inputCls} /></Field>
     </Shell>
