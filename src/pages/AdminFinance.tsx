@@ -141,7 +141,8 @@ export default function AdminFinance() {
           <Stat loading={loading} label="Margin on bundles" value={<Money value={p?.gross_profit} tone={Number(p?.gross_profit) < 0 ? "bad" : "default"} />} note="sales minus supplier cost and agents' share" />
           <Stat loading={loading} label="4% checkout fee collected" value={<Money value={p?.fee_income} />} note="charged on top of the price" tone="good" />
           <Stat loading={loading} label="Paystack fees" value={<Money value={p?.paystack_fees} />} tone="muted" />
-          <Stat loading={loading} label="Top-up charges + expenses" value={<Money value={Number(p?.topup_fees ?? 0) + Number(p?.other_expenses ?? 0)} />} tone="muted" />
+          <Stat loading={loading} label="Top-up charges" value={<Money value={p?.topup_fees ?? 0} />} note="suppliers' charge on float" tone="muted" />
+          <Stat loading={loading} label="Expenses" value={<Money value={p?.other_expenses ?? 0} />} note="subscriptions, registration, adverts" tone="bad" to="/admin/finance/expenses" />
           <Stat loading={loading} label="Agent subscriptions" value={<Money value={p?.agent_subscriptions ?? 0} />} note="monthly fees" tone="good" to="/admin/agents/subscriptions" />
           {Number(p?.network_fees_gross ?? 0) > 0 && <Stat loading={loading} label="Sub-agent fees" value={<Money value={p?.network_fees_ours ?? 0} />} note={`our 4% · ${formatGHS(Number(p?.network_fees_to_parents ?? 0))} passed to parent agents`} tone="good" to="/admin/agents" />}
           <Stat loading={loading} label="Agent payout fees" value={<Money value={p?.agent_payout_fees ?? 0} />} note="1% on withdrawals" tone="good" to="/admin/agents/payouts" />
