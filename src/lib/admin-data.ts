@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface AdminOrderRow {
   id: string;
   order_reference: string;
+  product_id?: string | null;
   recipient_phone: string;
   guest_email: string | null;
   wallet_ledger_entry_id?: string | null;
@@ -13,6 +14,7 @@ export interface AdminOrderRow {
   payment_status: string;
   supplier_status: string | null;
   supplier_order_reference: string | null;
+  supplier_purchase_id?: string | null;
   supplier_retry_after: string | null;
   supplier_retry_count: number;
   failure_reason: string | null;

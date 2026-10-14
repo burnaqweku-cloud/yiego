@@ -64,3 +64,9 @@
 --   + data_products.forced_fallback_supplier_id and phase1.admin_set_product_fallback(p_actor, p_product_id, p_supplier_code|null):
 --     a pinned bundle has its OWN fallback (must differ from Always via; null = no fallback). Set: 5GB/6GB → EmmaDataKing, 40/50GB none.
 --   fallback.ts: pinned bundle → its own fallback only; unpinned → the network's fallback.
+-- 14 Oct 11:00: delivery_speed() / delivery_speed_by_network() count only orders a supplier is really working on
+--   (delivered, or open with a live supplier reference and no failed/refunded/not_approved status); the clock starts at the
+--   CURRENT supplier's fulfillment_started event (restarts after a fallback), else paid_at.
+-- admin-order-action "try_supplier" {supplierCode}: admin sends a REFUNDED (or never-sent) paid order to a chosen active
+--   supplier that sells the bundle; refused while the current supplier may still hold it. Writes a supplier.fallback event
+--   (stage admin_try_supplier) and sends via fulfillOrder({supplierId, viaFallback:true}). Orders page: "Try another supplier" dropdown.
