@@ -21,7 +21,13 @@ export interface PurchaseContext {
   /** From supplier_product_mappings — each supplier's own product identifiers. */
   supplierNetworkCode: string | null;
   supplierCapacity: string | null;
+  /** How many purchase calls this supplier already got for this order (0 = first send). Suppliers that key
+   *  orders by our reference get a distinct reference per attempt, so a lookup is never ambiguous. */
+  attempt?: number;
 }
+
+/** EmmaDataKing keys orders by our reference: first send = the order reference, retries = "-R1", "-R2"… */
+export function edkRef(orderReference: string, attempt = 0) { return attempt > 0 ? `${orderReference}-R${attempt}` : orderReference; }
 
 export interface PurchaseOutcome {
   ok: boolean;
@@ -61,7 +67,7 @@ export interface SupplierAdapter {
   isConfigured(): boolean;
   /** Optional: look an order up by OUR reference. Used after a timeout, before any fallback, because a
    *  supplier that did not answer may still have taken the order. Throws when the lookup itself fails. */
-  findByReference?(orderReference: string): Promise<ReferenceLookup>;
+  findByReference?(orderReference: string, attempt?: number): Promise<ReferenceLookup>;
 }
 
 /** A purchase reply that is not a "no": no answer, gateway timeout, server error. The supplier may have the order. */
@@ -223,7 +229,7 @@ const emmaDataKing: SupplierAdapter = {
     return { ok: true };
   },
   async purchase(context) {
-    const requestPayload = { network: context.supplierNetworkCode ?? "YELLO", capacity: String(context.supplierCapacity ?? ""), phoneNumber: context.recipientPhone, ref: context.orderReference };
+    const requestPayload = { network: context.supplierNetworkCode ?? "YELLO", capacity: String(context.supplierCapacity ?? ""), phoneNumber: context.recipientPhone, ref: edkRef(context.orderReference, context.attempt ?? 0) };
     const result = await edk.purchase(requestPayload);
     const data = result.payload?.data ?? {};
     // Their id (EDK-…) is the receipt; our own reference is what /order-status reads, so keep both.
@@ -236,20 +242,21 @@ const emmaDataKing: SupplierAdapter = {
       requestPayload,
       responsePayload: result.payload,
       supplierReference: data.id ?? null,
-      purchaseId: data.reference ?? context.orderReference,
+      purchaseId: data.reference ?? requestPayload.ref,
       transactionReference: data.transaction_code ?? null,
       supplierStatus: data.status ?? null,
       message: accepted ? null : result.payload?.message ?? result.payload?.error ?? "EmmaDataKing purchase failed",
     };
   },
   mapStatus: (supplierStatus) => edk.mapStatus(supplierStatus),
-  async findByReference(orderReference) {
-    const r = await edk.checkOrderStatus(orderReference);
+  async findByReference(orderReference, attempt = 0) {
+    const ref = edkRef(orderReference, attempt);
+    const r = await edk.checkOrderStatus(ref);
     const data = r.payload?.data ?? {};
     if (r.status === 404 || (r.ok && !data.id && !data.reference)) return { found: false, held: false, refunded: false, supplierReference: null, purchaseId: null, transactionReference: null, supplierStatus: null };
     if (!r.ok) throw new Error(`EmmaDataKing lookup failed (${r.status})`);
     const status = String(data.status ?? "").toUpperCase();
-    return { found: true, held: edk.mapStatus(status) !== "failed_needs_review", refunded: status === "REFUNDED", supplierReference: data.id ?? null, purchaseId: data.reference ?? orderReference, transactionReference: data.transaction_code ?? null, supplierStatus: status || null };
+    return { found: true, held: edk.mapStatus(status) !== "failed_needs_review", refunded: status === "REFUNDED", supplierReference: data.id ?? null, purchaseId: data.reference ?? ref, transactionReference: data.transaction_code ?? null, supplierStatus: status || null };
   },
 };
 

@@ -43,3 +43,7 @@
 -- Fallback moves an order ONLY on a confirmed refund (EmmaDataKing REFUNDED, DBH refunded/refund), never on FAILED/REJECTED:
 -- "failed" is not "money back" and the supplier could still re-run it. FAILED orders wait in Needs review with a
 -- "NOT refunded yet; confirm with the supplier" reason. (Fallback is switched OFF by the owner for now.)
+-- 14 Oct: EmmaDataKing gets a distinct reference per attempt (edkRef: YG-x, YG-x-R1, YG-x-R2…; PurchaseContext.attempt =
+-- number of earlier purchase logs at that supplier) so lookups are never ambiguous; the pre-send lookup checks every
+-- earlier attempt. sync-emmadataking-order-status "refund watch": Needs-review orders marked "NOT refunded yet" are polled;
+-- on REFUNDED they go to the network's fallback (if set) or are re-labelled "safe to Retry".

@@ -3,6 +3,7 @@ import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { requireCronSecret } from "../_shared/internal.ts";
 import { fulfillOrder } from "../_shared/fulfillment.ts";
 import { checkOrderStatus, mapStatus } from "../_shared/emmadataking.ts";
+import { edkRef } from "../_shared/supplierAdapters.ts";
 import { rerouteToFallback } from "../_shared/fallback.ts";
 
 /* EmmaDataKing, every minute from cron:
@@ -57,7 +58,28 @@ Deno.serve(async (req) => {
         results.push({ reference: order.order_reference, outcome: next, supplierStatus });
       } catch (error) { results.push({ reference: order.order_reference, outcome: "exception", message: error instanceof Error ? error.message : String(error) }); }
     }
-    return jsonResponse({ checked: results.length, resent, results });
+    /* 3. Refund watch: orders they FAILED after a timeout sit in Needs review as "NOT refunded yet". Once they flip
+          the last attempt to REFUNDED the money is back, so the order may move: to the network's fallback if one
+          is set, otherwise its reason changes to "safe to Retry" for a person. */
+    const refunds: unknown[] = [];
+    const { data: waiting } = await supabase.from("orders").select("id, order_reference, status, network_id, product_id, supplier_id, failure_reason")
+      .eq("supplier_id", supplier.id).eq("payment_status", "succeeded").eq("status", "failed_needs_review").is("supplier_purchase_id", null)
+      .ilike("failure_reason", "%NOT refunded yet%").order("updated_at", { ascending: true }).limit(MAX_PER_RUN);
+    for (const order of waiting ?? []) {
+      try {
+        const { count } = await supabase.from("supplier_api_logs").select("id", { count: "exact", head: true }).eq("order_id", order.id).eq("supplier_id", supplier.id).eq("action", "purchase");
+        const ref = edkRef(order.order_reference, Math.max(0, (count ?? 1) - 1));
+        const r = await checkOrderStatus(ref);
+        const st = String((r.payload as any)?.data?.status ?? "").toUpperCase();
+        if (!r.ok || st !== "REFUNDED") { refunds.push({ reference: order.order_reference, outcome: "still_waiting", supplierStatus: st || null }); continue; }
+        const fb = await rerouteToFallback(supabase, order, "EmmaDataKing", "REFUNDED after a failed attempt");
+        if (fb) { refunds.push({ reference: order.order_reference, outcome: `rerouted_to_${fb.code}` }); continue; }
+        await supabase.from("orders").update({ supplier_status: "REFUNDED", failure_reason: "EmmaDataKing REFUNDED the failed attempt — money is back on our float; safe to Retry or refund the customer", updated_at: new Date().toISOString() }).eq("id", order.id);
+        await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.status_update", from_status: order.status, to_status: order.status, message: "EmmaDataKing refunded the failed attempt (refund watch); safe to retry.", metadata: { supplier: "emmadataking", supplierStatus: "REFUNDED", ref } });
+        refunds.push({ reference: order.order_reference, outcome: "refunded_safe_to_retry" });
+      } catch (error) { refunds.push({ reference: order.order_reference, outcome: "exception", message: error instanceof Error ? error.message : String(error) }); }
+    }
+    return jsonResponse({ checked: results.length, resent, results, refunds });
   } catch (error) {
     return jsonResponse({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }

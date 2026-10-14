@@ -167,8 +167,10 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
   // Idempotency key: reused when the last attempt at THIS supplier got no answer (timeout, connection
   // error, server error), so a supplier that did take the order recognises the repeat instead of selling
   // twice. A fresh key only after a clear refusal, or when this supplier was never tried for the order.
-  const { data: lastTry } = await supabase.from("supplier_api_logs").select("http_status, call_status").eq("order_id", order.id).eq("supplier_id", supplier.id).eq("action", "purchase").order("created_at", { ascending: false }).limit(1).maybeSingle();
-  const triedBefore = Boolean(lastTry);
+  const { data: tries } = await supabase.from("supplier_api_logs").select("http_status, call_status").eq("order_id", order.id).eq("supplier_id", supplier.id).eq("action", "purchase").order("created_at", { ascending: false });
+  const lastTry = (tries ?? [])[0] ?? null;
+  const attempt: number = (tries ?? []).length; // 0 = first send to this supplier
+  const triedBefore = attempt > 0;
   const lastWasAmbiguous = Boolean(lastTry) && lastTry.call_status !== "success" && (lastTry.http_status === 0 || lastTry.http_status === 408 || lastTry.http_status >= 500);
   const idempotencyKey = (lastWasAmbiguous && order.supplier_idempotency_key) ? order.supplier_idempotency_key : crypto.randomUUID();
   const { data: claimed, error: claimError } = await supabase
@@ -197,6 +199,7 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
     idempotencyKey,
     supplierNetworkCode: mapping.supplier_network_code ?? null,
     supplierCapacity: mapping.supplier_capacity ?? null,
+    attempt,
   };
 
   // Refuse an order this supplier cannot serve before any money moves.
@@ -239,8 +242,10 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
   // reference before buying again. If they do, adopt it; nothing is sent.
   if (triedBefore && adapter.findByReference) {
     try {
-      const look = await adapter.findByReference(order.order_reference);
-      if (look.found && look.held) {
+      // Every earlier attempt has its own reference at the supplier; any of them still held means it is theirs.
+      let look: Awaited<ReturnType<NonNullable<typeof adapter.findByReference>>> | null = null;
+      for (let a = attempt - 1; a >= 0; a--) { const l = await adapter.findByReference(order.order_reference, a); if (l.found && l.held) { look = l; break; } }
+      if (look && look.found && look.held) {
         const adopted = adapter.mapStatus(look.supplierStatus);
         await supabase.from("orders").update({ status: adopted, supplier_order_reference: look.supplierReference, supplier_purchase_id: look.purchaseId, supplier_transaction_reference: look.transactionReference, supplier_status: look.supplierStatus, supplier_retry_after: null, failure_reason: null, updated_at: new Date().toISOString() }).eq("id", order.id);
         await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.already_held", from_status: "processing", to_status: adopted, message: `${supplier.name} already has this order (${look.supplierStatus ?? "accepted"}); not sent again.`, metadata: { supplier: supplier.code, supplierReference: look.supplierReference, supplierStatus: look.supplierStatus } });
@@ -275,8 +280,8 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
     fallbackAllowed = false;
     if (adapter.findByReference) {
       try {
-        let look = await adapter.findByReference(order.order_reference);
-        if (!look.found) { await new Promise((r) => setTimeout(r, 5000)); look = await adapter.findByReference(order.order_reference); }
+        let look = await adapter.findByReference(order.order_reference, attempt);
+        if (!look.found) { await new Promise((r) => setTimeout(r, 5000)); look = await adapter.findByReference(order.order_reference, attempt); }
         if (look.found && look.held) {
           await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.recovered_after_timeout", from_status: "processing", to_status: "processing", message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) but has the order (${look.supplierStatus ?? "accepted"}). Keeping it there.`, metadata: { supplier: supplier.code, httpStatus: outcome.httpStatus, supplierReference: look.supplierReference, supplierStatus: look.supplierStatus } });
           outcome = { ...outcome, ok: true, supplierReference: look.supplierReference, purchaseId: look.purchaseId, transactionReference: look.transactionReference, supplierStatus: look.supplierStatus, message: null };
