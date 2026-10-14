@@ -22,7 +22,7 @@ const FAILED_STATUSES = new Set(["failed", "rejected", "cancelled", "canceled"])
 const awaitingRefund = (o: Row) => o.status === "processing" && FAILED_STATUSES.has((o.supplier_status ?? "").toLowerCase());
 const stageOf = (o: Row): Exclude<Stage, "all"> => o.admin_resolution_status === "awaiting_verification" ? "verification" : o.status.startsWith("failed") ? (NO_FLOAT.test(o.failure_reason ?? "") ? "no_float" : "review") : awaitingRefund(o) ? "awaiting_refund" : "in_progress";
 const STAGE_LABEL: Record<Stage, string> = { all: "All", in_progress: "In progress", awaiting_refund: "Awaiting refund", verification: "Verification", review: "Needs review", no_float: "Supplier no money" };
-interface Row { id: string; order_reference: string; product_id?: string | null; recipient_phone: string; amount: number; cost_amount: number | null; supplier_order_reference: string | null; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { code: string; name: string } | null }
+interface Row { id: string; order_reference: string; product_id?: string | null; recipient_phone: string; amount: number; cost_amount: number | null; supplier_order_reference: string | null; supplier_retry_after: string | null; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { code: string; name: string } | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any };
 const startOfDay = (d: Date) => { const x = new Date(d); x.setUTCHours(0, 0, 0, 0); return x; };
@@ -54,7 +54,7 @@ export default function AdminOrdersReceived() {
         setSupplierOptions((su.data ?? []).map((x) => ({ code: x.code, name: x.name, product_ids: new Set((m.data ?? []).filter((r) => r.supplier_id === x.id).map((r) => r.product_id)) })));
       });
   }, []);
-  const canTryElsewhere = (o: Row) => { const st = (o.supplier_status ?? "").toLowerCase(); return !["delivered", "refunded", "cancelled"].includes(o.status) && (["refunded", "refund", "not_approved"].includes(st) || o.admin_resolution_status === "awaiting_verification" || (!o.supplier_order_reference && !o.supplier_status)); };
+  const canTryElsewhere = (o: Row) => { const st = (o.supplier_status ?? "").toLowerCase(); return !["delivered", "refunded", "cancelled"].includes(o.status) && !o.supplier_retry_after && (["refunded", "refund", "not_approved"].includes(st) || o.admin_resolution_status === "awaiting_verification" || (!o.supplier_order_reference && !o.supplier_status)); };
   const trySupplier = async (o: Row, code: string, name: string) => {
     if (!window.confirm(`Send ${o.order_reference} to ${name} now? The previous supplier has not charged us for it, so this is a fresh send.`)) return;
     setRetrying(o.id);
@@ -77,7 +77,7 @@ export default function AdminOrdersReceived() {
     let mounted = true; setLoading(true);
     // The API returns at most 1000 rows per read. A date range fits; "All time" would not, so it fetches only the
     // orders still waiting (the other buckets are per-range anyway) in pages of 1000.
-    const cols = "id, order_reference, product_id, recipient_phone, amount, cost_amount, supplier_order_reference, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(code, name)";
+    const cols = "id, order_reference, product_id, recipient_phone, amount, cost_amount, supplier_order_reference, supplier_retry_after, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(code, name)";
     const fetchAll = async () => {
       if (!allTime) { const r = await db().from("orders").select(cols).eq("payment_status", "succeeded").gte("paid_at", startOfDay(new Date(from)).toISOString()).lte("paid_at", endOfDay(new Date(to)).toISOString()).order("paid_at", { ascending: false }).limit(1000); return (r.data ?? []) as Row[]; }
       const out: Row[] = []; for (let page = 0; page < 20; page++) { const r = await db().from("orders").select(cols).eq("payment_status", "succeeded").not("status", "in", "(delivered,refunded,cancelled)").order("paid_at", { ascending: false }).range(page * 1000, page * 1000 + 999); const batch = (r.data ?? []) as Row[]; out.push(...batch); if (batch.length < 1000) break; }
@@ -96,7 +96,7 @@ export default function AdminOrdersReceived() {
   const stageCounts = (["in_progress", "awaiting_refund", "verification", "review", "no_float"] as const).map((st) => ({ st, n: waitingRows.filter((o) => stageOf(o) === st).length }));
   const counts = { all: rows.filter(inSource).length, delivered: rows.filter((o) => inSource(o) && o.status === "delivered").length, waiting: rows.filter((o) => inSource(o) && !["delivered", "refunded", "cancelled"].includes(o.status)).length, refunded: rows.filter((o) => inSource(o) && o.status === "refunded").length };
   const total = list.reduce((a, o) => a + Number(o.amount), 0);
-  const reasonOf = (o: Row) => o.admin_resolution_status === "awaiting_verification" ? "MTN verification" : o.status === "failed_needs_review" ? (o.failure_reason ?? "failed at supplier") : awaitingRefund(o) ? `${o.suppliers?.name ?? "supplier"} ${o.supplier_status} — waiting for their refund, then it moves on by itself` : o.status === "processing" ? `${o.suppliers?.name ?? "supplier"} says ${o.supplier_status ?? "processing"}` : o.status.replace(/_/g, " ");
+  const reasonOf = (o: Row) => o.admin_resolution_status === "awaiting_verification" ? "MTN verification" : o.status === "failed_needs_review" ? (o.failure_reason ?? "failed at supplier") : awaitingRefund(o) ? `${o.suppliers?.name ?? "supplier"} ${o.supplier_status} — waiting for their refund, then it moves on by itself` : o.status === "processing" && o.supplier_retry_after && !o.supplier_order_reference ? `${o.suppliers?.name ?? "supplier"} asked us to wait (same number got a bundle in the last 10 min) — re-sending at ${new Date(o.supplier_retry_after).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : o.status === "processing" ? `${o.suppliers?.name ?? "supplier"} says ${o.supplier_status ?? "processing"}` : o.status.replace(/_/g, " ");
 
   const exportCsv = () => {
     const lines = [["paid at", "order", "network", "bundle", "recipient", "amount", "status", "detail", "source"], ...list.map((o) => [o.paid_at, o.order_reference, o.networks?.name ?? "", o.data_products?.name ?? "", o.recipient_phone, Number(o.amount).toFixed(2), o.status, reasonOf(o).replace(/"/g, "'"), o.agent_id ? "agent" : "platform"])];
