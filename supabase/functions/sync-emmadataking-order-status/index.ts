@@ -68,8 +68,10 @@ Deno.serve(async (req) => {
     for (const order of waiting ?? []) {
       try {
         const { count } = await supabase.from("supplier_api_logs").select("id", { count: "exact", head: true }).eq("order_id", order.id).eq("supplier_id", supplier.id).eq("action", "purchase");
-        const ref = edkRef(order.order_reference, Math.max(0, (count ?? 1) - 1));
-        const r = await checkOrderStatus(ref);
+        let ref = edkRef(order.order_reference, Math.max(0, (count ?? 1) - 1));
+        let r = await checkOrderStatus(ref);
+        // Retries sent before per-attempt references exist under the plain reference.
+        if (r.status === 404 && ref !== order.order_reference) { ref = order.order_reference; r = await checkOrderStatus(ref); }
         const st = String((r.payload as any)?.data?.status ?? "").toUpperCase();
         if (!r.ok || st !== "REFUNDED") { refunds.push({ reference: order.order_reference, outcome: "still_waiting", supplierStatus: st || null }); continue; }
         const fb = await rerouteToFallback(supabase, order, "EmmaDataKing", "REFUNDED after a failed attempt");
