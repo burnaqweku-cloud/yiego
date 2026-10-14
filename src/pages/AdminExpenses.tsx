@@ -27,13 +27,16 @@ export default function AdminExpenses() {
   const [admins, setAdmins] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    const [en, who] = await Promise.all([
-      db().from("finance_entries").select("id, created_by, kind, occurred_at, amount, note, reverses, postings:finance_postings(account, amount)").order("occurred_at", { ascending: false }).limit(2000),
+    // Only entries that hit "other_expenses" (the ledger has thousands of other rows, so ask for exactly these).
+    const { data: hits } = await db().from("finance_postings").select("entry_id").eq("account", "other_expenses").gt("amount", 0).limit(5000);
+    const ids = [...new Set(((hits ?? []) as { entry_id: string }[]).map((h) => h.entry_id))];
+    const [en, rev, who] = await Promise.all([
+      ids.length ? db().from("finance_entries").select("id, created_by, kind, occurred_at, amount, note, reverses, postings:finance_postings(account, amount)").in("id", ids).order("occurred_at", { ascending: false }) : Promise.resolve({ data: [] }),
+      ids.length ? db().from("finance_entries").select("reverses").in("reverses", ids) : Promise.resolve({ data: [] }),
       db().rpc("admin_user_labels", {}),
     ]);
-    const all = (en.data ?? []) as Entry[];
-    const reversed = new Set(all.filter((e) => e.reverses).map((e) => e.reverses as string));
-    setEntries(all.filter((e) => e.kind !== "reversal" && !reversed.has(e.id) && e.postings.some((p) => p.account === "other_expenses" && Number(p.amount) > 0)));
+    const reversed = new Set(((rev.data ?? []) as { reverses: string }[]).map((r) => r.reverses));
+    setEntries(((en.data ?? []) as Entry[]).filter((e) => e.kind !== "reversal" && !reversed.has(e.id)));
     const labels: Record<string, string> = {}; for (const r of (who.data ?? []) as Array<{ user_id: string; label: string }>) labels[r.user_id] = r.label; setAdmins(labels);
     setLoading(false);
   }, []);
