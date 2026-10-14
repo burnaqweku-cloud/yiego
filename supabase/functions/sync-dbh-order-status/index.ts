@@ -207,8 +207,8 @@ Deno.serve(async (req) => {
 
       /* ── Silent MTN refund → verification hold, not a failure ── */
       if (isSilentMtnRefund(order, report)) {
-        const fb = await rerouteToFallback(supabase, order, "DataBundlesHub", "MTN has not approved this number on DBH's channel (silent refund)");
-        if (fb) { results.push({ reference: order.order_reference, outcome: `rerouted_to_${fb.code}`, supplierStatus }); return; }
+        // Verification holds stay on DBH: the hourly approval check re-sends here once MTN approves the number.
+        // (The fallback supplier rejects these same numbers, so hopping would only lose an hour.)
         const held = await markAwaitingVerification(supabase, order, source, { supplierStatus });
         await bumpSupplierStatus(order, supplierStatus);
         results.push({ reference: order.order_reference, outcome: held.changed ? AWAITING_VERIFICATION : "already_awaiting_verification", supplierStatus });
@@ -252,8 +252,6 @@ Deno.serve(async (req) => {
           // The batch list was wrong. Trust the direct, current re-check.
           const confirmedReport: SupplierReport = { status: confirmedStatus, errorCode: confirmation.payload?.data?.errorCode ?? confirmation.payload?.data?.error_code ?? null };
           if (isSilentMtnRefund(order, confirmedReport)) {
-            const fb2 = await rerouteToFallback(supabase, order, "DataBundlesHub", "MTN has not approved this number on DBH's channel (silent refund, confirmed)");
-            if (fb2) { results.push({ reference: order.order_reference, outcome: `rerouted_to_${fb2.code}`, supplierStatus: confirmedStatus }); return; }
             const held = await markAwaitingVerification(supabase, order, "batch sync (corrected on confirm)", { supplierStatus: confirmedStatus });
             await bumpSupplierStatus(order, confirmedStatus);
             results.push({ reference: order.order_reference, outcome: held.changed ? AWAITING_VERIFICATION : "already_awaiting_verification", supplierStatus: confirmedStatus, corrected: true });

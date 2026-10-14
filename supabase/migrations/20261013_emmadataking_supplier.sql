@@ -54,3 +54,10 @@
 -- 14 Oct 09:10: phase1.admin_supplier_last_deliveries(p_actor) — per supplier, the latest delivered order (last 7 days):
 -- order, bundle, network, sent_at (that supplier's fulfillment_started event, else paid_at), delivered_at, minutes.
 -- Shown on Admin → Suppliers cards ("Last delivery: N min · MTN 2GB · time"), green ≤30, amber ≤90, red beyond.
+-- 14 Oct 09:40 — per-bundle pinned supplier ("Always via", Admin → Suppliers → network → bundle):
+--   alter table phase1.data_products add column forced_supplier_id uuid references phase1.suppliers(id);
+--   phase1.admin_set_product_supplier(p_actor, p_product_id, p_supplier_code|null) — admin only; supplier must be active
+--   and sell the bundle (non-disabled mapping, activated). MTN 5, 6, 40, 50GB pinned to DataBundlesHub.
+-- fulfillment.ts routes: opts.supplierId → product.forced_supplier_id → network.preferred_supplier_id.
+-- fallback.ts: a pinned bundle falls back to the network fallback, or to the network main when the pin IS the fallback
+--   (still only after a confirmed refund). sync-dbh: MTN verification (silent) refunds never leave DBH any more.

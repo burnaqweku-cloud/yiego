@@ -121,7 +121,9 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
   // fallback. If the network has no supplier or the supplier can't take the
   // bundle, the order waits for a person rather than being re-routed.
   const { data: network } = await supabase.from("networks").select("name, preferred_supplier_id, fallback_supplier_id").eq("id", order.network_id).maybeSingle();
-  const routedSupplierId: string | null = opts.supplierId ?? network?.preferred_supplier_id ?? null;
+  // A bundle can be pinned to one supplier ("Always via" on Admin → Suppliers); that beats the network's main one.
+  const { data: product } = await supabase.from("data_products").select("forced_supplier_id").eq("id", order.product_id).maybeSingle();
+  const routedSupplierId: string | null = opts.supplierId ?? product?.forced_supplier_id ?? network?.preferred_supplier_id ?? null;
   /** Hand the order to the network's fallback supplier (once). Returns null when there is none. */
   const tryFallback = async (fromName: string, why: string) => {
     if (opts.viaFallback) return null;
