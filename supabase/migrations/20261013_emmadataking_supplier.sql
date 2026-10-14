@@ -81,3 +81,6 @@
 --   Four orders marked delivered by hand: AG-6A4D6087A6, YG-9BF09263F4, YG-BD7FC00DC8, YG-988CAE3788.
 -- 14 Oct 15:05: a manual "Try another supplier" that gets REFUNDED goes back to the supplier it came from
 --   (fallback.ts rerouteToFallback, stage return_after_manual_try) — e.g. back into DBH's verification queue.
+-- 14 Oct 21:50: a supplier answering "number not approved" at purchase no longer triggers the fallback
+--   (fulfillment.ts). It falls through to failed_needs_review and the orders_dbh_mtn_approval trigger holds it
+--   as awaiting_verification at the same supplier. AG-BB63D49E29 had bounced DBH → Emma (refunded) → Needs review.

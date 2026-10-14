@@ -396,6 +396,11 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
       }
     } catch { fallbackAllowed = false; outcome = { ...outcome, message: `${outcome.message ?? "refused"} — could not confirm with the supplier whether it still holds the order; check before re-sending.` }; }
   }
+  // "Number not approved yet" is MTN verifying a first-time number, not a refusal: no fallback. Falling through
+  // marks it failed_needs_review and the orders_dbh_mtn_approval trigger turns that into the verification hold
+  // at this same supplier (sending it elsewhere just gets it refused again — EmmaDataKing refunds unverified numbers).
+  const NOT_APPROVED = /(is not approved and has been automatically saved for approval|not (yet )?approved|unapproved|pending approval|awaiting approval|approval (is )?required|not on (the )?approved list)/i;
+  if (!outcome.ok && fallbackAllowed && NOT_APPROVED.test(outcome.message ?? "")) fallbackAllowed = false;
   if (!outcome.ok && fallbackAllowed) {
     const fb = opts.viaFallback ? null : await fallbackFor(supabase, order, supplier.id);
     if (fb) {
