@@ -285,11 +285,17 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
         if (look.found && look.held) {
           await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.recovered_after_timeout", from_status: "processing", to_status: "processing", message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) but has the order (${look.supplierStatus ?? "accepted"}). Keeping it there.`, metadata: { supplier: supplier.code, httpStatus: outcome.httpStatus, supplierReference: look.supplierReference, supplierStatus: look.supplierStatus } });
           outcome = { ...outcome, ok: true, supplierReference: look.supplierReference, purchaseId: look.purchaseId, transactionReference: look.transactionReference, supplierStatus: look.supplierStatus, message: null };
+        } else if (look.found && !look.refunded) {
+          // FAILED/REJECTED but not refunded: nothing can be done yet (they may still re-run it or refund it), so
+          // the order stays IN PROGRESS, not in Needs review. The supplier's refund watch moves it on once REFUNDED.
+          await supabase.from("supplier_api_logs").insert({ supplier_id: supplier.id, order_id: order.id, action: "purchase", endpoint: outcome.endpoint, request_payload: outcome.requestPayload, response_payload: outcome.responsePayload, http_status: outcome.httpStatus, call_status: "error", idempotency_key: idempotencyKey, error_message: `${supplier.name} did not answer in time and then reported ${look.supplierStatus}`, duration_ms: outcome.durationMs });
+          await supabase.from("orders").update({ status: "processing", supplier_status: look.supplierStatus, supplier_retry_after: null, failure_reason: `${supplier.name} reported ${look.supplierStatus} — waiting for their refund before anything else can happen`, updated_at: new Date().toISOString() }).eq("id", order.id).is("supplier_purchase_id", null).is("supplier_order_reference", null);
+          await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.failed_awaiting_refund", from_status: "processing", to_status: "processing", message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) and then reported ${look.supplierStatus}. Waiting for their refund; nothing to do yet.`, metadata: { supplier: supplier.code, httpStatus: outcome.httpStatus, supplierStatus: look.supplierStatus, supplierReference: look.supplierReference } });
+          return { skipped: true, reason: "awaiting_supplier_refund", orderId: order.id, status: "processing" };
         } else {
-          // Another supplier may take it only when this one has no record of it or has given the money back.
-          // FAILED/REJECTED is not refunded: they could still re-run it, so it waits for a person.
-          fallbackAllowed = !look.found || look.refunded;
-          outcome = { ...outcome, message: look.found ? `${supplier.name} did not answer in time and then reported ${look.supplierStatus ?? "failed"}${look.refunded ? " (money returned)" : " — NOT refunded yet; confirm with them before re-sending anywhere"}` : `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) and has no record of this order` };
+          // No record of it, or the money is back: a real failure. Another supplier may take it.
+          fallbackAllowed = true;
+          outcome = { ...outcome, message: look.found ? `${supplier.name} did not answer in time and then reported ${look.supplierStatus ?? "failed"} (money returned)` : `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) and has no record of this order` };
         }
       } catch (e) {
         outcome = { ...outcome, message: `${supplier.name} did not answer in time (HTTP ${outcome.httpStatus}) and could not be asked whether it has the order (${e instanceof Error ? e.message : "lookup failed"}).` };

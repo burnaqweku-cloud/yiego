@@ -47,3 +47,7 @@
 -- number of earlier purchase logs at that supplier) so lookups are never ambiguous; the pre-send lookup checks every
 -- earlier attempt. sync-emmadataking-order-status "refund watch": Needs-review orders marked "NOT refunded yet" are polled;
 -- on REFUNDED they go to the network's fallback (if set) or are re-labelled "safe to Retry".
+-- 14 Oct 05:30: a supplier FAILED/REJECTED that is NOT yet refunded keeps the order IN PROGRESS (status processing,
+-- supplier_status FAILED, event supplier.failed_awaiting_refund) — Needs review is only for orders a person can act on.
+-- Once REFUNDED: fallback if set, else failed_needs_review "safe to Retry". EDK adapter stores a purchase id only when
+-- the purchase was accepted. AG-77329A765C and YG-33C0F1DFA6 moved to processing/FAILED by hand.

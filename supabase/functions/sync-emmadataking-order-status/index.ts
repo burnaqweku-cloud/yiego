@@ -47,13 +47,20 @@ Deno.serve(async (req) => {
         if (!r.ok || !supplierStatus) { results.push({ reference: order.order_reference, outcome: "status_unavailable" }); continue; }
         const next = mapStatus(supplierStatus);
         if (next === "processing") { if (order.supplier_status !== supplierStatus) await supabase.from("orders").update({ supplier_status: supplierStatus, updated_at: new Date().toISOString() }).eq("id", order.id); results.push({ reference: order.order_reference, outcome: "still_processing", supplierStatus }); continue; }
-        if (next === "failed_needs_review" && supplierStatus === "REFUNDED") {
-          // Only REFUNDED (money confirmed back) may go to the fallback. FAILED/REJECTED is not refunded and they
-          // could still re-run it, so it waits for a person.
+        if (next === "failed_needs_review" && supplierStatus !== "REFUNDED") {
+          // FAILED/REJECTED but not refunded: nothing can be done yet, so it stays in progress (refund watch below).
+          if (order.supplier_status !== supplierStatus) {
+            await supabase.from("orders").update({ supplier_status: supplierStatus, failure_reason: `EmmaDataKing reported ${supplierStatus} — waiting for their refund before anything else can happen`, updated_at: new Date().toISOString() }).eq("id", order.id);
+            await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.failed_awaiting_refund", from_status: order.status, to_status: order.status, message: `EmmaDataKing reported ${supplierStatus}. Waiting for their refund; nothing to do yet.`, metadata: { supplier: "emmadataking", supplierStatus } });
+          }
+          results.push({ reference: order.order_reference, outcome: "failed_awaiting_refund", supplierStatus }); continue;
+        }
+        if (next === "failed_needs_review") {
+          // REFUNDED: money confirmed back. The fallback may take it; otherwise a person decides.
           const fb = await rerouteToFallback(supabase, order, "EmmaDataKing", supplierStatus);
           if (fb) { results.push({ reference: order.order_reference, outcome: `rerouted_to_${fb.code}`, supplierStatus }); continue; }
         }
-        await supabase.from("orders").update({ status: next, supplier_status: supplierStatus, failure_reason: next === "delivered" ? null : supplierStatus === "REFUNDED" ? "Supplier REFUNDED — money returned to our float; customer not yet refunded or re-sent" : `Supplier ${supplierStatus} — NOT refunded yet; confirm with EmmaDataKing before re-sending or refunding`, updated_at: new Date().toISOString() }).eq("id", order.id);
+        await supabase.from("orders").update({ status: next, supplier_status: supplierStatus, failure_reason: next === "delivered" ? null : "EmmaDataKing REFUNDED — money is back on our float; safe to Retry or refund the customer", updated_at: new Date().toISOString() }).eq("id", order.id);
         await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.status_update", from_status: order.status, to_status: next, message: `EmmaDataKing reported ${supplierStatus} (status sync)`, metadata: { supplier: "emmadataking", supplierStatus } });
         results.push({ reference: order.order_reference, outcome: next, supplierStatus });
       } catch (error) { results.push({ reference: order.order_reference, outcome: "exception", message: error instanceof Error ? error.message : String(error) }); }
@@ -63,8 +70,8 @@ Deno.serve(async (req) => {
           is set, otherwise its reason changes to "safe to Retry" for a person. */
     const refunds: unknown[] = [];
     const { data: waiting } = await supabase.from("orders").select("id, order_reference, status, network_id, product_id, supplier_id, failure_reason")
-      .eq("supplier_id", supplier.id).eq("payment_status", "succeeded").eq("status", "failed_needs_review").is("supplier_purchase_id", null)
-      .ilike("failure_reason", "%NOT refunded yet%").order("updated_at", { ascending: true }).limit(MAX_PER_RUN);
+      .eq("supplier_id", supplier.id).eq("payment_status", "succeeded").in("status", ["processing", "failed_needs_review"]).is("supplier_purchase_id", null)
+      .or("failure_reason.ilike.%waiting for their refund%,failure_reason.ilike.%NOT refunded yet%").order("updated_at", { ascending: true }).limit(MAX_PER_RUN);
     for (const order of waiting ?? []) {
       try {
         const { count } = await supabase.from("supplier_api_logs").select("id", { count: "exact", head: true }).eq("order_id", order.id).eq("supplier_id", supplier.id).eq("action", "purchase");
@@ -76,8 +83,8 @@ Deno.serve(async (req) => {
         if (!r.ok || st !== "REFUNDED") { refunds.push({ reference: order.order_reference, outcome: "still_waiting", supplierStatus: st || null }); continue; }
         const fb = await rerouteToFallback(supabase, order, "EmmaDataKing", "REFUNDED after a failed attempt");
         if (fb) { refunds.push({ reference: order.order_reference, outcome: `rerouted_to_${fb.code}` }); continue; }
-        await supabase.from("orders").update({ supplier_status: "REFUNDED", failure_reason: "EmmaDataKing REFUNDED the failed attempt — money is back on our float; safe to Retry or refund the customer", updated_at: new Date().toISOString() }).eq("id", order.id);
-        await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.status_update", from_status: order.status, to_status: order.status, message: "EmmaDataKing refunded the failed attempt (refund watch); safe to retry.", metadata: { supplier: "emmadataking", supplierStatus: "REFUNDED", ref } });
+        await supabase.from("orders").update({ status: "failed_needs_review", supplier_status: "REFUNDED", failure_reason: "EmmaDataKing REFUNDED the failed attempt — money is back on our float; safe to Retry or refund the customer", updated_at: new Date().toISOString() }).eq("id", order.id);
+        await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.status_update", from_status: order.status, to_status: "failed_needs_review", message: "EmmaDataKing refunded the failed attempt (refund watch); safe to retry.", metadata: { supplier: "emmadataking", supplierStatus: "REFUNDED", ref } });
         refunds.push({ reference: order.order_reference, outcome: "refunded_safe_to_retry" });
       } catch (error) { refunds.push({ reference: order.order_reference, outcome: "exception", message: error instanceof Error ? error.message : String(error) }); }
     }

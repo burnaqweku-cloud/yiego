@@ -242,7 +242,7 @@ const emmaDataKing: SupplierAdapter = {
       requestPayload,
       responsePayload: result.payload,
       supplierReference: data.id ?? null,
-      purchaseId: data.reference ?? requestPayload.ref,
+      purchaseId: accepted ? (data.reference ?? requestPayload.ref) : null,
       transactionReference: data.transaction_code ?? null,
       supplierStatus: data.status ?? null,
       message: accepted ? null : result.payload?.message ?? result.payload?.error ?? "EmmaDataKing purchase failed",
