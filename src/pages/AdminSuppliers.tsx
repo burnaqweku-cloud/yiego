@@ -18,7 +18,7 @@ import { useAuth } from "@/store/auth-context";
 interface LastDelivery { supplier_code: string; order_reference: string; bundle: string; network: string; sent_at: string; delivered_at: string; minutes: number }
 interface Supplier { id: string; code: string; name: string; status: "active" | "paused" | "disabled"; balance: number | null; last_balance_checked_at: string | null; low_balance_threshold: number | null; metadata: Record<string, unknown> | null }
 interface Network { id: string; code: string; name: string; is_paused: boolean; pause_reason: string | null; preferred_supplier_id: string | null; fallback_supplier_id?: string | null }
-interface Product { id: string; name: string; capacity_gb: number; customer_price: number; is_active: boolean; is_paused: boolean; pause_reason: string | null; network_id: string; forced_supplier_id: string | null }
+interface Product { id: string; name: string; capacity_gb: number; customer_price: number; is_active: boolean; is_paused: boolean; pause_reason: string | null; network_id: string; forced_supplier_id: string | null; forced_fallback_supplier_id: string | null }
 interface Mapping { product_id: string; supplier_id: string; supplier_price: number | null; is_active: boolean }
 interface Readiness { network: string; supplier: string; known: number; total: number; missing: string[] }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,7 +44,7 @@ export default function AdminSuppliers() {
     const [s, n, p, m, l, r, d] = await Promise.all([
       db().from("suppliers").select("id, code, name, status, balance, last_balance_checked_at, low_balance_threshold, metadata").order("display_order"),
       db().from("networks").select("id, code, name, is_paused, pause_reason, preferred_supplier_id, fallback_supplier_id").order("display_order"),
-      db().from("data_products").select("id, name, capacity_gb, customer_price, is_active, is_paused, pause_reason, network_id, forced_supplier_id").eq("is_active", true).order("capacity_gb"),
+      db().from("data_products").select("id, name, capacity_gb, customer_price, is_active, is_paused, pause_reason, network_id, forced_supplier_id, forced_fallback_supplier_id").eq("is_active", true).order("capacity_gb"),
       db().from("supplier_product_mappings").select("product_id, supplier_id, supplier_price, is_active").eq("is_active", true),
       db().from("supplier_api_logs").select("action, endpoint, http_status, call_status, supplier_reference, error_message, duration_ms, created_at").order("created_at", { ascending: false }).limit(300),
       db().rpc("admin_network_supplier_readiness", { p_actor: actor }),
@@ -137,7 +137,11 @@ export default function AdminSuppliers() {
                               <option value="">network's ({routed?.name ?? "none"})</option>
                               {suppliers.filter((x) => x.status === "active" && mappings.some((m) => m.product_id === p.id && m.supplier_id === x.id)).map((x) => <option key={x.id} value={x.code}>{x.name}</option>)}
                             </select></label>
-                          {via && <Pill tone="good">{via.name}</Pill>}</span>}
+                          {via && <label className="inline-flex items-center gap-1 text-[10.5px] font-normal text-faint-foreground">fallback
+                            <select value={suppliers.find((x) => x.id === p.forced_fallback_supplier_id)?.code ?? ""} onChange={(e) => void call("admin_set_product_fallback", { p_product_id: p.id, p_supplier_code: e.target.value || null }, e.target.value ? `${n.name} ${p.capacity_gb}GB falls back to ${suppliers.find((x) => x.code === e.target.value)?.name ?? e.target.value} after a refund` : `${n.name} ${p.capacity_gb}GB has no fallback`)} className="rounded-md border border-white/[0.1] bg-transparent px-1 py-0.5 text-[11px] text-foreground" aria-label={`Fallback for ${n.name} ${p.capacity_gb}GB`}>
+                              <option value="">none</option>
+                              {suppliers.filter((x) => x.status === "active" && x.id !== via.id && mappings.some((m) => m.product_id === p.id && m.supplier_id === x.id)).map((x) => <option key={x.id} value={x.code}>{x.name}</option>)}
+                            </select></label>}</span>}
                         secondary={p.is_paused ? p.pause_reason : cost != null ? `cost ${formatGHS(Number(cost))} at ${effective?.name ?? "—"} · margin ${formatGHS(margin ?? 0)}` : "no cost from this supplier"}
                         right={formatGHS(Number(p.customer_price))}
                         rightNote={p.is_paused ? <button type="button" className="text-primary-glow" onClick={() => void call("admin_pause_product", { p_product_id: p.id, p_paused: false, p_reason: null }, `${n.name} ${p.capacity_gb}GB is back on`)}>resume</button> : <button type="button" className="text-faint-foreground hover:text-amber" onClick={() => { setPausing({ kind: "product", id: p.id, label: `${n.name} ${p.capacity_gb}GB` }); setReason(""); }}>pause</button>}

@@ -61,3 +61,6 @@
 -- fulfillment.ts routes: opts.supplierId → product.forced_supplier_id → network.preferred_supplier_id.
 -- fallback.ts: a pinned bundle falls back to the network fallback, or to the network main when the pin IS the fallback
 --   (still only after a confirmed refund). sync-dbh: MTN verification (silent) refunds never leave DBH any more.
+--   + data_products.forced_fallback_supplier_id and phase1.admin_set_product_fallback(p_actor, p_product_id, p_supplier_code|null):
+--     a pinned bundle has its OWN fallback (must differ from Always via; null = no fallback). Set: 5GB/6GB → EmmaDataKing, 40/50GB none.
+--   fallback.ts: pinned bundle → its own fallback only; unpinned → the network's fallback.

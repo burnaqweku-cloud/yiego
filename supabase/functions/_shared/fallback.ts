@@ -18,13 +18,12 @@ export interface FallbackTarget { id: string; code: string; name: string; mappin
 /** The fallback supplier for this order's network, if it exists, is active, knows the bundle, and this
  *  order has not already been handed to a fallback. */
 export async function fallbackFor(supabase: Db, order: { id: string; network_id: string; product_id: string; supplier_id: string | null }, excludeSupplierId: string | null): Promise<FallbackTarget | null> {
-  const { data: network } = await supabase.from("networks").select("preferred_supplier_id, fallback_supplier_id").eq("id", order.network_id).maybeSingle();
-  // A pinned bundle ("Always via") falls back to the network's fallback, or to the network's main supplier when the
-  // pin IS the fallback. Only ever used after a confirmed refund (callers enforce that).
-  const { data: product } = await supabase.from("data_products").select("forced_supplier_id").eq("id", order.product_id).maybeSingle();
+  const { data: network } = await supabase.from("networks").select("fallback_supplier_id").eq("id", order.network_id).maybeSingle();
+  // Only ever used after a confirmed refund (callers enforce that).
+  // A pinned bundle ("Always via") has its own fallback setting: a supplier, or none (then no fallback at all).
+  const { data: product } = await supabase.from("data_products").select("forced_supplier_id, forced_fallback_supplier_id").eq("id", order.product_id).maybeSingle();
   const forced: string | null = product?.forced_supplier_id ?? null;
-  let fallbackId: string | null = network?.fallback_supplier_id ?? null;
-  if (forced && fallbackId === forced) fallbackId = network?.preferred_supplier_id ?? null;
+  const fallbackId: string | null = forced ? (product?.forced_fallback_supplier_id ?? null) : (network?.fallback_supplier_id ?? null);
   if (!fallbackId || fallbackId === excludeSupplierId) return null;
   // Once per attempt, not once for ever: an admin Retry starts a fresh attempt, so only fallback hand-offs
   // since the latest retry count. (Stops automatic ping-pong, never blocks a person re-sending the order.)
