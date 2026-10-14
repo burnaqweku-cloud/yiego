@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Download, RotateCcw, Search } from "lucide-react";
+import { ArrowLeft, ClipboardCopy, Download, Infinity as InfinityIcon, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -22,7 +22,7 @@ const FAILED_STATUSES = new Set(["failed", "rejected", "cancelled", "canceled"])
 const awaitingRefund = (o: Row) => o.status === "processing" && FAILED_STATUSES.has((o.supplier_status ?? "").toLowerCase());
 const stageOf = (o: Row): Exclude<Stage, "all"> => o.admin_resolution_status === "awaiting_verification" ? "verification" : o.status.startsWith("failed") ? (NO_FLOAT.test(o.failure_reason ?? "") ? "no_float" : "review") : awaitingRefund(o) ? "awaiting_refund" : "in_progress";
 const STAGE_LABEL: Record<Stage, string> = { all: "All", in_progress: "In progress", awaiting_refund: "Awaiting refund", verification: "Verification", review: "Needs review", no_float: "Supplier no money" };
-interface Row { id: string; order_reference: string; recipient_phone: string; amount: number; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { code: string; name: string } | null }
+interface Row { id: string; order_reference: string; recipient_phone: string; amount: number; cost_amount: number | null; supplier_order_reference: string | null; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { code: string; name: string } | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any };
 const startOfDay = (d: Date) => { const x = new Date(d); x.setUTCHours(0, 0, 0, 0); return x; };
@@ -36,6 +36,7 @@ export default function AdminOrdersReceived() {
   const source = (params.get("source") as Source) || "all";
   const from = params.get("from") ?? new Date().toISOString().slice(0, 10);
   const to = params.get("to") ?? from;
+  const allTime = params.get("all") === "1"; // off by default: the date range rules unless the admin switches it on
   const [rows, setRows] = useState<Row[]>([]);
   const origins = useFallbackOrigins(rows);
   const [loading, setLoading] = useState(true);
@@ -56,11 +57,11 @@ export default function AdminOrdersReceived() {
   };
   useEffect(() => {
     let mounted = true; setLoading(true);
-    db().from("orders").select("id, order_reference, recipient_phone, amount, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(code, name)")
-      .eq("payment_status", "succeeded").gte("paid_at", startOfDay(new Date(from)).toISOString()).lte("paid_at", endOfDay(new Date(to)).toISOString()).order("paid_at", { ascending: false }).limit(5000)
+    db().from("orders").select("id, order_reference, recipient_phone, amount, cost_amount, supplier_order_reference, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(code, name)")
+      .eq("payment_status", "succeeded").gte("paid_at", allTime ? "2000-01-01" : startOfDay(new Date(from)).toISOString()).lte("paid_at", allTime ? "2100-01-01" : endOfDay(new Date(to)).toISOString()).order("paid_at", { ascending: false }).limit(5000)
       .then((r: { data: Row[] | null }) => { if (mounted) { setRows(r.data ?? []); setLoading(false); } });
     return () => { mounted = false; };
-  }, [from, to, tick]);
+  }, [from, to, allTime, tick]);
 
   const inBucket = (o: Row) => bucket === "all" || (bucket === "delivered" && o.status === "delivered") || (bucket === "refunded" && o.status === "refunded") || (bucket === "waiting" && !["delivered", "refunded", "cancelled"].includes(o.status));
   const inSource = (o: Row) => source === "all" || (source === "agents" ? o.agent_id != null : o.agent_id == null);
@@ -87,7 +88,14 @@ export default function AdminOrdersReceived() {
         <Stat loading={loading} label="Waiting" value={String(counts.waiting)} tone={bucket === "waiting" ? "warn" : "default"} onClick={() => set("bucket", "waiting")} />
         <Stat loading={loading} label="Refunded" value={String(counts.refunded)} tone={bucket === "refunded" ? "bad" : "default"} onClick={() => set("bucket", "refunded")} />
       </StatGrid>
-      <Panel title={BUCKET_TITLE[bucket]} note={`${list.length} orders · ${formatGHS(total)}`}>
+      <Panel title={BUCKET_TITLE[bucket]} note={`${list.length} orders · ${formatGHS(total)}${allTime ? " · all time" : ""}`} action={<div className="flex items-center gap-1.5">
+        <Button size="sm" variant={allTime ? "default" : "ghost"} onClick={() => set("all", allTime ? "0" : "1")} title="Ignore the dates and show every order since launch"><InfinityIcon size={14} />All time</Button>
+        {bucket === "waiting" && stage === "awaiting_refund" && list.length > 0 && <Button size="sm" variant="ghost" title="Copy these orders in a form you can paste to the supplier's support" onClick={() => {
+          const bySupplier = new Map<string, Row[]>(); for (const o of list) { const k = o.suppliers?.name ?? "Supplier"; bySupplier.set(k, [...(bySupplier.get(k) ?? []), o]); }
+          const text = [...bySupplier.entries()].map(([name, rows]) => `${name} — ${rows.length} order${rows.length === 1 ? "" : "s"} marked ${[...new Set(rows.map((o) => o.supplier_status))].join("/")} but not yet refunded:\n` + rows.map((o, i) => `${i + 1}. Ref ${o.order_reference}${o.supplier_order_reference ? ` (your ID ${o.supplier_order_reference})` : ""} · ${o.networks?.name ?? ""} ${o.data_products?.capacity_gb ?? ""}GB · ${o.recipient_phone} · charged GH₵${Number(o.cost_amount ?? 0).toFixed(2)} · ${formatAdminDate(o.paid_at)} · status ${o.supplier_status}`).join("\n") + "\nPlease refund these to our balance or confirm their status. Thank you.").join("\n\n");
+          void navigator.clipboard.writeText(text).then(() => toast.success(`${list.length} order${list.length === 1 ? "" : "s"} copied for the supplier.`));
+        }}><ClipboardCopy size={14} />Copy all</Button>}
+      </div>}>
         <div className="mb-2 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
           <label className="relative block"><Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-faint-foreground" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Order, phone, network" className={`${inputCls} pl-8`} /></label>
           <Segmented<Source> value={source} onChange={(v) => set("source", v)} options={[{ value: "all", label: "All" }, { value: "platform", label: "YG" }, { value: "agents", label: "Agents" }]} />
