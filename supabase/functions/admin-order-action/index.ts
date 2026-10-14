@@ -194,14 +194,18 @@ Deno.serve(async (req) => {
       if (order.status === "delivered" || order.status === "refunded" || order.status === "cancelled") return jsonResponse({ error: `Order is already ${order.status}` }, { status: 409 });
       const st = String(order.supplier_status ?? "").toLowerCase();
       const refunded = ["refunded", "refund"].includes(st);
+      // DBH "not approved" (MTN verification hold) is a refusal at purchase: no money was taken, so it is safe to offer elsewhere.
+      const heldUnpaid = order.admin_resolution_status === "awaiting_verification" || st === "not_approved";
       const neverSent = !order.supplier_purchase_id && !order.supplier_order_reference && !order.supplier_status;
-      if (!refunded && !neverSent) return jsonResponse({ error: `Not safe yet: ${order.supplier_status ?? "the current supplier"} is not a confirmed refund. Wait until the supplier reports REFUNDED.` }, { status: 409 });
+      if (!refunded && !neverSent && !heldUnpaid) return jsonResponse({ error: `Not safe yet: ${order.supplier_status ?? "the current supplier"} is not a confirmed refund. Wait until the supplier reports REFUNDED.` }, { status: 409 });
       const { data: target } = await supabase.from("suppliers").select("id, code, name, status").eq("code", supplierCode).maybeSingle();
       if (!target || target.status !== "active") return jsonResponse({ error: "That supplier is not active" }, { status: 409 });
       const { data: mapping } = await supabase.from("supplier_product_mappings").select("id").eq("product_id", order.product_id).eq("supplier_id", target.id).eq("is_active", true).limit(1).maybeSingle();
       if (!mapping) return jsonResponse({ error: `${target.name} does not sell this bundle` }, { status: 409 });
       await supabase.from("orders").update({ supplier_purchase_id: null, supplier_order_reference: null, supplier_transaction_reference: null, supplier_status: null, supplier_retry_after: null, failure_reason: null, admin_resolution_status: null, admin_resolution_reason: null, status: "processing", updated_at: new Date().toISOString() }).eq("id", order.id);
-      await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.fallback", from_status: order.status, to_status: "processing", message: `Admin sent this order to ${target.name} (previous supplier ${refunded ? "refunded it" : "never had it"}).`, metadata: { from: (Array.isArray(order.suppliers) ? order.suppliers[0]?.code : (order.suppliers as { code?: string } | null)?.code) ?? null, to: target.code, stage: "admin_try_supplier" }, created_by: authData.user.id });
+      // A fresh attempt: the fallback chance resets (fallback.ts counts hand-offs since the latest admin.retry).
+      await supabase.from("order_events").insert({ order_id: order.id, event_type: "admin.retry", from_status: order.status, to_status: order.status, message: `Admin chose ${target.name} for a fresh attempt`, created_by: authData.user.id });
+      await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.fallback", from_status: order.status, to_status: "processing", message: `Admin sent this order to ${target.name} (previous supplier ${refunded ? "refunded it" : heldUnpaid ? "held it unpaid for MTN verification" : "never had it"}).`, metadata: { from: (Array.isArray(order.suppliers) ? order.suppliers[0]?.code : (order.suppliers as { code?: string } | null)?.code) ?? null, to: target.code, stage: "admin_try_supplier" }, created_by: authData.user.id });
       const result = await fulfillOrder(supabase, order.id, { supplierId: target.id, viaFallback: true });
       if (result.skipped) return jsonResponse({ status: "skipped", action, error: `Not sent: ${String(result.reason).replace(/_/g, " ")}`, result });
       return jsonResponse({ status: "success", action, result });
