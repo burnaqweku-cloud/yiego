@@ -41,7 +41,19 @@ export async function fallbackFor(supabase: Db, order: { id: string; network_id:
 /** After acceptance: the main supplier did not deliver. Reset the supplier fields and queue the order for the
  *  fallback's resend loop (supplier_retry_after = now). Returns the target, or null when there is none. */
 export async function rerouteToFallback(supabase: Db, order: { id: string; status: string; network_id: string; product_id: string; supplier_id: string | null; order_reference?: string }, fromName: string, why: string): Promise<FallbackTarget | null> {
-  const target = await fallbackFor(supabase, order, order.supplier_id);
+  let target = await fallbackFor(supabase, order, order.supplier_id);
+  let stage = "after_acceptance";
+  if (!target) {
+    // An admin's manual "try another supplier" that gets refunded goes BACK to the supplier it came from
+    // (e.g. into DBH's verification queue), instead of stopping in Needs review.
+    const { data: tried } = await supabase.from("order_events").select("metadata").eq("order_id", order.id).eq("event_type", FALLBACK_EVENT).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const fromCode: string | null = tried?.metadata?.stage === "admin_try_supplier" ? (tried.metadata?.from ?? null) : null;
+    if (fromCode) {
+      const { data: back } = await supabase.from("supplier_product_mappings").select("supplier_price, suppliers!inner(id, code, name, status)").eq("product_id", order.product_id).eq("suppliers.code", fromCode).eq("is_active", true).eq("suppliers.status", "active").limit(1).maybeSingle();
+      const b = back?.suppliers as { id: string; code: string; name: string } | undefined;
+      if (b && b.id !== order.supplier_id) { target = { id: b.id, code: b.code, name: b.name, mappingPrice: back.supplier_price != null ? Number(back.supplier_price) : null }; stage = "return_after_manual_try"; }
+    }
+  }
   if (!target) return null;
   const now = new Date().toISOString();
   await supabase.from("orders").update({
@@ -51,8 +63,8 @@ export async function rerouteToFallback(supabase: Db, order: { id: string; statu
   }).eq("id", order.id);
   await supabase.from("order_events").insert({
     order_id: order.id, event_type: FALLBACK_EVENT, from_status: order.status, to_status: "processing",
-    message: `${fromName} did not deliver (${why}). Sending to ${target.name} instead.`,
-    metadata: { from: fromName, to: target.code, why, stage: "after_acceptance" },
+    message: stage === "return_after_manual_try" ? `${fromName} refunded the manual try (${why}). Sending back to ${target.name}.` : `${fromName} did not deliver (${why}). Sending to ${target.name} instead.`,
+    metadata: { from: fromName, to: target.code, why, stage },
   });
   return target;
 }

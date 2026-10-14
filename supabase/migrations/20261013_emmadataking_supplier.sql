@@ -79,3 +79,5 @@
 -- 14 Oct 14:20: EmmaDataKing delivers some FAILED orders by hand (support confirmed 4 today) and the status becomes
 --   COMPLETED. The refund watch now marks such orders delivered instead of waiting for a refund that never comes.
 --   Four orders marked delivered by hand: AG-6A4D6087A6, YG-9BF09263F4, YG-BD7FC00DC8, YG-988CAE3788.
+-- 14 Oct 15:05: a manual "Try another supplier" that gets REFUNDED goes back to the supplier it came from
+--   (fallback.ts rerouteToFallback, stage return_after_manual_try) — e.g. back into DBH's verification queue.
