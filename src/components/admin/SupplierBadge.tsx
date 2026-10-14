@@ -15,22 +15,24 @@ const UNKNOWN = { letter: "?", cls: "border-white/15 bg-white/[0.06] text-muted-
 export interface SupplierRef { code: string; name: string }
 export const supplierLetter = (s: SupplierRef | null | undefined) => (s ? (LETTER[s.code] ?? { ...UNKNOWN, letter: s.name.charAt(0).toUpperCase() }) : null);
 
-export default function SupplierBadge({ supplier, from, className = "" }: { supplier: SupplierRef | null | undefined; from?: SupplierRef | null; className?: string }) {
+export default function SupplierBadge({ supplier, from, className = "" }: { supplier: SupplierRef | null | undefined; from?: (SupplierRef & { why?: string | null; lowBalance?: boolean }) | null; className?: string }) {
   const now = supplierLetter(supplier);
   if (!now) return null;
   const was = from && from.code !== supplier?.code ? supplierLetter(from) : null;
-  const title = was ? `Started at ${from!.name}, now with ${supplier!.name} (fallback)` : `With ${supplier!.name}`;
+  const reason = from?.why ? ` — ${from.lowBalance ? "low balance at " + from.name : from.why}` : "";
+  const title = was ? `Started at ${from!.name}, now with ${supplier!.name} (fallback${reason})` : `With ${supplier!.name}`;
   return (
     <span title={title} aria-label={title} className={`inline-flex h-5 shrink-0 items-center gap-0.5 rounded-full border px-1.5 font-mono text-[10.5px] font-bold leading-none ${now.cls} ${className}`}>
-      {was && <><span className="opacity-60">{was.letter}</span><span className="opacity-60">→</span></>}{now.letter}
+      {was && <><span className="opacity-60">{was.letter}</span><span className="opacity-60">→</span></>}{now.letter}{was && from?.lowBalance && <span className="ml-0.5 text-amber" title={`${from.name} had no float`}>₵</span>}
     </span>
   );
 }
 
 /** Orders the fallback moved: order id → the supplier they started at. The fallback event's
  *  `from` is a supplier code or name depending on where it was written, so both are matched. */
+export type FallbackOrigin = SupplierRef & { why: string | null; lowBalance: boolean };
 export function useFallbackOrigins(tick?: unknown) {
-  const [origins, setOrigins] = useState<Record<string, SupplierRef>>({});
+  const [origins, setOrigins] = useState<Record<string, FallbackOrigin>>({});
   useEffect(() => {
     let alive = true;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,16 +40,17 @@ export function useFallbackOrigins(tick?: unknown) {
     void Promise.all([
       db.from("suppliers").select("code, name"),
       db.from("order_events").select("order_id, metadata").eq("event_type", "supplier.fallback").order("created_at", { ascending: false }).limit(3000),
-    ]).then(([s, e]: [{ data: SupplierRef[] | null }, { data: { order_id: string; metadata: { from?: string } | null }[] | null }]) => {
+    ]).then(([s, e]: [{ data: SupplierRef[] | null }, { data: { order_id: string; metadata: { from?: string; why?: string } | null }[] | null }]) => {
       if (!alive) return;
       const suppliers = s.data ?? [];
       const byKey = new Map<string, SupplierRef>();
       for (const sup of suppliers) { byKey.set(sup.code.toLowerCase(), sup); byKey.set(sup.name.toLowerCase(), sup); }
-      const map: Record<string, SupplierRef> = {};
+      const map: Record<string, FallbackOrigin> = {};
       for (const ev of e.data ?? []) {
         const from = (ev.metadata?.from ?? "").toLowerCase();
         const sup = byKey.get(from);
-        if (sup && !map[ev.order_id]) map[ev.order_id] = sup; // newest event wins
+        const why = ev.metadata?.why ?? null;
+        if (sup && !map[ev.order_id]) map[ev.order_id] = { ...sup, why, lowBalance: /balance|insufficient|float|fund/i.test(why ?? "") }; // newest event wins
       }
       setOrigins(map);
     });

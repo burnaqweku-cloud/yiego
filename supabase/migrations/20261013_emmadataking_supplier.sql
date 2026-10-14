@@ -70,3 +70,6 @@
 -- admin-order-action "try_supplier" {supplierCode}: admin sends a REFUNDED (or never-sent) paid order to a chosen active
 --   supplier that sells the bundle; refused while the current supplier may still hold it. Writes a supplier.fallback event
 --   (stage admin_try_supplier) and sends via fulfillOrder({supplierId, viaFallback:true}). Orders page: "Try another supplier" dropdown.
+-- 14 Oct 11:30: on a CLEAR refusal (e.g. insufficient balance) fulfillment.ts asks the supplier by reference before
+--   any fallback; if they hold it queued the order stays (event supplier.recovered_after_timeout). Lookup failure → no fallback.
+-- Admin badge: E→D tooltip carries the fallback reason; a ₵ mark means the first supplier had no float.

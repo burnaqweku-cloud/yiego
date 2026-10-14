@@ -384,6 +384,18 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
 
   // Refused outright by this supplier (not approved, no stock, rejected): give the fallback supplier the
   // order now, before anything is held or marked failed. The refusal is still logged.
+  if (!outcome.ok && fallbackAllowed && !isAmbiguousOutcome(outcome) && adapter.findByReference) {
+    // A clear refusal (e.g. insufficient balance) should mean they never took it — but a supplier that queues the
+    // order "until top-up" while also answering with an error would be a double send. Ask before moving it.
+    try {
+      const look = await adapter.findByReference(order.order_reference, attempt);
+      if (look.found && look.held) {
+        await supabase.from("supplier_api_logs").insert({ supplier_id: supplier.id, order_id: order.id, action: "purchase", endpoint: outcome.endpoint, request_payload: outcome.requestPayload, response_payload: outcome.responsePayload, http_status: outcome.httpStatus, call_status: "error", idempotency_key: idempotencyKey, error_message: `${outcome.message ?? "refused"} — but they hold the order (${look.supplierStatus})`, duration_ms: outcome.durationMs });
+        await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.recovered_after_timeout", from_status: "processing", to_status: "processing", message: `${supplier.name} answered "${outcome.message ?? "refused"}" but has the order queued (${look.supplierStatus ?? "accepted"}). Keeping it there.`, metadata: { supplier: supplier.code, httpStatus: outcome.httpStatus, supplierReference: look.supplierReference, supplierStatus: look.supplierStatus } });
+        outcome = { ...outcome, ok: true, supplierReference: look.supplierReference, purchaseId: look.purchaseId, transactionReference: look.transactionReference, supplierStatus: look.supplierStatus, message: null };
+      }
+    } catch { fallbackAllowed = false; outcome = { ...outcome, message: `${outcome.message ?? "refused"} — could not confirm with the supplier whether it still holds the order; check before re-sending.` }; }
+  }
   if (!outcome.ok && fallbackAllowed) {
     const fb = opts.viaFallback ? null : await fallbackFor(supabase, order, supplier.id);
     if (fb) {
