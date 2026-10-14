@@ -73,3 +73,6 @@
 -- 14 Oct 11:30: on a CLEAR refusal (e.g. insufficient balance) fulfillment.ts asks the supplier by reference before
 --   any fallback; if they hold it queued the order stays (event supplier.recovered_after_timeout). Lookup failure → no fallback.
 -- Admin badge: E→D tooltip carries the fallback reason; a ₵ mark means the first supplier had no float.
+-- 14 Oct 12:35: phase1.true_up_order_cost() (trigger on supplier_api_logs) now reads data.price OR data.amount, so
+--   EmmaDataKing's live charge overwrites the order cost like DBH's does. Found 4GB = 15.68 live (list 15.50): three
+--   orders and the mapping corrected, ledger float_correction +0.54 cost_of_bundles / -0.54 float_emmadataking.
