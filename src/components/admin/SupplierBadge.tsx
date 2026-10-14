@@ -50,7 +50,7 @@ export function useFallbackOrigins(tick?: unknown) {
         const from = (ev.metadata?.from ?? "").toLowerCase();
         const sup = byKey.get(from);
         const why = ev.metadata?.why ?? null;
-        if (sup && !map[ev.order_id]) map[ev.order_id] = { ...sup, why, lowBalance: /balance|insufficient|float|fund/i.test(why ?? "") }; // newest event wins
+        if (sup && !map[ev.order_id]) map[ev.order_id] = { ...sup, why, lowBalance: /balance|insufficient|no float|low float/i.test(why ?? "") }; // newest event wins
       }
       setOrigins(map);
     });
