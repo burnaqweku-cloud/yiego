@@ -51,3 +51,6 @@
 -- supplier_status FAILED, event supplier.failed_awaiting_refund) — Needs review is only for orders a person can act on.
 -- Once REFUNDED: fallback if set, else failed_needs_review "safe to Retry". EDK adapter stores a purchase id only when
 -- the purchase was accepted. AG-77329A765C and YG-33C0F1DFA6 moved to processing/FAILED by hand.
+-- 14 Oct 09:10: phase1.admin_supplier_last_deliveries(p_actor) — per supplier, the latest delivered order (last 7 days):
+-- order, bundle, network, sent_at (that supplier's fulfillment_started event, else paid_at), delivered_at, minutes.
+-- Shown on Admin → Suppliers cards ("Last delivery: N min · MTN 2GB · time"), green ≤30, amber ≤90, red beyond.

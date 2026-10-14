@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRightLeft, Pause, Play, RefreshCw, RotateCcw, Store, Wifi } from "lucide-react";
+import { ArrowRightLeft, Pause, Play, RefreshCw, RotateCcw, Store, Timer, Wifi } from "lucide-react";
 import { toast } from "sonner";
 import AdminListPagination from "@/components/admin/AdminListPagination";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -15,6 +15,7 @@ import { useAuth } from "@/store/auth-context";
    Every control here writes through an admin_* SQL function that records
    who did it. The shop reads the same flags, so a pause is immediate. */
 
+interface LastDelivery { supplier_code: string; order_reference: string; bundle: string; network: string; sent_at: string; delivered_at: string; minutes: number }
 interface Supplier { id: string; code: string; name: string; status: "active" | "paused" | "disabled"; balance: number | null; last_balance_checked_at: string | null; low_balance_threshold: number | null; metadata: Record<string, unknown> | null }
 interface Network { id: string; code: string; name: string; is_paused: boolean; pause_reason: string | null; preferred_supplier_id: string | null; fallback_supplier_id?: string | null }
 interface Product { id: string; name: string; capacity_gb: number; customer_price: number; is_active: boolean; is_paused: boolean; pause_reason: string | null; network_id: string }
@@ -26,6 +27,7 @@ const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: 
 export default function AdminSuppliers() {
   const { user } = useAuth(); const actor = user?.id ?? "";
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [lastDeliveries, setLastDeliveries] = useState<LastDelivery[]>([]);
   const [networks, setNetworks] = useState<Network[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [mappings, setMappings] = useState<Mapping[]>([]);
@@ -39,14 +41,16 @@ export default function AdminSuppliers() {
   const [page, setPage] = useState(1); const [pageSize, setPageSize] = useState(25);
 
   const load = useCallback(async () => {
-    const [s, n, p, m, l, r] = await Promise.all([
+    const [s, n, p, m, l, r, d] = await Promise.all([
       db().from("suppliers").select("id, code, name, status, balance, last_balance_checked_at, low_balance_threshold, metadata").order("display_order"),
       db().from("networks").select("id, code, name, is_paused, pause_reason, preferred_supplier_id, fallback_supplier_id").order("display_order"),
       db().from("data_products").select("id, name, capacity_gb, customer_price, is_active, is_paused, pause_reason, network_id").eq("is_active", true).order("capacity_gb"),
       db().from("supplier_product_mappings").select("product_id, supplier_id, supplier_price, is_active").eq("is_active", true),
       db().from("supplier_api_logs").select("action, endpoint, http_status, call_status, supplier_reference, error_message, duration_ms, created_at").order("created_at", { ascending: false }).limit(300),
       db().rpc("admin_network_supplier_readiness", { p_actor: actor }),
+      db().rpc("admin_supplier_last_deliveries", { p_actor: actor }),
     ]);
+    setLastDeliveries(Array.isArray(d.data) ? (d.data as LastDelivery[]) : []);
     setSuppliers(s.data ?? []); setNetworks(n.data ?? []); setProducts(p.data ?? []); setMappings(m.data ?? []); setLogs(l.data ?? []); setReadiness(Array.isArray(r.data) ? (r.data as Readiness[]) : []); setLoading(false);
   }, [actor]);
   useEffect(() => { void load(); }, [load]);
@@ -87,7 +91,7 @@ export default function AdminSuppliers() {
         {suppliers.map((s) => {
           const low = s.balance != null && Number(s.balance) < Number(s.low_balance_threshold ?? 100);
           return <Stat key={s.id} loading={loading} label={s.name} icon={Store} value={s.balance == null ? "—" : <Money value={s.balance} tone={low ? "bad" : "default"} />} tone={s.status !== "active" ? "muted" : low ? "bad" : "good"}
-            note={<span className="flex items-center gap-1.5"><Pill tone={s.status === "active" ? "good" : s.status === "paused" ? "warn" : "muted"}>{s.status}</Pill>{s.last_balance_checked_at ? formatAdminDate(s.last_balance_checked_at) : "no balance yet"}{s.status !== "active" ? <button type="button" className="text-primary-glow" onClick={() => void call("admin_set_supplier_status", { p_supplier_code: s.code, p_status: "active" }, `${s.name} activated`)}>activate</button> : <button type="button" className="text-faint-foreground" onClick={() => void call("admin_set_supplier_status", { p_supplier_code: s.code, p_status: "paused" }, `${s.name} paused`)}>pause</button>}</span>} />;
+            note={<span className="flex flex-col gap-1"><span className="flex items-center gap-1.5"><Pill tone={s.status === "active" ? "good" : s.status === "paused" ? "warn" : "muted"}>{s.status}</Pill>{s.last_balance_checked_at ? formatAdminDate(s.last_balance_checked_at) : "no balance yet"}{s.status !== "active" ? <button type="button" className="text-primary-glow" onClick={() => void call("admin_set_supplier_status", { p_supplier_code: s.code, p_status: "active" }, `${s.name} activated`)}>activate</button> : <button type="button" className="text-faint-foreground" onClick={() => void call("admin_set_supplier_status", { p_supplier_code: s.code, p_status: "paused" }, `${s.name} paused`)}>pause</button>}</span>{(() => { const d = lastDeliveries.find((x) => x.supplier_code === s.code); return d ? <span className="text-[11.5px]"><Timer size={11} className="mr-1 inline -mt-0.5 text-faint-foreground" />Last delivery: <b className={`text-foreground ${d.minutes <= 30 ? "" : d.minutes <= 90 ? "text-amber" : "text-danger"}`}>{d.minutes} min</b> · {d.network} {d.bundle} · {formatAdminDate(d.delivered_at)}</span> : <span className="text-[11.5px] text-faint-foreground">No delivery in the last 7 days</span>; })()}</span>} />;
         })}
       </StatGrid>
 
