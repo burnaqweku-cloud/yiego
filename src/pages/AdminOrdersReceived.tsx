@@ -85,7 +85,7 @@ export default function AdminOrdersReceived() {
       <StatGrid cols={4}>
         <Stat loading={loading} label="All" value={String(counts.all)} tone={bucket === "all" ? "good" : "default"} onClick={() => set("bucket", "all")} />
         <Stat loading={loading} label="Delivered" value={String(counts.delivered)} tone={bucket === "delivered" ? "good" : "default"} onClick={() => set("bucket", "delivered")} />
-        <Stat loading={loading} label="Waiting" value={String(counts.waiting)} tone={bucket === "waiting" ? "warn" : "default"} onClick={() => set("bucket", "waiting")} />
+        <Stat loading={loading} label="Waiting" value={String(counts.waiting)} note={(() => { const n = rows.filter((o) => inSource(o) && awaitingRefund(o)).length; return n ? `${n} awaiting a supplier refund` : undefined; })()} tone={bucket === "waiting" ? "warn" : "default"} onClick={() => set("bucket", "waiting")} />
         <Stat loading={loading} label="Refunded" value={String(counts.refunded)} tone={bucket === "refunded" ? "bad" : "default"} onClick={() => set("bucket", "refunded")} />
       </StatGrid>
       <Panel title={BUCKET_TITLE[bucket]} note={`${list.length} orders · ${formatGHS(total)}${allTime ? " · all time" : ""}`} action={<div className="flex items-center gap-1.5">
