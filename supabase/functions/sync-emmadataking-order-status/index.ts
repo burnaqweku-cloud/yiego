@@ -80,6 +80,13 @@ Deno.serve(async (req) => {
         // Retries sent before per-attempt references exist under the plain reference.
         if (r.status === 404 && ref !== order.order_reference) { ref = order.order_reference; r = await checkOrderStatus(ref); }
         const st = String((r.payload as any)?.data?.status ?? "").toUpperCase();
+        // A FAILED they later deliver by hand comes back COMPLETED: the order is delivered, nothing to refund.
+        if (r.ok && mapStatus(st) === "delivered") {
+          const d = (r.payload as any)?.data ?? {};
+          await supabase.from("orders").update({ status: "delivered", supplier_status: st, supplier_purchase_id: d.reference ?? ref, supplier_order_reference: d.id ?? null, failure_reason: null, updated_at: new Date().toISOString() }).eq("id", order.id);
+          await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.status_update", from_status: order.status, to_status: "delivered", message: `EmmaDataKing reported ${st} after a FAILED (delivered by them)`, metadata: { supplier: "emmadataking", supplierStatus: st, ref } });
+          refunds.push({ reference: order.order_reference, outcome: "delivered_after_failed" }); continue;
+        }
         if (!r.ok || st !== "REFUNDED") { refunds.push({ reference: order.order_reference, outcome: "still_waiting", supplierStatus: st || null }); continue; }
         const fb = await rerouteToFallback(supabase, order, "EmmaDataKing", "REFUNDED after a failed attempt");
         if (fb) { refunds.push({ reference: order.order_reference, outcome: `rerouted_to_${fb.code}` }); continue; }

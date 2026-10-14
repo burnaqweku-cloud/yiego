@@ -76,3 +76,6 @@
 -- 14 Oct 12:35: phase1.true_up_order_cost() (trigger on supplier_api_logs) now reads data.price OR data.amount, so
 --   EmmaDataKing's live charge overwrites the order cost like DBH's does. Found 4GB = 15.68 live (list 15.50): three
 --   orders and the mapping corrected, ledger float_correction +0.54 cost_of_bundles / -0.54 float_emmadataking.
+-- 14 Oct 14:20: EmmaDataKing delivers some FAILED orders by hand (support confirmed 4 today) and the status becomes
+--   COMPLETED. The refund watch now marks such orders delivered instead of waiting for a refund that never comes.
+--   Four orders marked delivered by hand: AG-6A4D6087A6, YG-9BF09263F4, YG-BD7FC00DC8, YG-988CAE3788.
