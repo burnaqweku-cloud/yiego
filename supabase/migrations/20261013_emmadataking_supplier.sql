@@ -84,3 +84,5 @@
 -- 14 Oct 21:50: a supplier answering "number not approved" at purchase no longer triggers the fallback
 --   (fulfillment.ts). It falls through to failed_needs_review and the orders_dbh_mtn_approval trigger holds it
 --   as awaiting_verification at the same supplier. AG-BB63D49E29 had bounced DBH → Emma (refunded) → Needs review.
+-- 15 Oct 00:30: EmmaDataKing "reprocess" of a FAILED order puts it back to PROCESSING. The refund watch now records
+--   that (supplier_status + reason "is reprocessing this") instead of leaving "FAILED — waiting for refund" on the row.

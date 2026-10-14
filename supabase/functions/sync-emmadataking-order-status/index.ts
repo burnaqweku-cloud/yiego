@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     const refunds: unknown[] = [];
     const { data: waiting } = await supabase.from("orders").select("id, order_reference, status, network_id, product_id, supplier_id, failure_reason")
       .eq("supplier_id", supplier.id).eq("payment_status", "succeeded").in("status", ["processing", "failed_needs_review"]).is("supplier_purchase_id", null)
-      .or("failure_reason.ilike.%waiting for their refund%,failure_reason.ilike.%NOT refunded yet%").order("updated_at", { ascending: true }).limit(MAX_PER_RUN);
+      .or("failure_reason.ilike.%waiting for their refund%,failure_reason.ilike.%NOT refunded yet%,failure_reason.ilike.%is reprocessing this%").order("updated_at", { ascending: true }).limit(MAX_PER_RUN);
     for (const order of waiting ?? []) {
       try {
         const { count } = await supabase.from("supplier_api_logs").select("id", { count: "exact", head: true }).eq("order_id", order.id).eq("supplier_id", supplier.id).eq("action", "purchase");
@@ -86,6 +86,12 @@ Deno.serve(async (req) => {
           await supabase.from("orders").update({ status: "delivered", supplier_status: st, supplier_purchase_id: d.reference ?? ref, supplier_order_reference: d.id ?? null, failure_reason: null, updated_at: new Date().toISOString() }).eq("id", order.id);
           await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.status_update", from_status: order.status, to_status: "delivered", message: `EmmaDataKing reported ${st} after a FAILED (delivered by them)`, metadata: { supplier: "emmadataking", supplierStatus: st, ref } });
           refunds.push({ reference: order.order_reference, outcome: "delivered_after_failed" }); continue;
+        }
+        // They sometimes reprocess a FAILED by hand: it goes back to PROCESSING/PENDING first. Show that, keep waiting.
+        if (r.ok && st && st !== "FAILED" && st !== "REFUNDED" && order.status === "processing") {
+          await supabase.from("orders").update({ supplier_status: st, failure_reason: `EmmaDataKing is reprocessing this (${st}) after a FAILED — it will deliver or refund by itself`, updated_at: new Date().toISOString() }).eq("id", order.id);
+          await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.status_update", from_status: order.status, to_status: order.status, message: `EmmaDataKing reported ${st} after a FAILED (reprocessing)`, metadata: { supplier: "emmadataking", supplierStatus: st, ref } });
+          refunds.push({ reference: order.order_reference, outcome: "reprocessing", supplierStatus: st }); continue;
         }
         if (!r.ok || st !== "REFUNDED") { refunds.push({ reference: order.order_reference, outcome: "still_waiting", supplierStatus: st || null }); continue; }
         const fb = await rerouteToFallback(supabase, order, "EmmaDataKing", "REFUNDED after a failed attempt");
