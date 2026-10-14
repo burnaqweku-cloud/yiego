@@ -15,10 +15,13 @@ import { formatGHS } from "@/lib/format";
    Orders page, for the same day or range. */
 type Bucket = "all" | "delivered" | "waiting" | "refunded";
 type Source = "all" | "platform" | "agents";
-type Stage = "all" | "in_progress" | "verification" | "review" | "no_float";
+type Stage = "all" | "in_progress" | "awaiting_refund" | "verification" | "review" | "no_float";
 const NO_FLOAT = /insufficient (wallet )?balance|insufficient funds|low balance/i;
-const stageOf = (o: Row): Exclude<Stage, "all"> => o.admin_resolution_status === "awaiting_verification" ? "verification" : o.status.startsWith("failed") ? (NO_FLOAT.test(o.failure_reason ?? "") ? "no_float" : "review") : "in_progress";
-const STAGE_LABEL: Record<Stage, string> = { all: "All", in_progress: "In progress", verification: "Verification", review: "Needs review", no_float: "Supplier no money" };
+const FAILED_STATUSES = new Set(["failed", "rejected", "cancelled", "canceled"]);
+// "Awaiting refund": the supplier failed it but has not refunded yet; nothing can happen until they do (then it moves on by itself).
+const awaitingRefund = (o: Row) => o.status === "processing" && FAILED_STATUSES.has((o.supplier_status ?? "").toLowerCase());
+const stageOf = (o: Row): Exclude<Stage, "all"> => o.admin_resolution_status === "awaiting_verification" ? "verification" : o.status.startsWith("failed") ? (NO_FLOAT.test(o.failure_reason ?? "") ? "no_float" : "review") : awaitingRefund(o) ? "awaiting_refund" : "in_progress";
+const STAGE_LABEL: Record<Stage, string> = { all: "All", in_progress: "In progress", awaiting_refund: "Awaiting refund", verification: "Verification", review: "Needs review", no_float: "Supplier no money" };
 interface Row { id: string; order_reference: string; recipient_phone: string; amount: number; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { code: string; name: string } | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any };
@@ -65,10 +68,10 @@ export default function AdminOrdersReceived() {
   const inStage = (o: Row) => bucket !== "waiting" || stage === "all" || stageOf(o) === stage;
   const list = useMemo(() => rows.filter((o) => inBucket(o) && inSource(o) && inStage(o) && (!q || o.order_reference.toLowerCase().includes(q) || o.recipient_phone.includes(q) || (o.networks?.name ?? "").toLowerCase().includes(q))), [rows, bucket, source, stage, q]); // eslint-disable-line react-hooks/exhaustive-deps
   const waitingRows = rows.filter((o) => inSource(o) && !["delivered", "refunded", "cancelled"].includes(o.status));
-  const stageCounts = (["in_progress", "verification", "review", "no_float"] as const).map((st) => ({ st, n: waitingRows.filter((o) => stageOf(o) === st).length }));
+  const stageCounts = (["in_progress", "awaiting_refund", "verification", "review", "no_float"] as const).map((st) => ({ st, n: waitingRows.filter((o) => stageOf(o) === st).length }));
   const counts = { all: rows.filter(inSource).length, delivered: rows.filter((o) => inSource(o) && o.status === "delivered").length, waiting: rows.filter((o) => inSource(o) && !["delivered", "refunded", "cancelled"].includes(o.status)).length, refunded: rows.filter((o) => inSource(o) && o.status === "refunded").length };
   const total = list.reduce((a, o) => a + Number(o.amount), 0);
-  const reasonOf = (o: Row) => o.admin_resolution_status === "awaiting_verification" ? "MTN verification" : o.status === "failed_needs_review" ? (o.failure_reason ?? "failed at supplier") : o.status === "processing" ? `${o.suppliers?.name ?? "supplier"} says ${o.supplier_status ?? "processing"}` : o.status.replace(/_/g, " ");
+  const reasonOf = (o: Row) => o.admin_resolution_status === "awaiting_verification" ? "MTN verification" : o.status === "failed_needs_review" ? (o.failure_reason ?? "failed at supplier") : awaitingRefund(o) ? `${o.suppliers?.name ?? "supplier"} ${o.supplier_status} — waiting for their refund, then it moves on by itself` : o.status === "processing" ? `${o.suppliers?.name ?? "supplier"} says ${o.supplier_status ?? "processing"}` : o.status.replace(/_/g, " ");
 
   const exportCsv = () => {
     const lines = [["paid at", "order", "network", "bundle", "recipient", "amount", "status", "detail", "source"], ...list.map((o) => [o.paid_at, o.order_reference, o.networks?.name ?? "", o.data_products?.name ?? "", o.recipient_phone, Number(o.amount).toFixed(2), o.status, reasonOf(o).replace(/"/g, "'"), o.agent_id ? "agent" : "platform"])];
@@ -101,7 +104,7 @@ export default function AdminOrdersReceived() {
                 <p className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-foreground"><SupplierBadge supplier={o.suppliers} from={origins[o.id]} /><CopyRef value={o.order_reference} /> <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
                 <p className="text-[11px] text-faint-foreground">paid {formatAdminDate(o.paid_at)} · {age(o.paid_at)} ago · {reasonOf(o)}</p>
               </div>
-              <div className="flex flex-col items-end gap-1.5 text-right"><p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</p><Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status === "refunded" ? "refunded" : o.admin_resolution_status === "awaiting_verification" ? "verification" : o.admin_resolution_status === "wrong_network" ? "wrong network" : o.status.startsWith("failed") ? "review" : "in progress"}</Pill>{stageOf(o) === "no_float" && <button type="button" disabled={retrying === o.id} onClick={() => void retry(o)} className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-[11.5px] font-medium text-foreground disabled:opacity-50"><RotateCcw size={11} />{retrying === o.id ? "Sending…" : "Retry"}</button>}</div>
+              <div className="flex flex-col items-end gap-1.5 text-right"><p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</p><Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status === "refunded" ? "refunded" : o.admin_resolution_status === "awaiting_verification" ? "verification" : o.admin_resolution_status === "wrong_network" ? "wrong network" : o.status.startsWith("failed") ? "review" : awaitingRefund(o) ? "awaiting refund" : "in progress"}</Pill>{stageOf(o) === "no_float" && <button type="button" disabled={retrying === o.id} onClick={() => void retry(o)} className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-[11.5px] font-medium text-foreground disabled:opacity-50"><RotateCcw size={11} />{retrying === o.id ? "Sending…" : "Retry"}</button>}</div>
             </li>))}
         </ul>
       </Panel>
