@@ -47,7 +47,7 @@ const MAX_ORDERS_PER_RUN = 100;
 const MAX_TX_PAGES = 3;
 const MAX_FALLBACK_CHECKS = 10;
 const MAX_RESENDS_PER_RUN = 20;
-const LOSING_STATUSES = new Set(["failed", "refunded", "cancelled", "reversed"]);
+const LOSING_STATUSES = new Set(["failed", "rejected", "refunded", "cancelled", "reversed"]);
 
 type OrderRow = {
   id: string;
@@ -67,10 +67,10 @@ type SupplierReport = { status: string; errorCode: string | number | null };
 
 function terminalFor(supplierStatus: string): { nextStatus: string; failureReason: string | null } | null {
   if (["delivered", "completed"].includes(supplierStatus)) return { nextStatus: "delivered", failureReason: null };
-  if (["failed", "refunded", "cancelled", "reversed"].includes(supplierStatus)) {
+  if (["failed", "rejected", "refunded", "cancelled", "reversed"].includes(supplierStatus)) {
     return {
       nextStatus: "failed_needs_review",
-      failureReason: `Supplier ${supplierStatus} — supplier returned our money; the customer has not been refunded or delivered. Retry or refund.`,
+      failureReason: ["failed", "rejected"].includes(supplierStatus) ? `Supplier ${supplierStatus} — NOT refunded yet; the money moves on by itself once they refund. The customer has not been refunded or delivered.` : `Supplier ${supplierStatus} — supplier returned our money; the customer has not been refunded or delivered. Retry or refund.`,
     };
   }
   return null;
@@ -125,6 +125,14 @@ Deno.serve(async (req) => {
       .order("updated_at", { ascending: true })
       .limit(MAX_ORDERS_PER_RUN);
     if (ordersError) return jsonResponse({ error: ordersError.message }, { status: 500 });
+    // A "failed"/"rejected" sits in Needs review NOT refunded yet. Keep watching it: once DBH flips it to
+    // "refunded" the money is back and the order may move to the fallback (or become safe to Retry).
+    const { data: losers } = await supabase
+      .from("orders")
+      .select("id, order_reference, recipient_phone, status, supplier_status, supplier_purchase_id, admin_resolution_status, network_id, product_id, supplier_id, networks(name, code)")
+      .eq("supplier_id", supplier.id).eq("status", "failed_needs_review").in("supplier_status", ["failed", "rejected"])
+      .not("supplier_purchase_id", "is", null).order("updated_at", { ascending: true }).limit(50);
+    for (const l of (losers ?? []) as unknown as OrderRow[]) if (!(orders ?? []).some((o: { id: string }) => o.id === l.id)) (orders as unknown as OrderRow[]).push(l);
     if (!orders || orders.length === 0) return jsonResponse({ checked: 0, resent, results: [] });
 
     /* ── purchaseId per order, from the purchase receipts we logged ── */

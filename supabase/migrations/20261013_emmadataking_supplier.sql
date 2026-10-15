@@ -86,3 +86,6 @@
 --   as awaiting_verification at the same supplier. AG-BB63D49E29 had bounced DBH → Emma (refunded) → Needs review.
 -- 15 Oct 00:30: EmmaDataKing "reprocess" of a FAILED order puts it back to PROCESSING. The refund watch now records
 --   that (supplier_status + reason "is reprocessing this") instead of leaving "FAILED — waiting for refund" on the row.
+-- 15 Oct 08:30: DBH statuses per their docs — "skipped" (provider skipped, they retry; stays processing) and
+--   "rejected" (final, not refunded): rejected now lands in Needs review like "failed", reason "NOT refunded yet".
+--   sync-dbh keeps polling failed/rejected orders; a later "refunded" moves them to the fallback / safe to Retry.
