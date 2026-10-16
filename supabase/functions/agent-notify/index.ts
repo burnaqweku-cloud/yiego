@@ -92,6 +92,25 @@ Deno.serve(async (req) => {
       }
       return jsonResponse({ sent });
     }
+
+    if (body.kind === "network_fee") {
+      // A sub-agent paid their parent's fee: receipt to the sub, "your agent paid you" to the parent.
+      const denied = await requireCronSecret(req, supabase); if (denied) return denied;
+      const { data: i } = await supabase.from("payment_intents").select("id, amount, metadata, verified_at").eq("id", String(body.intentId)).eq("purpose", "network_fee").eq("status", "succeeded").maybeSingle();
+      if (!i) return jsonResponse({ skipped: "not_found" });
+      const m = (i.metadata ?? {}) as { agent_id?: string; parent_agent_id?: string; baseAmount?: number; months?: number };
+      const { data: sub } = await supabase.from("agents").select("store_name, slug, user_id, paid_until").eq("id", String(m.agent_id)).maybeSingle();
+      const { data: parent } = await supabase.from("agents").select("store_name, slug, user_id, custom_domain, custom_domain_status, email_domain, email_domain_status").eq("id", String(m.parent_agent_id)).maybeSingle();
+      if (!sub || !parent) return jsonResponse({ skipped: "not_found" });
+      const base = Number(m.baseAmount ?? 0); const months = Number(m.months ?? 1);
+      const until = sub.paid_until ? new Date(sub.paid_until).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
+      let sent = 0;
+      const { data: su } = await supabase.auth.admin.getUserById(sub.user_id);
+      if (su?.user?.email) { const r = await sendEmail({ to: su.user.email, subject: `Payment received — ${sub.store_name} is open until ${until}`, html: wrap("Payment received", `<p>Thanks! We received GH₵ ${Number(i.amount).toFixed(2)} for <b>${esc(sub.store_name)}</b> (${months} month${months === 1 ? "" : "s"} under ${esc(parent.store_name)}).</p><p>Your store is open until <b>${until}</b>.</p>`, { href: `${site}/agent`, label: "Open your dashboard" }), from: fromOf(parent as Storeish) }); if (!("skipped" in r && r.skipped) && r.ok) sent++; }
+      const { data: pu } = await supabase.auth.admin.getUserById(parent.user_id);
+      if (pu?.user?.email) { const r = await sendEmail({ to: pu.user.email, subject: `${sub.store_name} paid you GH₵ ${base.toFixed(2)}`, html: wrap("Your agent paid their fee", `<p><b>${esc(sub.store_name)}</b> paid GH₵ ${base.toFixed(2)} (${months} month${months === 1 ? "" : "s"}). It's in your earnings balance now.</p><p>Their store stays open until <b>${until}</b>.</p>`, { href: `${site}/agent/network`, label: "See your agents" }) }); if (!("skipped" in r && r.skipped) && r.ok) sent++; }
+      return jsonResponse({ sent });
+    }
     return jsonResponse({ error: "Unsupported kind" }, { status: 400 });
   } catch (e) { return jsonResponse({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 }); }
 });

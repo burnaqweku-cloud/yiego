@@ -13,14 +13,27 @@ Deno.serve(async (req) => {
   try {
     const supabase = createSupabaseAdmin();
     const denied = await requireCronSecret(req, supabase); if (denied) return denied;
-    const { data: due } = await supabase.rpc("agents_due_for_reminder");
+    const { data: due } = await supabase.rpc("agents_due_for_reminder_v2");
     const results: unknown[] = [];
-    for (const a of (due ?? []) as Array<{ agent_id: string; user_id: string; store_name: string; paid_until: string; kind: string }>) {
+    for (const a of (due ?? []) as Array<{ agent_id: string; user_id: string; store_name: string; paid_until: string; kind: string; parent_name: string | null; parent_fee: number | null }>) {
       const { data: profile } = await supabase.from("profiles").select("email, full_name").eq("id", a.user_id).maybeSingle();
       if (!profile?.email) { results.push({ agent: a.agent_id, skipped: "no_email" }); continue; }
+      const when = new Date(a.paid_until).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
+      if (a.parent_name) {
+        // A sub-agent renews with their parent, at the parent's fee — never the DataYego plan.
+        const fee = Number(a.parent_fee ?? 0).toFixed(2);
+        const html = a.kind === "grace"
+          ? wrap("Your store closes tonight", `<p>Hi ${profile.full_name ?? ""},</p><p>Your agent month with <b>${a.parent_name}</b> for <b>${a.store_name}</b> ended on <b>${when}</b>. Tonight your store stops taking orders. Your balance, orders and settings stay as they are — pay the fee any time and it reopens instantly.</p><p>Monthly fee: <b>GH₵ ${fee}</b>.</p>`)
+          : a.kind === "3d"
+          ? wrap("Your agent month ends in 3 days", `<p>Hi ${profile.full_name ?? ""},</p><p>Your agent month with <b>${a.parent_name}</b> for <b>${a.store_name}</b> runs until <b>${when}</b>. Pay before then and your store stays open without a break.</p><p>Monthly fee: <b>GH₵ ${fee}</b>.</p>`)
+          : wrap("Your agent month ends today", `<p>Hi ${profile.full_name ?? ""},</p><p>Today is the last day of your agent month with <b>${a.parent_name}</b> for <b>${a.store_name}</b>. You have until tomorrow night to pay; after that your store stops taking orders until you do.</p><p>Monthly fee: <b>GH₵ ${fee}</b>.</p>`);
+        const r = await sendEmail({ to: profile.email, subject: a.kind === "grace" ? `${a.store_name} closes tonight` : a.kind === "3d" ? `Your agent month with ${a.parent_name} ends in 3 days` : `Your agent month with ${a.parent_name} ends today`, replyTo: "support@yiego.shop", html });
+        if (!r.skipped && r.ok) await supabase.rpc("agents_mark_reminded", { p_agent: a.agent_id, p_kind: a.kind });
+        results.push({ agent: a.agent_id, kind: a.kind, sub: true, sent: !r.skipped && r.ok });
+        continue;
+      }
       const { data: quote } = await supabase.rpc("agent_plan_quote", { p_user: a.user_id });
       const price = Number(quote?.pay_now ?? 0).toFixed(2);
-      const when = new Date(a.paid_until).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
       const html = a.kind === "grace"
         ? wrap("Your store closes tonight", `<p>Hi ${profile.full_name ?? ""},</p><p>Your DataYego agent plan for <b>${a.store_name}</b> ended on <b>${when}</b>. Tonight your store stops taking orders and agent prices are locked. Your balance, orders and settings stay exactly as they are — renew any time and everything reopens instantly.</p><p>From <b>GH₵ ${price}</b> a month.</p>`)
         : a.kind === "3d"

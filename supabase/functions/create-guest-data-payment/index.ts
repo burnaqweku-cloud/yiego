@@ -100,6 +100,9 @@ Deno.serve(async (req) => {
       agentSelf = Boolean(own);
     }
     const agentPrice = agent ? Number(product.agent_price ?? product.customer_price) : null;
+    // A sub-agent (store under a parent) buys at the parent's price, not DataYego's — agent_cost_price decides.
+    let selfPrice = agentPrice;
+    if (agentSelf && agent) { const { data: cp } = await supabase.rpc("agent_cost_price", { p_agent: agent.id, p_product: product.id }); if (cp != null && Number(cp) > 0) selfPrice = Number(cp); }
     // Referred customers: first purchase at agent price (decided in the database).
     let friendPrice = false;
     if (!agent && authenticatedUser) { const { data: fp } = await supabase.rpc("friend_price_eligible", { p_user: authenticatedUser.id }); friendPrice = fp === true; }
@@ -107,7 +110,7 @@ Deno.serve(async (req) => {
     const campaignToken = typeof body?.campaignToken === "string" && /^[0-9a-f]{32}$/i.test(body.campaignToken) ? body.campaignToken : null;
     let campaignPrice: number | null = null;
     if (campaignToken && !agent) { const { data: cp } = await supabase.rpc("campaign_price_for", { p_token: campaignToken, p_phone: recipientPhone, p_product: product.id }); if (cp != null) campaignPrice = Number(cp); else return jsonResponse({ error: "This giveaway claim has expired or doesn't match the number. Go back to the giveaway page and claim again.", code: "campaign_invalid" }, { status: 409 }); }
-    const sellingPrice = campaignPrice != null ? campaignPrice : agent ? (agentSelf ? Number(agentPrice) : Number(agent.prices?.[product.id] ?? product.customer_price)) : (friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price));
+    const sellingPrice = campaignPrice != null ? campaignPrice : agent ? (agentSelf ? Number(selfPrice) : Number(agent.prices?.[product.id] ?? product.customer_price)) : (friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price));
     const agentMargin = agent && agentPrice != null ? (agentSelf ? 0 : Math.max(0, Math.round((sellingPrice - agentPrice) * 100) / 100)) : null;
 
     // The supplier the guest chose in the shop, if they chose one.
