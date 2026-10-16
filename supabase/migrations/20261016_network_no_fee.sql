@@ -69,3 +69,6 @@ language sql stable security definer set search_path to 'phase1','public' as $$
 $$;
 grant execute on function phase1.my_parent_store() to authenticated;
 create policy agents_parent_read on phase1.agents for select to authenticated using (false);
+
+-- 16 Oct 09:55: every new store (agent or sub-agent) starts on the Market template. Existing stores unchanged.
+alter table phase1.agents alter column template set default 'market';

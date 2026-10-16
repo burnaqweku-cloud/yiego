@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { storeBase } from "@/lib/storeHost";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import AddMoneyFlow from "@/components/flows/AddMoneyFlow";
-import { LogOut, Plus, Wallet } from "lucide-react";
+import { LayoutDashboard, LogOut, Plus, Wallet } from "lucide-react";
+import { dashboardHref } from "@/lib/agentDashboard";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/components/store/StoreShell";
@@ -18,6 +19,15 @@ export default function StoreAccount() {
   const store = useStore(); const { slug: paramSlug } = useParams(); const slug = paramSlug ?? store.slug; const navigate = useNavigate();
   const { isAuthenticated, user, signOut, loading } = useAuth();
   const [orders, setOrders] = useState<Row[] | null>(null); const [balance, setBalance] = useState<number | null>(null);
+  // An agent (owner, staff or a sub-agent of this store) gets a way into their dashboard from here.
+  const [agentAccess, setAgentAccess] = useState<{ role?: string; store_name?: string } | null>(null);
+  useEffect(() => {
+    if (!isAuthenticated) { setAgentAccess(null); return; }
+    let alive = true;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("my_agent_access", {}).then(({ data }: { data: { role?: string; store_name?: string } | null }) => { if (alive) setAgentAccess(data ?? null); });
+    return () => { alive = false; };
+  }, [isAuthenticated]);
   const [addOpen, setAddOpen] = useState(false); const [sp, setSp] = useSearchParams(); const [reloadKey, setReloadKey] = useState(0);
   // Back from Paystack after a top-up: confirm it and refresh the balance.
   useEffect(() => {
@@ -38,6 +48,14 @@ export default function StoreAccount() {
   return (
     <StorePage title="Your account" lead={user?.email}>
     <div className="space-y-4">
+      {agentAccess && (
+        <section className="onyx-panel rounded-[22px] p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div><h2 className="text-[15px] font-semibold text-foreground">Your dashboard</h2><p className="mt-0.5 text-[12.5px] text-muted-foreground">Orders, prices, earnings and your store settings.</p></div>
+            <a href={dashboardHref()} className="st-btn fill inline-flex items-center gap-2 !px-4 !py-2 !text-[14px]"><LayoutDashboard size={16} />Open dashboard</a>
+          </div>
+        </section>
+      )}
       <section className="onyx-panel rounded-[22px] p-5">
         <div className="flex items-center justify-between rounded-2xl bg-white/[0.03] px-4 py-3"><span className="flex items-center gap-2 text-[13px] text-muted-foreground"><Wallet size={15} />Wallet</span><span className="flex items-center gap-2"><span className="font-display text-[18px] font-semibold text-foreground">{balance == null ? "…" : formatGHS(balance)}</span><button type="button" onClick={() => setAddOpen(true)} className="onyx-btn-primary inline-flex items-center gap-1 px-3 py-1.5 text-[12.5px]"><Plus size={13} />Add money</button></span></div>
         <p className="mt-2 text-[11.5px] text-faint-foreground">Top up with MoMo or card, then pay from your wallet at checkout with no payment fee.</p>
