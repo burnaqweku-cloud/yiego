@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { dashboardHref } from "@/lib/agentDashboard";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,7 +47,7 @@ export default function StoreJoin() {
     const { data, error } = await p1().rpc("network_apply", { p_parent_slug: store.slug, p_store_name: shop.store_name.trim(), p_slug: slug, p_whatsapp: shop.whatsapp.replace(/\D/g, "") || null, p_answers: answers });
     setBusy(false);
     if (error) { const m = error.message; return toast.error(m.includes("slug_taken") ? "That link name is taken; try another." : m.includes("already_an_agent") ? "This account already has a store. Sign in at datayego.com/agent." : m.includes("already_applied") ? "You've already applied; we'll email you when they decide." : m.includes("network_not_open") ? `${store.store_name} isn't taking agents right now.` : m.includes("answer_required") ? "Please answer every required question." : "Couldn't send your application. Try again."); }
-    if (data.status === "approved") { toast.success(data.store_status === "active" ? "Approved! Your store is open." : "Approved! Pay the fee to open your store."); window.location.assign("https://datayego.com/agent"); return; }
+    if (data.status === "approved") { toast.success(data.store_status === "active" ? "Approved! Your store is open." : "Approved! Pay the fee to open your store."); window.location.assign(dashboardHref()); return; }
     toast.success("Application sent."); setMine({ id: data.id, status: "pending", store_name: shop.store_name.trim(), requested_slug: slug, decision_note: null, created_at: new Date().toISOString() }); setStep("intro");
   };
   if (offer === undefined) return <div className="h-40" />;
@@ -61,7 +62,7 @@ export default function StoreJoin() {
           <div className="rounded-2xl bg-white/[0.03] py-3"><p className="text-[18px] font-semibold text-foreground">{offer.agent_count}</p><p className="text-[11px] text-faint-foreground">agents already</p></div>
         </div>
         {step === "intro" && mine?.status === "pending" && <div className="mt-5 rounded-2xl border border-amber/40 bg-amber/10 p-4"><p className="text-[14px] font-semibold text-foreground">Your application is with {store.store_name}</p><p className="mt-1 text-[12.5px] text-muted-foreground">Sent {new Date(mine.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} for <b>{mine.store_name}</b> ({mine.requested_slug}.datayego.com). You'll get an email as soon as they decide.</p></div>}
-        {step === "intro" && mine?.status === "approved" && <div className="mt-5 rounded-2xl border border-primary/40 bg-primary/10 p-4"><p className="text-[14px] font-semibold text-foreground">You're approved</p><p className="mt-1 text-[12.5px] text-muted-foreground">Open your dashboard to finish setting up.</p><a href="https://datayego.com/agent" className="onyx-btn-primary mt-3 inline-block px-4 py-2 text-[13px]">Open dashboard</a></div>}
+        {step === "intro" && mine?.status === "approved" && <div className="mt-5 rounded-2xl border border-primary/40 bg-primary/10 p-4"><p className="text-[14px] font-semibold text-foreground">You're approved</p><p className="mt-1 text-[12.5px] text-muted-foreground">Open your dashboard to finish setting up.</p><a href={dashboardHref()} className="onyx-btn-primary mt-3 inline-block px-4 py-2 text-[13px]">Open dashboard</a></div>}
         {step === "intro" && mine?.status === "declined" && <div className="mt-5 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4"><p className="text-[14px] font-semibold text-foreground">Not approved this time</p>{mine.decision_note && <p className="mt-1 text-[12.5px] italic text-muted-foreground">"{mine.decision_note}"</p>}<p className="mt-1 text-[12.5px] text-muted-foreground">You're welcome to apply again.</p></div>}
         {step === "intro" && mine?.status !== "pending" && mine?.status !== "approved" && mine !== undefined && <button type="button" onClick={() => setStep(isAuthenticated ? "store" : "account")} className="onyx-btn-primary mt-5 w-full py-3 text-[14px]">{offer.auto_approve ? "Start" : "Apply"}</button>}
         {!offer.auto_approve && <p className="mt-3 text-[11.5px] text-faint-foreground">{store.store_name} reviews every application and you'll hear back by email{Number(offer.fee) > 0 ? "; the fee is only paid after approval" : ""}.</p>}
@@ -91,7 +92,7 @@ export default function StoreJoin() {
             </label>)}
           </div>}
           <button type="button" disabled={busy} onClick={() => void doStore()} className="onyx-btn-primary w-full py-3 text-[14px] disabled:opacity-60">{busy ? "Sending…" : offer.auto_approve ? (Number(offer.fee) > 0 ? "Continue to payment" : "Open my store") : "Send application"}</button>
-          <p className="text-center text-[11.5px] text-faint-foreground">You'll manage it at datayego.com/agent.</p>
+          <p className="text-center text-[11.5px] text-faint-foreground">Once approved, sign in here on {store.store_name} any time to open your dashboard.</p>
         </section>
       )}
     </div>

@@ -6,6 +6,8 @@ import { useStore } from "@/components/store/StoreShell";
 import StorePage from "@/components/store/StorePage";
 import { useAuth } from "@/store/auth-context";
 import { setSignupStore } from "@/store/auth";
+import { dashboardHref } from "@/lib/agentDashboard";
+import { supabase } from "@/integrations/supabase/client";
 
 /* Sign up / sign in on the agent's store. Accounts created here belong to this store. */
 export default function StoreAuth({ mode }: { mode: "sign-in" | "sign-up" }) {
@@ -13,7 +15,18 @@ export default function StoreAuth({ mode }: { mode: "sign-in" | "sign-up" }) {
   const { isAuthenticated, signIn, signUp } = useAuth();
   const [f, setF] = useState({ fullName: "", email: "", phone: "", password: "" });
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (isAuthenticated) navigate(`${storeBase(slug)}/account`, { replace: true }); }, [isAuthenticated, slug, navigate]);
+  // An agent (including an agent selling under this store) signs in here and lands on their dashboard; customers on My account.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let alive = true;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("my_agent_access", {}).then(({ data }: { data: unknown }) => {
+      if (!alive) return;
+      if (data) { const to = dashboardHref(); if (to.startsWith("http")) window.location.assign(to); else navigate(to, { replace: true }); }
+      else navigate(`${storeBase(slug)}/account`, { replace: true });
+    });
+    return () => { alive = false; };
+  }, [isAuthenticated, slug, navigate]);
   const digits = f.phone.replace(/\D/g, "");
   const phoneValid = /^0\d{9}$/.test(digits);
   const passwordValid = f.password.length >= 8 && /[A-Z]/.test(f.password) && /[a-z]/.test(f.password) && /\d/.test(f.password);

@@ -18,7 +18,7 @@ import { X } from "lucide-react";
 /* The agent app. Its own header, its own navigation (bottom bar on phones,
    sidebar on desktop), no public site chrome. Pages read shared data from
    AgentContext so each one stays small. */
-export interface Agent { id: string; slug: string; store_name: string; header_name?: string | null; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; template?: string; accent_color?: string | null; logo_url?: string | null; banner_url?: string | null; about_text?: string | null; hours_text?: string | null; store_notice?: string | null; contact_phone?: string | null; socials?: Record<string, string>; featured_product_ids?: string[]; faq?: Array<{ q: string; a: string }>; sale_alert_email?: boolean; support_whatsapp_url?: string | null; support_whatsapp_on?: boolean; support_chat_on?: boolean; support_ai_on?: boolean; custom_domain?: string | null; custom_domain_status?: string | null; email_domain?: string | null; email_domain_status?: "pending" | "verified" | "failed" | null; email_domain_records?: Array<{ type: string; name: string; value: string; ttl?: string; purpose?: string; status?: string }> | null; parent_agent_id?: string | null; network_on?: boolean; network_fee?: number; network_pitch?: string | null; network_auto_approve?: boolean; network_questions?: Array<{ id: string; label: string; type: "text" | "textarea" | "select" | "phone" | "email"; required: boolean; options: string[] }>; parent?: { store_name: string; slug: string; network_fee: number } | null }
+export interface Agent { id: string; slug: string; store_name: string; header_name?: string | null; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; template?: string; accent_color?: string | null; logo_url?: string | null; banner_url?: string | null; about_text?: string | null; hours_text?: string | null; store_notice?: string | null; contact_phone?: string | null; socials?: Record<string, string>; featured_product_ids?: string[]; faq?: Array<{ q: string; a: string }>; sale_alert_email?: boolean; support_whatsapp_url?: string | null; support_whatsapp_on?: boolean; support_chat_on?: boolean; support_ai_on?: boolean; custom_domain?: string | null; custom_domain_status?: string | null; email_domain?: string | null; email_domain_status?: "pending" | "verified" | "failed" | null; email_domain_records?: Array<{ type: string; name: string; value: string; ttl?: string; purpose?: string; status?: string }> | null; parent_agent_id?: string | null; network_on?: boolean; network_fee?: number; network_pitch?: string | null; network_auto_approve?: boolean; network_questions?: Array<{ id: string; label: string; type: "text" | "textarea" | "select" | "phone" | "email"; required: boolean; options: string[] }>; parent?: { store_name: string; slug: string; network_fee: number; custom_domain?: string | null; custom_domain_status?: string | null } | null }
 export interface AgentOrder { order_reference: string; recipient_phone: string; amount: number; agent_margin: number | null; status: string; admin_resolution_status: string | null; paid_at: string | null; created_at: string; data_products: { name: string } | null; networks: { name: string } | null }
 export interface AgentPayout { id: string; amount: number; fee: number; net: number; status: string; created_at: string; paid_at: string | null; note: string | null }
 export interface Plan { payout_minimum: number; payout_fee_rate: number; payout_fee_minimum: number }
@@ -70,7 +70,7 @@ export default function AgentShell() {
 
   const reload = useCallback(async () => {
     if (!user) return;
-    const [a, pr, q, s] = await Promise.all([p1().from("agents").select("id, slug, store_name, header_name, tagline, status, paid_until, momo_number, momo_name, whatsapp, earnings_balance, template, accent_color, logo_url, banner_url, about_text, hours_text, store_notice, contact_phone, socials, featured_product_ids, faq, sale_alert_email, support_whatsapp_url, support_whatsapp_on, support_chat_on, support_ai_on, custom_domain, custom_domain_status, email_domain, email_domain_status, email_domain_records, parent_agent_id, network_on, network_fee, network_pitch, network_auto_approve, network_questions, parent:parent_agent_id(store_name, slug, network_fee)").eq("user_id", user.id).maybeSingle(), loadPhase1Products(), planQuote(), p1().from("site_settings").select("value").eq("key", "agent_plan").maybeSingle()]);
+    const [a, pr, q, s] = await Promise.all([p1().from("agents").select("id, slug, store_name, header_name, tagline, status, paid_until, momo_number, momo_name, whatsapp, earnings_balance, template, accent_color, logo_url, banner_url, about_text, hours_text, store_notice, contact_phone, socials, featured_product_ids, faq, sale_alert_email, support_whatsapp_url, support_whatsapp_on, support_chat_on, support_ai_on, custom_domain, custom_domain_status, email_domain, email_domain_status, email_domain_records, parent_agent_id, network_on, network_fee, network_pitch, network_auto_approve, network_questions, parent:parent_agent_id(store_name, slug, network_fee, custom_domain, custom_domain_status)").eq("user_id", user.id).maybeSingle(), loadPhase1Products(), planQuote(), p1().from("site_settings").select("value").eq("key", "agent_plan").maybeSingle()]);
     let g = (a.data as Agent | null) ?? null; let r: "owner" | "staff" = "owner";
     if (!g) {
       // Not an agent: maybe staff on someone's store.
@@ -113,6 +113,10 @@ export default function AgentShell() {
 
   const sub = subscriptionOf(agent, quote?.grace_days ?? 1);
   const isSub = !!agent.parent_agent_id;
+  // A sub-agent's "home" is the parent's store, not DataYego: the dashboard wears the parent's name and links back there.
+  const parentUrl = agent.parent ? (agent.parent.custom_domain && agent.parent.custom_domain_status === "active" ? `https://${agent.parent.custom_domain}` : `https://${agent.parent.slug}.datayego.com`) : "/";
+  const eyebrow = isSub && agent.parent ? `${agent.parent.store_name} · Agent` : "Agent";
+  const leave = () => void signOut().then(() => { if (isSub) window.location.assign(parentUrl); else navigate("/"); }).catch(() => toast.error("Couldn't sign out."));
   if (role === "owner" && (sub.state === "unpaid" || sub.state === "suspended")) return isSub ? <NetworkPayScreen agent={agent} /> : <PayScreen agent={agent} quote={quote} />;
 
   return (
@@ -121,18 +125,18 @@ export default function AgentShell() {
         <div className="mx-auto flex max-w-5xl">
           {/* Desktop sidebar */}
           <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-white/[0.06] p-4 sm:flex">
-            <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div><NotificationBell /></div>
+            <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{eyebrow}</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div><NotificationBell /></div>
             <div className="mt-6"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !g.parentOnly || !agent.parent_agent_id)} unread={unread} soon={networkOpen ? [] : ["agents"]} /></div>
             <div className="mt-auto space-y-1 text-[12.5px]">
               <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><ExternalLink size={14} />View my store</a>
-              <Link to="/" onClick={() => sessionStorage.setItem("yg-agent-browse", "1")} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit DataYego</Link>
-              <button type="button" onClick={() => void signOut().then(() => navigate("/")).catch(() => toast.error("Couldn't sign out."))} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-danger hover:bg-danger/[0.08]"><LogOut size={14} />Sign out</button>
+              {isSub ? <a href={parentUrl} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit {agent.parent?.store_name}</a> : <Link to="/" onClick={() => sessionStorage.setItem("yg-agent-browse", "1")} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit DataYego</Link>}
+              <button type="button" onClick={leave} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-danger hover:bg-danger/[0.08]"><LogOut size={14} />Sign out</button>
             </div>
           </aside>
           <div className="min-w-0 flex-1">
             {/* Mobile header */}
             <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[0.06] bg-background/85 px-4 py-3 backdrop-blur sm:hidden">
-              <div className="flex min-w-0 items-center gap-3"><button type="button" onClick={() => setDrawer(true)} aria-label="Menu" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Menu size={18} /></button><div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div></div>
+              <div className="flex min-w-0 items-center gap-3"><button type="button" onClick={() => setDrawer(true)} aria-label="Menu" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Menu size={18} /></button><div className="min-w-0"><p className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{eyebrow}</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div></div>
               <div className="flex items-center gap-2"><span className="rounded-full bg-primary/12 px-2.5 py-1 text-[12px] font-semibold text-primary-glow">{formatGHS(Number(agent.earnings_balance))}</span><NotificationBell /><a href={storeUrl} target="_blank" rel="noreferrer" aria-label="View store" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><ExternalLink size={14} /></a></div>
             </header>
             <main className="px-4 pb-10 pt-4 sm:px-8 sm:pb-10 sm:pt-8">
@@ -142,7 +146,7 @@ export default function AgentShell() {
             </main>
           </div>
         </div>
-        <AskDataYegoLauncher />
+        {!isSub && <AskDataYegoLauncher />}
         {renew && (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={() => setRenew(false)}>
             <div className="onyx-panel w-full max-w-md rounded-t-3xl p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
@@ -157,12 +161,12 @@ export default function AgentShell() {
           <div className="fixed inset-0 z-50 sm:hidden" onClick={() => setDrawer(false)}>
             <div className="absolute inset-0 bg-black/60" />
             <aside className="absolute inset-y-0 left-0 flex w-[82%] max-w-[320px] flex-col bg-background p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agent</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p><p className="text-[12px] text-primary-glow">{formatGHS(Number(agent.earnings_balance))} earned</p></div><button type="button" onClick={() => setDrawer(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
+              <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{eyebrow}</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p><p className="text-[12px] text-primary-glow">{formatGHS(Number(agent.earnings_balance))} earned</p></div><button type="button" onClick={() => setDrawer(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
               <div className="mt-5 flex-1 overflow-y-auto"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !g.parentOnly || !agent.parent_agent_id)} unread={unread} onNavigate={() => setDrawer(false)} soon={networkOpen ? [] : ["agents"]} /></div>
               <div className="mt-4 space-y-0.5 border-t border-white/[0.06] pt-3 text-[13px]">
                 <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><ExternalLink size={14} />View my store</a>
-                <Link to="/" onClick={() => { sessionStorage.setItem("yg-agent-browse", "1"); setDrawer(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Shop as a customer</Link>
-                <button type="button" onClick={() => void signOut().then(() => navigate("/")).catch(() => toast.error("Could not sign out."))} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-danger"><LogOut size={14} />Sign out</button>
+                {isSub ? <a href={parentUrl} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Visit {agent.parent?.store_name}</a> : <Link to="/" onClick={() => { sessionStorage.setItem("yg-agent-browse", "1"); setDrawer(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Shop as a customer</Link>}
+                <button type="button" onClick={leave} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-danger"><LogOut size={14} />Sign out</button>
               </div>
             </aside>
           </div>
