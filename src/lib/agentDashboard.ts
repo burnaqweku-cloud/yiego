@@ -1,6 +1,3 @@
-import { isStoreHost } from "@/lib/storeHost";
-
-/* The agent dashboard lives on the main site. From a store host (custom domain or free subdomain) the link must
-   be absolute; on the main site a relative path keeps the SPA navigation. */
-export const DASHBOARD_URL = "https://datayego.com/agent";
-export const dashboardHref = () => (isStoreHost() ? DASHBOARD_URL : "/agent");
+/* The agent dashboard is served on the main site AND on every store host (custom domain or free subdomain), so a
+   sub-agent can stay on the parent's address. The link is therefore always relative to wherever the person is. */
+export const dashboardHref = () => "/agent";

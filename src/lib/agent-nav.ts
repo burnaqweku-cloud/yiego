@@ -4,7 +4,7 @@ import { AppWindow, BarChart3, Gift, Globe, Home, LifeBuoy, Megaphone, MessagesS
    A page is a route; when the route has a `view`, the page component shows only the
    sections listed for that view (see <Section />), so one long page becomes several screens. */
 export interface AgentNavPage { id: string; label: string; to: string; end?: boolean; badge?: boolean; sections?: string[] }
-export interface AgentNavGroup { id: string; label: string; icon: LucideIcon; parentOnly?: boolean; pages: AgentNavPage[] }
+export interface AgentNavGroup { id: string; label: string; icon: LucideIcon; parentOnly?: boolean; notForSubs?: boolean; pages: AgentNavPage[] }
 
 export const AGENT_GROUPS: AgentNavGroup[] = [
   { id: "home", label: "Home", icon: Home, pages: [{ id: "home", label: "Home", to: "/agent", end: true }] },
@@ -20,7 +20,7 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "store-faq", label: "FAQ", to: "/agent/store/faq", sections: ["faq"] },
     { id: "domain-addresses", label: "Store address", to: "/agent/domain/addresses", sections: ["free-address"] },
   ] },
-  { id: "domain", label: "Domain", icon: Globe, pages: [
+  { id: "domain", label: "Domain", icon: Globe, notForSubs: true, pages: [
     { id: "domain-buy", label: "Buy a domain", to: "/agent/domain/buy", sections: ["buy-a-domain-through-us", "domains-bought-through-us", "perks"] },
     { id: "domain-connect", label: "Connect an existing domain", to: "/agent/domain/connect", sections: ["your-own-domain", "perks", "email-domain"] },
   ] },
@@ -52,7 +52,7 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "support-settings", label: "Support buttons", to: "/agent/team/support", sections: ["buttons-on-your-store"] },
     { id: "staff", label: "Staff", to: "/agent/team/staff", sections: ["team"] },
   ] },
-  { id: "more", label: "More", icon: LifeBuoy, pages: [
+  { id: "more", label: "More", icon: LifeBuoy, notForSubs: true, pages: [
     { id: "ask", label: "Store assistant", to: "/agent/ask" },
     { id: "invite", label: "Invite & earn", to: "/account" },
     { id: "help", label: "Help Center", to: "/agent/help" },

@@ -7,6 +7,7 @@ import { formatGHS } from "@/lib/format";
 import { loadPhase1Networks, loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
 import { planQuote, type PlanQuote } from "@/lib/agents";
 import { AGENT_GROUPS, STAFF_GROUPS as STAFF_NAV, groupForPath, LEGACY_REDIRECTS } from "@/lib/agent-nav";
+import { isStoreHost } from "@/lib/storeHost";
 import AskDataYegoLauncher from "@/components/agent/AskDataYego";
 import { ChevronDown } from "lucide-react";
 import { useAuth } from "@/store/auth-context";
@@ -96,7 +97,8 @@ export default function AgentShell() {
       const map: Record<string, string> = {}; for (const r of ap.data ?? []) map[r.product_id] = Number(r.price).toFixed(2); setPrices(map);
     }
   }, [user]);
-  useEffect(() => { if (!isAuthenticated) { navigate(`/auth?next=${encodeURIComponent("/agent")}`); return; } sessionStorage.removeItem("yg-agent-browse"); void reload(); }, [isAuthenticated, reload, navigate]);
+  // Signed out: on the main site go to /auth; on a store host (a sub-agent on the parent's address) use that store's sign-in page.
+  useEffect(() => { if (!isAuthenticated) { navigate(isStoreHost() ? "/sign-in" : `/auth?next=${encodeURIComponent("/agent")}`); return; } sessionStorage.removeItem("yg-agent-browse"); void reload(); }, [isAuthenticated, reload, navigate]);
   // Staff only ever see their store's customer pages. Anything else bounces to Support.
   const location = useLocation();
   useEffect(() => {
@@ -109,7 +111,7 @@ export default function AgentShell() {
   const legacy = LEGACY_REDIRECTS[location.pathname.replace(/\/$/, "")];
   useEffect(() => { if (legacy) navigate(legacy, { replace: true }); }, [legacy, navigate]);
   if (agent === undefined) return <div className="min-h-dvh bg-background" />;
-  if (agent === null) return <div className="mk-wrap py-16 text-center"><p className="text-[16px] font-semibold text-foreground">You're not an agent yet</p><Link to="/agents" className="mt-4 inline-block text-[13px] text-primary-glow">Apply to be an agent</Link></div>;
+  if (agent === null) return <div className="mk-wrap py-16 text-center"><p className="text-[16px] font-semibold text-foreground">You're not an agent yet</p><Link to={isStoreHost() ? "/join" : "/agents"} className="mt-4 inline-block text-[13px] text-primary-glow">Apply to be an agent</Link></div>;
   // The store's best address: their own domain once live, otherwise the free subdomain.
   const storeUrl = agent.custom_domain && agent.custom_domain_status === "active" ? `https://${agent.custom_domain}` : `https://${agent.slug}.datayego.com`;
 
@@ -118,7 +120,7 @@ export default function AgentShell() {
   // A sub-agent's "home" is the parent's store, not DataYego: the dashboard wears the parent's name and links back there.
   const parentUrl = agent.parent ? (agent.parent.custom_domain && agent.parent.custom_domain_status === "active" ? `https://${agent.parent.custom_domain}` : `https://${agent.parent.slug}.datayego.com`) : "/";
   const eyebrow = isSub && agent.parent ? `${agent.parent.store_name} · Agent` : "Agent";
-  const leave = () => void signOut().then(() => { if (isSub) window.location.assign(parentUrl); else navigate("/"); }).catch(() => toast.error("Couldn't sign out."));
+  const leave = () => void signOut().then(() => { if (isSub) window.location.assign(isStoreHost() ? "/" : parentUrl); else navigate("/"); }).catch(() => toast.error("Couldn't sign out."));
   if (role === "owner" && (sub.state === "unpaid" || sub.state === "suspended")) return isSub ? <SubClosedScreen agent={agent} /> : <PayScreen agent={agent} quote={quote} />;
 
   return (
@@ -128,10 +130,10 @@ export default function AgentShell() {
           {/* Desktop sidebar */}
           <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-white/[0.06] p-4 sm:flex">
             <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{eyebrow}</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div><NotificationBell /></div>
-            <div className="mt-6"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !g.parentOnly || !agent.parent_agent_id)} unread={unread} soon={networkOpen ? [] : ["agents"]} /></div>
+            <div className="mt-6"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !agent.parent_agent_id || (!g.parentOnly && !g.notForSubs))} unread={unread} soon={networkOpen ? [] : ["agents"]} /></div>
             <div className="mt-auto space-y-1 text-[12.5px]">
               <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><ExternalLink size={14} />View my store</a>
-              {isSub ? <a href={parentUrl} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit {agent.parent?.store_name}</a> : <Link to="/" onClick={() => sessionStorage.setItem("yg-agent-browse", "1")} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit DataYego</Link>}
+              {isSub ? <a href={parentUrl} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit {agent.parent?.store_name}</a> : <a href={isStoreHost() ? "https://datayego.com" : "/"} onClick={() => sessionStorage.setItem("yg-agent-browse", "1")} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit DataYego</a>}
               <button type="button" onClick={leave} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-danger hover:bg-danger/[0.08]"><LogOut size={14} />Sign out</button>
             </div>
           </aside>
@@ -164,10 +166,10 @@ export default function AgentShell() {
             <div className="absolute inset-0 bg-black/60" />
             <aside className="absolute inset-y-0 left-0 flex w-[82%] max-w-[320px] flex-col bg-background p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{eyebrow}</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p><p className="text-[12px] text-primary-glow">{formatGHS(Number(agent.earnings_balance))} earned</p></div><button type="button" onClick={() => setDrawer(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
-              <div className="mt-5 flex-1 overflow-y-auto"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !g.parentOnly || !agent.parent_agent_id)} unread={unread} onNavigate={() => setDrawer(false)} soon={networkOpen ? [] : ["agents"]} /></div>
+              <div className="mt-5 flex-1 overflow-y-auto"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !agent.parent_agent_id || (!g.parentOnly && !g.notForSubs))} unread={unread} onNavigate={() => setDrawer(false)} soon={networkOpen ? [] : ["agents"]} /></div>
               <div className="mt-4 space-y-0.5 border-t border-white/[0.06] pt-3 text-[13px]">
                 <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><ExternalLink size={14} />View my store</a>
-                {isSub ? <a href={parentUrl} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Visit {agent.parent?.store_name}</a> : <Link to="/" onClick={() => { sessionStorage.setItem("yg-agent-browse", "1"); setDrawer(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Shop as a customer</Link>}
+                {isSub ? <a href={parentUrl} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Visit {agent.parent?.store_name}</a> : <a href={isStoreHost() ? "https://datayego.com" : "/"} onClick={() => { sessionStorage.setItem("yg-agent-browse", "1"); setDrawer(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Shop as a customer</a>}
                 <button type="button" onClick={leave} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-danger"><LogOut size={14} />Sign out</button>
               </div>
             </aside>
