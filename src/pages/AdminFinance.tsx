@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, Banknote, Download, Landmark, PiggyBank, Receipt, RefreshCw, Undo2, Wallet } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Banknote, Download, Landmark, Network, PiggyBank, Receipt, RefreshCw, Undo2, Wallet } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -62,6 +62,7 @@ export default function AdminFinance() {
   const [ledgerLimit, setLedgerLimit] = useState(30);
   const [modal, setModal] = useState<"topup" | "payout" | "expense" | null>(null);
   const [reversing, setReversing] = useState<Entry | null>(null);
+  const [network, setNetwork] = useState<{ margin: number; margin_back: number; fee_count: number } | null>(null);
 
   const load = useCallback(async () => {
     const [ov, en, su] = await Promise.all([
@@ -71,6 +72,14 @@ export default function AdminFinance() {
     ]);
     if (ov.error) toast.error(ov.error.message);
     setOverview((ov.data as Overview) ?? null); setEntries(en.data ?? []); setSuppliers(su.data ?? []); setLoading(false);
+    // Sub-agent network in this period: parents' margin (":parent" postings, part of "Paid to agents") and fee count.
+    const from = periodFrom(period);
+    let q = db().from("finance_live_entries").select("kind, amount, reference").in("kind", ["agent_margin", "agent_margin_reversed", "network_fee"]).like("reference", "%:parent").limit(5000);
+    let qf = db().from("finance_live_entries").select("id", { count: "exact", head: true }).eq("kind", "network_fee");
+    if (from) { q = q.gte("occurred_at", from); qf = qf.gte("occurred_at", from); }
+    const [nm, nf] = await Promise.all([q, qf]);
+    const rows = (nm.data ?? []) as Array<{ kind: string; amount: number }>;
+    setNetwork({ margin: rows.filter((r) => r.kind === "agent_margin").reduce((t, r) => t + Number(r.amount), 0), margin_back: rows.filter((r) => r.kind === "agent_margin_reversed").reduce((t, r) => t + Number(r.amount), 0), fee_count: nf.count ?? 0 });
   }, [period]);
   useEffect(() => { void load(); }, [load]);
 
@@ -144,13 +153,22 @@ export default function AdminFinance() {
           <Stat loading={loading} label="Top-up charges" value={<Money value={p?.topup_fees ?? 0} />} note="suppliers' charge on float" tone="muted" />
           <Stat loading={loading} label="Expenses" value={<Money value={p?.other_expenses ?? 0} />} note="subscriptions, registration, adverts" tone="bad" to="/admin/finance/expenses" />
           <Stat loading={loading} label="Agent subscriptions" value={<Money value={p?.agent_subscriptions ?? 0} />} note="monthly fees" tone="good" to="/admin/agents/subscriptions" />
-          {Number(p?.network_fees_gross ?? 0) > 0 && <Stat loading={loading} label="Sub-agent fees" value={<Money value={p?.network_fees_ours ?? 0} />} note={`our 4% · ${formatGHS(Number(p?.network_fees_to_parents ?? 0))} passed to parent agents`} tone="good" to="/admin/agents" />}
           <Stat loading={loading} label="Agent payout fees" value={<Money value={p?.agent_payout_fees ?? 0} />} note="1% on withdrawals" tone="good" to="/admin/agents/payouts" />
         </StatGrid>
         <div className="mt-3 grid grid-cols-2 gap-2.5">
           <Stat loading={loading} label="Net profit" value={<Money value={p?.net} tone={Number(p?.net) < 0 ? "bad" : "good"} />} note="everything in, everything out" tone={Number(p?.net) < 0 ? "bad" : "good"} />
           <Stat loading={loading} label="Net without the 4% fee" value={<Money value={p?.net_excluding_fee_passthrough} tone={Number(p?.net_excluding_fee_passthrough) < 0 ? "bad" : "default"} />} note="what the bundles alone earn" />
         </div>
+      </Panel>
+
+      <Panel title="Sub-agents" icon={Network} note="parents recruit agents; fees pass through us" action={<InlineAction to="/admin/sub-agents">Open Sub-agents</InlineAction>}>
+        <StatGrid cols={4}>
+          <Stat loading={loading} label="Fees collected" value={<Money value={p?.network_fees_gross ?? 0} />} note={`${network?.fee_count ?? 0} payment${(network?.fee_count ?? 0) === 1 ? "" : "s"} · gross, incl. 4%`} />
+          <Stat loading={loading} label="Passed to parents" value={<Money value={p?.network_fees_to_parents ?? 0} />} note="owed to them, paid out with earnings" tone="muted" />
+          <Stat loading={loading} label="Ours from fees" value={<Money value={p?.network_fees_ours ?? 0} />} note="the 4% — already inside '4% checkout fee collected'" tone="good" />
+          <Stat loading={loading} label="Parents' margin on sub sales" value={<Money value={(network?.margin ?? 0) - (network?.margin_back ?? 0)} />} note="already inside 'Paid to agents'; subs' own markup is there too" tone="muted" />
+        </StatGrid>
+        <p className="mt-2 text-[11px] text-faint-foreground">Nothing here is counted twice: fees land in Paystack transit like any payment, the parent's share sits in "owed to agents" until they withdraw, and sub orders earn us the normal agent-price margin.</p>
       </Panel>
 
       <div className="grid gap-5 lg:grid-cols-2">
