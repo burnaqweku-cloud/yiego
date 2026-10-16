@@ -53,3 +53,19 @@ $$;
 -- update phase1.agents set status = 'active', paid_until = (current_date + interval '100 years')::date, updated_at = now()
 --   where parent_agent_id is not null and status in ('awaiting_payment','lapsed','paused');
 -- update phase1.agents set paid_until = (current_date + interval '100 years')::date where parent_agent_id is not null and status = 'active';
+
+-- 16 Oct 09:45: a sub-agent could not read the parent's row (agents_own policy), so the dashboard showed "Visit "
+-- pointing at the main site. my_parent_store() returns the parent's public details; AgentShell uses it.
+-- (An agents_parent_read policy was tried and left in place disabled — using (false) — because a policy that
+-- queries agents recurses, and a wide-open row would expose the parent's MoMo/balance.)
+create or replace function phase1.my_parent_agent_id() returns uuid
+language sql stable security definer set search_path to 'phase1','public' as $$
+  select parent_agent_id from phase1.agents where user_id = auth.uid() and parent_agent_id is not null limit 1
+$$;
+create or replace function phase1.my_parent_store() returns jsonb
+language sql stable security definer set search_path to 'phase1','public' as $$
+  select jsonb_build_object('id', p.id, 'store_name', p.store_name, 'slug', p.slug, 'network_fee', p.network_fee, 'custom_domain', p.custom_domain, 'custom_domain_status', p.custom_domain_status, 'logo_url', p.logo_url, 'whatsapp', p.whatsapp)
+  from phase1.agents s join phase1.agents p on p.id = s.parent_agent_id where s.user_id = auth.uid() limit 1
+$$;
+grant execute on function phase1.my_parent_store() to authenticated;
+create policy agents_parent_read on phase1.agents for select to authenticated using (false);

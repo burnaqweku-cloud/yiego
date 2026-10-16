@@ -80,6 +80,8 @@ export default function AgentShell() {
         if (sa) { g = { ...(sa as Agent), momo_number: null, momo_name: null, earnings_balance: 0 }; r = "staff"; }
       }
     }
+    // A sub-agent can't read the parent's row (row security), so the parent's public details come from my_parent_store().
+    if (g?.parent_agent_id && !g.parent) { const { data: ps } = await p1().rpc("my_parent_store", {}); if (ps) g = { ...g, parent: ps as Agent["parent"] }; }
     setRole(r); setAgent(g); setProducts(pr.data ?? []); setQuote(q); setPlan(s.data?.value ?? null);
     if (g && r === "owner") { const { data: fl } = await p1().rpc("my_price_floors", {}); setFloors((fl as Record<string, number>) ?? {}); }
     if (g && r === "staff") {
