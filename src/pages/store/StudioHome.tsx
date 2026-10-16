@@ -58,7 +58,7 @@ export default function StudioHome() {
               <Link to={`${base}/bundles`} className="st-btn fill">Buy data<ArrowRight size={17} /></Link>
               <Link to={`${base}/track`} className="st-btn ghost"><Search size={16} />Track an order</Link>
             </div>
-            <div className="mt-8 grid grid-cols-3 divide-x divide-[var(--st-line)] overflow-hidden rounded-2xl border border-[var(--st-line)] bg-white sm:max-w-md">
+            <div className="mt-8 grid grid-cols-3 divide-x divide-[var(--st-line)] overflow-hidden rounded-2xl border border-[var(--st-line)] bg-[#ffffff] sm:max-w-md">
               {[["3", "Networks"], ["24/7", "Auto delivery"], ["MoMo", "or card"]].map(([v, l]) => <div key={l} className="px-2 py-4 text-center"><p className="text-[22px] font-extrabold leading-none tracking-tight text-[var(--st-ink)]">{v}</p><p className="mt-1.5 whitespace-nowrap text-[12px] text-[var(--st-slate)]">{l}</p></div>)}
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function StudioHome() {
         <div className="mx-auto max-w-5xl rounded-3xl bg-[hsl(var(--primary))] px-6 py-10 text-[#fff] sm:px-10 sm:py-12">
           <h2 className="font-display text-[26px] leading-tight sm:text-[34px]">Ready when you are.</h2>
           <p className="mt-2 max-w-[44ch] text-[15px] text-white/85">Bundles for MTN, Telecel and AirtelTigo, paid in seconds, delivered to any number in Ghana.</p>
-          <Link to={`${base}/bundles`} className="st-btn mt-6 !bg-white !text-[hsl(var(--primary-strong))]">See all bundles<ArrowRight size={17} /></Link>
+          <Link to={`${base}/bundles`} className="st-btn mt-6 !bg-[#ffffff] !text-[hsl(var(--primary-strong))]">See all bundles<ArrowRight size={17} /></Link>
         </div>
       </section>
 
