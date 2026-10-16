@@ -15,7 +15,8 @@ import { useAuth } from "@/store/auth-context";
 
 /* One agent, in full: who they are, their plan, every order through them
    (store sale vs their own purchase), earnings, payouts, free months. */
-interface Agent { id: string; user_id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; created_at: string }
+interface Agent { id: string; user_id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; created_at: string; parent_agent_id: string | null; network_on: boolean | null; network_fee: number | null; network_paused_at: string | null }
+interface NetInfo { parent: { id: string; store_name: string; slug: string; network_fee: number } | null; subs: Array<{ id: string; store_name: string; slug: string; status: string; paid_until: string | null }>; parentMargin: number; feeIncome: number }
 interface Ord { id: string; order_reference: string; recipient_phone: string; amount: number; agent_price: number | null; agent_margin: number | null; status: string; supplier_status: string | null; admin_resolution_status: string | null; paid_at: string; user_id: string | null; guest_email: string | null; data_products: { name: string; capacity_gb: number } | null; networks: { name: string } | null; suppliers: { code: string; name: string } | null }
 interface Payout { id: string; amount: number; fee: number; net: number; status: string; created_at: string; paid_at: string | null }
 interface Grant { id: string; months: number; from_date: string; until_date: string; note: string | null; created_at: string }
@@ -31,6 +32,7 @@ export default function AdminAgentDetail() {
   const [orders, setOrders] = useState<Ord[]>([]);
   const origins = useFallbackOrigins(orders); const [payouts, setPayouts] = useState<Payout[]>([]); const [grants, setGrants] = useState<Grant[]>([]); const [ledger, setLedger] = useState<Ledger[]>([]);
   const [range, setRange] = useState<Range>("30d"); const [source, setSource] = useState<Source>("all"); const [isMaster, setIsMaster] = useState(false);
+  const [net, setNet] = useState<NetInfo | null>(null);
   const [granting, setGranting] = useState(false); const [viewing, setViewing] = useState<Ord | null>(null); const [months, setMonths] = useState("1"); const [note, setNote] = useState("");
   const load = useCallback(async () => {
     const { data: g } = await db().from("agents").select("*").eq("id", id).maybeSingle();
@@ -44,6 +46,14 @@ export default function AdminAgentDetail() {
       actor ? db().rpc("admin_role", { p_user: actor }) : Promise.resolve({ data: null, error: null }),
     ]);
     setEmail(p.data?.email ?? "—"); setOrders(o.data ?? []); setPayouts(py.data ?? []); setGrants(gr.data ?? []); setLedger(lg.data ?? []); setIsMaster(r.data === "master");
+    // Sub-agent network: who they sell under, or who sells under them.
+    const [par, subs, pm, fi] = await Promise.all([
+      g.parent_agent_id ? db().from("agents").select("id, store_name, slug, network_fee").eq("id", g.parent_agent_id).maybeSingle() : Promise.resolve({ data: null }),
+      db().from("agents").select("id, store_name, slug, status, paid_until").eq("parent_agent_id", g.id).order("created_at", { ascending: false }),
+      db().from("orders").select("parent_margin").eq("parent_agent_id", g.id).eq("status", "delivered"),
+      db().from("finance_live_entries").select("metadata").eq("kind", "network_fee").filter("metadata->>parent_agent_id", "eq", g.id),
+    ]);
+    setNet({ parent: par.data ?? null, subs: subs.data ?? [], parentMargin: ((pm.data ?? []) as Array<{ parent_margin: number }>).reduce((t, x) => t + Number(x.parent_margin ?? 0), 0), feeIncome: ((fi.data ?? []) as Array<{ metadata: { base?: number } }>).reduce((t, x) => t + Number(x.metadata?.base ?? 0), 0) });
   }, [id, range, actor]);
   useEffect(() => { void load(); }, [load]);
   const changeLink = async () => {
@@ -85,6 +95,21 @@ export default function AdminAgentDetail() {
         <Stat label="Contact" value={a.whatsapp ?? a.momo_number ?? "—"} note={a.momo_number ? `MoMo ${a.momo_number}${a.momo_name ? ` (${a.momo_name})` : ""}` : "no MoMo yet"} />
         <Stat label="Tagline" value={a.tagline ?? "—"} note={`slug ${a.slug}`} />
       </StatGrid>
+
+      {net && (net.parent || net.subs.length > 0 || a.network_on) && (
+        <Panel title="Sub-agent network" note={net.parent ? "this is a sub-agent" : "this agent recruits sub-agents"} action={<Link to={net.parent ? "/admin/sub-agents/list" : "/admin/sub-agents/parents"}><Button variant="ghost" size="sm">Open Sub-agents</Button></Link>}>
+          {net.parent
+            ? <p className="text-[12.5px] text-muted-foreground">Sells under <Link to={`/admin/agents/${net.parent.id}`} className="font-semibold text-foreground hover:underline">{net.parent.store_name}</Link> ({net.parent.slug}) · pays them {formatGHS(Number(net.parent.network_fee))}/month · buys at their prices. Does not pay the DataYego plan; "grant months" below has no effect on a sub.</p>
+            : <>
+              <StatGrid cols={3}>
+                <Stat label="Sub-agents" value={`${net.subs.filter((x) => x.status === "active").length}/${net.subs.length}`} note={`active / all · programme ${a.network_paused_at ? "paused by admin" : a.network_on ? "open" : "closed"} · fee ${formatGHS(Number(a.network_fee ?? 0))}/mo`} />
+                <Stat label="Margin from subs" value={<Money value={net.parentMargin} />} note="on delivered sub orders" />
+                <Stat label="Fees from subs" value={<Money value={net.feeIncome} />} note="credited to earnings" />
+              </StatGrid>
+              {net.subs.length > 0 && <ul className="mt-2 divide-y divide-white/[0.06]">{net.subs.slice(0, 20).map((x) => <li key={x.id} className="flex items-center justify-between gap-2 py-1.5 text-[12.5px]"><Link to={`/admin/agents/${x.id}`} className="text-foreground hover:underline">{x.store_name} <span className="text-faint-foreground">· {x.slug}</span></Link><span className="text-[11px] text-muted-foreground"><Pill tone={x.status === "active" ? "good" : x.status === "awaiting_payment" ? "warn" : "muted"}>{x.status.replace(/_/g, " ")}</Pill>{x.paid_until ? ` until ${formatAdminDate(x.paid_until)}` : ""}</span></li>)}</ul>}
+            </>}
+        </Panel>
+      )}
 
       <div className="flex flex-wrap items-center gap-2"><Segmented<Range> value={range} onChange={setRange} options={[{ value: "7d", label: "7 days" }, { value: "30d", label: "30 days" }, { value: "all", label: "Since launch" }]} /><Segmented<Source> value={source} onChange={setSource} options={[{ value: "all", label: `All (${orders.length})` }, { value: "store", label: `Store sales (${storeOrders.length})` }, { value: "self", label: `Own purchases (${selfOrders.length})` }]} /><Button variant="ghost" size="sm" onClick={exportCsv}><Download size={14} />CSV</Button></div>
       <StatGrid cols={4}>

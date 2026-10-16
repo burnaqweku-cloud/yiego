@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { BadgePercent, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion } from "lucide-react";
+import { BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2 } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
 export interface AdminPage {
@@ -50,6 +50,14 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "agent-payouts", label: "Payments", to: "/admin/agents/payouts", icon: WalletCards, keywords: ["payout", "payment", "withdraw", "momo", "earnings", "pay agent"] },
     { id: "agent-plan", label: "Plan & promos", to: "/admin/agents/plan", icon: BadgePercent, keywords: ["promo", "discount", "fee", "price", "plan"] },
     { id: "agent-launch", label: "Launch", to: "/admin/agents/launch", icon: Rocket, keywords: ["launch", "switch", "go live", "email test"] },
+  ] },
+  { id: "sub-agents", label: "Sub-agents", icon: Network, pages: [
+    { id: "sub-agents", label: "Overview", to: "/admin/sub-agents", icon: Network, keywords: ["sub agent", "sub-agents", "network", "parent", "programme", "recruit"] },
+    { id: "sub-agent-parents", label: "Parents", to: "/admin/sub-agents/parents", icon: Store, keywords: ["parent agent", "programme", "pause", "network fee"] },
+    { id: "sub-agent-list", label: "All sub-agents", to: "/admin/sub-agents/list", icon: Users, keywords: ["sub agent", "move", "detach", "suspend", "grant months"] },
+    { id: "sub-agent-applications", label: "Applications", to: "/admin/sub-agents/applications", icon: UserCheck, keywords: ["join", "apply", "network application"] },
+    { id: "sub-agent-fees", label: "Fees", to: "/admin/sub-agents/fees", icon: CreditCard, keywords: ["network fee", "monthly fee", "paid", "re-apply"] },
+    { id: "sub-agent-settings", label: "Settings", to: "/admin/sub-agents/settings", icon: Settings2, keywords: ["switch", "enable", "allow list", "coming soon"] },
   ] },
   { id: "announcements", label: "Announcements", icon: Megaphone, pages: [
     { id: "announcements", label: "Announcements", to: "/admin/announcements", icon: Megaphone, keywords: ["notification", "announce", "update", "notice", "bell", "broadcast"] },
