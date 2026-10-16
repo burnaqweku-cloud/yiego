@@ -99,12 +99,12 @@ export default function AdminAgentDetail() {
       {net && (net.parent || net.subs.length > 0 || a.network_on) && (
         <Panel title="Sub-agent network" note={net.parent ? "this is a sub-agent" : "this agent recruits sub-agents"} action={<Link to={net.parent ? "/admin/sub-agents/list" : "/admin/sub-agents/parents"}><Button variant="ghost" size="sm">Open Sub-agents</Button></Link>}>
           {net.parent
-            ? <p className="text-[12.5px] text-muted-foreground">Sells under <Link to={`/admin/agents/${net.parent.id}`} className="font-semibold text-foreground hover:underline">{net.parent.store_name}</Link> ({net.parent.slug}) · pays them {formatGHS(Number(net.parent.network_fee))}/month · buys at their prices. Does not pay the DataYego plan; "grant months" below has no effect on a sub.</p>
+            ? <p className="text-[12.5px] text-muted-foreground">Sells under <Link to={`/admin/agents/${net.parent.id}`} className="font-semibold text-foreground hover:underline">{net.parent.store_name}</Link> ({net.parent.slug}) · free · buys at the prices {net.parent.store_name} set for agents. Does not pay the DataYego plan; "grant months" below has no effect on a sub.</p>
             : <>
               <StatGrid cols={3}>
-                <Stat label="Sub-agents" value={`${net.subs.filter((x) => x.status === "active").length}/${net.subs.length}`} note={`active / all · programme ${a.network_paused_at ? "paused by admin" : a.network_on ? "open" : "closed"} · fee ${formatGHS(Number(a.network_fee ?? 0))}/mo`} />
+                <Stat label="Sub-agents" value={`${net.subs.filter((x) => x.status === "active").length}/${net.subs.length}`} note={`active / all · programme ${a.network_paused_at ? "paused by admin" : a.network_on ? "open" : "closed"}`} />
                 <Stat label="Margin from subs" value={<Money value={net.parentMargin} />} note="on delivered sub orders" />
-                <Stat label="Fees from subs" value={<Money value={net.feeIncome} />} note="credited to earnings" />
+                <Stat label="Sub-agents' sales" value={net.subs.length ? `${net.subs.filter((x) => x.status === "active").length} selling` : "—"} note="their orders are AG- orders with parent = this agent" />
               </StatGrid>
               {net.subs.length > 0 && <ul className="mt-2 divide-y divide-white/[0.06]">{net.subs.slice(0, 20).map((x) => <li key={x.id} className="flex items-center justify-between gap-2 py-1.5 text-[12.5px]"><Link to={`/admin/agents/${x.id}`} className="text-foreground hover:underline">{x.store_name} <span className="text-faint-foreground">· {x.slug}</span></Link><span className="text-[11px] text-muted-foreground"><Pill tone={x.status === "active" ? "good" : x.status === "awaiting_payment" ? "warn" : "muted"}>{x.status.replace(/_/g, " ")}</Pill>{x.paid_until ? ` until ${formatAdminDate(x.paid_until)}` : ""}</span></li>)}</ul>}
             </>}

@@ -10,7 +10,7 @@ import { setSignupStore } from "@/store/auth";
 import { storeBase } from "@/lib/storeHost";
 import { formatGHS } from "@/lib/format";
 
-/* "Become an agent" on a parent's store: sign in or create an account, name your store, pay the fee (or start free). */
+/* "Become an agent" on a parent's store: sign in or create an account, name your store — free. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const p1 = () => (supabase as unknown as { schema: (s: string) => any }).schema("phase1");
 export default function StoreJoin() {

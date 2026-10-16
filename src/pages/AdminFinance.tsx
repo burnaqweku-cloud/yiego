@@ -62,7 +62,7 @@ export default function AdminFinance() {
   const [ledgerLimit, setLedgerLimit] = useState(30);
   const [modal, setModal] = useState<"topup" | "payout" | "expense" | null>(null);
   const [reversing, setReversing] = useState<Entry | null>(null);
-  const [network, setNetwork] = useState<{ margin: number; margin_back: number; fee_count: number } | null>(null);
+  const [network, setNetwork] = useState<{ margin: number; margin_back: number } | null>(null);
 
   const load = useCallback(async () => {
     const [ov, en, su] = await Promise.all([
@@ -72,14 +72,13 @@ export default function AdminFinance() {
     ]);
     if (ov.error) toast.error(ov.error.message);
     setOverview((ov.data as Overview) ?? null); setEntries(en.data ?? []); setSuppliers(su.data ?? []); setLoading(false);
-    // Sub-agent network in this period: parents' margin (":parent" postings, part of "Paid to agents") and fee count.
+    // Sub-agent network in this period: parents' margin (":parent" postings, part of "Paid to agents").
     const from = periodFrom(period);
-    let q = db().from("finance_live_entries").select("kind, amount, reference").in("kind", ["agent_margin", "agent_margin_reversed", "network_fee"]).like("reference", "%:parent").limit(5000);
-    let qf = db().from("finance_live_entries").select("id", { count: "exact", head: true }).eq("kind", "network_fee");
-    if (from) { q = q.gte("occurred_at", from); qf = qf.gte("occurred_at", from); }
-    const [nm, nf] = await Promise.all([q, qf]);
+    let q = db().from("finance_live_entries").select("kind, amount, reference").in("kind", ["agent_margin", "agent_margin_reversed"]).like("reference", "%:parent").limit(5000);
+    if (from) q = q.gte("occurred_at", from);
+    const nm = await q;
     const rows = (nm.data ?? []) as Array<{ kind: string; amount: number }>;
-    setNetwork({ margin: rows.filter((r) => r.kind === "agent_margin").reduce((t, r) => t + Number(r.amount), 0), margin_back: rows.filter((r) => r.kind === "agent_margin_reversed").reduce((t, r) => t + Number(r.amount), 0), fee_count: nf.count ?? 0 });
+    setNetwork({ margin: rows.filter((r) => r.kind === "agent_margin").reduce((t, r) => t + Number(r.amount), 0), margin_back: rows.filter((r) => r.kind === "agent_margin_reversed").reduce((t, r) => t + Number(r.amount), 0) });
   }, [period]);
   useEffect(() => { void load(); }, [load]);
 
@@ -161,14 +160,12 @@ export default function AdminFinance() {
         </div>
       </Panel>
 
-      <Panel title="Sub-agents" icon={Network} note="parents recruit agents; fees pass through us" action={<InlineAction to="/admin/sub-agents">Open Sub-agents</InlineAction>}>
-        <StatGrid cols={4}>
-          <Stat loading={loading} label="Fees collected" value={<Money value={p?.network_fees_gross ?? 0} />} note={`${network?.fee_count ?? 0} payment${(network?.fee_count ?? 0) === 1 ? "" : "s"} · gross, incl. 4%`} />
-          <Stat loading={loading} label="Passed to parents" value={<Money value={p?.network_fees_to_parents ?? 0} />} note="owed to them, paid out with earnings" tone="muted" />
-          <Stat loading={loading} label="Ours from fees" value={<Money value={p?.network_fees_ours ?? 0} />} note="the 4% — already inside '4% checkout fee collected'" tone="good" />
+      <Panel title="Sub-agents" icon={Network} note="agents recruited by agents, free" action={<InlineAction to="/admin/sub-agents">Open Sub-agents</InlineAction>}>
+        <StatGrid cols={2}>
           <Stat loading={loading} label="Parents' margin on sub sales" value={<Money value={(network?.margin ?? 0) - (network?.margin_back ?? 0)} />} note="already inside 'Paid to agents'; subs' own markup is there too" tone="muted" />
+          <Stat loading={loading} label="Our side" value="normal agent-price margin" note="a sub's order earns us the same as any agent order" tone="muted" />
         </StatGrid>
-        <p className="mt-2 text-[11px] text-faint-foreground">Nothing here is counted twice: fees land in Paystack transit like any payment, the parent's share sits in "owed to agents" until they withdraw, and sub orders earn us the normal agent-price margin.</p>
+        <p className="mt-2 text-[11px] text-faint-foreground">No fees change hands: a sub-agent's store is free. The parent's share sits in "owed to agents" until they withdraw.</p>
       </Panel>
 
       <div className="grid gap-5 lg:grid-cols-2">

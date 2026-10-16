@@ -45,7 +45,6 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "agent-prices", label: "Prices for your agents", to: "/agent/network/prices" },
     { id: "programme", label: "Programme & invite link", to: "/agent/network/programme", sections: ["programme"] },
     { id: "questions", label: "Application form", to: "/agent/network/form", sections: ["questions"] },
-    { id: "coupons", label: "Coupons", to: "/agent/network/coupons", sections: ["coupons-on-your-fee"] },
     { id: "agent-messages", label: "Message your agents", to: "/agent/network/messages", sections: ["message-your-agents"] },
   ] },
   { id: "team", label: "Team & support", icon: UserCog, pages: [

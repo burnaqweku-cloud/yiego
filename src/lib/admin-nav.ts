@@ -56,7 +56,6 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "sub-agent-parents", label: "Parents", to: "/admin/sub-agents/parents", icon: Store, keywords: ["parent agent", "programme", "pause", "network fee"] },
     { id: "sub-agent-list", label: "All sub-agents", to: "/admin/sub-agents/list", icon: Users, keywords: ["sub agent", "move", "detach", "suspend", "grant months"] },
     { id: "sub-agent-applications", label: "Applications", to: "/admin/sub-agents/applications", icon: UserCheck, keywords: ["join", "apply", "network application"] },
-    { id: "sub-agent-fees", label: "Fees", to: "/admin/sub-agents/fees", icon: CreditCard, keywords: ["network fee", "monthly fee", "paid", "re-apply"] },
     { id: "sub-agent-settings", label: "Settings", to: "/admin/sub-agents/settings", icon: Settings2, keywords: ["switch", "enable", "allow list", "coming soon"] },
   ] },
   { id: "announcements", label: "Announcements", icon: Megaphone, pages: [

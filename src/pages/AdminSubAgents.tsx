@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CreditCard, Network, Search, Settings, Store, UserCheck, Users } from "lucide-react";
+import { AlertTriangle, Network, Search, Settings, Store, UserCheck, Users } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -9,21 +9,20 @@ import Modal from "@/components/ui/modal";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 
-/* Sub-agents — agents recruited by a paid agent (the "parent"). The sub gets their own store, buys at the parent's
-   prices and pays the parent a monthly fee the parent sets; the parent earns the margin and the fee, DataYego keeps
-   the 4% Paystack pass-through on fees and its normal bundle margin. This section is the admin's window into all
-   of it: who runs a programme, who sells under whom, the applications funnel, every fee, and the master switch. */
+/* Sub-agents — agents recruited by a paid agent (the "parent"), free. The sub gets their own store and buys at the
+   price the parent sets for agents; the parent earns that margin, DataYego earns its normal agent-price margin.
+   This section is the admin's window into all of it: who runs a programme, who sells under whom, the applications
+   funnel, and the master switch. */
 
-type Tab = "overview" | "parents" | "subs" | "applications" | "fees" | "settings";
-const TAB_PATH: Record<Tab, string> = { overview: "/admin/sub-agents", parents: "/admin/sub-agents/parents", subs: "/admin/sub-agents/list", applications: "/admin/sub-agents/applications", fees: "/admin/sub-agents/fees", settings: "/admin/sub-agents/settings" };
-const TAB_TITLE: Record<Tab, string> = { overview: "Sub-agents", parents: "Parents", subs: "All sub-agents", applications: "Applications", fees: "Fees", settings: "Settings" };
+type Tab = "overview" | "parents" | "subs" | "applications" | "settings";
+const TAB_PATH: Record<Tab, string> = { overview: "/admin/sub-agents", parents: "/admin/sub-agents/parents", subs: "/admin/sub-agents/list", applications: "/admin/sub-agents/applications", settings: "/admin/sub-agents/settings" };
+const TAB_TITLE: Record<Tab, string> = { overview: "Sub-agents", parents: "Parents", subs: "All sub-agents", applications: "Applications", settings: "Settings" };
 type Period = "7d" | "30d" | "month" | "all";
 
 interface Overview { tier: { enabled: boolean; allow: string[] } | null; parents: { programmes_on: number; with_subs: number; paused: number }; subs: { total: number; active: number; awaiting_payment: number; lapsed: number; suspended: number; new_in_period: number }; applications: { pending: number; approved: number; declined: number }; fees: { count: number; gross: number; to_parents: number; ours: number }; sales: { orders: number; amount: number; parent_margin: number; sub_margin: number; our_cost: number }; errors: number }
 interface Parent { id: string; slug: string; store_name: string; status: string; paid_until: string | null; network_on: boolean; network_fee: number; network_auto_approve: boolean; network_paused_at: string | null; network_paused_reason: string | null; created_at: string; tier_open: boolean; subs_total: number; subs_active: number; pending_apps: number; fee_income: number; margin_income: number; sub_sales: number; sub_orders: number }
 interface Sub { id: string; slug: string; store_name: string; status: string; paid_until: string | null; created_at: string; whatsapp: string | null; user_id: string; earnings_balance: number; parent_id: string; parent_slug: string; parent_name: string; parent_fee: number; email: string | null; orders: number; sales: number; parent_margin: number; own_margin: number; fees_paid: number; last_order_at: string | null }
 interface Application { id: string; status: "pending" | "approved" | "declined"; applicant_name: string | null; applicant_email: string | null; applicant_phone: string | null; store_name: string; requested_slug: string; whatsapp: string | null; answers: Array<{ label: string; answer: string }> | null; decision_note: string | null; decided_at: string | null; agent_id: string | null; created_at: string; parent_id: string; parent_slug: string; parent_name: string; parent_fee: number; network_auto_approve: boolean; agent_slug: string | null }
-interface Fee { id: string; status: string; amount: number; provider_reference: string; created_at: string; verified_at: string | null; base: number | null; fee: number | null; months: number | null; percent_off: number | null; sub_id: string | null; sub_name: string | null; parent_id: string | null; parent_name: string | null; applied: boolean; error: string | null }
 interface AgentLite { id: string; slug: string; store_name: string; status: string }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,18 +41,17 @@ export default function AdminSubAgents() {
   const [parents, setParents] = useState<Parent[]>([]);
   const [subs, setSubs] = useState<Sub[]>([]);
   const [apps, setApps] = useState<Application[]>([]);
-  const [fees, setFees] = useState<Fee[]>([]);
   const [agents, setAgents] = useState<AgentLite[]>([]);
   const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
-    const [o, p, s, a, f, al] = await Promise.all([
+    const [o, p, s, a, al] = await Promise.all([
       db().rpc("admin_network_overview", { p_from: periodFrom(period), p_to: null }),
-      db().rpc("admin_network_parents"), db().rpc("admin_network_subs"), db().rpc("admin_network_applications", { p_status: null }), db().rpc("admin_network_fees", { p_limit: 300 }),
+      db().rpc("admin_network_parents"), db().rpc("admin_network_subs"), db().rpc("admin_network_applications", { p_status: null }),
       db().from("agents").select("id, slug, store_name, status").is("parent_agent_id", null).order("store_name"),
     ]);
-    const first = [o, p, s, a, f].find((r) => r.error); if (first?.error) toast.error(err(first.error));
-    setOv((o.data as Overview) ?? null); setParents((p.data as Parent[]) ?? []); setSubs((s.data as Sub[]) ?? []); setApps((a.data as Application[]) ?? []); setFees((f.data as Fee[]) ?? []); setAgents((al.data as AgentLite[]) ?? []);
+    const first = [o, p, s, a].find((r) => r.error); if (first?.error) toast.error(err(first.error));
+    setOv((o.data as Overview) ?? null); setParents((p.data as Parent[]) ?? []); setSubs((s.data as Sub[]) ?? []); setApps((a.data as Application[]) ?? []); setAgents((al.data as AgentLite[]) ?? []);
     setLoading(false);
   }, [period]);
   useEffect(() => { void load(); }, [load]);
@@ -65,14 +63,13 @@ export default function AdminSubAgents() {
 
   return (
     <div className="space-y-5">
-      <AdminPageHeader title={TAB_TITLE[tab]} description="Agents recruited by a paid agent. Subs get their own store, buy at the parent's prices and pay the parent a monthly fee; we keep the usual bundle margin plus 4% on fees." />
-      <Segmented<Tab> value={tab} onChange={setTab} options={[{ value: "overview", label: "Overview" }, { value: "parents", label: "Parents" }, { value: "subs", label: "Sub-agents" }, { value: "applications", label: `Applications${ov?.applications.pending ? ` (${ov.applications.pending})` : ""}` }, { value: "fees", label: "Fees" }, { value: "settings", label: "Settings" }]} />
+      <AdminPageHeader title={TAB_TITLE[tab]} description="Agents recruited by a paid agent, free. Subs get their own store and buy at the price the parent sets for agents; the parent keeps that margin, we keep our usual agent-price margin." />
+      <Segmented<Tab> value={tab} onChange={setTab} options={[{ value: "overview", label: "Overview" }, { value: "parents", label: "Parents" }, { value: "subs", label: "Sub-agents" }, { value: "applications", label: `Applications${ov?.applications.pending ? ` (${ov.applications.pending})` : ""}` }, { value: "settings", label: "Settings" }]} />
 
       {tab === "overview" && <OverviewTab ov={ov} loading={loading} period={period} setPeriod={setPeriod} parents={parents} subs={subs} onTab={setTab} />}
       {tab === "parents" && <ParentsTab parents={parents} loading={loading} search={search} setSearch={setSearch} match={match} act={act} />}
       {tab === "subs" && <SubsTab subs={subs} agents={agents} loading={loading} search={search} setSearch={setSearch} match={match} act={act} />}
       {tab === "applications" && <ApplicationsTab apps={apps} loading={loading} search={search} setSearch={setSearch} match={match} />}
-      {tab === "fees" && <FeesTab fees={fees} loading={loading} search={search} setSearch={setSearch} match={match} act={act} />}
       {tab === "settings" && <SettingsTab ov={ov} agents={agents} act={act} />}
     </div>
   );
@@ -86,7 +83,7 @@ function OverviewTab({ ov, loading, period, setPeriod, parents, subs, onTab }: {
   return (
     <>
       {!on && <p className="rounded-xl border border-amber/25 bg-amber/[0.06] px-3 py-2 text-[12px] text-amber">The feature is switched off. Agents see "Coming soon" on their Agents page. Turn it on for everyone, or for chosen agents, under Settings.</p>}
-      {(ov?.errors ?? 0) > 0 && <p className="rounded-xl border border-danger/25 bg-danger/[0.06] px-3 py-2 text-[12px] text-danger"><AlertTriangle size={13} className="-mt-0.5 mr-1 inline" />{ov!.errors} background error{ov!.errors === 1 ? "" : "s"} in this period (fee or margin posting). See Fees for the ones tied to a payment.</p>}
+      {(ov?.errors ?? 0) > 0 && <p className="rounded-xl border border-danger/25 bg-danger/[0.06] px-3 py-2 text-[12px] text-danger"><AlertTriangle size={13} className="-mt-0.5 mr-1 inline" />{ov!.errors} background error{ov!.errors === 1 ? "" : "s"} in this period (margin posting). Check phase1.system_errors.</p>}
       <StatGrid cols={4}>
         <Stat loading={loading} label="Programmes open" value={ov?.parents.programmes_on ?? 0} note={`${ov?.parents.with_subs ?? 0} parent${ov?.parents.with_subs === 1 ? "" : "s"} with agents · ${ov?.parents.paused ?? 0} paused`} icon={Network} onClick={() => onTab("parents")} />
         <Stat loading={loading} label="Sub-agents" value={ov?.subs.total ?? 0} note={`${ov?.subs.active ?? 0} active · ${ov?.subs.awaiting_payment ?? 0} unpaid · ${ov?.subs.lapsed ?? 0} lapsed`} icon={Users} onClick={() => onTab("subs")} tone={ov?.subs.awaiting_payment ? "warn" : "default"} />
@@ -94,14 +91,7 @@ function OverviewTab({ ov, loading, period, setPeriod, parents, subs, onTab }: {
         <Stat loading={loading} label="New subs this period" value={ov?.subs.new_in_period ?? 0} icon={Store} tone="muted" />
       </StatGrid>
       <Segmented<Period> value={period} onChange={setPeriod} options={[{ value: "7d", label: "7 days" }, { value: "30d", label: "30 days" }, { value: "month", label: "This month" }, { value: "all", label: "All time" }]} />
-      <div className="grid gap-3 lg:grid-cols-2">
-        <Panel title="Fees" icon={CreditCard} note="monthly fees subs paid their parents">
-          <StatGrid cols={3}>
-            <Stat loading={loading} label="Collected (gross)" value={<Money value={ov?.fees.gross} />} note={`${ov?.fees.count ?? 0} payment${ov?.fees.count === 1 ? "" : "s"}`} />
-            <Stat loading={loading} label="To parents" value={<Money value={ov?.fees.to_parents} />} note="credited to their earnings" tone="muted" />
-            <Stat loading={loading} label="Ours (4%)" value={<Money value={ov?.fees.ours} tone="good" />} note="Paystack pass-through we keep" />
-          </StatGrid>
-        </Panel>
+      <div className="grid gap-3">
         <Panel title="Sales by sub-agents" icon={Store} note="delivered orders from sub stores">
           <StatGrid cols={3}>
             <Stat loading={loading} label="Sales" value={<Money value={ov?.sales.amount} />} note={`${ov?.sales.orders ?? 0} order${ov?.sales.orders === 1 ? "" : "s"}`} />
@@ -113,7 +103,7 @@ function OverviewTab({ ov, loading, period, setPeriod, parents, subs, onTab }: {
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
         <Panel title="Top parents" icon={Network} action={<Button variant="ghost" size="sm" onClick={() => onTab("parents")}>All parents</Button>}>
-          <Rows empty={loading ? "Loading…" : "No parent has a programme yet."}>{topParents.map((p) => <Row key={p.id} primary={<>{p.store_name} {p.network_paused_at ? <Pill tone="bad">paused by admin</Pill> : p.network_on ? <Pill tone="good">open</Pill> : <Pill>closed</Pill>}</>} secondary={`${p.subs_active}/${p.subs_total} active agents · fee ${formatGHS(Number(p.network_fee))}/mo · ${p.pending_apps} waiting`} right={formatGHS(Number(p.fee_income) + Number(p.margin_income))} rightNote="earned from agents" />)}</Rows>
+          <Rows empty={loading ? "Loading…" : "No parent has a programme yet."}>{topParents.map((p) => <Row key={p.id} primary={<>{p.store_name} {p.network_paused_at ? <Pill tone="bad">paused by admin</Pill> : p.network_on ? <Pill tone="good">open</Pill> : <Pill>closed</Pill>}</>} secondary={`${p.subs_active}/${p.subs_total} active agents · ${p.pending_apps} waiting`} right={formatGHS(Number(p.margin_income))} rightNote="margin from agents" />)}</Rows>
         </Panel>
         <Panel title="Newest sub-agents" icon={Users} action={<Button variant="ghost" size="sm" onClick={() => onTab("subs")}>All sub-agents</Button>}>
           <Rows empty={loading ? "Loading…" : "No sub-agents yet."}>{recentSubs.map((s) => <Row key={s.id} primary={<>{s.store_name} <Pill tone={statusTone(s.status)}>{readable(s.status)}</Pill></>} secondary={`under ${s.parent_name} · joined ${formatAdminDate(s.created_at)}`} right={formatGHS(Number(s.sales))} rightNote={`${s.orders} orders`} />)}</Rows>
@@ -134,15 +124,15 @@ function ParentsTab({ parents, loading, search, setSearch, match, act }: { paren
       <Panel title="Parents" icon={Network} note="agents who run, or have run, a programme">
         <Rows empty={loading ? "Loading…" : "Nobody has opened a programme yet."}>{list.map((p) => (
           <Row key={p.id} onClick={() => setSel(p)} primary={<>{p.store_name} <span className="text-faint-foreground">· {p.slug}</span> {p.network_paused_at ? <Pill tone="bad">paused by admin</Pill> : p.network_on ? <Pill tone="good">open</Pill> : <Pill>closed</Pill>} {!p.tier_open && !p.network_paused_at && <Pill tone="warn">feature off for them</Pill>}</>}
-            secondary={`${p.subs_active}/${p.subs_total} active agents · ${p.pending_apps} waiting · fee ${formatGHS(Number(p.network_fee))}/mo${p.network_auto_approve ? " · auto-approve" : ""} · agents' sales ${formatGHS(Number(p.sub_sales))}`}
-            right={formatGHS(Number(p.fee_income) + Number(p.margin_income))} rightNote={`fees ${formatGHS(Number(p.fee_income))} · margin ${formatGHS(Number(p.margin_income))}`} />
+            secondary={`${p.subs_active}/${p.subs_total} active agents · ${p.pending_apps} waiting${p.network_auto_approve ? " · auto-approve" : ""} · agents' sales ${formatGHS(Number(p.sub_sales))}`}
+            right={formatGHS(Number(p.margin_income))} rightNote="margin from agents" />
         ))}</Rows>
       </Panel>
       <Modal open={!!sel} onClose={() => setSel(null)} label={sel?.store_name ?? "Parent"}>
         {sel && <div className="space-y-4 p-1">
           <div><h3 className="text-[16px] font-semibold text-foreground">{sel.store_name}</h3><p className="text-[12px] text-muted-foreground">{sel.slug}.datayego.com · plan {readable(sel.status)}{sel.paid_until ? ` until ${formatAdminDate(sel.paid_until)}` : ""}</p></div>
-          <StatGrid cols={3}><Stat label="Agents" value={`${sel.subs_active}/${sel.subs_total}`} note="active / all" /><Stat label="Fee income" value={<Money value={sel.fee_income} />} /><Stat label="Margin income" value={<Money value={sel.margin_income} />} /></StatGrid>
-          <div className="grid gap-1 text-[12.5px] text-muted-foreground"><p>Monthly fee: <b className="text-foreground">{formatGHS(Number(sel.network_fee))}</b> · {sel.network_auto_approve ? "approves applications automatically" : "reviews each application"}</p><p>Programme: <b className="text-foreground">{sel.network_paused_at ? `paused by admin on ${formatAdminDate(sel.network_paused_at)}${sel.network_paused_reason ? ` — ${sel.network_paused_reason}` : ""}` : sel.network_on ? "open to new agents" : "closed by the parent"}</b></p><p>Agents' orders: {sel.sub_orders} · sales {formatGHS(Number(sel.sub_sales))}</p></div>
+          <StatGrid cols={3}><Stat label="Agents" value={`${sel.subs_active}/${sel.subs_total}`} note="active / all" /><Stat label="Margin income" value={<Money value={sel.margin_income} />} note="on delivered agent orders" /><Stat label="Agents' sales" value={<Money value={sel.sub_sales} />} note={`${sel.sub_orders} orders`} /></StatGrid>
+          <div className="grid gap-1 text-[12.5px] text-muted-foreground"><p>{sel.network_auto_approve ? "Approves applications automatically" : "Reviews each application"} · agents join free</p><p>Programme: <b className="text-foreground">{sel.network_paused_at ? `paused by admin on ${formatAdminDate(sel.network_paused_at)}${sel.network_paused_reason ? ` — ${sel.network_paused_reason}` : ""}` : sel.network_on ? "open to new agents" : "closed by the parent"}</b></p></div>
           {sel.network_paused_at
             ? <Button size="sm" onClick={() => void pause(sel, false)}>Unpause programme</Button>
             : <div className="space-y-2"><Field label="Reason (shown to nobody; for your records)"><input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} placeholder="e.g. complaints from their agents" /></Field><Button size="sm" variant="ghost" onClick={() => void pause(sel, true)}>Pause programme</Button></div>}
@@ -156,9 +146,9 @@ function ParentsTab({ parents, loading, search, setSearch, match, act }: { paren
 /* ── Sub-agents ───────────────────────────────────────────────────────────────────────────── */
 function SubsTab({ subs, agents, loading, search, setSearch, match, act }: { subs: Sub[]; agents: AgentLite[]; loading: boolean; search: string; setSearch: (s: string) => void; match: (...xs: Array<string | null | undefined>) => boolean; act: (label: string, fn: () => Promise<{ error?: { message: string } | null }>) => Promise<boolean> }) {
   const [filter, setFilter] = useState<"all" | "active" | "awaiting_payment" | "lapsed" | "suspended">("all");
-  const [sel, setSel] = useState<Sub | null>(null); const [moveTo, setMoveTo] = useState(""); const [months, setMonths] = useState("1");
+  const [sel, setSel] = useState<Sub | null>(null); const [moveTo, setMoveTo] = useState("");
   const list = subs.filter((s) => (filter === "all" || (filter === "lapsed" ? ["lapsed", "paused"].includes(s.status) : s.status === filter)) && match(s.store_name, s.slug, s.parent_name, s.email, s.whatsapp));
-  const close = () => { setSel(null); setMoveTo(""); setMonths("1"); };
+  const close = () => { setSel(null); setMoveTo(""); };
   return (
     <>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -168,23 +158,22 @@ function SubsTab({ subs, agents, loading, search, setSearch, match, act }: { sub
       <Panel title="Sub-agents" icon={Users}>
         <Rows empty={loading ? "Loading…" : "No sub-agents match."}>{list.map((s) => (
           <Row key={s.id} onClick={() => setSel(s)} primary={<>{s.store_name} <span className="text-faint-foreground">· {s.slug}</span> <Pill tone={statusTone(s.status)}>{readable(s.status)}</Pill></>}
-            secondary={`under ${s.parent_name} · ${s.paid_until ? `paid until ${formatAdminDate(s.paid_until)}` : "no paid period"} · ${s.orders} orders · joined ${formatAdminDate(s.created_at)}`}
+            secondary={`under ${s.parent_name} · ${s.orders} orders · joined ${formatAdminDate(s.created_at)}`}
             right={formatGHS(Number(s.sales))} rightNote={`parent earned ${formatGHS(Number(s.parent_margin))}`} />
         ))}</Rows>
       </Panel>
       <Modal open={!!sel} onClose={close} label={sel?.store_name ?? "Sub-agent"}>
         {sel && <div className="space-y-4 p-1">
-          <div><h3 className="text-[16px] font-semibold text-foreground">{sel.store_name} <Pill tone={statusTone(sel.status)}>{readable(sel.status)}</Pill></h3><p className="text-[12px] text-muted-foreground">{sel.slug}.datayego.com · under <b>{sel.parent_name}</b> at {formatGHS(Number(sel.parent_fee))}/mo</p><p className="text-[12px] text-muted-foreground">{sel.email ?? "no email"}{sel.whatsapp ? ` · ${sel.whatsapp}` : ""} · joined {formatAdminDate(sel.created_at)}</p></div>
-          <StatGrid cols={3}><Stat label="Sales" value={<Money value={sel.sales} />} note={`${sel.orders} orders`} /><Stat label="Their markup" value={<Money value={sel.own_margin} />} note={`balance ${formatGHS(Number(sel.earnings_balance))}`} /><Stat label="Parent earned" value={<Money value={Number(sel.parent_margin) + Number(sel.fees_paid)} />} note={`fees ${formatGHS(Number(sel.fees_paid))}`} /></StatGrid>
-          <p className="text-[12px] text-muted-foreground">Paid until: <b className="text-foreground">{sel.paid_until ? formatAdminDate(sel.paid_until) : "—"}</b>{sel.last_order_at ? ` · last order ${formatAdminDate(sel.last_order_at)}` : ""}</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Grant months (no payment; parent gets nothing)"><div className="flex gap-2"><input value={months} onChange={(e) => setMonths(e.target.value)} inputMode="numeric" className={inputCls} /><Button size="sm" onClick={() => { const m = Number(months); if (!(m >= 1 && m <= 24)) return toast.error("1 to 24 months."); void act(`${m} month${m === 1 ? "" : "s"} added.`, () => db().rpc("admin_network_grant_months", { p_sub: sel.id, p_months: m })).then((ok) => ok && close()); }}>Add</Button></div></Field>
+          <div><h3 className="text-[16px] font-semibold text-foreground">{sel.store_name} <Pill tone={statusTone(sel.status)}>{readable(sel.status)}</Pill></h3><p className="text-[12px] text-muted-foreground">{sel.slug}.datayego.com · under <b>{sel.parent_name}</b> · free</p><p className="text-[12px] text-muted-foreground">{sel.email ?? "no email"}{sel.whatsapp ? ` · ${sel.whatsapp}` : ""} · joined {formatAdminDate(sel.created_at)}</p></div>
+          <StatGrid cols={3}><Stat label="Sales" value={<Money value={sel.sales} />} note={`${sel.orders} orders`} /><Stat label="Their markup" value={<Money value={sel.own_margin} />} note={`balance ${formatGHS(Number(sel.earnings_balance))}`} /><Stat label="Parent earned" value={<Money value={sel.parent_margin} />} note="margin on their orders" /></StatGrid>
+          {sel.last_order_at && <p className="text-[12px] text-muted-foreground">Last order {formatAdminDate(sel.last_order_at)}</p>}
+          <div className="grid gap-3">
             <Field label="Move under another parent"><div className="flex gap-2"><select value={moveTo} onChange={(e) => setMoveTo(e.target.value)} className={inputCls}><option value="">choose…</option>{agents.filter((a) => a.id !== sel.parent_id && a.id !== sel.id).map((a) => <option key={a.id} value={a.id}>{a.store_name} ({a.slug})</option>)}</select><Button size="sm" disabled={!moveTo} onClick={() => { const t = agents.find((a) => a.id === moveTo); if (t && window.confirm(`Move ${sel.store_name} under ${t.store_name}? Their prices below ${t.store_name}'s prices are raised to match.`)) void act("Moved.", () => db().rpc("admin_network_move_sub", { p_sub: sel.id, p_new_parent: moveTo })).then((ok) => ok && close()); }}>Move</Button></div></Field>
           </div>
           <div className="flex flex-wrap gap-2">
             {sel.status === "suspended"
               ? <Button size="sm" onClick={() => void act("Reactivated.", () => db().rpc("admin_network_set_sub_status", { p_sub: sel.id, p_status: "active" })).then((ok) => ok && close())}>Reactivate</Button>
-              : <Button size="sm" variant="ghost" onClick={() => { if (window.confirm(`Suspend ${sel.store_name}? Their store stops taking orders and they can't pay to reopen until you reactivate.`)) void act("Suspended.", () => db().rpc("admin_network_set_sub_status", { p_sub: sel.id, p_status: "suspended" })).then((ok) => ok && close()); }}>Suspend</Button>}
+              : <Button size="sm" variant="ghost" onClick={() => { if (window.confirm(`Suspend ${sel.store_name}? Their store stops taking orders until you reactivate.`)) void act("Suspended.", () => db().rpc("admin_network_set_sub_status", { p_sub: sel.id, p_status: "suspended" })).then((ok) => ok && close()); }}>Suspend</Button>}
             <Button size="sm" variant="ghost" onClick={() => { if (window.confirm(`Detach ${sel.store_name} from ${sel.parent_name}? They become an ordinary agent who must buy the DataYego plan to keep selling; prices below our agent price are raised.`)) void act("Detached.", () => db().rpc("admin_network_move_sub", { p_sub: sel.id, p_new_parent: null })).then((ok) => ok && close()); }}>Detach from parent</Button>
             <Button size="sm" variant="ghost" onClick={() => { window.location.href = `/admin/agents/${sel.id}`; }}>Open agent record</Button>
           </div>
@@ -214,36 +203,12 @@ function ApplicationsTab({ apps, loading, search, setSearch, match }: { apps: Ap
       <Modal open={!!sel} onClose={() => setSel(null)} label="Application">
         {sel && <div className="space-y-3 p-1">
           <div><h3 className="text-[16px] font-semibold text-foreground">{sel.applicant_name ?? "Applicant"} <Pill tone={sel.status === "approved" ? "good" : sel.status === "declined" ? "bad" : "warn"}>{sel.status}</Pill></h3><p className="text-[12px] text-muted-foreground">{sel.applicant_email ?? ""}{sel.applicant_phone ? ` · ${sel.applicant_phone}` : ""}{sel.whatsapp ? ` · WhatsApp ${sel.whatsapp}` : ""}</p></div>
-          <p className="text-[12.5px] text-muted-foreground">Wants <b className="text-foreground">{sel.store_name}</b> ({sel.requested_slug}) under <b className="text-foreground">{sel.parent_name}</b> at {formatGHS(Number(sel.parent_fee))}/mo · applied {formatAdminDate(sel.created_at)}</p>
+          <p className="text-[12.5px] text-muted-foreground">Wants <b className="text-foreground">{sel.store_name}</b> ({sel.requested_slug}) under <b className="text-foreground">{sel.parent_name}</b> · applied {formatAdminDate(sel.created_at)}</p>
           {(sel.answers ?? []).filter((x) => x.answer).map((x, i) => <div key={i} className="rounded-lg border border-white/[0.07] p-2 text-[12.5px]"><p className="text-faint-foreground">{x.label}</p><p className="text-foreground">{x.answer}</p></div>)}
           {sel.decision_note && <p className="text-[12.5px] text-muted-foreground">Parent's note: <i>{sel.decision_note}</i></p>}
           {sel.agent_slug && <p className="text-[12.5px] text-muted-foreground">Store opened: <b className="text-foreground">{sel.agent_slug}.datayego.com</b></p>}
         </div>}
       </Modal>
-    </>
-  );
-}
-
-/* ── Fees ─────────────────────────────────────────────────────────────────────────────────── */
-function FeesTab({ fees, loading, search, setSearch, match, act }: { fees: Fee[]; loading: boolean; search: string; setSearch: (s: string) => void; match: (...xs: Array<string | null | undefined>) => boolean; act: (label: string, fn: () => Promise<{ error?: { message: string } | null }>) => Promise<boolean> }) {
-  const list = fees.filter((f) => match(f.sub_name, f.parent_name, f.provider_reference));
-  const paid = fees.filter((f) => f.status === "succeeded");
-  const stuck = paid.filter((f) => !f.applied);
-  return (
-    <>
-      <StatGrid cols={3}>
-        <Stat loading={loading} label="Paid fees" value={paid.length} note={`${formatGHS(paid.reduce((a, f) => a + Number(f.amount), 0))} gross`} />
-        <Stat loading={loading} label="Pending (not paid)" value={fees.filter((f) => f.status === "pending").length} note="links opened, never completed" tone="muted" />
-        <Stat loading={loading} label="Paid but not applied" value={stuck.length} note={stuck.length ? "money in, store not extended — re-apply below" : "all good"} tone={stuck.length ? "bad" : "good"} />
-      </StatGrid>
-      <label className={`${inputCls} flex items-center gap-2 !py-1.5`}><Search size={13} className="shrink-0 text-faint-foreground" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Sub, parent or reference" className="min-w-0 flex-1 bg-transparent text-[12.5px] outline-none" /></label>
-      <Panel title="Every fee payment" icon={CreditCard} note="newest first">
-        <Rows empty={loading ? "Loading…" : "No fee payments yet."}>{list.map((f) => (
-          <Row key={f.id} primary={<>{f.sub_name ?? "?"} → {f.parent_name ?? "?"} <Pill tone={f.status === "succeeded" ? (f.applied ? "good" : "bad") : f.status === "pending" ? "muted" : "warn"}>{f.status === "succeeded" ? (f.applied ? "applied" : "paid, NOT applied") : f.status}</Pill></>}
-            secondary={<>{formatAdminDate(f.verified_at ?? f.created_at)} · {f.months ?? 1} month{(f.months ?? 1) === 1 ? "" : "s"}{f.percent_off ? ` · ${f.percent_off}% coupon` : ""} · {f.provider_reference}{f.error ? <span className="text-danger"> · {f.error}</span> : null}{f.status === "succeeded" && !f.applied && <> · <button type="button" className="font-semibold text-primary-glow hover:underline" onClick={() => void act("Fee re-applied.", () => db().rpc("admin_network_fee_reapply", { p_intent_id: f.id }))}>Re-apply now</button></>}</>}
-            right={formatGHS(Number(f.amount))} rightNote={`parent ${formatGHS(Number(f.base ?? 0))} · ours ${formatGHS(Number(f.fee ?? 0))}`} />
-        ))}</Rows>
-      </Panel>
     </>
   );
 }
@@ -260,8 +225,8 @@ function SettingsTab({ ov, agents, act }: { ov: Overview | null; agents: AgentLi
         <label className="flex items-start justify-between gap-3 py-1"><span><span className="block text-[13px] font-semibold text-foreground">Open to all agents</span><span className="block text-[11.5px] text-muted-foreground">Every active agent sees "Build your own network" and can start recruiting. Off = only the agents listed on the right.</span></span><input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="mt-1 h-5 w-5" /></label>
         <div className="mt-3 rounded-lg border border-white/[0.07] p-2.5 text-[11.5px] text-muted-foreground">
           <p className="font-semibold text-foreground">How the money works</p>
-          <p className="mt-1">Fee: the sub pays the parent's monthly fee + 4% Paystack charge. The fee goes to the parent's earnings; we keep the 4%.</p>
-          <p className="mt-1">Orders: the sub sells at their price, buys at the parent's price; the parent earns that gap, we earn our usual agent-price margin. Subs never pay the DataYego plan.</p>
+          <p className="mt-1">Sub-agents join free — no monthly fee to the parent or to us.</p>
+          <p className="mt-1">Orders: the sub sells at their price and buys at the price the parent set for agents; the parent earns that gap, we earn our usual agent-price margin. Subs never pay the DataYego plan.</p>
           <p className="mt-1">Sub-agents cannot recruit their own agents (one level only).</p>
         </div>
       </Panel>

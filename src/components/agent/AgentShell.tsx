@@ -117,7 +117,7 @@ export default function AgentShell() {
   const parentUrl = agent.parent ? (agent.parent.custom_domain && agent.parent.custom_domain_status === "active" ? `https://${agent.parent.custom_domain}` : `https://${agent.parent.slug}.datayego.com`) : "/";
   const eyebrow = isSub && agent.parent ? `${agent.parent.store_name} · Agent` : "Agent";
   const leave = () => void signOut().then(() => { if (isSub) window.location.assign(parentUrl); else navigate("/"); }).catch(() => toast.error("Couldn't sign out."));
-  if (role === "owner" && (sub.state === "unpaid" || sub.state === "suspended")) return isSub ? <NetworkPayScreen agent={agent} /> : <PayScreen agent={agent} quote={quote} />;
+  if (role === "owner" && (sub.state === "unpaid" || sub.state === "suspended")) return isSub ? <SubClosedScreen agent={agent} /> : <PayScreen agent={agent} quote={quote} />;
 
   return (
     <AgentContext.Provider value={{ role, networkOpen, unread, floors, isSub, agent, orders, payouts, products, prices, setPrices, plan, quote, storeUrl, reload, sub, openRenew: () => setRenew(true) }}>
@@ -151,7 +151,7 @@ export default function AgentShell() {
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={() => setRenew(false)}>
             <div className="onyx-panel w-full max-w-md rounded-t-3xl p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start justify-between"><div><h2 className="text-[17px] font-semibold text-foreground">{sub.state === "active" ? "Extend your plan" : "Renew your plan"}</h2><p className="mt-0.5 text-[12px] text-muted-foreground">{sub.state === "active" ? `Paid until ${longDate(sub.paidUntil)} · ${sub.daysLeft} day${sub.daysLeft === 1 ? "" : "s"} left. Whatever you buy is added on.` : "Everything reopens the moment payment is confirmed."}</p></div><button type="button" onClick={() => setRenew(false)} aria-label="Close" className="text-muted-foreground"><X size={18} /></button></div>
-              <div className="mt-4">{isSub ? <NetworkPayInline agent={agent} /> : <PlanPicker quote={quote} verb={sub.state === "active" ? "Extend" : "Renew"} extending={sub.state === "active"} />}</div>
+              <div className="mt-4">{isSub ? <p className="text-[13px] text-muted-foreground">Your store under {agent.parent?.store_name} is free — nothing to pay.</p> : <PlanPicker quote={quote} verb={sub.state === "active" ? "Extend" : "Renew"} extending={sub.state === "active"} />}</div>
             </div>
           </div>
         )}
@@ -176,39 +176,20 @@ export default function AgentShell() {
   );
 }
 
-/* Sub-agents pay their parent's fee, not a DataYego plan. */
-function NetworkPayScreen({ agent }: { agent: Agent }) {
-  const [months, setMonths] = useState(1); const [coupon, setCoupon] = useState(""); const [busy, setBusy] = useState(false);
-  const fee = Number(agent.parent?.network_fee ?? 0);
-  const pay = async () => { setBusy(true); const { data, error } = await supabase.functions.invoke<{ authorizationUrl?: string; error?: string }>("network-pay", { body: { months, coupon: coupon.trim() || undefined } }); setBusy(false); if (error || data?.error || !data?.authorizationUrl) return toast.error(data?.error ?? error?.message ?? "Couldn't start payment."); window.location.assign(data.authorizationUrl); };
+/* Sub-agents never pay a plan: their store is free under the parent. The only closed state is a suspension. */
+function SubClosedScreen({ agent }: { agent: Agent }) {
+  const parentName = agent.parent?.store_name ?? "your network";
   return (
     <div className="onyx-canvas flex min-h-dvh items-center justify-center px-5 py-8">
-      <div className="onyx-panel w-full max-w-md rounded-3xl p-6">
-        <div className="text-center"><CreditCard size={28} className="mx-auto text-primary-glow" /><p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">{agent.status === "suspended" ? "Suspended" : "Approved · awaiting payment"}</p><h1 className="mt-1 text-[20px] font-semibold text-foreground">{agent.status === "suspended" ? "This store is suspended" : `Open ${agent.store_name}`}</h1><p className="mt-1 text-[13px] text-muted-foreground">{agent.status === "suspended" ? `Contact ${agent.parent?.store_name ?? "your network"} to sort this out.` : `Your store is under ${agent.parent?.store_name ?? "a network"}. Pay the monthly fee and it opens straight away.`}</p></div>
-        {agent.status !== "suspended" && (<div className="mt-5 space-y-3">
-          <div className="grid grid-cols-3 gap-2">{[1, 3, 6].map((m) => <button key={m} type="button" onClick={() => setMonths(m)} className={`rounded-2xl border p-3 text-center ${months === m ? "border-primary-glow/50 bg-primary/10" : "border-white/[0.08]"}`}><p className="text-[13px] font-semibold text-foreground">{m} month{m > 1 ? "s" : ""}</p><p className="text-[12px] text-muted-foreground">{formatGHS(fee * m)}</p></button>)}</div>
-          <input value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="Coupon code (optional)" autoCapitalize="characters" className="onyx-field w-full" />
-          <button type="button" disabled={busy} onClick={() => void pay()} className="onyx-btn-primary w-full py-3 text-[14px] disabled:opacity-60">{busy ? "Please wait…" : `Pay ${formatGHS(fee * months)} + 4% fee`}</button>
-          <p className="text-center text-[11.5px] text-faint-foreground">Paid to {agent.parent?.store_name}. Coupons from {agent.parent?.store_name} are applied at payment.</p>
-        </div>)}
-        {agent.status !== "suspended" && <ul className="mt-5 space-y-2 text-left text-[13px] text-muted-foreground">
-          {[["Your own online store", `${agent.store_name} at ${agent.slug}.datayego.com, with your logo, colours and pages.`], ["Your prices, your profit", `Buy at ${agent.parent?.store_name ?? "your network"}'s agent price, sell at yours, keep the difference on every sale.`], ["Nothing to deliver", "Payment, delivery and receipts run automatically. Your profit is paid to MoMo."], ["Support when you need it", `${agent.parent?.store_name ?? "Your network"} can see your support inbox and help you out.`]].map(([t, d]) => <li key={t} className="flex gap-2"><span className="mt-0.5 text-primary-glow">✓</span><span><b className="text-foreground">{t}.</b> {d}</span></li>)}
-        </ul>}
-        <Link to="/" className="mt-4 block text-center text-[12px] text-muted-foreground">Back</Link>
+      <div className="onyx-panel w-full max-w-md rounded-3xl p-6 text-center">
+        <CreditCard size={28} className="mx-auto text-primary-glow" />
+        <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">{agent.status === "suspended" ? "Suspended" : "Closed"}</p>
+        <h1 className="mt-1 text-[20px] font-semibold text-foreground">{agent.store_name}</h1>
+        <p className="mt-2 text-[13px] text-muted-foreground">{agent.status === "suspended" ? `This store has been suspended. Contact ${parentName} for help.` : `This store is closed right now. Contact ${parentName} for help.`}</p>
+        <Link to="/" className="mt-4 block text-[12px] text-muted-foreground">Back</Link>
       </div>
     </div>
   );
-}
-function NetworkPayInline({ agent }: { agent: Agent }) {
-  const [months, setMonths] = useState(1); const [coupon, setCoupon] = useState(""); const [busy, setBusy] = useState(false);
-  const fee = Number(agent.parent?.network_fee ?? 0);
-  if (!(fee > 0)) return <p className="text-[13px] text-muted-foreground">Your network doesn't charge a fee. Nothing to pay.</p>;
-  const pay = async () => { setBusy(true); const { data, error } = await supabase.functions.invoke<{ authorizationUrl?: string; error?: string }>("network-pay", { body: { months, coupon: coupon.trim() || undefined } }); setBusy(false); if (error || data?.error || !data?.authorizationUrl) return toast.error(data?.error ?? error?.message ?? "Couldn't start payment."); window.location.assign(data.authorizationUrl); };
-  return (<div className="space-y-3">
-    <div className="grid grid-cols-3 gap-2">{[1, 3, 6].map((m) => <button key={m} type="button" onClick={() => setMonths(m)} className={`rounded-2xl border p-3 text-center ${months === m ? "border-primary-glow/50 bg-primary/10" : "border-white/[0.08]"}`}><p className="text-[13px] font-semibold text-foreground">{m} month{m > 1 ? "s" : ""}</p><p className="text-[12px] text-muted-foreground">{formatGHS(fee * m)}</p></button>)}</div>
-    <input value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="Coupon code (optional)" autoCapitalize="characters" className="onyx-field w-full" />
-    <button type="button" disabled={busy} onClick={() => void pay()} className="onyx-btn-primary w-full py-3 text-[14px] disabled:opacity-60">{busy ? "Please wait…" : `Pay ${formatGHS(fee * months)} + 4% fee to ${agent.parent?.store_name ?? "your network"}`}</button>
-  </div>);
 }
 /** "MTN 2GB at 8.50 instead of 9.00, 10GB at 41.00 instead of 43.00 ..." from live public and agent prices. */
 function useMtnSavingLine() {
