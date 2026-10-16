@@ -29,17 +29,24 @@ Deno.serve(async (req) => {
     if (!a) return jsonResponse({ error: "Announcement not found" }, { status: 404 });
     let emails: string[] = [];
     if (a.audience === "agents") {
-      const { data } = await supabase.from("agents").select("user_id").in("status", ["active", "lapsed", "paused", "awaiting_payment"]);
+      // Paid agents only: approved-but-unpaid or lapsed stores are not agents yet, and sub-agents (parent_agent_id set) never hear from DataYego.
+      const today = new Date().toISOString().slice(0, 10);
+      const { data } = await supabase.from("agents").select("user_id").is("parent_agent_id", null).eq("status", "active").gte("paid_until", today);
       const ids = (data ?? []).map((r: { user_id: string }) => r.user_id);
       if (ids.length) { const { data: p } = await supabase.from("profiles").select("email").in("id", ids); emails = (p ?? []).map((r: { email: string }) => r.email).filter(Boolean); }
     } else if (a.audience === "customers" || a.audience === "everyone") {
       const { data: p } = await supabase.from("profiles").select("email").not("email", "is", null).limit(5000);
       emails = (p ?? []).map((r: { email: string }) => r.email).filter(Boolean);
+      { // Sub-agents only know their parent's store, so DataYego never emails them.
+        const { data: subs } = await supabase.from("agents").select("user_id").not("parent_agent_id", "is", null);
+        const subIds = (subs ?? []).map((r: { user_id: string }) => r.user_id);
+        if (subIds.length) { const { data: sp } = await supabase.from("profiles").select("email").in("id", subIds); const subEmails = new Set((sp ?? []).map((r: { email: string }) => r.email)); emails = emails.filter((e) => !subEmails.has(e)); }
+      }
       if (a.audience === "customers") { const { data: ag } = await supabase.from("agents").select("user_id"); const { data: agp } = await supabase.from("profiles").select("email").in("id", (ag ?? []).map((r: { user_id: string }) => r.user_id)); const agentEmails = new Set((agp ?? []).map((r: { email: string }) => r.email)); emails = emails.filter((e) => !agentEmails.has(e)); }
     } else return jsonResponse({ error: "Visitors have no email address to send to." }, { status: 400 });
     const html = wrap(esc(a.title), esc(a.body), a.link_url ? { url: a.link_url, label: a.link_label ?? "Open" } : null);
     let sent = 0;
-    for (const to of [...new Set(emails)]) { const r = await sendEmail({ to, subject: a.title, html, replyTo: "support@yiego.shop" }); if (!r.skipped && r.ok) sent += 1; }
+    for (const to of [...new Set(emails)]) { const r = await sendEmail({ to, subject: a.title, html, replyTo: "support@datayego.com" }); if (!r.skipped && r.ok) sent += 1; }
     await supabase.from("announcements").update({ emailed_at: new Date().toISOString() }).eq("id", a.id);
     return jsonResponse({ status: "success", sent, total: emails.length });
   } catch (e) { return jsonResponse({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 }); }
