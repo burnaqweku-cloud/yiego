@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { storeBase } from "@/lib/storeHost";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Bell, Facebook, Instagram, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound, Users } from "lucide-react";
+import { Bell, Facebook, Instagram, LayoutDashboard, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound, Users } from "lucide-react";
+import { dashboardHref } from "@/lib/agentDashboard";
 import { useAuth } from "@/store/auth-context";
 import StoreSupport from "@/components/store/StoreSupport";
 import StorePopup from "@/components/store/StorePopup";
@@ -31,6 +32,15 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
   const slug = hostSlug ?? params.slug ?? "";
   const [menu, setMenu] = useState(false);
   const { isAuthenticated } = useAuth();
+  // A signed-in agent (owner, staff or a sub-agent) gets a way into their dashboard from any storefront.
+  const [isAgent, setIsAgent] = useState(false);
+  useEffect(() => {
+    if (!isAuthenticated) { setIsAgent(false); return; }
+    let alive = true;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("my_agent_access", {}).then(({ data }: { data: unknown }) => { if (alive) setIsAgent(Boolean(data)); });
+    return () => { alive = false; };
+  }, [isAuthenticated]);
   // Store announcements (the agent's own), with a per-device "seen" marker.
   const [anns, setAnns] = useState<Array<{ id: string; title: string; body: string; created_at: string }>>([]);
   const [annOpen, setAnnOpen] = useState(false);
@@ -100,7 +110,8 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
     { to: `${storeBase(store.slug)}/faq`, label: "FAQ", icon: HelpCircle },
     ...(store.network ? [{ to: `${storeBase(store.slug)}/join`, label: "Become an agent", icon: Users }] : []),
     { to: `${storeBase(store.slug)}/${isAuthenticated ? "account" : "sign-in"}`, label: isAuthenticated ? "Your account" : "Sign in / Create account", icon: UserRound },
-  ] as Array<{ to: string; label: string; icon: typeof Package; end?: boolean }>;
+    ...(isAgent ? [{ to: dashboardHref(), label: "Your dashboard", icon: LayoutDashboard, external: dashboardHref().startsWith("http") }] : []),
+  ] as Array<{ to: string; label: string; icon: typeof Package; end?: boolean; external?: boolean }>;
   const isHome = location.pathname.replace(/\/$/, "") === (storeBase(store.slug) || "");
   return (
     <StoreContext.Provider value={store}>
@@ -114,10 +125,11 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
                 <FitName text={store.header_name || store.store_name} base={16} className="truncate font-bold text-foreground" />
               </Link>
               <nav className="st-nav ml-6 hidden items-center gap-1 md:flex">
-                {NAV.filter((n) => n.label !== "Home" && n.label !== "Sign in / Create account" && n.label !== "Your account").map((n) => <Link key={n.to} to={n.to} className={(n.end ? location.pathname === n.to : location.pathname.startsWith(n.to)) ? "on" : ""}>{n.label}</Link>)}
+                {NAV.filter((n) => n.label !== "Home" && n.label !== "Sign in / Create account" && n.label !== "Your account" && n.label !== "Your dashboard").map((n) => <Link key={n.to} to={n.to} className={(n.end ? location.pathname === n.to : location.pathname.startsWith(n.to)) ? "on" : ""}>{n.label}</Link>)}
               </nav>
               <div className="ml-auto flex items-center gap-2">
                 {anns.length > 0 && <button type="button" onClick={markSeen} aria-label="Store news" className="relative hidden h-9 w-9 items-center justify-center rounded-xl border md:flex border-white/[0.1] text-foreground"><Bell size={17} />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{unread}</span>}</button>}
+                {isAgent && <a href={dashboardHref()} className="hidden h-9 items-center gap-1.5 rounded-xl px-3 text-[14px] font-medium text-muted-foreground md:flex"><LayoutDashboard size={15} />Dashboard</a>}
                 <Link to={`${storeBase(store.slug)}/${isAuthenticated ? "account" : "sign-in"}`} className="hidden h-9 items-center rounded-xl px-3 text-[14px] font-medium text-muted-foreground md:flex">{isAuthenticated ? "Account" : "Sign in"}</Link>
                 <Link to={`${storeBase(store.slug)}/bundles`} className="st-btn fill shrink-0 whitespace-nowrap !px-3 !py-1.5 !text-[13px] sm:!px-4 sm:!py-2 sm:!text-[14px]">Buy data</Link>
                 <button type="button" onClick={() => setMenu(true)} aria-label={unread > 0 ? "Menu, new store news" : "Menu"} className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.1] text-foreground md:hidden"><Menu size={18} />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background" />}</button>
@@ -154,8 +166,10 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
               <nav className="mt-5 flex flex-1 flex-col gap-0.5 overflow-y-auto">
                 {anns.length > 0 && <button type="button" onClick={() => { setMenu(false); markSeen(); }} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[14px] text-foreground hover:bg-white/[0.04]"><Bell size={17} />Store news{unread > 0 && <span className="ml-auto rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">{unread}</span>}</button>}
                 {NAV.map((n) => {
-                  const active = n.end ? location.pathname === n.to : location.pathname.startsWith(n.to);
-                  return <Link key={n.to} to={n.to} onClick={() => setMenu(false)} className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] ${active ? "bg-primary/15 text-primary-glow" : "text-foreground hover:bg-white/[0.04]"}`}><n.icon size={17} />{n.label}</Link>;
+                  const active = !n.external && (n.end ? location.pathname === n.to : location.pathname.startsWith(n.to));
+                  const cls = `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] ${active ? "bg-primary/15 text-primary-glow" : "text-foreground hover:bg-white/[0.04]"}`;
+                  if (n.external) return <a key={n.to} href={n.to} className={cls}><n.icon size={17} />{n.label}</a>;
+                  return <Link key={n.to} to={n.to} onClick={() => setMenu(false)} className={cls}><n.icon size={17} />{n.label}</Link>;
                 })}
               </nav>
               {wa && <a href={wa} target="_blank" rel="noreferrer" className="mt-3 flex items-center justify-center gap-2 rounded-full bg-[#25D366] px-4 py-2.5 text-[13.5px] font-semibold text-[#062b16]"><MessageCircle size={16} />WhatsApp {store.store_name}</a>}
