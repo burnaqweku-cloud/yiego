@@ -40,7 +40,7 @@ function Block({ block }: { block: BlogBlock }) {
               {block.rows.map((row, i) => (
                 <tr key={i} className="border-b border-white/[0.05] last:border-b-0">
                   {row.map((cell, j) => (
-                    <td key={j} className={j === 0 ? "px-5 py-3.5 text-muted-foreground" : "px-5 py-3.5 font-mono text-[13.5px] text-foreground"}>
+                    <td key={j} className={j === 0 ? "px-5 py-3.5 text-muted-foreground" : /^[*#\d][\d*#]*$/.test(cell) ? "px-5 py-3.5 font-mono text-[13.5px] text-foreground" : "px-5 py-3.5 text-[13.5px] leading-6 text-foreground"}>
                       <InlineText text={cell} />
                     </td>
                   ))}

@@ -31,7 +31,7 @@ function Actions({ onInvite }: { onInvite: () => void }) {
         className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-primary-glow underline-offset-4 hover:underline"
       >
         <Gift size={15} aria-hidden="true" />
-        Invite a friend and earn GH₵6.00 in data
+        Invite friends and earn free data
       </button>
     </>
   );
