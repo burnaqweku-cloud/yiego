@@ -26,7 +26,7 @@ interface WalletRow { id: string; balance: number | string }
 interface LedgerRow {
   id: string;
   direction: "credit" | "debit";
-  type: "deposit" | "purchase" | "refund" | "adjustment";
+  type: "deposit" | "purchase" | "refund" | "adjustment" | "agent_plan";
   amount: number | string;
   reference: string;
   status: "pending" | "posted" | "failed" | "reversed";
@@ -60,6 +60,7 @@ function transactionTitle(type: LedgerRow["type"]) {
   if (type === "deposit") return "Wallet top-up";
   if (type === "purchase") return "Data purchase";
   if (type === "refund") return "Refund";
+  if (type === "agent_plan") return "Agent plan";
   return "Wallet adjustment";
 }
 

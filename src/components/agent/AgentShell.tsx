@@ -123,7 +123,7 @@ export default function AgentShell() {
   const parentUrl = agent.parent ? (agent.parent.custom_domain && agent.parent.custom_domain_status === "active" ? `https://${agent.parent.custom_domain}` : `https://${agent.parent.slug}.datayego.com`) : "/";
   const eyebrow = isSub && agent.parent ? `${agent.parent.store_name} · Agent` : "Agent";
   const leave = () => void signOut().then(() => { if (isSub) window.location.assign(isStoreHost() ? "/" : parentUrl); else navigate("/"); }).catch(() => toast.error("Couldn't sign out."));
-  if (role === "owner" && (sub.state === "unpaid" || sub.state === "suspended")) return isSub ? <SubClosedScreen agent={agent} /> : <PayScreen agent={agent} quote={quote} />;
+  if (role === "owner" && (sub.state === "unpaid" || sub.state === "suspended")) return isSub ? <SubClosedScreen agent={agent} /> : <PayScreen agent={agent} quote={quote} onPaid={() => void reload()} />;
 
   return (
     <AgentContext.Provider value={{ role, networkOpen, unread, floors, isSub, agent, orders, payouts, products, prices, setPrices, plan, quote, storeUrl, reload, sub, openRenew: () => setRenew(true) }}>
@@ -157,7 +157,7 @@ export default function AgentShell() {
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={() => setRenew(false)}>
             <div className="onyx-panel w-full max-w-md rounded-t-3xl p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start justify-between"><div><h2 className="text-[17px] font-semibold text-foreground">{sub.state === "active" ? "Extend your plan" : "Renew your plan"}</h2><p className="mt-0.5 text-[12px] text-muted-foreground">{sub.state === "active" ? `Paid until ${longDate(sub.paidUntil)} · ${sub.daysLeft} day${sub.daysLeft === 1 ? "" : "s"} left. Whatever you buy is added on.` : "Everything reopens the moment payment is confirmed."}</p></div><button type="button" onClick={() => setRenew(false)} aria-label="Close" className="text-muted-foreground"><X size={18} /></button></div>
-              <div className="mt-4">{isSub ? <p className="text-[13px] text-muted-foreground">Your store under {agent.parent?.store_name} is free — nothing to pay.</p> : <PlanPicker quote={quote} verb={sub.state === "active" ? "Extend" : "Renew"} extending={sub.state === "active"} />}</div>
+              <div className="mt-4">{isSub ? <p className="text-[13px] text-muted-foreground">Your store under {agent.parent?.store_name} is free — nothing to pay.</p> : <PlanPicker quote={quote} verb={sub.state === "active" ? "Extend" : "Renew"} extending={sub.state === "active"} earningsBalance={Number(agent.earnings_balance ?? 0)} onPaid={() => { setRenew(false); void reload(); }} />}</div>
             </div>
           </div>
         )}
@@ -213,7 +213,7 @@ function useMtnSavingLine() {
   return line;
 }
 
-function PayScreen({ agent, quote }: { agent: Agent; quote: PlanQuote | null }) {
+function PayScreen({ agent, quote, onPaid }: { agent: Agent; quote: PlanQuote | null; onPaid: () => void }) {
   const suspended = agent.status === "suspended";
   const cheaperLine = useMtnSavingLine();
   return (
@@ -224,7 +224,7 @@ function PayScreen({ agent, quote }: { agent: Agent; quote: PlanQuote | null }) 
           <h1 className="mt-3 text-[20px] font-semibold text-foreground">{suspended ? "This account is suspended" : "One step left"}</h1>
           <p className="mt-1 text-[13px] text-muted-foreground">{suspended ? "Contact DataYego support to sort this out." : "You're approved. Pick a plan and your store opens straight away."}</p>
         </div>
-        {!suspended && <div className="mt-5"><PlanPicker quote={quote} /></div>}
+        {!suspended && <div className="mt-5"><PlanPicker quote={quote} earningsBalance={Number(agent.earnings_balance ?? 0)} onPaid={onPaid} /></div>}
         <ul className="mt-5 space-y-2 text-left text-[13px] text-muted-foreground">
           {[["Buy data cheaper", cheaperLine], ["Free online store", "Your own link. You set the prices and keep the profit on every sale."], ["No deposit needed", "Your customers pay through your store; your profit is saved for you and paid to MoMo from 20.00."], ["We do the rest", "Delivery, payment and support are handled by DataYego."]].map(([t, d]) => <li key={t} className="flex gap-2"><span className="mt-0.5 text-primary-glow">✓</span><span><b className="text-foreground">{t}.</b> {d}</span></li>)}
         </ul>
