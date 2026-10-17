@@ -34,7 +34,7 @@ export default function Blog() {
           <div className="mt-12 grid gap-4 md:grid-cols-2">
             {posts.map((post) => (
               <article key={post.slug} className="mk-card mk-card-hover flex flex-col p-6 sm:p-7">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{post.category}</p>
+                <p className="text-[13px] font-semibold text-[var(--gold)]">{post.category}</p>
                 <h2 className="mt-3 font-display text-[19px] font-semibold leading-snug tracking-tight text-foreground">
                   <Link to={`/blog/${post.slug}`} className="after:absolute after:inset-0">{post.heading}</Link>
                 </h2>

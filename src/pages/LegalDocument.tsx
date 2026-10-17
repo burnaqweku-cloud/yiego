@@ -287,7 +287,7 @@ export default function LegalDocument() {
         <div className="mk-wrap">
           <hr className="mk-rule" />
           <div className="mt-9 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <h2 id="other-legal-title" className="text-[13px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
+            <h2 id="other-legal-title" className="text-[13.5px] font-semibold text-muted-foreground">
               Other policies
             </h2>
             <div className="flex flex-wrap gap-x-8 gap-y-2">

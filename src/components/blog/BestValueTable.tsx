@@ -43,7 +43,7 @@ export default function BestValueTable() {
       <div className="overflow-x-auto rounded-[18px] border border-white/[0.07]">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-[0.14em] text-faint-foreground">
+            <tr className="border-b border-white/[0.07] bg-white/[0.02] text-[12px] text-faint-foreground">
               <th className="px-5 py-3.5 font-semibold">Network</th>
               <th className="px-5 py-3.5 font-semibold">Best-value bundle</th>
               <th className="px-5 py-3.5 font-semibold">Price</th>

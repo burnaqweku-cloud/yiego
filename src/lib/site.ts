@@ -100,6 +100,34 @@ const STATIC_ROUTES: PublicRoute[] = [
     description: "Enter your YG- reference to see the live payment and delivery status of your DataYego data bundle order. No account needed.",
   },
   {
+    path: "/agents",
+    priority: 0.9,
+    changefreq: "weekly",
+    title: "Become a Data Agent in Ghana — Sell MTN, Telecel & AirtelTigo Data | DataYego",
+    description: "Start a data business in Ghana with DataYego: agent prices on every bundle, a free online store with your own link, your own prices, profit paid to MoMo. No deposit.",
+  },
+  {
+    path: "/agents/store",
+    priority: 0.6,
+    changefreq: "monthly",
+    title: "What's in a DataYego Agent Store — Templates, Prices, Chat, Status Maker",
+    description: "Everything a DataYego agent gets: a store with your name, three templates, your own prices, customer accounts, chat, promos, a WhatsApp status maker and analytics.",
+  },
+  {
+    path: "/help/agents",
+    priority: 0.5,
+    changefreq: "monthly",
+    title: "Agent Help Centre — Earnings, Orders, Prices & Plans | DataYego",
+    description: "How a DataYego agent store works: earnings and payouts, orders, setting prices, the monthly plan and sub-agents.",
+  },
+  {
+    path: "/check-mtn",
+    priority: 0.6,
+    changefreq: "monthly",
+    title: "Check if an MTN Number Can Receive Data Bundles — DataYego",
+    description: "Check whether an MTN Ghana number is approved to receive data bundles before you buy. Free, instant, no account needed.",
+  },
+  {
     path: "/about",
     priority: 0.5,
     changefreq: "monthly",
@@ -111,7 +139,7 @@ const STATIC_ROUTES: PublicRoute[] = [
     priority: 0.5,
     changefreq: "monthly",
     title: "Help & Support — DataYego",
-    description: "Get help any hour: the DataYego assistant answers instantly, and WhatsApp and email reach the team directly for orders, payments and refunds.",
+    description: "Get help any hour: the DataYego assistant answers at any hour, and WhatsApp and email reach the team directly for orders, payments and refunds.",
   },
   {
     path: "/contact",

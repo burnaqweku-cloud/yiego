@@ -17,6 +17,9 @@ export interface LiveBundle {
   price: number;
   /** Size in GB, used to compare bundles by price per GB. */
   capacityGb: number;
+  /** What an agent pays for the same bundle; null when the catalogue has no agent price for it. */
+  agentPrice: number | null;
+  paused: boolean;
 }
 
 /** "500MB" and "1.5GB" both appear as labels, so parse rather than assume GB. */
@@ -39,6 +42,8 @@ function toBundle(product: Phase1Product): LiveBundle {
     validity: product.validity,
     price: Number(product.customer_price),
     capacityGb: capacityFrom(product),
+    agentPrice: product.agent_price != null && Number(product.agent_price) > 0 ? Number(product.agent_price) : null,
+    paused: Boolean(product.is_paused),
   };
 }
 

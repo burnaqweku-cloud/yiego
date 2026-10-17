@@ -32,7 +32,7 @@ function Block({ block }: { block: BlogBlock }) {
         <div className="overflow-x-auto rounded-[18px] border border-white/[0.07]">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-[0.14em] text-faint-foreground">
+              <tr className="border-b border-white/[0.07] bg-white/[0.02] text-[12px] text-faint-foreground">
                 {block.head.map((cell, i) => <th key={i} className="px-5 py-3.5 font-semibold">{cell}</th>)}
               </tr>
             </thead>
@@ -124,7 +124,7 @@ export default function BlogPost() {
             <div className="mt-5 grid gap-4 md:grid-cols-3">
               {others.map((entry) => (
                 <article key={entry.slug} className="mk-card mk-card-hover p-5">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{entry.category}</p>
+                  <p className="text-[13px] font-semibold text-[var(--gold)]">{entry.category}</p>
                   <h3 className="mt-2.5 font-display text-[15px] font-semibold leading-snug tracking-tight text-foreground">
                     <Link to={`/blog/${entry.slug}`} className="after:absolute after:inset-0">{entry.heading}</Link>
                   </h3>

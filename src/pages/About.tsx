@@ -123,8 +123,8 @@ export default function About() {
           <p className="mk-lead mt-7 max-w-[62ch]" data-reveal style={d(140)}>
             DataYego sells prepaid data bundles for MTN, Telecel and AirtelTigo. You pick a network,
             pick a bundle, type the number that should receive it, and pay — from your wallet, by
-            Mobile Money or card, or by handing the order to someone else to settle. The data lands
-            in minutes, and the order keeps a reference you can come back to.
+            Mobile Money or card, or by handing the order to someone else to settle. The data goes to
+            that number, and the order keeps a reference you can come back to.
           </p>
         </div>
       </section>
@@ -166,7 +166,7 @@ export default function About() {
 
           {/* Contrast rows — the old way against how it works here */}
           <div className="mt-16 lg:mt-20" data-reveal style={d(80)}>
-            <div className="hidden pb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] sm:gap-10">
+            <div className="hidden pb-3 text-[13.5px] font-semibold text-muted-foreground sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] sm:gap-10">
               <span>What used to happen</span>
               <span>How DataYego handles it</span>
             </div>

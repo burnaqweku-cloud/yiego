@@ -1,4 +1,5 @@
-import { ArrowRight, CheckCircle2, Loader2, Zap } from "lucide-react";
+import type { CSSProperties } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Seo from "@/components/seo/Seo";
 import { metaFor } from "@/lib/site";
@@ -79,12 +80,16 @@ const PAGES: Record<NetworkId, NetworkPageConfig> = {
   },
 };
 
+const NET_CLASS: Record<NetworkId, string> = { mtn: "net-mtn", telecel: "net-telecel", at: "net-at" };
+const NET_MARK: Record<NetworkId, string> = { mtn: "MTN", telecel: "TEL", at: "AT" };
+
 export default function NetworkBundles({ network }: { network: NetworkId }) {
   const config = PAGES[network];
   const networkName = NETWORKS.find((n) => n.id === network)?.name ?? network;
-  const { byNetwork, loading } = useLiveBundles();
+  const { byNetwork } = useLiveBundles();
   const { openBuyData } = useFlows();
-  const bundles = byNetwork[network];
+  const bundles = [...byNetwork[network]].sort((a, b) => a.capacityGb - b.capacityGb || a.price - b.price);
+  const cheapest = bundles.length ? Math.min(...bundles.map((b) => b.price)) : null;
 
   const jsonLd = [
     faqPageLd(config.faqs),
@@ -95,88 +100,99 @@ export default function NetworkBundles({ network }: { network: NetworkId }) {
   const others = (Object.keys(PAGES) as NetworkId[]).filter((id) => id !== network);
 
   return (
-    <section className="mk-section-tight" aria-labelledby="network-title">
+    <div className={NET_CLASS[network]}>
       <Seo {...metaFor(config.path)} jsonLd={jsonLd} />
-      <div className="mk-wrap">
-        <p className="mk-eyebrow">{networkName} · Ghana</p>
-        <h1 id="network-title" className="mk-display mt-5 max-w-[18ch] !text-[clamp(30px,5vw,50px)]">{config.h1}</h1>
-        <p className="mk-lead mt-6 max-w-[62ch]">{config.intro}</p>
 
-        <ul className="mt-8 grid gap-3 sm:grid-cols-2">
-          {config.bullets.map((bullet) => (
-            <li key={bullet} className="flex items-start gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 text-sm leading-6 text-muted-foreground">
-              <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-primary-glow" aria-hidden="true" />{bullet}
-            </li>
-          ))}
-        </ul>
+      {/* Hero: the copy on the left, the whole price list on the right. */}
+      <section className="mk-wrap" aria-labelledby="network-title">
+        <div className="grid gap-10 py-10 sm:py-14 lg:grid-cols-12 lg:gap-12 lg:py-20">
+          <div className="lg:col-span-6">
+            <div className="flex items-center gap-3">
+              <span className="net-mark" aria-hidden="true">{NET_MARK[network]}</span>
+              <span className="mk-eyebrow !text-foreground">{networkName} · Ghana</span>
+            </div>
+            <h1 id="network-title" className="mk-h2 mt-5 max-w-[18ch] !text-[clamp(32px,5.2vw,58px)]">{config.h1}</h1>
+            <p className="mk-lead mt-6">{config.intro}</p>
+            <ul className="mt-8 grid gap-3">
+              {config.bullets.map((bullet) => (
+                <li key={bullet} className="flex items-start gap-3 text-[15px] leading-6 text-muted-foreground">
+                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-primary-glow" aria-hidden="true" />{bullet}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <a href="#prices" className="mk-btn mk-btn-primary w-full sm:w-auto">See {networkName} prices</a>
+              {network === "mtn" ? (
+                <Link to="/check-mtn" className="mk-btn mk-btn-ghost w-full sm:w-auto">Check an MTN number first</Link>
+              ) : (
+                <Link to="/prices" className="mk-btn mk-btn-ghost w-full sm:w-auto">Compare all networks</Link>
+              )}
+            </div>
+          </div>
 
-        {/* ── Live price table ── */}
-        <div className="mt-12">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 className="mk-h3">{networkName} bundle prices today</h2>
-            <p className="text-xs text-faint-foreground">Live from our catalogue — the price here is the price at checkout.</p>
+          <div className="lg:col-span-6" id="prices">
+            <div className="board">
+              <div className="flex items-center justify-between gap-3 border-b border-[hsl(var(--border))] px-5 py-4">
+                <p className="font-display text-[15px] font-bold text-foreground">{networkName} bundle prices today</p>
+                {cheapest != null && <span className="text-[12.5px] text-muted-foreground">from GH₵{cheapest.toFixed(2)}</span>}
+              </div>
+              {bundles.length === 0 ? (
+                <p className="p-6 text-sm text-muted-foreground">Prices are loading slowly right now. Open the <Link className="font-semibold text-foreground underline underline-offset-4" to="/shop">shop</Link> to browse every live {networkName} bundle.</p>
+              ) : (
+                bundles.map((bundle, i) => (
+                  <button
+                    key={bundle.productCode}
+                    type="button"
+                    className="board-row"
+                    style={{ "--i": Math.min(i, 10) } as CSSProperties}
+                    disabled={bundle.paused}
+                    aria-label={bundle.paused ? `${networkName} ${bundle.size} is unavailable right now` : `Buy ${networkName} ${bundle.size} for GH₵${bundle.price.toFixed(2)}`}
+                    onClick={() => openBuyData({ kind: "bundle", networkId: network, productCode: bundle.productCode })}
+                  >
+                    <span>
+                      <span className="board-size">{bundle.size}</span>
+                      <span className="board-meta block">{bundle.paused ? "Unavailable right now" : bundle.validity ?? networkName}</span>
+                    </span>
+                    <span className="board-price"><small>GH₵</small>{bundle.price.toFixed(2)}</span>
+                  </button>
+                ))
+              )}
+              <div className="board-foot">
+                <span>Tap a bundle to buy it. The price here is the price at checkout.</span>
+              </div>
+            </div>
+            <p className="mt-3 text-[13px] leading-5 text-faint-foreground">Wallet payments skip the card and MoMo processing fee: top up once and buy in two taps.</p>
           </div>
-          <div className="mt-5 overflow-x-auto rounded-[22px] border border-white/[0.07]">
-            {loading ? (
-              <div className="grid min-h-40 place-items-center"><Loader2 className="animate-spin text-primary-glow" /></div>
-            ) : bundles.length === 0 ? (
-              <p className="p-6 text-sm text-muted-foreground">Prices are loading slowly right now — open the <Link className="font-semibold text-primary-glow underline" to="/shop">shop</Link> to browse every live {networkName} bundle.</p>
-            ) : (
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-[0.14em] text-faint-foreground">
-                    <th className="px-5 py-3.5 font-semibold">Bundle</th>
-                    <th className="px-5 py-3.5 font-semibold">Validity</th>
-                    <th className="px-5 py-3.5 font-semibold">Price</th>
-                    <th className="px-5 py-3.5"><span className="sr-only">Buy</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bundles.map((bundle) => (
-                    <tr key={bundle.productCode} className="border-b border-white/[0.05] last:border-b-0">
-                      <td className="px-5 py-4 font-semibold text-foreground">{bundle.size}</td>
-                      <td className="px-5 py-4 text-muted-foreground">{bundle.validity ?? "—"}</td>
-                      <td className="px-5 py-4 font-mono text-[13.5px] text-foreground">GHS {bundle.price.toFixed(2)}</td>
-                      <td className="px-5 py-4 text-right">
-                        <button type="button" className="mk-btn mk-btn-primary !px-4 !py-2 !text-[13px]" onClick={() => openBuyData({ kind: "bundle", networkId: network, productCode: bundle.productCode })}>
-                          Buy<Zap size={14} aria-hidden="true" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-          <p className="mt-3 text-xs leading-5 text-faint-foreground">Wallet payments skip the card/MoMo processing fee — top up once and buy in two taps.</p>
         </div>
+      </section>
 
-        {/* ── FAQ (mirrors the FAQPage structured data) ── */}
-        <div className="mt-14">
-          <h2 className="mk-h3">Common questions about {networkName} data</h2>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
+      {/* Questions, written out in full so the page answers them without a tap. */}
+      <section className="mk-section-tight" aria-labelledby="network-faq">
+        <div className="mk-wrap">
+          <h2 id="network-faq" className="mk-h2 max-w-[20ch]">Common questions about {networkName} data</h2>
+          <dl className="mt-10 grid gap-x-12 gap-y-9 md:grid-cols-2">
             {config.faqs.map((faq) => (
-              <div key={faq.q} className="rounded-[22px] border border-white/[0.07] bg-white/[0.02] p-6">
-                <h3 className="font-display text-[15px] font-semibold tracking-tight text-foreground">{faq.q}</h3>
-                <p className="mt-2.5 text-sm leading-6 text-muted-foreground">{faq.a}</p>
+              <div key={faq.q} className="fact">
+                <dt className="mk-h3">{faq.q}</dt>
+                <dd className="mk-body mt-2">{faq.a}</dd>
               </div>
             ))}
-          </div>
+          </dl>
         </div>
+      </section>
 
-        {/* ── Cross-links keep crawl depth shallow and buyers moving ── */}
-        <div className="mt-14 flex flex-col gap-6 border-t border-white/[0.07] pt-9 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="mk-h3 max-w-[24ch]">Compare with the other networks</h2>
+      {/* Cross-links keep crawl depth shallow and buyers moving. */}
+      <section className="mk-section-tight" aria-labelledby="network-others">
+        <div className="mk-wrap flex flex-col gap-6 border-t border-[hsl(var(--border))] pt-10 sm:flex-row sm:items-center sm:justify-between">
+          <h2 id="network-others" className="mk-h3 max-w-[24ch]">Compare with the other networks</h2>
           <div className="flex flex-wrap gap-3">
             {others.map((id) => (
-              <Link key={id} to={PAGES[id].path} className="mk-btn mk-btn-ghost group">
-                {NETWORKS.find((n) => n.id === id)?.name} bundles<ArrowRight size={17} className="mk-arrow" aria-hidden="true" />
-              </Link>
+              <Link key={id} to={PAGES[id].path} className="mk-btn mk-btn-ghost">{NETWORKS.find((n) => n.id === id)?.name} bundles</Link>
             ))}
-            <Link to="/prices" className="mk-btn mk-btn-ghost group">All prices<ArrowRight size={17} className="mk-arrow" aria-hidden="true" /></Link>
+            <Link to="/prices" className="mk-btn mk-btn-ghost">All prices</Link>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }

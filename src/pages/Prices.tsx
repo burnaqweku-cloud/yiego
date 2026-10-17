@@ -1,18 +1,19 @@
-import { ArrowRight, Loader2, Zap } from "lucide-react";
+import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import Seo from "@/components/seo/Seo";
 import { metaFor } from "@/lib/site";
 import { NETWORKS, type NetworkId } from "@/data/bundles";
 import { useFlows } from "@/store/flows";
-import { useLiveBundles } from "@/hooks/useLiveBundles";
+import { useLiveBundles, type LiveBundle } from "@/hooks/useLiveBundles";
 import { breadcrumbLd } from "@/lib/structuredData";
 
 /* ══════════════════════════════════════════════════════════════
    /prices — every network's live bundle prices on one crawlable
    page. Targets "data bundle prices in Ghana" comparison
-   searches; each network section links on to its dedicated
+   searches; each network board links on to its dedicated
    landing page. Prices come from the same catalogue the shop
-   sells from, so the page is always current.
+   sells from (snapshot first, then live), so the page is current
+   and the pre-rendered HTML already carries the numbers.
    ══════════════════════════════════════════════════════════════ */
 
 const NETWORK_PATHS: Record<NetworkId, string> = {
@@ -20,84 +21,123 @@ const NETWORK_PATHS: Record<NetworkId, string> = {
   telecel: "/telecel-data-bundles",
   at: "/airteltigo-data-bundles",
 };
+const NET_CLASS: Record<NetworkId, string> = { mtn: "net-mtn", telecel: "net-telecel", at: "net-at" };
+
+const byCapacity = (a: LiveBundle, b: LiveBundle) => a.capacityGb - b.capacityGb || a.price - b.price;
+
+/** The bundle with the lowest price per GB on a network (paused bundles excluded). */
+function bestValue(list: LiveBundle[]): LiveBundle | null {
+  const live = list.filter((b) => !b.paused && b.capacityGb > 0);
+  if (!live.length) return null;
+  return live.reduce((best, b) => (b.price / b.capacityGb < best.price / best.capacityGb ? b : best));
+}
 
 export default function Prices() {
-  const { byNetwork, loading, error } = useLiveBundles();
+  const { byNetwork } = useLiveBundles();
   const { openBuyData } = useFlows();
-  const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const onSale = Object.values(byNetwork).flat().filter((b) => !b.paused);
+  const cheapest = onSale.length ? Math.min(...onSale.map((b) => b.price)) : null;
 
   return (
-    <section className="mk-section-tight" aria-labelledby="prices-title">
+    <>
       <Seo {...metaFor("/prices")} jsonLd={breadcrumbLd([{ name: "Home", path: "/" }, { name: "Prices", path: "/prices" }])} />
-      <div className="mk-wrap">
-        <p className="mk-eyebrow">Live prices</p>
-        <h1 id="prices-title" className="mk-display mt-5 max-w-[16ch] !text-[clamp(30px,5vw,50px)]">Data bundle prices in Ghana</h1>
-        <p className="mk-lead mt-6 max-w-[62ch]">
-          Every bundle DataYego sells for MTN, Telecel and AirtelTigo, priced live as of {today}. These are the exact prices at checkout — pay with Mobile Money or card and the data is sent to any number automatically.
-        </p>
 
-        {loading ? (
-          <div className="grid min-h-48 place-items-center"><Loader2 className="animate-spin text-primary-glow" /></div>
-        ) : error && !Object.values(byNetwork).some((l) => l.length) ? (
-          <p className="mt-10 text-sm text-muted-foreground">Prices are loading slowly right now — open the <Link className="font-semibold text-primary-glow underline" to="/shop">shop</Link> to browse every live bundle.</p>
-        ) : (
-          <div className="mt-10 space-y-12">
+      <section className="mk-wrap" aria-labelledby="prices-title">
+        <div className="py-10 sm:py-14 lg:py-16">
+          <span className="mk-eyebrow">Live prices</span>
+          <h1 id="prices-title" className="mk-hero-title mt-3 max-w-[14ch] !text-[clamp(36px,6.5vw,72px)]">Data bundle prices in Ghana</h1>
+          <p className="mk-lead mt-6">
+            Every bundle DataYego sells for MTN, Telecel and AirtelTigo, straight from the live catalogue. The price here is the
+            price at checkout{cheapest != null ? `, and the cheapest bundle on the board is GH₵${cheapest.toFixed(2)}` : ""}. Pay
+            with Mobile Money or card and the data goes to any number.
+          </p>
+        </div>
+
+        {/* Three boards, one per network, every bundle listed. */}
+        <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
+          {NETWORKS.map((network) => {
+            const bundles = [...byNetwork[network.id]].sort(byCapacity);
+            return (
+              <section key={network.id} className={`board ${NET_CLASS[network.id]}`} aria-labelledby={`prices-${network.id}`}>
+                <div className="flex items-center justify-between gap-3 border-b border-[hsl(var(--border))] px-5 py-4">
+                  <h2 id={`prices-${network.id}`} className="flex items-center gap-2.5 font-display text-[16px] font-bold text-foreground">
+                    <span className="h-3 w-3 rounded-full" style={{ background: "var(--net)" }} aria-hidden="true" />
+                    {network.name} prices
+                  </h2>
+                  <Link to={NETWORK_PATHS[network.id]} className="text-[13px] font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+                    {network.name} page
+                  </Link>
+                </div>
+                {bundles.length === 0 ? (
+                  <p className="p-6 text-sm text-muted-foreground">No {network.name} bundles are on sale right now. Check back shortly.</p>
+                ) : (
+                  bundles.map((bundle, i) => (
+                    <button
+                      key={bundle.productCode}
+                      type="button"
+                      className="board-row"
+                      style={{ "--i": Math.min(i, 10) } as CSSProperties}
+                      disabled={bundle.paused}
+                      aria-label={bundle.paused ? `${network.name} ${bundle.size} is unavailable right now` : `Buy ${network.name} ${bundle.size} for GH₵${bundle.price.toFixed(2)}`}
+                      onClick={() => openBuyData({ kind: "bundle", networkId: network.id, productCode: bundle.productCode })}
+                    >
+                      <span>
+                        <span className="board-size">{bundle.size}</span>
+                        <span className="board-meta block">{bundle.paused ? "Unavailable right now" : bundle.validity ?? network.name}</span>
+                      </span>
+                      <span className="board-price"><small>GH₵</small>{bundle.price.toFixed(2)}</span>
+                    </button>
+                  ))
+                )}
+                <div className="board-foot"><span>Tap a bundle to buy it.</span></div>
+              </section>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Best value per network, computed from the same list. */}
+      <section className="mk-section-tight" aria-labelledby="prices-value">
+        <div className="mk-wrap">
+          <h2 id="prices-value" className="mk-h2 max-w-[18ch]">Best value per GB</h2>
+          <p className="mk-lead mt-4">The bundle on each network with the lowest price per gigabyte right now.</p>
+          <dl className="mt-10 grid gap-8 sm:grid-cols-3">
             {NETWORKS.map((network) => {
-              const bundles = byNetwork[network.id];
+              const best = bestValue(byNetwork[network.id]);
               return (
-                <div key={network.id}>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="mk-h3 flex items-center gap-2.5">
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: network.color }} aria-hidden="true" />
-                      {network.name} bundle prices
-                    </h2>
-                    <Link to={NETWORK_PATHS[network.id]} className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-glow">
-                      {network.name} page<ArrowRight size={15} aria-hidden="true" />
-                    </Link>
-                  </div>
-                  <div className="mt-4 overflow-x-auto rounded-[22px] border border-white/[0.07]">
-                    {bundles.length === 0 ? (
-                      <p className="p-6 text-sm text-muted-foreground">No {network.name} bundles are on sale right now — check back shortly.</p>
+                <div key={network.id} className={`fact ${NET_CLASS[network.id]}`}>
+                  <dt className="flex items-center gap-2 text-[14px] font-semibold text-muted-foreground">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--net)" }} aria-hidden="true" />{network.name}
+                  </dt>
+                  <dd className="mt-2">
+                    {best ? (
+                      <>
+                        <p className="fact-n">{best.size} <span className="text-[var(--gold)]">GH₵{best.price.toFixed(2)}</span></p>
+                        <p className="fact-l">About GH₵{(best.price / best.capacityGb).toFixed(2)} per GB{best.validity ? `, ${best.validity.toLowerCase()}` : ""}.</p>
+                      </>
                     ) : (
-                      <table className="w-full text-left text-sm">
-                        <thead>
-                          <tr className="border-b border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-[0.14em] text-faint-foreground">
-                            <th className="px-5 py-3.5 font-semibold">Bundle</th>
-                            <th className="px-5 py-3.5 font-semibold">Validity</th>
-                            <th className="px-5 py-3.5 font-semibold">Price</th>
-                            <th className="px-5 py-3.5"><span className="sr-only">Buy</span></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {bundles.map((bundle) => (
-                            <tr key={bundle.productCode} className="border-b border-white/[0.05] last:border-b-0">
-                              <td className="px-5 py-4 font-semibold text-foreground">{bundle.size}</td>
-                              <td className="px-5 py-4 text-muted-foreground">{bundle.validity ?? "—"}</td>
-                              <td className="px-5 py-4 font-mono text-[13.5px] text-foreground">GHS {bundle.price.toFixed(2)}</td>
-                              <td className="px-5 py-4 text-right">
-                                <button type="button" className="mk-btn mk-btn-primary !px-4 !py-2 !text-[13px]" onClick={() => openBuyData({ kind: "bundle", networkId: network.id, productCode: bundle.productCode })}>
-                                  Buy<Zap size={14} aria-hidden="true" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      <p className="fact-l">No bundles on sale right now.</p>
                     )}
-                  </div>
+                  </dd>
                 </div>
               );
             })}
-          </div>
-        )}
-
-        <div className="mt-14 rounded-[22px] border border-white/[0.07] bg-white/[0.02] p-6 sm:p-7">
-          <h2 className="font-display text-[15px] font-semibold tracking-tight text-foreground">How paying works</h2>
-          <p className="mt-2.5 max-w-[70ch] text-sm leading-6 text-muted-foreground">
-            Pay per order with Mobile Money or card (secured by Paystack), or top up your DataYego wallet once and buy in two taps — wallet payments skip the processing fee. No account is needed to buy: guest checkout gives you a YG- reference you can follow on the <Link className="font-semibold text-primary-glow underline" to="/track-order">Track Order</Link> page.
-          </p>
+          </dl>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <section className="mk-section-tight" aria-labelledby="prices-pay">
+        <div className="mk-wrap">
+          <div className="mk-card p-6 sm:p-8">
+            <h2 id="prices-pay" className="mk-h3">How paying works</h2>
+            <p className="mk-body mt-3 max-w-[70ch]">
+              Pay per order with Mobile Money or card (secured by Paystack), or top up your DataYego wallet once and buy in two taps;
+              wallet payments skip the processing fee. No account is needed to buy: guest checkout gives you a YG- reference you can
+              follow on the <Link className="font-semibold text-foreground underline underline-offset-4" to="/track-order">Track Order</Link> page.
+            </p>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

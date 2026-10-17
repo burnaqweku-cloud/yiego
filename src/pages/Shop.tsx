@@ -55,7 +55,7 @@ export default function Shop() {
               first thing a returning customer sees, the way a bank app leads
               with your balance rather than burying it under copy. */}
           <header data-reveal>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
+            <p className="text-[13.5px] font-semibold text-muted-foreground">
               {dateFmt.format(new Date())}
             </p>
             <h1 className="mt-1.5 font-display text-[24px] font-semibold tracking-tight text-foreground sm:text-[30px]">
@@ -91,7 +91,7 @@ export default function Shop() {
         </>
       ) : (
         <header data-reveal>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
+          <p className="text-[13.5px] font-semibold text-muted-foreground">
             Data bundles
           </p>
           <h1 className="mt-1.5 font-display text-[24px] font-semibold tracking-tight text-foreground sm:text-[30px]">

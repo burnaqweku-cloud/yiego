@@ -96,7 +96,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: "How do I get help?",
-        a: "The 24/7 AI assistant answers most questions instantly. For anything account-specific — a stuck order, a payment question, a dispute — contact the team on WhatsApp or by email with your DataYego reference.",
+        a: "The assistant answers most questions at any hour. For anything account-specific — a stuck order, a payment question, a dispute — contact the team on WhatsApp or by email with your DataYego reference.",
         preview: true,
       },
       {

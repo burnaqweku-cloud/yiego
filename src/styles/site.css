@@ -202,6 +202,8 @@
   transition: background 0.12s;
 }
 .board-row:last-child { border-bottom: 0; }
+.board-row:disabled { opacity: 0.45; cursor: not-allowed; }
+.board-row:disabled .board-price { color: hsl(var(--muted-foreground)); }
 .board-row:hover, .board-row:focus-visible { background: rgba(238, 245, 240, 0.045); outline: none; }
 .board-size { font-family: var(--font-display); font-weight: 760; font-size: 22px; letter-spacing: -0.02em; color: var(--paper); }
 .board-meta { font-size: 12.5px; color: hsl(var(--faint-foreground)); margin-top: 1px; }

@@ -96,6 +96,40 @@ async function prerenderRoutes(outDir: string) {
   }
 }
 
+/* Refresh src/data/catalog.snapshot.json from the live catalogue at the start of every production build, so the
+ * pre-rendered pages (and the first paint before the live fetch) carry today's prices. Same public endpoint and
+ * key the browser uses. Any failure (offline CI, slow API, odd payload) keeps the committed snapshot. */
+function refreshCatalogSnapshot() {
+  return {
+    name: "yiego-refresh-catalog-snapshot",
+    apply: "build" as const,
+    async buildStart() {
+      if (process.env.YIEGO_SKIP_SNAPSHOT) return;
+      const file = path.resolve(__dirname, "src/data/catalog.snapshot.json");
+      const select = "id,app_product_code,name,validity,capacity_gb,customer_price,network_id,is_paused,pause_reason,agent_price";
+      const url = `${PUBLIC_SUPABASE_URL}/rest/v1/data_products?select=${select}&is_active=eq.true&order=display_order.asc`;
+      try {
+        const res = await fetch(url, {
+          headers: { apikey: PUBLIC_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${PUBLIC_SUPABASE_PUBLISHABLE_KEY}`, "Accept-Profile": "phase1" },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const products = (await res.json()) as Array<{ app_product_code?: string; customer_price?: unknown }>;
+        if (!Array.isArray(products) || products.length < 10 || !products.every((p) => p.app_product_code && p.customer_price != null)) {
+          throw new Error("unexpected payload");
+        }
+        const next = JSON.stringify({ generated_at: new Date().toISOString(), products }, null, 1) + "\n";
+        const prev = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+        const strip = (t: string) => t.replace(/"generated_at": "[^"]*"/, "");
+        if (strip(prev) !== strip(next)) fs.writeFileSync(file, next);
+        console.log(`[snapshot] catalogue refreshed: ${products.length} products`);
+      } catch (err) {
+        console.warn("[snapshot] live catalogue unavailable, keeping the committed snapshot:", (err as Error).message);
+      }
+    },
+  };
+}
+
 // Writes dist/version.json at the end of every production build.
 // The runtime polls this file to detect new deployments and auto-reload.
 function writeVersionFile() {
@@ -153,6 +187,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [
+    refreshCatalogSnapshot(),
     react(),
     mode === "development" && componentTagger(),
     VitePWA({

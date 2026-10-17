@@ -111,7 +111,7 @@ export default function Contact() {
             <section className="lg:col-span-7" aria-labelledby="contact-channels">
               <h2
                 id="contact-channels"
-                className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground"
+                className="text-[13.5px] font-semibold text-muted-foreground"
                 data-reveal
               >
                 Ways to reach us
@@ -181,7 +181,7 @@ export default function Contact() {
             <aside className="lg:col-span-5" aria-labelledby="contact-aside">
               <h2
                 id="contact-aside"
-                className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground"
+                className="text-[13.5px] font-semibold text-muted-foreground"
                 data-reveal
               >
                 Good to know

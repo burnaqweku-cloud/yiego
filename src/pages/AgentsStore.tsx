@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ChevronDown, Globe, Megaphone, ShoppingBag, Users, UsersRound } from "lucide-react";
+import { ChevronDown, Globe, Megaphone, ShoppingBag, Users, UsersRound } from "lucide-react";
+import { metaFor } from "@/lib/site";
 import Seo from "@/components/seo/Seo";
 import { headlineSavings, useAgentSavings } from "@/hooks/useAgentSavings";
 import { planQuote, type PlanQuote } from "@/lib/agents";
@@ -95,14 +96,14 @@ export default function AgentsStore() {
 
   return (
     <div className="mk-wrap py-8 sm:py-14">
-      <Seo path="/agents/store" title="Everything in your DataYego store" description="Your own data store: templates, your prices, customer accounts, chat, promos, a status maker and more. No deposit." />
+      <Seo {...metaFor("/agents/store")} />
       <div className="mx-auto max-w-2xl">
         {/* Hero */}
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Agents</p>
-        <h1 className="mt-2 font-display text-[32px] font-semibold leading-[1.05] tracking-tight text-foreground sm:text-[44px]">Everything in your store.</h1>
-        <p className="mt-4 text-[15px] leading-7 text-muted-foreground">{total} features, {SECTIONS.length} sections, {fee !== null ? `${feeText} a month` : "one small monthly fee"}. A real website with your name on it, agent prices on every bundle, customers who pay first so you never need a deposit, and the tools to sell on WhatsApp every day. Tap any row for the detail.</p>
+        <span className="mk-eyebrow">Agents</span>
+        <h1 className="mk-h2 mt-3">Everything in your store.</h1>
+        <p className="mk-lead mt-5">{total} features, {SECTIONS.length} sections, {fee !== null ? `${feeText} a month` : "one small monthly fee"}. A real website with your name on it, agent prices on every bundle, customers who pay first so you never need a deposit, and the tools to sell on WhatsApp every day. Tap any row for the detail.</p>
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Link to="/agents" className="onyx-btn-primary inline-flex items-center gap-1.5 px-5 py-2.5 text-[13.5px]">Apply now<ArrowRight size={15} /></Link>
+          <Link to="/agents" className="mk-btn mk-btn-primary">Apply now</Link>
           <span className="text-[12.5px] text-muted-foreground">{feeText} a month{quote?.promo ? ` (${quote.promo.percent_off}% off)` : ""} · no deposit</span>
         </div>
 
@@ -114,7 +115,7 @@ export default function AgentsStore() {
         {/* Live prices */}
         {savings.length > 0 && (
           <div className="mt-8 border-y border-white/[0.08] py-3">
-            <div className="flex items-baseline justify-between"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Agent prices right now</p><span className="text-[10.5px] font-semibold uppercase tracking-wide text-primary-glow">Live</span></div>
+            <div className="flex items-baseline justify-between"><p className="text-[14px] font-semibold text-foreground">Agent prices right now</p><span className="text-[12px] font-semibold text-primary-glow">Live</span></div>
             <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-4">
               {savings.map((s) => <p key={`${s.network}${s.gb}`} className="text-[13px] text-foreground"><span className="font-semibold">{s.network} {s.gb}GB</span> {formatGHS(s.agent)} <span className="text-faint-foreground line-through">{formatGHS(s.pub)}</span> <span className="text-primary-glow">+{formatGHS(s.pub - s.agent)}</span></p>)}
             </div>
@@ -128,8 +129,8 @@ export default function AgentsStore() {
             <div className="flex items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary-glow"><s.icon size={17} /></span>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{String(i + 1).padStart(2, "0")} · {s.items.length} features</p>
-                <h2 className="mt-0.5 font-display text-[22px] font-semibold leading-tight tracking-tight text-foreground sm:text-[26px]">{s.title}</h2>
+                <p className="text-[13px] font-semibold text-[var(--gold)]">{s.items.length} features</p>
+                <h2 className="mk-h3 mt-0.5 !text-[24px] sm:!text-[28px]">{s.title}</h2>
                 <p className="mt-1.5 text-[13.5px] leading-6 text-muted-foreground">{s.pitch}</p>
               </div>
             </div>
@@ -138,12 +139,12 @@ export default function AgentsStore() {
         ))}
 
         {/* The deal */}
-        <section className="mt-12 rounded-2xl border border-primary/25 bg-primary/[0.06] p-5 sm:p-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">The deal</p>
-          <h2 className="mt-1.5 font-display text-[24px] font-semibold leading-tight tracking-tight text-foreground sm:text-[28px]">All {total} features for {feeText} a month.</h2>
+        <section className="agents-panel mt-12 p-6 sm:p-8">
+          <span className="mk-eyebrow">The deal</span>
+          <h2 className="mk-h3 mt-2 !text-[26px] sm:!text-[30px]">All {total} features for {feeText} a month.</h2>
           <p className="mt-3 text-[13.5px] leading-6 text-muted-foreground">One fee, everything on this page, and everything we add after it. Plus the usual 4% checkout fee on each sale, which your customer pays at checkout. The fee is only due once you are approved. If a month is not paid your store pauses until you pay; your money, your earnings and your customers stay exactly where they are.</p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <Link to="/agents" className="onyx-btn-primary inline-flex items-center gap-1.5 px-5 py-2.5 text-[13.5px]">Apply to be an agent<ArrowRight size={15} /></Link>
+            <Link to="/agents" className="mk-btn mk-btn-primary">Apply to be an agent</Link>
             <Link to="/help/agents" className="text-[12.5px] text-muted-foreground hover:text-foreground">How earnings and payouts work</Link>
           </div>
         </section>

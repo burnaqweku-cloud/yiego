@@ -103,7 +103,7 @@ export default function Support() {
               </div>
 
               <div className="min-w-0 lg:border-l lg:border-white/[0.07] lg:pl-12">
-                <p className="text-[11.5px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
+                <p className="text-[13.5px] font-semibold text-muted-foreground">
                   What people ask it
                 </p>
                 <ul className="mt-4">
@@ -217,7 +217,7 @@ export default function Support() {
           >
             {contact?.business_hours && (
               <div className="rounded-[22px] border border-white/[0.07] bg-white/[0.02] p-6" data-reveal>
-                <p className="flex items-center gap-2 text-[11.5px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
+                <p className="flex items-center gap-2 text-[13.5px] font-semibold text-muted-foreground">
                   <Clock size={14} aria-hidden="true" />
                   Human support hours
                 </p>

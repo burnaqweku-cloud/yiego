@@ -3,6 +3,7 @@ import { ArrowRight, RotateCw, Search, X } from "lucide-react";
 import { NETWORKS, type Network, type NetworkId } from "@/data/bundles";
 import { formatGHS } from "@/lib/format";
 import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
+import snapshot from "@/data/catalog.snapshot.json";
 import { useFlows } from "@/store/flows";
 import { useReveal } from "@/hooks/useReveal";
 import { cn } from "@/lib/utils";
@@ -171,13 +172,14 @@ export default function BundleCatalogue() {
   const [attempt, setAttempt] = useState(0);
 
   // Bundles and prices come straight from the catalogue; each order routes to
-  // the network's supplier behind the scenes.
-  const [products, setProducts] = useState<Phase1Product[]>([]);
-  const [productsState, setProductsState] = useState<LoadState>("loading");
+  // the network's supplier behind the scenes. The build-time snapshot is the first render (pre-rendered HTML
+  // included), so the grid is never empty; the live catalogue replaces it as soon as it arrives.
+  const [products, setProducts] = useState<Phase1Product[]>(snapshot.products as Phase1Product[]);
+  const [productsState, setProductsState] = useState<LoadState>("ready");
   const [productsError, setProductsError] = useState<string | null>(null);
   useEffect(() => {
     let mounted = true;
-    setProductsState("loading");
+    setProductsState((st) => (st === "error" ? "loading" : st));
     // A slow or dropped request shouldn't show the "not loading" card straight away:
     // try three times (0s, 2s, 5s) before giving up.
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -187,8 +189,9 @@ export default function BundleCatalogue() {
         const ok = !result.error && result.data.length > 0;
         if (ok) { setProducts(result.data); setProductsState("ready"); setProductsError(null); return; }
         if (n < 2) { timer = setTimeout(() => tryLoad(n + 1), n === 0 ? 2000 : 5000); return; }
-        setProducts(result.data); setProductsState("error"); setProductsError(result.error ?? "No bundles were returned.");
         reportClientError("products", result.error ?? "No bundles were returned.", { attempts: 3 });
+        // The snapshot keeps selling; the "not loading" card is only for an empty grid.
+        setProducts((have) => { if (have.length) return have; setProductsState("error"); setProductsError(result.error ?? "No bundles were returned."); return result.data; });
       });
     };
     tryLoad(0);

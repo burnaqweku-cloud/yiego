@@ -99,7 +99,7 @@ export default function Faq() {
             {/* Sticky index */}
             <aside className="hidden lg:block" data-reveal>
               <nav aria-label="Jump to a section" className="lg:sticky lg:top-28">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
+                <p className="text-[13.5px] font-semibold text-muted-foreground">
                   On this page
                 </p>
                 <ul className="mt-4 space-y-1">
