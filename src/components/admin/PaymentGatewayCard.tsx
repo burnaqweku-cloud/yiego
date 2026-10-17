@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CreditCard, Loader2, ShieldCheck, TriangleAlert } from "lucide-react";
+import { ChevronDown, CreditCard, Loader2, ShieldCheck, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +23,7 @@ export default function PaymentGatewayCard() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<Gateway | null>(null);
   const [confirm, setConfirm] = useState<Gateway | null>(null);
+  const [open, setOpen] = useState(false); // folded by default: the header row is all you need day to day
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.functions.invoke<Status & { error?: string }>("payment-gateway", { body: {} });
@@ -43,10 +44,13 @@ export default function PaymentGatewayCard() {
 
   return (
     <Card><CardContent>
-      <div className="min-w-0">
-        <div className="flex items-center gap-2"><CreditCard className="text-primary-glow" /><h2 className="font-display text-lg font-semibold text-white">Payment gateway</h2></div>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Who takes the customer's money at checkout: data purchases, wallet top-ups, agent plans. Applies to the next payment started; payments already in progress finish on the gateway they started on.</p>
-      </div>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex w-full items-center gap-2 text-left">
+        <CreditCard className="shrink-0 text-primary-glow" /><h2 className="font-display text-lg font-semibold text-white">Payment gateway</h2>
+        {st && <span className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide ${testMode ? "bg-amber/15 text-amber" : "bg-primary/20 text-primary-glow"}`}>{LABEL[st.provider]}{testMode ? " · test" : " · active"}</span>}
+        <ChevronDown size={16} className={`shrink-0 text-faint-foreground transition-transform ${open ? "rotate-180" : ""} ${st ? "" : "ml-auto"}`} />
+      </button>
+      {!open ? null : <>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Who takes the customer's money at checkout: data purchases, wallet top-ups, agent plans. Applies to the next payment started; payments already in progress finish on the gateway they started on.</p>
       {loading || !st ? <p className="mt-4 text-sm text-muted-foreground"><Loader2 size={14} className="mr-1 inline animate-spin" />Loading…</p> : <>
         <div className="mt-4 grid gap-2 sm:grid-cols-3">
           {(["paystack", "flutterwave", "kora"] as Gateway[]).map((g) => { const on = st.provider === g; const gs = st[g]; return (
@@ -72,6 +76,7 @@ export default function PaymentGatewayCard() {
             <div className="mt-3 flex gap-2"><Button size="sm" onClick={() => void apply(confirm)} disabled={saving !== null}>{saving ? <Loader2 className="animate-spin" /> : null}Yes, switch</Button><Button size="sm" variant="quiet" onClick={() => setConfirm(null)}>Cancel</Button></div>
           </div>
         )}
+      </>}
       </>}
     </CardContent></Card>
   );
