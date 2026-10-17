@@ -19,6 +19,10 @@ async function enforceHomeStore(session: Session | null) {
   if (!session) return;
   const path = window.location.pathname;
   if (path.startsWith("/s/") || isStoreHost()) return;
+  // Pages that aren't shopping stay open to store customers: reading about the agent programme and applying
+  // (/agent, /agents, /help/agents), and the help / policy / blog pages. The bounce is only about not buying
+  // data from DataYego directly instead of from their store.
+  if (/^\/(agents?(\/|$)|help\/|faq|about|contact|legal\/|blog)/.test(path)) return;
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const p1 = (supabase as unknown as { schema: (s: string) => any }).schema("phase1");
