@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NETWORKS } from "@/data/bundles";
@@ -13,10 +14,13 @@ function cedisPerGb(price: number, capacityGb: number) {
 }
 
 export default function BestValueTable() {
-  const { byNetwork, loading, error } = useLiveBundles();
+  const { byNetwork, loading } = useLiveBundles();
+  // The date is filled in after mount so the pre-rendered HTML (built on another day) hydrates cleanly.
+  const [today, setToday] = useState<string | null>(null);
+  useEffect(() => { setToday(new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })); }, []);
 
   const ranked = NETWORKS.map((network) => {
-    const usable = byNetwork[network.id].filter((bundle) => bundle.capacityGb > 0);
+    const usable = byNetwork[network.id].filter((bundle) => bundle.capacityGb > 0 && !bundle.paused);
     const best = usable.length
       ? usable.reduce((a, b) => (cedisPerGb(a.price, a.capacityGb) <= cedisPerGb(b.price, b.capacityGb) ? a : b))
       : null;
@@ -26,7 +30,7 @@ export default function BestValueTable() {
   if (loading) {
     return <div className="grid min-h-32 place-items-center rounded-[18px] border border-white/[0.07]"><Loader2 className="animate-spin text-primary-glow" /></div>;
   }
-  if (error || ranked.length === 0) {
+  if (ranked.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
         Live prices are not loading right now — the full list is on the <Link className="font-semibold text-primary-glow underline" to="/prices">prices page</Link>.
@@ -36,7 +40,6 @@ export default function BestValueTable() {
 
   const cheapest = ranked.reduce((a, b) =>
     cedisPerGb(a.best!.price, a.best!.capacityGb) <= cedisPerGb(b.best!.price, b.best!.capacityGb) ? a : b);
-  const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 
   return (
     <div>
@@ -68,7 +71,7 @@ export default function BestValueTable() {
         </table>
       </div>
       <p className="mt-3 text-xs leading-5 text-faint-foreground">
-        DataYego prices, read live on {today}. Best value per network by price per gigabyte — on the day you read this, the winner is <strong className="text-muted-foreground">{cheapest.network.name}</strong>. See every size on the <Link className="font-semibold text-primary-glow underline" to="/prices">prices page</Link>.
+        DataYego prices, read live{today ? ` on ${today}` : ""}. Best value per network by price per gigabyte — on the day you read this, the winner is <strong className="text-muted-foreground">{cheapest.network.name}</strong>. See every size on the <Link className="font-semibold text-primary-glow underline" to="/prices">prices page</Link>.
       </p>
     </div>
   );

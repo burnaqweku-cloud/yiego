@@ -64,6 +64,6 @@ Targets: Ghana tech blogs (TechNova, Ghana Tech Blog, Pulse Ghana tech desk, MyJ
 4. Bing Webmaster Tools → "Import from Google Search Console" (one click), then submit the same sitemap.
 5. In two weeks, check Search Console → Performance for the query "datayego": the goal is position 1 with sitelinks. Sitelinks appear on their own once the brand page is unambiguous; the pre-rendered titles and the footer sitemap are what feed them.
 
-## 6. Agent stores and the brand
+## 6. Agent stores
 
-The agent stores are sold as white-label (no DataYego mention inside). A "Powered by DataYego" footer link on every store would be the strongest backlink signal the site could get (dozens of live domains), but it breaks that promise, so it is **not** built. If you want it, the options are: (a) a small line only on the free `*.datayego.com` subdomains, never on custom domains; (b) opt-in per agent with a small discount; (c) leave stores untouched. Your call.
+Agent stores stay white-label: no DataYego mention or link inside them. Brand signals come from datayego.com itself and the items above.
