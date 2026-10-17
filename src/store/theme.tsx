@@ -14,21 +14,22 @@ import { isStoreHost } from "@/lib/storeHost";
 export type ThemeMode = "dark" | "light" | "system";
 type Resolved = "dark" | "light";
 
-const STORAGE_KEY = "yiego_theme_v1";
+/* v2: Daylight became the default for everyone (17 Oct 2026). Bumping the key resets the choice people made under
+   the old default once; whatever they pick now is kept. */
+const STORAGE_KEY = "yiego_theme_v2";
 const THEME_COLOR: Record<Resolved, string> = {
   dark: "#080b0a",
   light: "#f2f7f4",
 };
 
-/** The public site (everything on the main host except the agent and admin apps) follows the device until the
- *  visitor picks a theme; the dashboards and store hosts default to Daylight. index.html's pre-paint script
- *  mirrors this. */
+/** The public site: everything on the main host except the agent and admin apps. */
 export function isPublicSitePath(pathname: string): boolean {
   return !isStoreHost() && !/^\/(agent|admin)(\/|$)/.test(pathname);
 }
 
+/** Daylight everywhere until the visitor chooses. index.html's pre-paint script mirrors this. */
 function defaultMode(): ThemeMode {
-  return typeof window !== "undefined" && isPublicSitePath(window.location.pathname) ? "system" : "light";
+  return "light";
 }
 
 function loadMode(): ThemeMode {

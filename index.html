@@ -25,13 +25,8 @@
       // Daylight is the default; Onyx Dark when chosen (or via device setting).
       (function () {
         try {
-          // The public site follows the device until a theme is chosen (src/store/theme.tsx → defaultMode);
-          // dashboards and store hosts default to Daylight.
-          var h = location.hostname.toLowerCase();
-          var mainHost = ["datayego.com", "www.datayego.com", "yiego.shop", "www.yiego.shop", "localhost", "127.0.0.1"].indexOf(h) !== -1 || /\.(lovable\.app|lovableproject\.com|lovable\.dev)$/.test(h);
-          var publicSite = mainHost && !/^\/(agent|admin)(\/|$)/.test(location.pathname);
-          var t = localStorage.getItem("yiego_theme_v1");
-          if (!t && publicSite) t = "system";
+          // Daylight is the default for everyone (key v2, src/store/theme.tsx); Onyx Dark only when chosen.
+          var t = localStorage.getItem("yiego_theme_v2");
           var dark =
             t === "dark" ||
             (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches);

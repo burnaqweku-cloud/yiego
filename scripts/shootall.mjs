@@ -47,7 +47,7 @@ try {
   const browser = await puppeteer.connect({ browserURL: `http://127.0.0.1:${PORT}`, defaultViewport: null });
   const page = await browser.newPage();
   await page.evaluateOnNewDocument((t) => {
-    try { localStorage.setItem("yiego_theme_v1", t); } catch {}
+    try { localStorage.setItem("yiego_theme_v2", t); } catch {}
   }, theme);
 
   for (const [sz, w, h] of SIZES) {
