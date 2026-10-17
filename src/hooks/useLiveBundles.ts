@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { NetworkId } from "@/data/bundles";
 import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
+import snapshot from "@/data/catalog.snapshot.json";
 
 /* ══════════════════════════════════════════════════════════════
    Live catalogue prices for the SEO landing pages (/prices and
@@ -41,9 +42,22 @@ function toBundle(product: Phase1Product): LiveBundle {
   };
 }
 
+function group(products: Phase1Product[]): Record<NetworkId, LiveBundle[]> {
+  const grouped: Record<NetworkId, LiveBundle[]> = { mtn: [], telecel: [], at: [] };
+  for (const id of Object.keys(grouped) as NetworkId[]) {
+    grouped[id] = products.filter((p) => p.app_product_code?.startsWith(PREFIX[id])).map(toBundle);
+  }
+  return grouped;
+}
+
+/* The catalogue snapshot (src/data/catalog.snapshot.json, refreshed at build time) is the first render on both the
+   server and the client, so pre-rendered pages carry real prices and hydration matches; the live catalogue then
+   replaces it. */
+export const SNAPSHOT_BUNDLES = group(snapshot.products as Phase1Product[]);
+
 export function useLiveBundles() {
-  const [byNetwork, setByNetwork] = useState<Record<NetworkId, LiveBundle[]>>({ mtn: [], telecel: [], at: [] });
-  const [loading, setLoading] = useState(true);
+  const [byNetwork, setByNetwork] = useState<Record<NetworkId, LiveBundle[]>>(SNAPSHOT_BUNDLES);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,13 +66,7 @@ export function useLiveBundles() {
       const { data, error: loadError } = await loadPhase1Products();
       if (cancelled) return;
       if (loadError) setError(loadError);
-      else {
-        const grouped: Record<NetworkId, LiveBundle[]> = { mtn: [], telecel: [], at: [] };
-        for (const id of Object.keys(grouped) as NetworkId[]) {
-          grouped[id] = data.filter((p) => p.app_product_code?.startsWith(PREFIX[id])).map(toBundle);
-        }
-        setByNetwork(grouped);
-      }
+      else if (data.length) setByNetwork(group(data));
       setLoading(false);
     })();
     return () => { cancelled = true; };

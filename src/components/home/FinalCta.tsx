@@ -26,7 +26,7 @@ export default function FinalCta() {
               style={{ "--d": "70ms" } as React.CSSProperties}
               className="mk-h2 mt-5"
             >
-              Data on the number, usually within minutes.
+              Data sent to the number automatically, tracked all the way.
             </h2>
 
             <p

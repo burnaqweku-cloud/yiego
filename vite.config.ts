@@ -1,4 +1,5 @@
-import { defineConfig } from "vite";
+import { build as viteBuild, defineConfig } from "vite";
+import { pathToFileURL } from "node:url";
 import react from "@vitejs/plugin-react-swc";
 import path from "node:path";
 import fs from "node:fs";
@@ -33,17 +34,66 @@ function writeRouteHtml(outDir: string) {
       .replace(/(<meta property="og:description" content=")[^"]*(")/, `$1${description}$2`)
       .replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${url}$2`)
       .replace(/(<meta name="twitter:title" content=")[^"]*(")/, `$1${title}$2`)
-      .replace("</head>", `    <link rel="canonical" href="${url}" />\n  </head>`);
+      .replace("</head>", `    <link rel="canonical" href="${url}" />\n    <link rel="alternate" hreflang="en-gh" href="${url}" />\n    <link rel="alternate" hreflang="x-default" href="${url}" />\n  </head>`);
 
-    if (route.path === "/") {
-      fs.writeFileSync(path.join(outDir, "index.html"), html);
-      continue;
-    }
-    const dir = path.join(outDir, route.path.replace(/^\//, ""));
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, "index.html"), html);
+    fs.writeFileSync(routeFile(outDir, route.path), html);
   }
   console.log(`[seo] wrote ${PUBLIC_ROUTES.length} route HTML files`);
+}
+
+function routeFile(outDir: string, routePath: string) {
+  if (routePath === "/") return path.join(outDir, "index.html");
+  const dir = path.join(outDir, routePath.replace(/^\//, ""));
+  fs.mkdirSync(dir, { recursive: true });
+  return path.join(dir, "index.html");
+}
+
+/* Pre-render: put the real page inside <div id="root"> of every route file.
+ *
+ * A second, server-side build of the same app (src/entry-server.tsx) renders each public route to HTML with the
+ * catalogue snapshot as data; the browser then hydrates that markup instead of starting from a blank div. Crawlers
+ * and link previews get the headline, prices, FAQ answers and JSON-LD without running JavaScript. Any failure
+ * leaves the route as the plain shell, so a rendering bug can never break a publish. */
+async function prerenderRoutes(outDir: string) {
+  const ssrDir = path.join(outDir, ".ssr");
+  try {
+    await viteBuild({
+      configFile: false,
+      logLevel: "warn",
+      plugins: [react()],
+      resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+      define: {
+        __BUILD_VERSION__: JSON.stringify(BUILD_VERSION),
+        "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(PUBLIC_SUPABASE_URL),
+        "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(PUBLIC_SUPABASE_PUBLISHABLE_KEY),
+        "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(PUBLIC_SUPABASE_PROJECT_ID),
+      },
+      build: { ssr: path.resolve(__dirname, "src/entry-server.tsx"), outDir: ssrDir, emptyOutDir: true, minify: false, rollupOptions: { output: { format: "es", entryFileNames: "entry-server.mjs" } } },
+      // One copy of React: react/react-dom stay external (Node loads them once); everything else is bundled.
+      ssr: { noExternal: /^(?!react$|react\/|react-dom$|react-dom\/|scheduler).+/, external: ["react", "react-dom", "scheduler"] },
+    });
+    // No cache-busting query here: the lazy page chunks import the entry by its plain path, and a second URL for the
+    // same file would give Node two copies of every module (and every React context) in it.
+    const mod = (await import(pathToFileURL(path.join(ssrDir, "entry-server.mjs")).href)) as { render: (url: string) => Promise<string> };
+    let ok = 0;
+    for (const route of PUBLIC_ROUTES) {
+      const file = routeFile(outDir, route.path);
+      try {
+        const body = await mod.render(route.path);
+        if (!body || body.length < 200) throw new Error("empty render");
+        const shell = fs.readFileSync(file, "utf8");
+        fs.writeFileSync(file, shell.replace('<div id="root"></div>', `<div id="root">${body}</div>`));
+        ok += 1;
+      } catch (err) {
+        console.warn(`[seo] prerender skipped ${route.path}:`, err instanceof Error ? err.message : err);
+      }
+    }
+    console.log(`[seo] prerendered ${ok}/${PUBLIC_ROUTES.length} routes`);
+  } catch (err) {
+    console.warn("[seo] prerender build failed; routes keep the plain shell:", err instanceof Error ? err.message : err);
+  } finally {
+    fs.rmSync(ssrDir, { recursive: true, force: true });
+  }
 }
 
 // Writes dist/version.json at the end of every production build.
@@ -52,7 +102,7 @@ function writeVersionFile() {
   return {
     name: "yiego-write-version-json",
     apply: "build" as const,
-    closeBundle() {
+    async closeBundle() {
       const outDir = path.resolve(__dirname, "dist");
       try {
         if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
@@ -71,6 +121,7 @@ function writeVersionFile() {
           `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
         );
         writeRouteHtml(outDir);
+        if (!process.env.YIEGO_SKIP_PRERENDER) await prerenderRoutes(outDir);
       } catch (err) {
         console.warn("[version.json] write failed:", err);
       }

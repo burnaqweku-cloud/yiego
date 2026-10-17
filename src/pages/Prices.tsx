@@ -33,7 +33,7 @@ export default function Prices() {
         <p className="mk-eyebrow">Live prices</p>
         <h1 id="prices-title" className="mk-display mt-5 max-w-[16ch] !text-[clamp(30px,5vw,50px)]">Data bundle prices in Ghana</h1>
         <p className="mk-lead mt-6 max-w-[62ch]">
-          Every bundle DataYego sells for MTN, Telecel and AirtelTigo, priced live as of {today}. These are the exact prices at checkout — pay with Mobile Money or card and the data is delivered to any number in minutes.
+          Every bundle DataYego sells for MTN, Telecel and AirtelTigo, priced live as of {today}. These are the exact prices at checkout — pay with Mobile Money or card and the data is sent to any number automatically.
         </p>
 
         {loading ? (

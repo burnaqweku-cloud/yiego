@@ -27,35 +27,35 @@ interface NetworkPageConfig {
 const PAGES: Record<NetworkId, NetworkPageConfig> = {
   mtn: {
     path: "/mtn-data-bundles",
-    h1: "MTN data bundles, delivered in minutes",
-    intro: "Buy MTN data online for any Ghana number — yours, family, friends or customers. Pick a bundle below, pay with Mobile Money or card, and the data lands on the line within minutes of payment clearing. The prices you see are the live prices you pay at checkout.",
+    h1: "MTN data bundles in Ghana — live prices, buy online",
+    intro: "Buy MTN data online for any Ghana number — yours, family, friends or customers. Pick a bundle below, pay with Mobile Money or card, and the bundle is sent to that number automatically. The prices you see are the live prices you pay at checkout.",
     bullets: [
       "Works for any MTN number in Ghana — buy for yourself or someone else",
       "Pay with MTN MoMo, other Mobile Money, or card (secured by Paystack)",
       "No account needed — check out as a guest and track with your YG- reference",
-      "Delivered automatically, usually within minutes of payment",
+      "Sent to the number automatically after payment",
     ],
     faqs: [
-      { q: "How do I buy MTN data online in Ghana?", a: "Choose an MTN bundle on this page, enter the recipient's MTN number, and pay with Mobile Money or card. The bundle is sent to that number automatically — most orders complete within minutes." },
+      { q: "How do I buy MTN data online in Ghana?", a: "Choose an MTN bundle on this page, enter the recipient's MTN number, and pay with Mobile Money or card. The bundle is sent to that number automatically and you get a YG- reference to track it." },
       { q: "Can I buy MTN data for another number?", a: "Yes. Enter any MTN number as the recipient. The data goes to the number you enter, not to your own line — handy for family, friends or customers." },
       { q: "Do I need an account to buy MTN data?", a: "No. You can check out as a guest and pay by Mobile Money or card. You'll get a YG- reference to track your order. An account adds a wallet, saved details and order history." },
-      { q: "How long does MTN data delivery take?", a: "Most orders are delivered within minutes of payment clearing. If the network is slow, your order stays visible with its live status on the Track Order page until it completes." },
+      { q: "How long does MTN data delivery take?", a: "Delivery is automatic once payment clears. Network speed varies, so instead of promising a time we give every order a live status on the Track Order page, and the support team is there if anything stalls." },
       { q: "How do the bundle validities work?", a: "Each bundle shows its validity next to the price on this page — what you see listed is exactly what the network applies when the bundle lands." },
     ],
   },
   telecel: {
     path: "/telecel-data-bundles",
     h1: "Telecel data bundles (formerly Vodafone)",
-    intro: "Buy Telecel Ghana data online — the network formerly known as Vodafone Ghana. Choose a bundle below, pay with Mobile Money or card, and it's delivered to any Telecel number in minutes. Prices come straight from our live catalogue, so what you see is what you pay.",
+    intro: "Buy Telecel Ghana data online — the network formerly known as Vodafone Ghana. Choose a bundle below, pay with Mobile Money or card, and it's sent to any Telecel number automatically. Prices come straight from our live catalogue, so what you see is what you pay.",
     bullets: [
       "Works for any Telecel (ex-Vodafone) number in Ghana",
       "Pay with Telecel Cash, MTN MoMo, other Mobile Money, or card",
       "Guest checkout — no account required, track with your YG- reference",
-      "Delivered automatically, usually within minutes of payment",
+      "Sent to the number automatically after payment",
     ],
     faqs: [
       { q: "Is Telecel the same as Vodafone Ghana?", a: "Yes — Vodafone Ghana was rebranded as Telecel Ghana. If your SIM was a Vodafone SIM, it's now a Telecel SIM, and the bundles on this page work for it." },
-      { q: "How do I buy Telecel data online?", a: "Pick a bundle on this page, enter the recipient's Telecel number, and pay with Mobile Money or card. The bundle is delivered automatically, usually within minutes." },
+      { q: "How do I buy Telecel data online?", a: "Pick a bundle on this page, enter the recipient's Telecel number, and pay with Mobile Money or card. The bundle is sent automatically and you can follow it on the Track Order page." },
       { q: "Can I buy Telecel data for someone else?", a: "Yes. Enter their Telecel number as the recipient and the data goes straight to their line." },
       { q: "Do I need an account?", a: "No — guest checkout works with Mobile Money or card, and you get a YG- reference to track the order. An account adds a wallet and order history." },
     ],
@@ -63,15 +63,15 @@ const PAGES: Record<NetworkId, NetworkPageConfig> = {
   at: {
     path: "/airteltigo-data-bundles",
     h1: "AirtelTigo data bundles, built for value",
-    intro: "Buy AirtelTigo (AT) data online for any Ghana number. AT bundles stretch further for students, teams and heavy browsers — pick one below, pay with Mobile Money or card, and it's delivered within minutes. Prices are live from our catalogue.",
+    intro: "Buy AirtelTigo (AT) data online for any Ghana number. AT bundles stretch further for students, teams and heavy browsers — pick one below, pay with Mobile Money or card, and it's sent to the number automatically. Prices are live from our catalogue.",
     bullets: [
       "Works for any AirtelTigo (AT) number in Ghana",
       "Pay with AT Money, MTN MoMo, other Mobile Money, or card",
       "Guest checkout — no account required, track with your YG- reference",
-      "Delivered automatically, usually within minutes of payment",
+      "Sent to the number automatically after payment",
     ],
     faqs: [
-      { q: "How do I buy AirtelTigo data online?", a: "Choose an AT bundle on this page, enter the recipient's AirtelTigo number, and pay with Mobile Money or card. Delivery is automatic, usually within minutes." },
+      { q: "How do I buy AirtelTigo data online?", a: "Choose an AT bundle on this page, enter the recipient's AirtelTigo number, and pay with Mobile Money or card. Delivery is automatic and every order can be followed on the Track Order page." },
       { q: "Are AT and AirtelTigo the same network?", a: "Yes — AirtelTigo also trades as AT. The bundles on this page work for any AirtelTigo/AT number in Ghana." },
       { q: "Can I buy AT data for another number?", a: "Yes. Enter any AirtelTigo number as the recipient — the data goes to that line, so you can buy for family, friends or customers." },
       { q: "Do I need an account to buy?", a: "No. Guest checkout works with Mobile Money or card, and your YG- reference lets you track the order. An account adds a wallet and order history." },

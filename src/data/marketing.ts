@@ -62,7 +62,7 @@ export const REASONS: Reason[] = [
   },
   {
     icon: Clock3,
-    title: "Usually delivered in minutes",
+    title: "Sent automatically, tracked all the way",
     body: "Orders go straight to the network the moment payment clears — no queues, no waiting for an agent to wake up.",
   },
   {
@@ -98,7 +98,7 @@ export interface TrustPoint {
 export const TRUST_POINTS: TrustPoint[] = [
   { icon: Smartphone, label: "All 3 networks", detail: "MTN · Telecel · AirtelTigo" },
   { icon: ShieldCheck, label: "Secure checkout", detail: "Paystack verified" },
-  { icon: Clock3, label: "Usually minutes, not hours", detail: "Automatic delivery" },
+  { icon: Clock3, label: "Automatic delivery", detail: "Sent straight to the number" },
   { icon: ReceiptText, label: "Every order tracked", detail: "DataYego reference" },
 ];
 

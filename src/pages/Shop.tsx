@@ -95,7 +95,7 @@ export default function Shop() {
             Data bundles
           </p>
           <h1 className="mt-1.5 font-display text-[24px] font-semibold tracking-tight text-foreground sm:text-[30px]">
-            Buy Ghana data in minutes
+            Buy Ghana data online
           </h1>
           <p className="mt-2 max-w-[62ch] text-sm leading-6 text-muted-foreground">
             Pick a bundle below, enter the recipient number and pay. Delivery starts the moment payment

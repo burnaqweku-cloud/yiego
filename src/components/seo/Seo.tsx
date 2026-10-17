@@ -83,5 +83,7 @@ export default function Seo({ title, description, path, image, noindex, jsonLd }
     };
   }, [title, description, path, image, noindex, jsonLdText]);
 
-  return null;
+  // Structured data is also rendered inline, so it is present in the pre-rendered HTML (Google reads JSON-LD
+  // anywhere in the document); the head copy above keeps it current on client-side navigation.
+  return jsonLdText ? <script type="application/ld+json" data-seo-inline="" dangerouslySetInnerHTML={{ __html: jsonLdText.replace(/</g, "\\u003c") }} /> : null;
 }

@@ -1,4 +1,4 @@
-import { createRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import App from "./App.tsx";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import "./index.css";
@@ -38,4 +38,9 @@ void (async () => {
   } catch { /* offline or blocked: carry on with what we have */ }
 })();
 
-createRoot(document.getElementById("root")!).render(<AppErrorBoundary><App /></AppErrorBoundary>);
+// Public pages arrive pre-rendered (see vite.config.ts → prerenderRoutes): hydrate that markup instead of replacing
+// it, so the first paint is instant and crawlers and humans see the same page. Anything else starts from the empty div.
+const rootEl = document.getElementById("root")!;
+const tree = <AppErrorBoundary><App /></AppErrorBoundary>;
+if (rootEl.hasChildNodes()) hydrateRoot(rootEl, tree, { onRecoverableError(err) { document.documentElement.dataset.hydration = "recovered"; document.documentElement.dataset.hydrationNote = String((err as Error)?.message ?? err).slice(0, 200); if (import.meta.env.DEV) console.warn(err); } });
+else createRoot(rootEl).render(tree);
