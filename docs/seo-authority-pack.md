@@ -10,7 +10,7 @@ Everything here is copy to paste. Base: Accra, Ghana (service-area business, add
 - **Year founded:** 2026 (where a form asks; never put a different year, directories cross-check each other and it is not a ranking factor).
 - **Website:** https://datayego.com
 - **Phone / WhatsApp:** +233 20 659 7254
-- **Email:** support@datayego.com
+- **Email:** support@yiego.shop
 - **Opening hours:** 24 hours (the site sells all day; put support hours in the description if they differ)
 - **Description (750 characters max):**
   > DataYego sells MTN, Telecel and AirtelTigo data bundles online for any Ghana number. Pick a bundle on datayego.com, enter the number receiving the data, and pay with Mobile Money or card. No account is needed, every order carries a reference you can track, and the price on the site is the price at checkout. DataYego also runs an agent programme: agents buy data at agent prices, get a free online store with their own link and prices, and withdraw their profit to Mobile Money.

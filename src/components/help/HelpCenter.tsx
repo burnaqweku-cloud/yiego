@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import helpSnapshot from "@/data/help.snapshot.json";
 import { useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -34,12 +35,14 @@ function score(a: HelpArticle, q: string) {
 const catRank = (c: string) => { const i = CATEGORY_ORDER.indexOf(c); return i === -1 ? 99 : i; };
 
 export default function HelpCenter({ audience = "agents", title = "Help Center", subtitle = "Short answers to the questions agents ask most." }: { audience?: "agents" | "customers"; title?: string; subtitle?: string }) {
-  const [articles, setArticles] = useState<HelpArticle[] | null>(null);
+  // The build-time snapshot (src/data/help.snapshot.json) is the first render, so the pre-rendered page carries
+  // every title and summary; the live table replaces it as soon as it answers.
+  const [articles, setArticles] = useState<HelpArticle[] | null>(() => (helpSnapshot.articles as (HelpArticle & { audience: string })[]).filter((a) => a.audience === audience));
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(params.get("q") ?? "");
   const slug = params.get("a");
   const { whatsappUrl, contact } = useContactSettings();
-  useEffect(() => { void p1().from("help_articles").select("slug, category, title, summary, body, keywords, sort_order").eq("audience", audience).eq("is_published", true).order("sort_order").then((r: { data: HelpArticle[] | null }) => setArticles(r.data ?? [])); }, [audience]);
+  useEffect(() => { void p1().from("help_articles").select("slug, category, title, summary, body, keywords, sort_order").eq("audience", audience).eq("is_published", true).order("sort_order").then((r: { data: HelpArticle[] | null }) => { if (r.data && r.data.length) setArticles(r.data); }); }, [audience]);
   const open = (s: string | null) => { const next = new URLSearchParams(params); if (s) next.set("a", s); else next.delete("a"); setParams(next); window.scrollTo({ top: 0 }); };
   const results = useMemo(() => { if (!articles || !q.trim()) return []; return articles.map((a) => ({ a, s: score(a, q) })).filter((x) => x.s > 0).sort((x, y) => y.s - x.s).map((x) => x.a); }, [articles, q]);
   const grouped = useMemo(() => { const m = new Map<string, HelpArticle[]>(); for (const a of articles ?? []) m.set(a.category, [...(m.get(a.category) ?? []), a]); return [...m.entries()].sort((x, y) => catRank(x[0]) - catRank(y[0])); }, [articles]);

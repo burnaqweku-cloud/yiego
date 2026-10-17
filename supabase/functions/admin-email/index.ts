@@ -13,6 +13,6 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const to = String(body.to ?? "").trim(); const subject = String(body.subject ?? "").trim(); const html = String(body.html ?? "");
   if (!to || !subject || !html) return jsonResponse({ error: "to, subject, html required" }, { status: 400 });
-  const r = await sendEmail({ to, subject, html, replyTo: "support@datayego.com" });
+  const r = await sendEmail({ to, subject, html, replyTo: "support@yiego.shop" });
   return jsonResponse(r);
 });

@@ -12,6 +12,7 @@ import { ProfileProvider } from "@/store/profile";
 import { FlowsProvider } from "@/store/flows";
 import AppPage from "@/components/layout/AppPage";
 import PublicShell from "@/components/layout/PublicShell";
+import StoreMissing from "@/components/store/StoreMissing";
 import Home from "./pages/Home";
 // Tiny route guards — kept eager so gated pages don't wait on an extra chunk.
 import RequireAdmin from "@/components/auth/RequireAdmin";
@@ -136,14 +137,21 @@ const StoreHostApp = ({ slug }: { slug: string }) => (
   </Routes></Suspense></FlowsProvider></ProfileProvider></WalletProvider></AuthProvider></ThemeProvider></BrowserRouter>
 );
 const StoreHostGate = () => {
-  const [slug, setSlug] = useState<string | null | undefined>(undefined);
+  // undefined: looking up; null: no store at this address; "error": the lookup itself failed (network, outage).
+  const [slug, setSlug] = useState<string | null | "error" | undefined>(undefined);
   useEffect(() => {
+    let done = false;
+    const timer = setTimeout(() => { if (!done) { done = true; setSlug("error"); } }, 15000);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("store_by_host", { p_host: window.location.hostname }).then((r: { data: { slug: string } | null }) => setSlug(r.data?.slug ?? null));
+    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("store_by_host", { p_host: window.location.hostname })
+      .then((r: { data: { slug: string } | null; error: unknown }) => { if (done) return; done = true; clearTimeout(timer); setSlug(r.error ? "error" : r.data?.slug ?? null); })
+      .catch(() => { if (done) return; done = true; clearTimeout(timer); setSlug("error"); });
+    return () => { done = true; clearTimeout(timer); };
   }, []);
   if (slug === undefined) return <div className="min-h-dvh bg-[#0b1512]" />;
-  if (slug) setHostSlug(slug);
-  if (slug === null) return <div className="flex min-h-dvh items-center justify-center bg-[#0b1512] px-6 text-center text-[14px] text-white/70">This address isn't connected to a store yet.</div>;
+  if (slug === null) return <StoreMissing kind="no-store-at-address" />;
+  if (slug === "error") return <StoreMissing kind="could-not-load" />;
+  setHostSlug(slug);
   return <StoreHostApp slug={slug} />;
 };
 

@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     } else return jsonResponse({ error: "Visitors have no email address to send to." }, { status: 400 });
     const html = wrap(esc(a.title), esc(a.body), a.link_url ? { url: a.link_url, label: a.link_label ?? "Open" } : null);
     let sent = 0;
-    for (const to of [...new Set(emails)]) { const r = await sendEmail({ to, subject: a.title, html, replyTo: "support@datayego.com" }); if (!r.skipped && r.ok) sent += 1; }
+    for (const to of [...new Set(emails)]) { const r = await sendEmail({ to, subject: a.title, html, replyTo: "support@yiego.shop" }); if (!r.skipped && r.ok) sent += 1; }
     await supabase.from("announcements").update({ emailed_at: new Date().toISOString() }).eq("id", a.id);
     return jsonResponse({ status: "success", sent, total: emails.length });
   } catch (e) { return jsonResponse({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 }); }

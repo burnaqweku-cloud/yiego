@@ -126,6 +126,25 @@ function refreshCatalogSnapshot() {
       } catch (err) {
         console.warn("[snapshot] live catalogue unavailable, keeping the committed snapshot:", (err as Error).message);
       }
+      // Same for the help centre articles (src/data/help.snapshot.json → /help/agents pre-renders with every title).
+      const helpFile = path.resolve(__dirname, "src/data/help.snapshot.json");
+      const helpUrl = `${PUBLIC_SUPABASE_URL}/rest/v1/help_articles?select=slug,audience,category,title,summary,body,keywords,sort_order&is_published=eq.true&order=sort_order.asc,title.asc`;
+      try {
+        const res = await fetch(helpUrl, {
+          headers: { apikey: PUBLIC_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${PUBLIC_SUPABASE_PUBLISHABLE_KEY}`, "Accept-Profile": "phase1" },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const articles = (await res.json()) as Array<{ slug?: string; body?: string }>;
+        if (!Array.isArray(articles) || articles.length < 5 || !articles.every((a) => a.slug && typeof a.body === "string")) throw new Error("unexpected payload");
+        const next = JSON.stringify({ generated_at: new Date().toISOString(), articles }, null, 1) + "\n";
+        const prev = fs.existsSync(helpFile) ? fs.readFileSync(helpFile, "utf8") : "";
+        const strip = (t: string) => t.replace(/"generated_at": "[^"]*"/, "");
+        if (strip(prev) !== strip(next)) fs.writeFileSync(helpFile, next);
+        console.log(`[snapshot] help articles refreshed: ${articles.length}`);
+      } catch (err) {
+        console.warn("[snapshot] help articles unavailable, keeping the committed snapshot:", (err as Error).message);
+      }
     },
   };
 }

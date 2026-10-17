@@ -4,6 +4,7 @@ import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-
 import { Bell, Facebook, Instagram, LayoutDashboard, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound, Users } from "lucide-react";
 import { dashboardHref } from "@/lib/agentDashboard";
 import { useAuth } from "@/store/auth-context";
+import StoreMissing from "@/components/store/StoreMissing";
 import StoreSupport from "@/components/store/StoreSupport";
 import StorePopup from "@/components/store/StorePopup";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +55,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
   }, [slug]);
   const markSeen = () => { localStorage.setItem(seenKey, anns.map((a) => a.id).join(",")); setAnnOpen(true); };
   const [store, setStore] = useState<StoreData | null | undefined>(undefined);
+  const [loadFailed, setLoadFailed] = useState(false);
   const navigate = useNavigate(); const location = useLocation();
   // An agent who changed their link: send visitors on the old one to the new one.
   useEffect(() => {
@@ -61,7 +63,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
   }, [store, slug, navigate, location.pathname, location.search]);
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("agent_store", { p_slug: slug, p_preview: true }).then((r: { data: StoreData | null }) => setStore(r.data ?? null));
+    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("agent_store", { p_slug: slug, p_preview: true }).then((r: { data: StoreData | null; error: unknown }) => { if (r.error) setLoadFailed(true); else setStore(r.data ?? null); }).catch(() => setLoadFailed(true));
   }, [slug]);
   // A store with its own domain lives there: datayego.com/s/<slug>/… (receipts, old links, shares) jumps to it, same page.
   useEffect(() => {
@@ -87,8 +89,9 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
     document.body.classList.add(cls, "st-body"); if (store.accent_color) document.body.classList.add("has-accent"); Object.entries(vars).forEach(([k, v]) => document.body.style.setProperty(k, v));
     return () => { document.body.classList.remove(cls, "st-body", "has-accent"); Object.keys(vars).forEach((k) => document.body.style.removeProperty(k)); };
   }, [store]);
+  if (loadFailed && !store) return <StoreMissing kind="could-not-load" />;
   if (store === undefined) return <div className="min-h-dvh bg-[#0b1512]" />;
-  if (store === null) return <div className="flex min-h-dvh items-center justify-center bg-[#0b1512] px-6 text-center"><div><Store size={30} className="mx-auto text-white/40" /><p className="mt-3 text-[17px] font-semibold text-white">This store isn't open</p><p className="mt-1 text-[13px] text-white/60">It may be paused, or the link may be wrong.</p></div></div>;
+  if (store === null) return <StoreMissing kind="not-open" />;
   const wa = store.support?.whatsapp_url ?? waLink(store);
   if (store.status === "closed") return (
     <div className="onyx-canvas flex min-h-dvh flex-col items-center justify-center px-6 text-center">
