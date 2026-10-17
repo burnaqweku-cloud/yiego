@@ -1,14 +1,15 @@
 # DataYego: off-site SEO pack (brand signals)
 
-Everything here is copy to paste. Fill the two blanks (city/area, year founded) before using.
+Everything here is copy to paste. Base: Accra, Ghana (service-area business, address hidden). Founded 2026.
 
 ## 1. Google Business Profile (business.google.com)
 
 - **Business name:** DataYego
 - **Category (primary):** Internet service provider → if not offered, use "Telecommunications service provider"; secondary: "E-commerce service"
-- **Service area:** Ghana (nationwide). Set the business as a service-area business, not a storefront, unless you want the office address public.
+- **Service area:** Ghana (nationwide). Service-area business (no storefront); the address on file is your real Accra address, hidden from the public.
+- **Year founded:** 2026 (where a form asks; never put a different year, directories cross-check each other and it is not a ranking factor).
 - **Website:** https://datayego.com
-- **Phone / WhatsApp:** +233 20 997 5451
+- **Phone / WhatsApp:** +233 20 659 7254
 - **Email:** support@datayego.com
 - **Opening hours:** 24 hours (the site sells all day; put support hours in the description if they differ)
 - **Description (750 characters max):**
@@ -52,7 +53,7 @@ Subject: A data shop that sells to any Ghana number (story idea)
 >
 > Happy to send numbers, screenshots or a guest piece on how to compare data bundles by price per GB (our live table: datayego.com/prices).
 >
-> [Your name], DataYego · +233 20 997 5451
+> [Your name], DataYego · +233 20 659 7254
 
 Targets: Ghana tech blogs (TechNova, Ghana Tech Blog, Pulse Ghana tech desk, MyJoyOnline business), student/campus news sites, and any WhatsApp-business or MoMo-focused YouTubers. One link from any of them beats fifty directory listings.
 
