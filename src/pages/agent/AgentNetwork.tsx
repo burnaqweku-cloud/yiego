@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Copy, Network as NetIcon, Megaphone, MessagesSquare, Inbox, ListChecks } from "lucide-react";
+import { AppWindow, Copy, Network as NetIcon, Megaphone, MessagesSquare, Inbox, ListChecks } from "lucide-react";
 import NetworkApplications from "@/components/agent/NetworkApplications";
 import NetworkQuestions from "@/components/agent/NetworkQuestions";
 import { toast } from "sonner";
 import { p1, useAgent } from "@/components/agent/AgentShell";
 import Section from "@/components/agent/Section";
 import ComingSoon from "@/components/agent/ComingSoon";
+import RecruitPopup from "@/components/agent/RecruitPopup";
 import { formatGHS } from "@/lib/format";
 
 /* Parent agents: recruit agents under them, free. Pitch, invite link, their agents, announcements, read-only support. */
@@ -38,6 +39,10 @@ export default function AgentNetwork() {
         </div>
         <label className="block"><span className="mb-1 block text-[12px] font-semibold text-foreground">Your pitch</span><textarea value={pitch} onChange={(e) => setPitch(e.target.value)} rows={4} maxLength={1500} placeholder="Why should someone sell data under you? What do they get, how do they earn, how do you support them?" className="onyx-field w-full resize-y" /></label>
         <div className="flex justify-end"><button type="button" onClick={() => void save()} className="onyx-btn-primary px-4 py-2 text-[13px]">Save</button></div>
+      </Section>
+
+      <Section page="network" id="recruit-popup" title="Recruitment pop-up" icon={<AppWindow size={15} />} subtitle="Catch visitors on your store and send them to your Join page. You choose when it shows, how often, and on which pages." defaultOpen>
+        <RecruitPopup programmeOn={!!agent.network_on} />
       </Section>
 
       <div className="grid grid-cols-3 gap-2">

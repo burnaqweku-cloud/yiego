@@ -7,7 +7,8 @@ import { useStore } from "@/components/store/StoreShell";
 import { storeBase } from "@/lib/storeHost";
 import { useAuth } from "@/store/auth-context";
 
-/* The store owner's pop-up.
+/* The store owner's pop-ups (custom ones and the recruitment pop-up from Your agents).
+   - Several can be live: the newest one this device hasn't used up shows; the others wait their turn.
    - once: one time per device; daily: once a day; always: once per visit (not on every page).
    - Never on sign-in, sign-up, account, tracking or payment pages, nor on the page its own button leads to.
    - After someone taps the button, it doesn't come back during that visit.
@@ -47,21 +48,31 @@ export default function StorePopup() {
     let alive = true;
     let t: ReturnType<typeof setTimeout> | null = null;
     if (quiet) { setP(null); return; }
-    void p1().rpc("store_popup_for", { p_slug: store.slug, p_page: page }).then((r: { data: Popup | null }) => {
-      const pop = r.data; if (!pop || !alive) return;
-      if (seenThisVisit(pop.id)) return;
-      const key = `yg-popup:${pop.id}`; const last = Number(localStorage.getItem(key) ?? 0);
-      if (pop.frequency === "once" && last) return;
-      if (pop.frequency === "daily" && Date.now() - last < 86_400_000) return;
-      const target = pop.action === "link" ? inStorePath(pop.action_url, store.slug) : pop.action === "join" ? "/join" : null;
-      const targetPath = target ? target.split(/[?#]/)[0] : null;
-      if (targetPath && targetPath === rest) return;
-      if (isAuthenticated && targetPath && /^\/(sign-up|sign-in)$/.test(targetPath)) return;
-      t = setTimeout(() => {
+    // Every live pop-up for this page, newest first; the first one this device hasn't used up (per its frequency) shows.
+    void p1().rpc("store_popups_for", { p_slug: store.slug, p_page: page }).then(async (r: { data: Popup[] | null }) => {
+      const list = (r.data ?? []) as Popup[]; if (!list.length || !alive) return;
+      let viewerIsAgent: boolean | null = null; // looked up only if a "join" pop-up is a candidate
+      for (const pop of list) {
+        if (seenThisVisit(pop.id)) continue;
+        const key = `yg-popup:${pop.id}`; const last = Number(localStorage.getItem(key) ?? 0);
+        if (pop.frequency === "once" && last) continue;
+        if (pop.frequency === "daily" && Date.now() - last < 86_400_000) continue;
+        const target = pop.action === "link" ? inStorePath(pop.action_url, store.slug) : pop.action === "join" ? "/join" : null;
+        const targetPath = target ? target.split(/[?#]/)[0] : null;
+        if (targetPath && targetPath === rest) continue;
+        if (isAuthenticated && targetPath && /^\/(sign-up|sign-in)$/.test(targetPath)) continue;
+        if (pop.action === "join" && isAuthenticated) {
+          if (viewerIsAgent === null) { const { data } = await p1().rpc("my_agent_access", {}); viewerIsAgent = Boolean(data); }
+          if (viewerIsAgent) continue; // already an agent somewhere — don't ask them to join
+        }
         if (!alive) return;
-        setP(pop); markSeen(pop.id); localStorage.setItem(key, String(Date.now()));
-        void p1().rpc("store_popup_hit", { p_id: pop.id, p_kind: "show" }).then(() => undefined);
-      }, Math.max(0, Number(pop.delay_seconds ?? 2)) * 1000);
+        t = setTimeout(() => {
+          if (!alive) return;
+          setP(pop); markSeen(pop.id); localStorage.setItem(key, String(Date.now()));
+          void p1().rpc("store_popup_hit", { p_id: pop.id, p_kind: "show" }).then(() => undefined);
+        }, Math.max(0, Number(pop.delay_seconds ?? 2)) * 1000);
+        return;
+      }
     });
     return () => { alive = false; if (t) clearTimeout(t); };
   }, [store.slug, page, quiet, rest, isAuthenticated]);

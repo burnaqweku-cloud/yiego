@@ -3,7 +3,7 @@ import { AppWindow, BarChart3, Gift, Globe, Home, LifeBuoy, Megaphone, MessagesS
 /* The agent dashboard menu, two tiers like the admin's: a group you tap opens its pages.
    A page is a route; when the route has a `view`, the page component shows only the
    sections listed for that view (see <Section />), so one long page becomes several screens. */
-export interface AgentNavPage { id: string; label: string; to: string; end?: boolean; badge?: boolean; sections?: string[] }
+export interface AgentNavPage { id: string; label: string; to: string; end?: boolean; badge?: "unread" | "applications"; sections?: string[] }
 export interface AgentNavGroup { id: string; label: string; icon: LucideIcon; parentOnly?: boolean; notForSubs?: boolean; pages: AgentNavPage[] }
 
 export const AGENT_GROUPS: AgentNavGroup[] = [
@@ -25,7 +25,7 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "domain-connect", label: "Connect an existing domain", to: "/agent/domain/connect", sections: ["your-own-domain", "perks", "email-domain"] },
   ] },
   { id: "customers", label: "Customers", icon: Users, pages: [
-    { id: "support", label: "Support inbox", to: "/agent/support", badge: true },
+    { id: "support", label: "Support inbox", to: "/agent/support", badge: "unread" },
     { id: "orders", label: "Orders", to: "/agent/orders" },
     { id: "customers", label: "Customers", to: "/agent/customers" },
     { id: "check-mtn", label: "Check MTN numbers", to: "/agent/check-mtn" },
@@ -40,10 +40,10 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "forms", label: "Form submissions", to: "/agent/popups/forms", sections: ["form-submissions"] },
   ] },
   { id: "agents", label: "Your agents", icon: Network, parentOnly: true, pages: [
-    { id: "applications", label: "Applications", to: "/agent/network/applications", sections: ["applications"] },
+    { id: "applications", label: "Applications", to: "/agent/network/applications", sections: ["applications"], badge: "applications" },
     { id: "agents-all", label: "All agents", to: "/agent/network/agents", sections: ["agents"] },
     { id: "agent-prices", label: "Prices for your agents", to: "/agent/network/prices" },
-    { id: "programme", label: "Programme & invite link", to: "/agent/network/programme", sections: ["programme"] },
+    { id: "programme", label: "Programme & invite link", to: "/agent/network/programme", sections: ["programme", "recruit-popup"] },
     { id: "questions", label: "Application form", to: "/agent/network/form", sections: ["questions"] },
     { id: "agent-messages", label: "Message your agents", to: "/agent/network/messages", sections: ["message-your-agents"] },
   ] },
@@ -61,7 +61,7 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
 
 export const STAFF_GROUPS: AgentNavGroup[] = [
   { id: "customers", label: "Customers", icon: Users, pages: [
-    { id: "support", label: "Support inbox", to: "/agent/support", badge: true, end: true },
+    { id: "support", label: "Support inbox", to: "/agent/support", badge: "unread", end: true },
     { id: "orders", label: "Orders", to: "/agent/orders" },
     { id: "customers", label: "Customers", to: "/agent/customers" },
     { id: "check-mtn", label: "Check MTN numbers", to: "/agent/check-mtn" },

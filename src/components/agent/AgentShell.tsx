@@ -34,7 +34,9 @@ export const fmt = (d: string) => new Date(d).toLocaleString("en-GB", { day: "nu
 
 
 /* Two-tier menu: tap a group to open its pages; the group holding the current page opens by itself. */
-function AgentNav({ groups, unread, onNavigate, soon = [] }: { groups: typeof AGENT_GROUPS; unread: number; onNavigate?: () => void; soon?: string[] }) {
+type Badges = { unread: number; applications: number };
+function AgentNav({ groups, badges, onNavigate, soon = [] }: { groups: typeof AGENT_GROUPS; badges: Badges; onNavigate?: () => void; soon?: string[] }) {
+  const count = (b?: keyof Badges) => (b ? badges[b] : 0);
   const location = useLocation();
   const active = groupForPath(location.pathname, groups);
   const [openId, setOpenId] = useState<string>(active?.id ?? "");
@@ -47,8 +49,8 @@ function AgentNav({ groups, unread, onNavigate, soon = [] }: { groups: typeof AG
         const open = openId === g.id; const holds = active?.id === g.id;
         return (
           <div key={g.id}>
-            <button type="button" onClick={() => setOpenId(open ? "" : g.id)} aria-expanded={open} className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13.5px] ${holds ? "text-foreground" : "text-foreground hover:bg-white/[0.04]"}`}><g.icon size={16} className={holds ? "text-primary-glow" : ""} /><span className="flex-1">{g.label}</span>{soon.includes(g.id) && <span className="rounded-full border border-white/[0.12] px-1.5 text-[10px] font-semibold text-faint-foreground">Soon</span>}{g.pages.some((p) => p.badge) && unread > 0 && !open && <span className="rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{unread}</span>}<ChevronDown size={14} className={`text-faint-foreground transition-transform ${open ? "rotate-180" : ""}`} /></button>
-            {open && <div className="mb-1 ml-4 flex flex-col gap-0.5 border-l border-white/[0.08] pl-2">{g.pages.map((p) => <NavLink key={p.id} to={p.to} end={p.end} onClick={onNavigate} className={({ isActive }) => `flex items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"}`}>{p.label}{p.badge && unread > 0 && <span className="ml-auto rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{unread}</span>}</NavLink>)}</div>}
+            <button type="button" onClick={() => setOpenId(open ? "" : g.id)} aria-expanded={open} className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13.5px] ${holds ? "text-foreground" : "text-foreground hover:bg-white/[0.04]"}`}><g.icon size={16} className={holds ? "text-primary-glow" : ""} /><span className="flex-1">{g.label}</span>{soon.includes(g.id) && <span className="rounded-full border border-white/[0.12] px-1.5 text-[10px] font-semibold text-faint-foreground">Soon</span>}{!open && g.pages.reduce((n, p) => n + count(p.badge), 0) > 0 && <span className="rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{g.pages.reduce((n, p) => n + count(p.badge), 0)}</span>}<ChevronDown size={14} className={`text-faint-foreground transition-transform ${open ? "rotate-180" : ""}`} /></button>
+            {open && <div className="mb-1 ml-4 flex flex-col gap-0.5 border-l border-white/[0.08] pl-2">{g.pages.map((p) => <NavLink key={p.id} to={p.to} end={p.end} onClick={onNavigate} className={({ isActive }) => `flex items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] ${isActive ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"}`}>{p.label}{count(p.badge) > 0 && <span className="ml-auto rounded-full bg-amber px-1.5 text-[10px] font-bold text-[#1a1200]">{count(p.badge)}</span>}</NavLink>)}</div>}
           </div>
         );
       })}
@@ -64,7 +66,7 @@ export default function AgentShell() {
   const [orders, setOrders] = useState<AgentOrder[]>([]); const [payouts, setPayouts] = useState<AgentPayout[]>([]);
   const [products, setProducts] = useState<Phase1Product[]>([]); const [prices, setPrices] = useState<Record<string, string>>({});
   const [plan, setPlan] = useState<Plan | null>(null); const [quote, setQuote] = useState<PlanQuote | null>(null);
-  const [role, setRole] = useState<"owner" | "staff">("owner"); const [unread, setUnread] = useState(0);
+  const [role, setRole] = useState<"owner" | "staff">("owner"); const [unread, setUnread] = useState(0); const [pendingApps, setPendingApps] = useState(0);
   const [networkOpen, setNetworkOpen] = useState(false);
   useEffect(() => { if (!agent) return; void p1().rpc("network_tier_status", {}).then(({ data }) => setNetworkOpen(!!(data as { open_for_me?: boolean } | null)?.open_for_me)); }, [agent?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [floors, setFloors] = useState<Record<string, number>>({});
@@ -106,7 +108,7 @@ export default function AgentShell() {
     const ok = ["/agent/support", "/agent/orders", "/agent/customers", "/agent/check-mtn", "/agent/help"];
     if (!ok.some((p) => location.pathname === p || location.pathname.startsWith(p + "/"))) navigate("/agent/support", { replace: true });
   }, [role, agent, location.pathname, navigate]);
-  useEffect(() => { if (!agent) return; const tick = () => void p1().rpc("agent_inbox_unread", {}).then(({ data }) => setUnread(Number(data ?? 0))); tick(); const t = setInterval(tick, 20000); return () => clearInterval(t); }, [agent]);
+  useEffect(() => { if (!agent) return; const tick = () => { void p1().rpc("agent_inbox_unread", {}).then(({ data }) => setUnread(Number(data ?? 0))); if (!agent.parent_agent_id) void p1().rpc("my_network_pending_count", {}).then(({ data }) => setPendingApps(Number(data ?? 0))); }; tick(); const t = setInterval(tick, 20000); return () => clearInterval(t); }, [agent]);
 
   const legacy = LEGACY_REDIRECTS[location.pathname.replace(/\/$/, "")];
   useEffect(() => { if (legacy) navigate(legacy, { replace: true }); }, [legacy, navigate]);
@@ -130,7 +132,7 @@ export default function AgentShell() {
           {/* Desktop sidebar */}
           <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-white/[0.06] p-4 sm:flex">
             <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{eyebrow}</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div><NotificationBell /></div>
-            <div className="mt-6"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !agent.parent_agent_id || (!g.parentOnly && !g.notForSubs))} unread={unread} soon={networkOpen ? [] : ["agents"]} /></div>
+            <div className="mt-6"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !agent.parent_agent_id || (!g.parentOnly && !g.notForSubs))} badges={{ unread, applications: pendingApps }} soon={networkOpen ? [] : ["agents"]} /></div>
             <div className="mt-auto space-y-1 text-[12.5px]">
               <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><ExternalLink size={14} />View my store</a>
               {isSub ? <a href={parentUrl} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit {agent.parent?.store_name}</a> : <a href={isStoreHost() ? "https://datayego.com" : "/"} onClick={() => sessionStorage.setItem("yg-agent-browse", "1")} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground hover:bg-white/[0.04]"><Home size={14} />Visit DataYego</a>}
@@ -166,7 +168,7 @@ export default function AgentShell() {
             <div className="absolute inset-0 bg-black/60" />
             <aside className="absolute inset-y-0 left-0 flex w-[82%] max-w-[320px] flex-col bg-background p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-[10.5px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{eyebrow}</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p><p className="text-[12px] text-primary-glow">{formatGHS(Number(agent.earnings_balance))} earned</p></div><button type="button" onClick={() => setDrawer(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><X size={16} /></button></div>
-              <div className="mt-5 flex-1 overflow-y-auto"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !agent.parent_agent_id || (!g.parentOnly && !g.notForSubs))} unread={unread} onNavigate={() => setDrawer(false)} soon={networkOpen ? [] : ["agents"]} /></div>
+              <div className="mt-5 flex-1 overflow-y-auto"><AgentNav groups={role === "staff" ? STAFF_NAV : AGENT_GROUPS.filter((g) => !agent.parent_agent_id || (!g.parentOnly && !g.notForSubs))} badges={{ unread, applications: pendingApps }} onNavigate={() => setDrawer(false)} soon={networkOpen ? [] : ["agents"]} /></div>
               <div className="mt-4 space-y-0.5 border-t border-white/[0.06] pt-3 text-[13px]">
                 <a href={storeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><ExternalLink size={14} />View my store</a>
                 {isSub ? <a href={parentUrl} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Visit {agent.parent?.store_name}</a> : <a href={isStoreHost() ? "https://datayego.com" : "/"} onClick={() => { sessionStorage.setItem("yg-agent-browse", "1"); setDrawer(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-muted-foreground"><Home size={14} />Shop as a customer</a>}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AppWindow, Image as ImageIcon, Inbox, Pencil, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { p1, useAgent } from "@/components/agent/AgentShell";
@@ -19,7 +20,7 @@ export default function AgentPopups() {
   const [popups, setPopups] = useState<Popup[]>([]); const [subs, setSubs] = useState<Sub[]>([]);
   const [f, setF] = useState<Form>(blank); const [editing, setEditing] = useState(false); const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const load = async () => { const [p, s] = await Promise.all([p1().from("store_popups").select("*").order("created_at", { ascending: false }), p1().from("store_form_submissions").select("*").order("created_at", { ascending: false }).limit(500)]); setPopups(p.data ?? []); setSubs(s.data ?? []); };
+  const load = async () => { const [p, s] = await Promise.all([p1().from("store_popups").select("*").neq("purpose", "recruit").order("created_at", { ascending: false }), p1().from("store_form_submissions").select("*").order("created_at", { ascending: false }).limit(500)]); setPopups(p.data ?? []); setSubs(s.data ?? []); };
   useEffect(() => { void load(); }, []);
   const startEdit = (p: Popup) => { setF({ id: p.id, title: p.title, body: p.body ?? "", button_label: p.button_label ?? "", action: p.action, action_url: p.action_url ?? "", frequency: p.frequency, image_url: p.image_url ?? "", starts_at: toLocal(p.starts_at), ends_at: toLocal(p.ends_at), delay_seconds: p.delay_seconds ?? 2, pages: p.pages?.length ? p.pages : ["all"] }); setEditing(true); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const upload = async (file: File) => {
@@ -48,7 +49,7 @@ export default function AgentPopups() {
 
   return (
     <div className="space-y-6">
-      <div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Pop-ups & forms</p><h1 className="font-display text-[24px] font-semibold text-foreground">Catch visitors on your website</h1><p className="mt-1 text-[13px] text-muted-foreground">A pop-up with a button: open a link or WhatsApp, collect details in a form{networkOpen ? ", sign people up as your agents" : ""}, or just show a message. Schedule it, pick the pages, see how many saw and tapped it.</p></div>
+      <div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Pop-ups & forms</p><h1 className="font-display text-[24px] font-semibold text-foreground">Catch visitors on your website</h1><p className="mt-1 text-[13px] text-muted-foreground">A pop-up with a button: open a link or WhatsApp, collect details in a form{networkOpen ? ", sign people up as your agents" : ""}, or just show a message. Schedule it, pick the pages, see how many saw and tapped it.{networkOpen && !agent.parent_agent_id && <> Your <Link to="/agent/network/programme" className="font-semibold text-primary-glow">recruitment pop-up</Link> is managed under Your agents.</>}</p></div>
 
       <Section page="popups" id="new-pop-up" title={editing ? "Edit pop-up" : "New pop-up"} icon={<AppWindow size={15} />} bodyClassName="space-y-3" defaultOpen>
         <div><input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value.slice(0, 60) })} placeholder="Title, e.g. Weekend deal on MTN 5GB" className="onyx-field w-full" /><p className="mt-1 text-right text-[11px] text-faint-foreground">{f.title.length}/60</p></div>
