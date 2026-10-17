@@ -25,8 +25,14 @@
       // Daylight is the default; Onyx Dark when chosen (or via device setting).
       (function () {
         try {
+          // The public site is always dark (src/store/theme.tsx → isPublicSitePath); dashboards and store hosts
+          // follow the saved theme.
+          var h = location.hostname.toLowerCase();
+          var mainHost = ["datayego.com", "www.datayego.com", "yiego.shop", "www.yiego.shop", "localhost", "127.0.0.1"].indexOf(h) !== -1 || /\.(lovable\.app|lovableproject\.com|lovable\.dev)$/.test(h);
+          var publicSite = mainHost && !/^\/(agent|admin)(\/|$)/.test(location.pathname);
           var t = localStorage.getItem("yiego_theme_v1");
           var dark =
+            publicSite ||
             t === "dark" ||
             (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
           if (!dark) {
@@ -36,21 +42,18 @@
             if (m) m.setAttribute("content", "#080b0a");
           }
         } catch (e) {
-          document.documentElement.classList.add("light");
+          /* storage blocked: keep the public site dark, light elsewhere */
+          if (!/^\/(agent|admin)(\/|$)/.test(location.pathname)) {
+            var m2 = document.querySelector('meta[name="theme-color"]');
+            if (m2) m2.setAttribute("content", "#080b0a");
+          } else document.documentElement.classList.add("light");
         }
       })();
     </script>
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Only the families the stylesheet actually uses: Manrope (body),
-         Space Grotesk (display), IBM Plex Mono (numbers/refs). -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Fonts are self-hosted (main.tsx imports them): no third-party request before first paint. -->
   </head>
   <body>
     <div id="root"></div>

@@ -26,7 +26,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: "How long does delivery take?",
-        a: "Orders are usually delivered within minutes of payment clearing, but it depends on the network: when a network is slow, deliveries can take hours. The live delivery time shows on the shop and at checkout. The order is sent to the network automatically — nobody has to process it by hand. If a network is slow, the order stays visible with its status until it completes.",
+        a: "The order goes to the network automatically as soon as your payment clears, so nobody has to process it by hand. How long the network takes varies by network and by time of day, and the order stays visible with its status until it completes. You can follow it with your DataYego reference.",
         preview: true,
       },
       {

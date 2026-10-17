@@ -10,22 +10,22 @@ export async function priceListImage(opts: { storeName: string; tagline?: string
   const accent = opts.accent && /^#[0-9a-fA-F]{6}$/.test(opts.accent) ? opts.accent : "#22c387";
   x.fillStyle = "#0b1512"; x.fillRect(0, 0, W, H);
   x.fillStyle = accent; x.fillRect(0, 0, W, 14);
-  x.fillStyle = "#ffffff"; x.font = "800 56px Manrope, Arial, sans-serif"; x.fillText(opts.storeName, pad, 120);
-  x.fillStyle = "#9fb3a9"; x.font = "500 28px Manrope, Arial, sans-serif"; x.fillText(opts.tagline || "MTN, Telecel & AirtelTigo data, delivered in minutes", pad, 170);
-  x.fillStyle = accent; x.font = "700 30px Manrope, Arial, sans-serif"; x.fillText(opts.link.replace(/^https?:\/\//, ""), pad, 230);
+  x.fillStyle = "#ffffff"; x.font = "800 56px 'Manrope Variable', Manrope, Arial, sans-serif"; x.fillText(opts.storeName, pad, 120);
+  x.fillStyle = "#9fb3a9"; x.font = "500 28px 'Manrope Variable', Manrope, Arial, sans-serif"; x.fillText(opts.tagline || "MTN, Telecel & AirtelTigo data, delivered in minutes", pad, 170);
+  x.fillStyle = accent; x.font = "700 30px 'Manrope Variable', Manrope, Arial, sans-serif"; x.fillText(opts.link.replace(/^https?:\/\//, ""), pad, 230);
   let y = head;
   for (const g of rows) {
-    x.fillStyle = accent; x.font = "800 34px Manrope, Arial, sans-serif"; x.fillText(g.name, pad, y); y += 24;
+    x.fillStyle = accent; x.font = "800 34px 'Manrope Variable', Manrope, Arial, sans-serif"; x.fillText(g.name, pad, y); y += 24;
     x.strokeStyle = "rgba(255,255,255,0.12)"; x.lineWidth = 2; x.beginPath(); x.moveTo(pad, y); x.lineTo(W - pad, y); x.stroke(); y += 44;
     for (const p of g.items) {
       const size = p.name.replace(/^.*?—\s*/, ""); const price = Number(opts.prices[p.id] ?? p.customer_price);
-      x.fillStyle = "#ffffff"; x.font = "600 32px Manrope, Arial, sans-serif"; x.fillText(size, pad, y);
-      x.fillStyle = "#9fb3a9"; x.font = "400 24px Manrope, Arial, sans-serif"; x.fillText(p.validity ?? "", pad + 180, y);
-      x.fillStyle = "#ffffff"; x.font = "700 32px Manrope, Arial, sans-serif"; const t = `GHS ${price.toFixed(2)}`; x.fillText(t, W - pad - x.measureText(t).width, y);
+      x.fillStyle = "#ffffff"; x.font = "600 32px 'Manrope Variable', Manrope, Arial, sans-serif"; x.fillText(size, pad, y);
+      x.fillStyle = "#9fb3a9"; x.font = "400 24px 'Manrope Variable', Manrope, Arial, sans-serif"; x.fillText(p.validity ?? "", pad + 180, y);
+      x.fillStyle = "#ffffff"; x.font = "700 32px 'Manrope Variable', Manrope, Arial, sans-serif"; const t = `GHS ${price.toFixed(2)}`; x.fillText(t, W - pad - x.measureText(t).width, y);
       y += lineH;
     }
     y += 12;
   }
-  x.fillStyle = "#6e8b7d"; x.font = "500 24px Manrope, Arial, sans-serif"; x.fillText(`Prices as of ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long" })} · pay with MoMo or card`, pad, H - 70);
+  x.fillStyle = "#6e8b7d"; x.font = "500 24px 'Manrope Variable', Manrope, Arial, sans-serif"; x.fillText(`Prices as of ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long" })} · pay with MoMo or card`, pad, H - 70);
   return await new Promise<Blob>((res) => c.toBlob((b) => res(b!), "image/png"));
 }

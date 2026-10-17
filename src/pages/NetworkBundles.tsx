@@ -82,7 +82,7 @@ const PAGES: Record<NetworkId, NetworkPageConfig> = {
 export default function NetworkBundles({ network }: { network: NetworkId }) {
   const config = PAGES[network];
   const networkName = NETWORKS.find((n) => n.id === network)?.name ?? network;
-  const { byNetwork, loading, error } = useLiveBundles();
+  const { byNetwork, loading } = useLiveBundles();
   const { openBuyData } = useFlows();
   const bundles = byNetwork[network];
 
@@ -119,7 +119,7 @@ export default function NetworkBundles({ network }: { network: NetworkId }) {
           <div className="mt-5 overflow-x-auto rounded-[22px] border border-white/[0.07]">
             {loading ? (
               <div className="grid min-h-40 place-items-center"><Loader2 className="animate-spin text-primary-glow" /></div>
-            ) : error || bundles.length === 0 ? (
+            ) : bundles.length === 0 ? (
               <p className="p-6 text-sm text-muted-foreground">Prices are loading slowly right now — open the <Link className="font-semibold text-primary-glow underline" to="/shop">shop</Link> to browse every live {networkName} bundle.</p>
             ) : (
               <table className="w-full text-left text-sm">

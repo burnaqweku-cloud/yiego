@@ -5,6 +5,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useLocation } from "react-router-dom";
+import { isStoreHost } from "@/lib/storeHost";
 
 /** Theme — Onyx Dark (signature), Daylight, or follow the device.
  *  The resolved theme toggles `light` on <html>; a pre-paint script in
@@ -29,8 +31,14 @@ function loadMode(): ThemeMode {
   return "light";
 }
 
+/** The public site (everything on the main host except the agent and admin apps) has one look: dark. The stored
+ *  theme still applies inside the dashboards and on store hosts. index.html's pre-paint script mirrors this test. */
+export function isPublicSitePath(pathname: string): boolean {
+  return !isStoreHost() && !/^\/(agent|admin)(\/|$)/.test(pathname);
+}
+
 function systemPrefersLight(): boolean {
-  return typeof window.matchMedia === "function"
+  return typeof window !== "undefined" && typeof window.matchMedia === "function"
     ? window.matchMedia("(prefers-color-scheme: light)").matches
     : false;
 }
@@ -58,10 +66,12 @@ const ThemeContext = createContext<ThemeValue | null>(null);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(loadMode);
   const [resolved, setResolved] = useState<Resolved>(() => resolve(loadMode()));
+  const { pathname } = useLocation();
+  const effective: Resolved = isPublicSitePath(pathname) ? "dark" : resolved;
 
   useEffect(() => {
-    apply(resolved);
-  }, [resolved]);
+    apply(effective);
+  }, [effective]);
 
   // Follow the OS while in system mode.
   useEffect(() => {
@@ -83,7 +93,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ mode, resolved, setMode }}>
+    <ThemeContext.Provider value={{ mode, resolved: effective, setMode }}>
       {children}
     </ThemeContext.Provider>
   );

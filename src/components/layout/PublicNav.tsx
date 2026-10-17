@@ -257,11 +257,10 @@ export default function PublicNav() {
                   Sign in
                 </Link>
                 <Link
-                  to="/auth?mode=signup"
-                  className="mk-btn mk-btn-primary group hidden !min-h-[44px] !px-5 !text-[14px] sm:inline-flex"
+                  to="/shop"
+                  className="mk-btn mk-btn-primary hidden !min-h-[44px] !px-5 !text-[14px] sm:inline-flex"
                 >
-                  Create account
-                  <ArrowRight size={15} className="mk-arrow" />
+                  Buy data
                 </Link>
               </>
             )}

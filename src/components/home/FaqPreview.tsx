@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { FAQ_PREVIEW } from "@/data/faq";
-import { useReveal } from "@/hooks/useReveal";
 import { cn } from "@/lib/utils";
 
 /**
@@ -10,51 +9,40 @@ import { cn } from "@/lib/utils";
  * One panel open at a time; the full list lives at /faq.
  */
 
-function AllQuestionsLink({ className, delay }: { className?: string; delay: string }) {
+function AllQuestionsLink({ className }: { className?: string }) {
   return (
-    <Link
-      to="/faq"
-      data-reveal
-      style={{ "--d": delay } as React.CSSProperties}
-      className={cn("mk-btn mk-btn-ghost group", className)}
-    >
+    <Link to="/faq" className={cn("mk-btn mk-btn-ghost", className)}>
       View all questions
-      <ArrowRight className="mk-arrow h-4 w-4" aria-hidden="true" />
     </Link>
   );
 }
 
 export default function FaqPreview() {
-  const ref = useReveal<HTMLElement>();
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section ref={ref} aria-labelledby="faq-preview-title" className="mk-section">
+    <section aria-labelledby="faq-preview-title" className="mk-section">
       <div className="mk-wrap">
         <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
           {/* Framing column — sticks while the answers scroll past it. */}
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-28">
-              <p data-reveal className="mk-eyebrow">
+              <p className="mk-eyebrow">
                 Questions
               </p>
               <h2
                 id="faq-preview-title"
-                data-reveal
-                style={{ "--d": "60ms" } as React.CSSProperties}
-                className="mk-h2 mt-5"
+                className="mk-h2 mt-3"
               >
                 Answered before you ask.
               </h2>
               <p
-                data-reveal
-                style={{ "--d": "120ms" } as React.CSSProperties}
                 className="mk-lead mt-5 max-w-md"
               >
-                Networks, delivery time, paying without an account — the things people
+                Networks, paying without an account, what happens if an order fails: the things people
                 check first. Everything else is on the full page.
               </p>
-              <AllQuestionsLink delay="180ms" className="mt-8 hidden lg:inline-flex" />
+              <AllQuestionsLink className="mt-8 hidden lg:inline-flex" />
             </div>
           </div>
 
@@ -68,8 +56,6 @@ export default function FaqPreview() {
               return (
                 <div
                   key={item.q}
-                  data-reveal
-                  style={{ "--d": `${i * 60}ms` } as React.CSSProperties}
                   className="mk-acc"
                   data-open={isOpen}
                 >
@@ -101,7 +87,7 @@ export default function FaqPreview() {
               );
             })}
 
-            <AllQuestionsLink delay="120ms" className="mt-8 flex w-full lg:hidden" />
+            <AllQuestionsLink className="mt-8 flex w-full lg:hidden" />
           </div>
         </div>
       </div>

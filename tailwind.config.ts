@@ -11,9 +11,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Manrope", "Inter", "system-ui", "-apple-system", "sans-serif"],
-        display: ["Space Grotesk", "Manrope", "system-ui", "sans-serif"],
-        mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
+        sans: ["var(--font-sans)"],
+        display: ["var(--font-display)"],
+        mono: ["var(--font-mono)"],
       },
       colors: {
         // `white` is the theme ink channel: true white in dark, deep

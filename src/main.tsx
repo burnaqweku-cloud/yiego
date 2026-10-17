@@ -1,6 +1,12 @@
 import { createRoot, hydrateRoot } from "react-dom/client";
 import App from "./App.tsx";
 import AppErrorBoundary from "./components/AppErrorBoundary";
+import "@fontsource-variable/manrope/wght.css";
+import "@fontsource-variable/space-grotesk/wght.css";
+import "@fontsource-variable/bricolage-grotesque/wght.css";
+import "@fontsource/ibm-plex-mono/400.css";
+import "@fontsource/ibm-plex-mono/500.css";
+import "@fontsource/ibm-plex-mono/600.css";
 import "./index.css";
 
 // A page left open across a publish asks for code files that no longer exist,

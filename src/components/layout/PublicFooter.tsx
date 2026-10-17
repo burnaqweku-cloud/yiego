@@ -14,11 +14,14 @@ interface FooterLink {
 
 const COLUMNS: { title: string; links: FooterLink[] }[] = [
   {
-    title: "Company",
+    title: "DataYego",
     links: [
       { label: "About us", to: "/about" },
       { label: "Shop", to: "/shop" },
       { label: "Track an order", to: "/track-order" },
+      { label: "Check an MTN number", to: "/check-mtn" },
+      { label: "Become an agent", to: "/agents" },
+      { label: "Agent help", to: "/help/agents" },
     ],
   },
   {
@@ -70,8 +73,8 @@ export default function PublicFooter() {
               <Wordmark className="h-[28px]" />
             </Link>
             <p className="mk-body mt-4 text-[13.5px]">
-              Data bundles for MTN, Telecel and AirtelTigo — bought in seconds, usually delivered in
-              minutes, tracked to the last cedi.
+              Data bundles for MTN, Telecel and AirtelTigo, bought online for any Ghana number and
+              tracked from payment to delivery.
             </p>
             <a
               href={WHATSAPP_CHANNEL}
@@ -88,7 +91,7 @@ export default function PublicFooter() {
           <div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:grid-cols-4">
             {COLUMNS.map((col) => (
               <nav key={col.title} aria-label={col.title}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint-foreground">
+                <p className="text-[14px] font-semibold text-foreground">
                   {col.title}
                 </p>
                 <ul className="mt-3.5 flex flex-col">
@@ -144,7 +147,7 @@ export default function PublicFooter() {
           <p className="text-[13px] text-faint-foreground">
             © {new Date().getFullYear()} {contact?.business_name || "DataYego"}. All rights reserved.
           </p>
-          <p className="text-[13px] text-faint-foreground">Built for Ghana 🇬🇭</p>
+          <p className="text-[13px] text-faint-foreground">Made in Ghana 🇬🇭</p>
         </div>
       </div>
     </footer>

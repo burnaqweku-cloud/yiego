@@ -7,22 +7,16 @@ import { metaFor } from "@/lib/site";
 import { organizationLd, websiteLd } from "@/lib/structuredData";
 import Hero from "@/components/home/Hero";
 import { AgentNudge } from "@/components/agents/AgentPopup";
+import Facts from "@/components/home/Facts";
+import HowItWorks from "@/components/home/HowItWorks";
 import BecomeAgent from "@/components/home/BecomeAgent";
-import TrustStrip from "@/components/home/TrustStrip";
-import Categories from "@/components/home/Categories";
 
 /**
- * The public homepage.
- *
- * Only the first screen (hero → trust → categories) is in the initial
- * bundle; everything below the fold is code-split and streamed in, so the
- * page paints fast on a Ghanaian mobile connection.
+ * The public homepage: the price board is the product, everything below it
+ * answers the questions a first-time buyer has. The hero, the facts and the
+ * steps ship in the initial bundle; the rest streams in below the fold.
  */
 
-const WhyYieGo = lazy(() => import("@/components/home/WhyYieGo"));
-const FeaturedBundles = lazy(() => import("@/components/home/FeaturedBundles"));
-const HowItWorks = lazy(() => import("@/components/home/HowItWorks"));
-const Testimonials = lazy(() => import("@/components/home/Testimonials"));
 const FaqPreview = lazy(() => import("@/components/home/FaqPreview"));
 const FinalCta = lazy(() => import("@/components/home/FinalCta"));
 
@@ -43,21 +37,11 @@ export default function Home() {
       <Seo {...metaFor("/")} jsonLd={[organizationLd(), websiteLd()]} />
       <Hero />
       <AgentNudge />
-      <TrustStrip />
-      <Categories />
+      <Facts />
+      <div className="mk-wrap"><hr className="mk-rule" /></div>
+      <HowItWorks />
       <BecomeAgent />
-
       <Suspense fallback={<SectionFallback />}>
-        <div className="mk-wrap">
-          <hr className="mk-rule" />
-        </div>
-        <WhyYieGo />
-        <FeaturedBundles />
-        <div className="mk-wrap">
-          <hr className="mk-rule" />
-        </div>
-        <HowItWorks />
-        <Testimonials />
         <FaqPreview />
         <FinalCta />
       </Suspense>

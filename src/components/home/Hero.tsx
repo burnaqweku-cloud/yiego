@@ -1,96 +1,72 @@
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Gift, ShieldCheck } from "lucide-react";
+import { Gift } from "lucide-react";
 import InviteSheet from "@/components/referrals/InviteSheet";
-import { useReveal } from "@/hooks/useReveal";
+import PriceBoard from "@/components/home/PriceBoard";
 
 /**
- * The first screen. No product shot and no mock-up — one confident line of
- * type, held in the middle of its own screen, over nothing but light.
- * Everything here is drawn from tokens, so it costs no images and changes
- * with the theme.
- *
- * `data-reveal` never sits on a class that declares a `transition` shorthand
- * (`.mk-btn`, `.mk-card`) — that shorthand is declared later in the same
- * cascade layer and would reset the stagger's transition-delay. Wrap those.
+ * The first screen: the promise on the left, the proof on the right. The
+ * price board is the product — a visitor can buy from the hero without
+ * reading anything else.
  */
+function Actions({ onInvite }: { onInvite: () => void }) {
+  return (
+    <>
+      <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center lg:mt-9">
+        <Link to="/shop" className="mk-btn mk-btn-primary w-full sm:w-auto">
+          Buy data
+        </Link>
+        <Link to="/track-order" className="mk-btn mk-btn-ghost w-full sm:w-auto">
+          Track an order
+        </Link>
+      </div>
 
-const delay = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
+      <p className="mt-6 text-[13.5px] text-faint-foreground">
+        No account needed. Buy as a guest and still track the order.
+      </p>
+
+      <button
+        type="button"
+        onClick={onInvite}
+        className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-primary-glow underline-offset-4 hover:underline"
+      >
+        <Gift size={15} aria-hidden="true" />
+        Invite a friend and earn GH₵6.00 in data
+      </button>
+    </>
+  );
+}
 
 export default function Hero() {
   const [inviteOpen, setInviteOpen] = useState(false);
-  const ref = useReveal<HTMLElement>();
 
   return (
-    <section ref={ref} className="mk-hero !pt-0" aria-labelledby="hero-h">
-      {/* Background, back to front — see .mk-hero-bg in index.css. */}
-      <div className="mk-hero-bg" aria-hidden="true">
-        <span className="beam" />
-        <span className="glow-a" />
-        <span className="glow-b" />
-        <span className="horizon" />
-      </div>
-      <div className="mk-hero-fade" aria-hidden="true" />
+    <section className="mk-hero !pt-0" aria-labelledby="hero-h">
+      <div className="mk-wrap">
+        <div className="grid items-center gap-10 py-10 sm:py-14 lg:grid-cols-12 lg:gap-10 lg:py-20">
+          <div className="lg:col-span-6">
+            <h1 id="hero-h" className="mk-hero-title max-w-[12ch]">
+              Buy data for any Ghana number.
+            </h1>
+            <p className="mk-lead mt-7">
+              MTN, Telecel and AirtelTigo bundles at prices that make sense. Pay with Mobile Money or card.
+              Every order has a reference you can track.
+            </p>
 
-      <div className="relative z-10 mk-wrap">
-        {/* Held in the middle of the first screen, but never taller than it. */}
-        <div className="mx-auto flex min-h-[min(78svh,720px)] max-w-[60rem] flex-col items-center justify-center py-16 text-center sm:py-20">
-          <div data-reveal style={delay(0)}>
-            <span className="mk-pill">
-              <span className="onyx-live-dot" aria-hidden="true" />
-              Live bundles · MTN, Telecel &amp; AirtelTigo
-            </span>
+            {/* On phones the board comes straight after the headline; the buttons follow it. */}
+            <div className="hidden lg:block">
+              <Actions onInvite={() => setInviteOpen(true)} />
+            </div>
           </div>
 
-          <h1
-            id="hero-h"
-            className="mk-hero-title mt-9 max-w-[15ch] text-balance"
-            data-reveal
-            style={delay(80)}
-          >
-            Data for any line, <span className="mk-accent">at prices that make sense.</span>
-          </h1>
+          <div className="lg:col-span-6">
+            <PriceBoard />
+          </div>
 
-          <p className="mk-lead mt-8 max-w-[40rem] text-balance" data-reveal style={delay(150)}>
-            Choose a bundle for MTN, Telecel or AirtelTigo, enter the number, and pay how you like.
-            Every order carries a reference you can track.
-          </p>
-
-          <button type="button" onClick={() => setInviteOpen(true)} className="group mt-5 inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full border border-primary-glow/25 bg-primary/[0.08] px-4 py-2 text-center text-[13.5px] font-semibold text-primary-glow" data-reveal style={delay(190)}>
-            <Gift size={15} aria-hidden="true" />
-            Invite &amp; earn GHS 6.00 in data
-            <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
-          </button>
+          <div className="-mt-4 lg:hidden">
+            <Actions onInvite={() => setInviteOpen(true)} />
+          </div>
           <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />
-
-          <div
-            className="mt-11 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row"
-            data-reveal
-            style={delay(220)}
-          >
-            <Link
-              to="/shop"
-              className="mk-btn mk-btn-primary group w-full !min-h-[54px] !px-8 !text-[15.5px] sm:w-auto"
-            >
-              Buy data
-              <ArrowRight className="mk-arrow" size={18} aria-hidden="true" />
-            </Link>
-            <Link
-              to="/track-order"
-              className="mk-btn mk-btn-ghost w-full !min-h-[54px] !px-7 !text-[15.5px] sm:w-auto"
-            >
-              Track an order
-            </Link>
-          </div>
-
-          <p
-            className="mt-8 inline-flex items-center gap-2 text-[13px] text-faint-foreground"
-            data-reveal
-            style={delay(290)}
-          >
-            <ShieldCheck size={14} strokeWidth={1.9} aria-hidden="true" />
-            No account needed — buy as a guest and still track the order.
-          </p>
         </div>
       </div>
     </section>

@@ -38,7 +38,7 @@ export default function Prices() {
 
         {loading ? (
           <div className="grid min-h-48 place-items-center"><Loader2 className="animate-spin text-primary-glow" /></div>
-        ) : error ? (
+        ) : error && !Object.values(byNetwork).some((l) => l.length) ? (
           <p className="mt-10 text-sm text-muted-foreground">Prices are loading slowly right now — open the <Link className="font-semibold text-primary-glow underline" to="/shop">shop</Link> to browse every live bundle.</p>
         ) : (
           <div className="mt-10 space-y-12">
