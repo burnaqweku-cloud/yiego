@@ -25,14 +25,14 @@
       // Daylight is the default; Onyx Dark when chosen (or via device setting).
       (function () {
         try {
-          // The public site is always dark (src/store/theme.tsx → isPublicSitePath); dashboards and store hosts
-          // follow the saved theme.
+          // The public site follows the device until a theme is chosen (src/store/theme.tsx → defaultMode);
+          // dashboards and store hosts default to Daylight.
           var h = location.hostname.toLowerCase();
           var mainHost = ["datayego.com", "www.datayego.com", "yiego.shop", "www.yiego.shop", "localhost", "127.0.0.1"].indexOf(h) !== -1 || /\.(lovable\.app|lovableproject\.com|lovable\.dev)$/.test(h);
           var publicSite = mainHost && !/^\/(agent|admin)(\/|$)/.test(location.pathname);
           var t = localStorage.getItem("yiego_theme_v1");
+          if (!t && publicSite) t = "system";
           var dark =
-            publicSite ||
             t === "dark" ||
             (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
           if (!dark) {
@@ -42,11 +42,8 @@
             if (m) m.setAttribute("content", "#080b0a");
           }
         } catch (e) {
-          /* storage blocked: keep the public site dark, light elsewhere */
-          if (!/^\/(agent|admin)(\/|$)/.test(location.pathname)) {
-            var m2 = document.querySelector('meta[name="theme-color"]');
-            if (m2) m2.setAttribute("content", "#080b0a");
-          } else document.documentElement.classList.add("light");
+          /* storage blocked: Daylight */
+          document.documentElement.classList.add("light");
         }
       })();
     </script>

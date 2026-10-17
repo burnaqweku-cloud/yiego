@@ -8,6 +8,7 @@ import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import "@fontsource/ibm-plex-mono/600.css";
 import "./index.css";
+import "./styles/site.css"; // after index.css: the public-site rules must win ties with the app rules
 
 // A page left open across a publish asks for code files that no longer exist,
 // which shows up as blank sheets or pages. Reload once to pick up the live build.

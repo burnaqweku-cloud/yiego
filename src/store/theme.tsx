@@ -5,7 +5,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useLocation } from "react-router-dom";
 import { isStoreHost } from "@/lib/storeHost";
 
 /** Theme — Onyx Dark (signature), Daylight, or follow the device.
@@ -21,6 +20,17 @@ const THEME_COLOR: Record<Resolved, string> = {
   light: "#f2f7f4",
 };
 
+/** The public site (everything on the main host except the agent and admin apps) follows the device until the
+ *  visitor picks a theme; the dashboards and store hosts default to Daylight. index.html's pre-paint script
+ *  mirrors this. */
+export function isPublicSitePath(pathname: string): boolean {
+  return !isStoreHost() && !/^\/(agent|admin)(\/|$)/.test(pathname);
+}
+
+function defaultMode(): ThemeMode {
+  return typeof window !== "undefined" && isPublicSitePath(window.location.pathname) ? "system" : "light";
+}
+
 function loadMode(): ThemeMode {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -28,13 +38,7 @@ function loadMode(): ThemeMode {
   } catch {
     /* default */
   }
-  return "light";
-}
-
-/** The public site (everything on the main host except the agent and admin apps) has one look: dark. The stored
- *  theme still applies inside the dashboards and on store hosts. index.html's pre-paint script mirrors this test. */
-export function isPublicSitePath(pathname: string): boolean {
-  return !isStoreHost() && !/^\/(agent|admin)(\/|$)/.test(pathname);
+  return defaultMode();
 }
 
 function systemPrefersLight(): boolean {
@@ -66,12 +70,9 @@ const ThemeContext = createContext<ThemeValue | null>(null);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(loadMode);
   const [resolved, setResolved] = useState<Resolved>(() => resolve(loadMode()));
-  const { pathname } = useLocation();
-  const effective: Resolved = isPublicSitePath(pathname) ? "dark" : resolved;
-
   useEffect(() => {
-    apply(effective);
-  }, [effective]);
+    apply(resolved);
+  }, [resolved]);
 
   // Follow the OS while in system mode.
   useEffect(() => {
@@ -93,7 +94,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ mode, resolved: effective, setMode }}>
+    <ThemeContext.Provider value={{ mode, resolved, setMode }}>
       {children}
     </ThemeContext.Provider>
   );

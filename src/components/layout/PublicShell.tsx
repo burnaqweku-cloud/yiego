@@ -5,7 +5,6 @@ import { Outlet, useLocation } from "react-router-dom";
 import PublicNav from "@/components/layout/PublicNav";
 import PublicFooter from "@/components/layout/PublicFooter";
 import FloatingSupport from "@/components/layout/FloatingSupport";
-import "@/styles/site.css";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
