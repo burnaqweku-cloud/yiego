@@ -61,7 +61,7 @@ export default function AdminAgents() {
   const load = useCallback(async () => {
     const [a, g, p, s, r, po, sp, gr] = await Promise.all([
       db().from("agent_applications").select("*").order("created_at", { ascending: false }).limit(500),
-      db().from("agents").select("id, user_id, slug, store_name, status, paid_until, earnings_balance, created_at, parent_agent_id, network_on").order("created_at", { ascending: false }),
+      db().from("agents").select("id, user_id, slug, store_name, status, paid_until, earnings_balance, created_at, parent_agent_id, network_on").is("parent_agent_id", null).order("created_at", { ascending: false }), // sub-agents live under Sub-agents, not here
       db().from("agent_promos").select("*").order("created_at", { ascending: false }),
       db().from("site_settings").select("key, value").in("key", ["agents_launched", "agent_plan"]),
       actor ? db().rpc("admin_role", { p_user: actor }) : Promise.resolve({ data: null, error: null }),
@@ -203,7 +203,7 @@ export default function AdminAgents() {
           <Segmented<AgentFilter> value={agentFilter} onChange={setAgentFilter} options={[{ value: "subscribed", label: `On subscription (${counts.subscribed})` }, { value: "sold", label: `Have sold (${counts.sold})` }, { value: "expiring", label: `Expiring ≤7d (${counts.expiring})` }, { value: "unpaid", label: `Approved, unpaid (${counts.unpaid})` }, { value: "lapsed", label: `Lapsed, sold before (${counts.lapsed})` }, { value: "all", label: `All (${counts.all})` }]} />
           <Segmented<"sales" | "recent" | "balance"> value={agentSort} onChange={setAgentSort} options={[{ value: "sales", label: "Top sales" }, { value: "balance", label: "Balance" }, { value: "recent", label: "Newest" }]} />
         </div>
-        <Panel title="Agents" note={`${visibleAgents.length} shown`} action={isMaster ? <Button size="sm" variant="soft" onClick={() => setMaking(true)}>Make someone an agent</Button> : undefined}>
+        <Panel title="Agents" note={`${visibleAgents.length} shown · sub-agents are under Sub-agents`} action={isMaster ? <Button size="sm" variant="soft" onClick={() => setMaking(true)}>Make someone an agent</Button> : undefined}>
           <Rows empty={loading ? "Loading…" : "No agents yet — approve an application to create one."}>
             {visibleAgents.map((g) => { const st = agentStats[g.id]; const dl = daysLeft(g); return (
               <li key={g.id} className="cursor-pointer py-2 hover:bg-white/[0.02]" onClick={() => navigate(`/admin/agents/${g.id}`)}>
