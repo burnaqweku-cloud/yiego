@@ -8,11 +8,10 @@ import { useContactSettings } from "@/hooks/useContactSettings";
 /**
  * Floating help on every customer-facing page.
  *
- * Phones get one small "Help" pill, bottom right, that slides away while the
- * page scrolls down and comes back when it stops, so it never sits on top of
- * the prices. Larger screens also get the WhatsApp channel bubble, bottom
- * left (only while WhatsApp support is enabled in contact settings). Both sit
- * below modals (z-40).
+ * The WhatsApp channel bubble bottom left (only while WhatsApp support is
+ * enabled in contact settings) and a small "Help" pill bottom right. Both
+ * slide away while the page scrolls down and come back when it stops, so
+ * they never sit on top of the prices. Both sit below modals (z-40).
  */
 export default function FloatingSupport() {
   const { whatsappUrl } = useContactSettings();
@@ -38,7 +37,7 @@ export default function FloatingSupport() {
   return (
     <>
       {whatsappUrl && (
-        <div className={`fixed bottom-5 left-5 z-40 hidden transition-all duration-300 sm:block ${shift}`} style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
+        <div className={`fixed bottom-4 left-4 z-40 transition-all duration-300 sm:bottom-5 sm:left-5 ${shift}`} style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
           <WhatsAppFab href={WHATSAPP_CHANNEL_URL} label="DataYego on WhatsApp" />
         </div>
       )}
