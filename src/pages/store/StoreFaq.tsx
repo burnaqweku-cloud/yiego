@@ -3,7 +3,7 @@ import StorePage from "@/components/store/StorePage";
 
 /* The store's FAQ: the agent's own questions, or the standard set if they haven't written any. */
 export const DEFAULT_FAQ = (name: string): Array<{ q: string; a: string }> => [
-  { q: "How fast is delivery?", a: "Usually within minutes of payment. MTN numbers receiving a bundle for the first time are verified by MTN first, which can take a few days; after that every order is fast." },
+  { q: "How fast is delivery?", a: "The bundle is sent to the number automatically as soon as payment clears; how long the network takes varies. MTN numbers receiving a bundle for the first time are verified by MTN first, which can take a few days; after that orders to that number go through without the wait." },
   { q: "How do I pay?", a: "Mobile money (MTN, Telecel, AirtelTigo) or card, at checkout. You get an order ID by email the moment payment goes through." },
   { q: "Can I buy for someone else?", a: "Yes. Enter their number as the recipient. The data goes to that number and the receipt comes to your email." },
   { q: "I entered the wrong number.", a: "If the number is on a different network from the bundle you chose, you can correct it from the Track page. A bundle already delivered to a number can't be reversed." },

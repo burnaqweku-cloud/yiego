@@ -74,7 +74,7 @@ An order can be shared so that another DataYego user pays for it using its order
 
 ## 7. Delivery
 
-Orders are sent to the network automatically once payment clears, and most arrive within minutes. Delivery depends on the mobile networks and on our supplier, so it is not instant in every case and can be delayed or interrupted by problems outside our control.
+Orders are sent to the network automatically once payment clears, and delivery time depends on the mobile networks and on our supplier, so it is not instant in every case and can be delayed or interrupted by problems outside our control.
 
 Every order carries a reference beginning with **YG-**. You can check payment and delivery status at any time on the Track Order page, and account holders can see all their orders under Orders.
 

@@ -24,11 +24,11 @@ export default function MarketHome() {
   const faq = (store.faq?.length ? store.faq : DEFAULT_FAQ(store.store_name)).slice(0, 4);
   return (
     <div className="space-y-7">
-      <Seo path={base} title={`${store.store_name} — MTN, Telecel & AirtelTigo data`} description={store.tagline ?? `Buy MTN, Telecel and AirtelTigo data from ${store.store_name}. Pay with MoMo, delivered in minutes.`} />
+      <Seo path={base} title={`${store.store_name} — MTN, Telecel & AirtelTigo data`} description={store.tagline ?? `Buy MTN, Telecel and AirtelTigo data from ${store.store_name}. Pay with MoMo, sent to any number.`} />
       <section className="st-board">
         <span className="st-sticker text-[12px]">MTN · Telecel · AirtelTigo</span>
         <h1 className="mt-3">{store.store_name}</h1>
-        <p className="mt-2 text-[15px]">{store.tagline ?? "Data for any number. Pay with MoMo, delivered in minutes."}</p>
+        <p className="mt-2 text-[15px]">{store.tagline ?? "Data for any number. Pay with MoMo, sent to any number."}</p>
         <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
           <Link to={`${base}/bundles`} className="onyx-btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 text-[15px]">Buy data<ArrowRight size={17} /></Link>
           <Link to={`${base}/track`} className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#fff8ec]/60 px-5 py-3 text-[14px] font-bold text-[#fff8ec]"><Search size={15} />Track an order</Link>

@@ -34,7 +34,7 @@ export default function StoreHome() {
         <section className="st-board">
           <span className="st-sticker text-[12px]">MTN · Telecel · AirtelTigo</span>
           <h1 className="mt-3">{store.store_name}</h1>
-          <p className="mt-2 text-[14px]">{store.tagline ?? "Data for any number. Pay with MoMo, delivered in minutes."}</p>
+          <p className="mt-2 text-[14px]">{store.tagline ?? "Data for any number. Pay with MoMo or card."}</p>
           {speedPill(speeds.MTN) && <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[12px] font-semibold text-[#fff8ec]"><span className="h-1.5 w-1.5 rounded-full bg-[#ffd23f]" />{speedPill(speeds.MTN)!.text}</p>}
         </section>
       )}

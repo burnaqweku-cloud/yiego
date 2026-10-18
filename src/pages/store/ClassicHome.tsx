@@ -23,9 +23,9 @@ export default function ClassicHome() {
   const faq = (store.faq?.length ? store.faq : DEFAULT_FAQ(store.store_name)).slice(0, 4);
   return (
     <div className="space-y-6">
-      <Seo path={base} title={`${store.store_name} — MTN, Telecel & AirtelTigo data`} description={store.tagline ?? `Buy MTN, Telecel and AirtelTigo data from ${store.store_name}. Pay with MoMo or card, delivered in minutes.`} />
+      <Seo path={base} title={`${store.store_name} — MTN, Telecel & AirtelTigo data`} description={store.tagline ?? `Buy MTN, Telecel and AirtelTigo data from ${store.store_name}. Pay with MoMo or card, sent to any number.`} />
       <section className="rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/25 via-primary/8 to-transparent p-6">
-        <h1 className="font-display text-[30px] font-semibold leading-[1.05] text-foreground sm:text-[38px]">Data for any number,<br />in minutes.</h1>
+        <h1 className="font-display text-[30px] font-semibold leading-[1.05] text-foreground sm:text-[38px]">Data for any number,<br />paid in two taps.</h1>
         <p className="mt-3 max-w-[34ch] text-[14.5px] text-muted-foreground">{store.tagline ?? "MTN, Telecel and AirtelTigo. Pay with MoMo or card, delivered straight to the number."}</p>
         <div className="mt-5 flex flex-col gap-2.5 sm:flex-row"><Link to={`${base}/bundles`} className="onyx-btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 text-[15px]">Buy data<ArrowRight size={17} /></Link><Link to={`${base}/track`} className="inline-flex items-center justify-center gap-2 rounded-full border border-white/[0.14] px-5 py-3 text-[14px] font-semibold text-foreground"><Search size={15} />Track an order</Link></div>
         <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[12px] text-muted-foreground"><span className="inline-flex items-center gap-1.5"><Zap size={13} className="text-primary-glow" />Automatic delivery, 24/7</span><span className="inline-flex items-center gap-1.5"><ShieldCheck size={13} className="text-primary-glow" />Secure payment</span><span>MTN · Telecel · AirtelTigo</span></div>

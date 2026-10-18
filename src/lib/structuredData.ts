@@ -85,7 +85,7 @@ export function bundleOffersLd(network: string, path: string, bundles: Array<{ n
     "@type": "Product",
     name: `${network} data bundles`,
     brand: { "@type": "Brand", name: network },
-    description: `${network} data bundles delivered in minutes by ${SITE_NAME}.`,
+    description: `${network} data bundles for any Ghana number, from ${SITE_NAME}.`,
     url: SITE_ORIGIN + path,
     offers: {
       "@type": "AggregateOffer",

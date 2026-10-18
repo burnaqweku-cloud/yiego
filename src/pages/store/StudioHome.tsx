@@ -45,14 +45,14 @@ export default function StudioHome() {
 
   return (
     <div>
-      <Seo path={base} title={`${store.store_name} — MTN, Telecel & AirtelTigo data bundles`} description={store.tagline ?? `Buy MTN, Telecel and AirtelTigo data from ${store.store_name}. Pay with MoMo or card, delivered to any number in minutes.`} />
+      <Seo path={base} title={`${store.store_name} — MTN, Telecel & AirtelTigo data bundles`} description={store.tagline ?? `Buy MTN, Telecel and AirtelTigo data from ${store.store_name}. Pay with MoMo or card, sent to any number in minutes.`} />
 
       {/* Hero: the claim, the two things a visitor came to do, and real prices. */}
       <section className="px-5 pb-10 pt-8 sm:px-8 sm:pt-14">
         <div className="mx-auto max-w-5xl lg:grid lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-12">
           <div>
             {store.store_notice && <p className="mb-5 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--primary-soft))] px-3.5 py-1.5 text-[13px] font-medium text-[hsl(var(--primary-glow))]"><span className="h-1.5 w-1.5 rounded-full bg-current" />{store.store_notice}</p>}
-            <h1 className="st-h1">Data for any number,<br />delivered in minutes.</h1>
+            <h1 className="st-h1">Data for any number,<br />sent straight to the line.</h1>
             <p className="st-lead mt-5 max-w-[32ch]">{store.tagline ?? `${first} sells MTN, Telecel and AirtelTigo bundles at fair prices. Pay with MoMo or card and the data lands on the number straight away.`}</p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link to={`${base}/bundles`} className="st-btn fill">Buy data<ArrowRight size={17} /></Link>

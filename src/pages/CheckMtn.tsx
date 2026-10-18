@@ -51,7 +51,7 @@ export default function CheckMtn({ embedded = false }: { embedded?: boolean } = 
       <section className="onyx-panel rounded-[24px] p-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">MTN number check</p>
         <h1 className="mt-2 font-display text-[26px] font-semibold leading-tight text-foreground">{embedded ? "Check a customer's MTN number" : "Can this MTN number receive data bundles?"}</h1>
-        <p className="mt-2 text-[13.5px] leading-6 text-muted-foreground">{embedded ? "MTN verifies a number the first time it receives a bundle from our supplier. Approved numbers get data in minutes; new ones can take a few days. Check before you sell so you can tell your customer what to expect." : "MTN verifies a number the first time it receives a bundle from our supplier. Approved numbers get data in minutes; new ones can take a few days. Check before you buy, for yourself or for the people you buy for."}</p>
+        <p className="mt-2 text-[13.5px] leading-6 text-muted-foreground">{embedded ? "MTN verifies a number the first time it receives a bundle from our supplier. Approved numbers receive data without a wait; new ones are verified by MTN first, which can take a few days. Check before you sell so you can tell your customer what to expect." : "MTN verifies a number the first time it receives a bundle from our supplier. Approved numbers receive data without a wait; new ones are verified by MTN first, which can take a few days. Check before you buy, for yourself or for the people you buy for."}</p>
         <div className="mt-5"><p className="mb-2 text-[13px] font-semibold text-foreground">Check one number</p><MtnCheckField source="checker" /></div>
       </section>
       <section className="onyx-panel rounded-[24px] p-6">
@@ -82,7 +82,7 @@ export default function CheckMtn({ embedded = false }: { embedded?: boolean } = 
       </section>
       <section className="onyx-panel rounded-[24px] p-6 text-[13.5px] leading-6 text-muted-foreground">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint-foreground">How it works</p>
-        <p className="mt-2"><b className="text-foreground">Approved</b> numbers receive bundles in minutes. <b className="text-foreground">Not yet approved</b> numbers can still be bought for: the order goes through once MTN approves the number, usually within a few days, and every order after that is fast.</p>
+        <p className="mt-2"><b className="text-foreground">Approved</b> numbers receive bundles without the verification wait. <b className="text-foreground">Not yet approved</b> numbers can still be bought for: the order goes through once MTN approves the number, usually within a few days, and every order after that is fast.</p>
         <p className="mt-2"><b className="text-foreground">Submit for verification</b> puts a number in MTN's queue without buying anything. Use it for numbers you'll buy for later, so they're ready when you need them.</p>
         <p className="mt-2">Checking is free, needs no account, and does nothing to the number.</p>
       </section>

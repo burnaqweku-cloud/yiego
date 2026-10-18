@@ -10,7 +10,7 @@ interface Entry { id: string; title: string; content: string; is_active: boolean
 const PLATFORM = [
   ["Orders and tracking", "Looks up any of your customers' orders by Order ID or, when they're signed in, sees their recent orders: paid, in progress, delivered, MTN verification, wrong network."],
   ["Prices", "Quotes your store's own prices and promos, live."],
-  ["Delivery", "Knows the current MTN delivery time and that Telecel/AirtelTigo usually deliver in minutes; explains first-time MTN verification."],
+  ["Delivery", "Explains how delivery works and first-time MTN verification, without promising a delivery time."],
   ["Payments", "MoMo and card via Paystack, the wallet, and why a payment can show as pending."],
   ["Hand-over", "Refunds, money deducted without delivery, complaints it can't verify, or anyone asking for a person: it hands over to you in your Support inbox."],
 ];
