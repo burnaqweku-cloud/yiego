@@ -44,11 +44,14 @@ Deno.serve(async (req) => {
       ? await supabase.auth.getUser(token)
       : { data: { user: null } };
     const authenticatedUser = authData.user ?? null;
-    const paymentEmail = authenticatedUser?.email ?? guestEmail;
-
-    if (!paymentEmail) {
-      return jsonResponse({ error: "An email is required for receipt and Paystack payment" }, { status: 400 });
+    if (guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+      return jsonResponse({ error: "That email address doesn't look right" }, { status: 400 });
     }
+    // Guests may skip the email. The gateway still needs one, so a placeholder built from the phone number is used
+    // for the payment only; the order keeps guest_email null, so no receipt is attempted and tracking is by reference
+    // or phone number.
+    const paymentEmail = authenticatedUser?.email ?? (guestEmail || `${guestPhone}@guest.datayego.com`);
+    const receiptEmail = authenticatedUser ? null : (guestEmail || null);
 
     // Expired-but-open orders would otherwise hold the one-open-order-per-recipient
     // slot forever; the prepared-order RPCs run this same sweep before inserting.
@@ -230,7 +233,7 @@ Deno.serve(async (req) => {
         .insert({
           order_reference: orderReference,
           user_id: authenticatedUser?.id ?? null,
-          guest_email: authenticatedUser ? null : paymentEmail,
+          guest_email: receiptEmail,
           guest_phone: authenticatedUser ? null : guestPhone,
           recipient_phone: recipientPhone,
           network_id: product.network_id,
