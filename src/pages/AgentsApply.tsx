@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import BackLink from "@/components/layout/BackLink";
 import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -45,6 +46,7 @@ export default function AgentsApply() {
     <section className="mk-wrap" aria-labelledby="apply-h">
       <Seo {...metaFor("/agents")} jsonLd={breadcrumbLd([{ name: "Home", path: "/" }, { name: "Become an agent", path: "/agents" }])} />
       <div className="mx-auto max-w-[520px] py-10 sm:py-14">
+        <BackLink className="mb-5" />
         <span className="mk-eyebrow">Become an agent</span>
         <h1 id="apply-h" className="mk-h2 mt-3">Apply to be a DataYego agent</h1>
         <p className="mk-lead mt-4 !text-[16px]">

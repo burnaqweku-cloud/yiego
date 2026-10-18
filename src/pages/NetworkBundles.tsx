@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import BackLink from "@/components/layout/BackLink";
 import { CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Seo from "@/components/seo/Seo";
@@ -108,6 +109,7 @@ export default function NetworkBundles({ network }: { network: NetworkId }) {
         {/* Phones: headline, then the prices, then the detail. Desktop: copy left, prices right. */}
         <div className="grid gap-8 py-10 sm:py-14 lg:grid-cols-12 lg:gap-x-12 lg:gap-y-6 lg:py-20">
           <div className="lg:col-span-6">
+            <BackLink className="mb-5" />
             <div className="flex items-center gap-3">
               <span className="net-mark" aria-hidden="true">{NET_MARK[network]}</span>
               <span className="mk-eyebrow !text-foreground">{networkName} · Ghana</span>

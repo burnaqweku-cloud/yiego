@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import BackLink from "@/components/layout/BackLink";
 import { Link } from "react-router-dom";
 import Seo from "@/components/seo/Seo";
 import { metaFor } from "@/lib/site";
@@ -44,6 +45,7 @@ export default function Prices() {
 
       <section className="mk-wrap" aria-labelledby="prices-title">
         <div className="py-8 sm:py-12 lg:py-16">
+          <BackLink className="mb-5" />
           <span className="mk-eyebrow">Live prices</span>
           <h1 id="prices-title" className="mk-hero-title mt-3 max-w-[14ch] !text-[clamp(36px,6.5vw,72px)]">Data bundle prices in Ghana</h1>
           <p className="mk-lead mt-5">

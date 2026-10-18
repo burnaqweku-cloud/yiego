@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import BackLink from "@/components/layout/BackLink";
 import { Check, ClipboardCopy, Clock, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import Seo from "@/components/seo/Seo";
@@ -48,8 +49,9 @@ export default function CheckMtn({ embedded = false }: { embedded?: boolean } = 
   return (
     <div className={embedded ? "w-full space-y-6" : "mx-auto w-full max-w-[760px] space-y-6"}>
       {!embedded && <Seo {...metaFor("/check-mtn")} />}
+      {!embedded && <BackLink className="mb-4" />}
       <section className="onyx-panel rounded-[24px] p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">MTN number check</p>
+        <p className="text-[13px] font-semibold text-primary-glow">MTN number check</p>
         <h1 className="mt-2 font-display text-[26px] font-semibold leading-tight text-foreground">{embedded ? "Check a customer's MTN number" : "Can this MTN number receive data bundles?"}</h1>
         <p className="mt-2 text-[13.5px] leading-6 text-muted-foreground">{embedded ? "MTN verifies a number the first time it receives a bundle from our supplier. Approved numbers receive data without a wait; new ones are verified by MTN first, which can take a few days. Check before you sell so you can tell your customer what to expect." : "MTN verifies a number the first time it receives a bundle from our supplier. Approved numbers receive data without a wait; new ones are verified by MTN first, which can take a few days. Check before you buy, for yourself or for the people you buy for."}</p>
         <div className="mt-5"><p className="mb-2 text-[13px] font-semibold text-foreground">Check one number</p><MtnCheckField source="checker" /></div>

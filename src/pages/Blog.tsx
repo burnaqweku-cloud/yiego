@@ -1,4 +1,5 @@
 import { ArrowRight, Clock3 } from "lucide-react";
+import BackLink from "@/components/layout/BackLink";
 import { Link } from "react-router-dom";
 import Seo from "@/components/seo/Seo";
 import { metaFor } from "@/lib/site";
@@ -22,6 +23,7 @@ export default function Blog() {
     <section className="mk-section-tight" aria-labelledby="blog-title">
       <Seo {...metaFor("/blog")} jsonLd={breadcrumbLd([{ name: "Home", path: "/" }, { name: "Guides", path: "/blog" }])} />
       <div className="mk-wrap">
+        <BackLink className="mb-5" />
         <p className="mk-eyebrow">DataYego guides</p>
         <h1 id="blog-title" className="mk-display mt-5 max-w-[18ch] !text-[clamp(30px,5vw,50px)]">Data guides for Ghana</h1>
         <p className="mk-lead mt-6 max-w-[62ch]">

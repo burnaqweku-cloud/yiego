@@ -160,7 +160,6 @@ export default function BundleCatalogue() {
   const [checkInfoOpen, setCheckInfoOpen] = useState(false);
   const { openBuyData } = useFlows();
   const [filter, setFilter] = useState<Filter>("all");
-  const [mtnCheckOpen, setMtnCheckOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [attempt, setAttempt] = useState(0);
 
@@ -236,7 +235,7 @@ export default function BundleCatalogue() {
     <section aria-labelledby="catalogue-title" className="scroll-mt-24" id="bundles">
       {/* Network tabs first: the first thing on the page is the thing to choose. Search is the small tool beside them. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar" role="tablist" aria-label="Network">
+        <div className="grid grid-cols-4 gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] p-1 sm:inline-grid sm:w-auto" role="tablist" aria-label="Network">
           {filters.map((f) => (
             <button
               key={f.id}
@@ -244,13 +243,13 @@ export default function BundleCatalogue() {
               role="tab"
               aria-selected={filter === f.id}
               onClick={() => setFilter(f.id)}
+              title={`${counts.get(f.id) ?? 0} bundles`}
               className={cn(
-                "shrink-0 rounded-full border px-4 py-2 text-[13.5px] font-semibold transition-colors",
-                filter === f.id ? "border-transparent bg-foreground text-background" : "border-white/[0.12] text-muted-foreground hover:text-foreground",
+                "rounded-full px-2 py-2 text-center text-[13px] font-semibold leading-none transition-colors sm:px-4",
+                filter === f.id ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground",
               )}
             >
               {f.label}
-              <span className="ml-1.5 tnum text-[11.5px] opacity-60">{counts.get(f.id) ?? 0}</span>
             </button>
           ))}
         </div>
@@ -359,14 +358,9 @@ export default function BundleCatalogue() {
                         </>)}
                       </h3>
                     </div>
-                    {group.network.name === "MTN" && !mtnCheckOpen && (
-                      <button type="button" onClick={() => setMtnCheckOpen(true)} className="mb-5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary-glow underline-offset-4 hover:underline">
-                        First time buying for this MTN number? Check it first
-                      </button>
-                    )}
-                    {group.network.name === "MTN" && mtnCheckOpen && (
+                    {group.network.name === "MTN" && (
                       <div className="mb-5 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
-                        <div className="mb-2 flex items-center gap-1.5"><p className="text-[13px] font-semibold text-foreground">Check if your MTN number is approved before you buy</p><button type="button" onClick={() => setCheckInfoOpen(true)} aria-label="About the MTN number check" className="text-faint-foreground hover:text-primary-glow"><Info size={15} /></button></div>
+                        <div className="mb-2 flex items-center gap-1.5"><p className="text-[13px] font-semibold text-foreground">First time buying for this MTN number? Check it first</p><button type="button" onClick={() => setCheckInfoOpen(true)} aria-label="About the MTN number check" className="text-faint-foreground hover:text-primary-glow"><Info size={15} /></button></div>
                         <MtnCheckField source="shop" />
                         <MtnCheckInfoSheet open={checkInfoOpen} onClose={() => setCheckInfoOpen(false)} />
                       </div>

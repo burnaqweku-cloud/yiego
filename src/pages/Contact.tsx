@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import BackLink from "@/components/layout/BackLink";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -80,6 +81,7 @@ export default function Contact() {
       {/* ── Page header ─────────────────────────────────────────── */}
       <section className="mk-section-tight" aria-labelledby="contact-title" ref={headRef}>
         <div className="mk-wrap">
+          <BackLink className="mb-5" />
           <p className="mk-eyebrow" data-reveal>
             Contact
           </p>

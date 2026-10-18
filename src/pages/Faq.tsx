@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import BackLink from "@/components/layout/BackLink";
 import { Link } from "react-router-dom";
 import { ArrowRight, Plus } from "lucide-react";
 import { FAQ_GROUPS } from "@/data/faq";
@@ -60,6 +61,7 @@ export default function Faq() {
       {/* ── Page header ─────────────────────────────────────────── */}
       <section className="mk-section-tight" aria-labelledby="faq-title" ref={headRef}>
         <div className="mk-wrap">
+          <BackLink className="mb-5" />
           <p className="mk-eyebrow" data-reveal>
             Questions
           </p>

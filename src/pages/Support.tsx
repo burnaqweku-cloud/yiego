@@ -1,4 +1,5 @@
 import type { ComponentPropsWithoutRef, CSSProperties } from "react";
+import BackLink from "@/components/layout/BackLink";
 import { ArrowRight, ArrowUpRight, Bot, Clock, Mail, MessageCircle, ShieldAlert } from "lucide-react";
 import { Link } from "react-router-dom";
 import Seo from "@/components/seo/Seo";
@@ -54,6 +55,7 @@ export default function Support() {
       {/* ── Page header ─────────────────────────────────────────── */}
       <RevealSection className="mk-section-tight pb-0" aria-labelledby="support-title">
         <div className="mk-wrap">
+          <BackLink className="mb-5" />
           <p className="mk-eyebrow" data-reveal>
             Help
           </p>

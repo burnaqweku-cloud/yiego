@@ -20,9 +20,6 @@ const NETWORK_PATH: Record<NetworkId, string> = {
 
 const NETWORK_CLASS: Record<NetworkId, string> = { mtn: "net-mtn", telecel: "net-telecel", at: "net-at" };
 
-/** Rows the board shows before the "all bundles" link takes over. */
-const ROWS = 7;
-
 const byCapacity = (a: LiveBundle, b: LiveBundle) => a.capacityGb - b.capacityGb || a.price - b.price;
 
 export default function PriceBoard() {
@@ -31,7 +28,7 @@ export default function PriceBoard() {
   const [networkId, setNetworkId] = useState<NetworkId>("mtn");
   const network = NETWORKS.find((n) => n.id === networkId) ?? NETWORKS[0];
   const all = [...(byNetwork[networkId] ?? [])].sort(byCapacity);
-  const rows = all.slice(0, ROWS);
+  const rows = all;
 
   return (
     <div className={`board ${NETWORK_CLASS[networkId]}`}>
@@ -82,7 +79,7 @@ export default function PriceBoard() {
       <div className="board-foot">
         <span>Tap a bundle to buy it.</span>
         <Link to={NETWORK_PATH[networkId]} className="font-semibold text-foreground underline-offset-4 hover:underline">
-          All {all.length} {network.name} bundles
+          About {network.name} bundles
         </Link>
       </div>
     </div>

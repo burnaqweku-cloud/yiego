@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import BackLink from "@/components/layout/BackLink";
 import { Link } from "react-router-dom";
 import { ChevronDown, Globe, Megaphone, ShoppingBag, Users, UsersRound } from "lucide-react";
 import { metaFor } from "@/lib/site";
@@ -129,6 +130,7 @@ export default function AgentsStore() {
       <Seo {...metaFor("/agents/store")} jsonLd={faqPageLd(FAQ)} />
       <div className="mx-auto max-w-2xl">
         {/* Hero */}
+        <BackLink className="mb-5" />
         <span className="mk-eyebrow">Agents</span>
         <h1 className="mk-h2 mt-3">Everything in your store.</h1>
         <p className="mk-lead mt-5">{total} features, {SECTIONS.length} sections, {fee !== null ? `${feeText} a month` : "one small monthly fee"}. A real website with your name on it, agent prices on every bundle, customers who pay first so you never need a deposit, and the tools to sell on WhatsApp every day. Tap any row for the detail.</p>
