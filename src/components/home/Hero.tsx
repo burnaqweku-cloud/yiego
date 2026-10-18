@@ -9,18 +9,24 @@ import PriceBoard from "@/components/home/PriceBoard";
  * price board is the product — a visitor can buy from the hero without
  * reading anything else.
  */
-function Actions({ onInvite }: { onInvite: () => void }) {
+/** The two actions. On phones they sit in one short row under the intro; on desktop they keep their full size. */
+function Buttons({ compact = false }: { compact?: boolean }) {
+  const size = compact ? "!min-h-[44px] !px-4 !text-[14.5px]" : "w-full sm:w-auto";
+  return (
+    <div className={compact ? "grid grid-cols-2 gap-2.5" : "mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"}>
+      <Link to="/shop" className={`mk-btn mk-btn-primary ${size}`}>
+        Buy data
+      </Link>
+      <Link to="/track-order" className={`mk-btn mk-btn-ghost ${size}`}>
+        Track an order
+      </Link>
+    </div>
+  );
+}
+
+function Notes({ onInvite }: { onInvite: () => void }) {
   return (
     <>
-      <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center lg:mt-9">
-        <Link to="/shop" className="mk-btn mk-btn-primary w-full sm:w-auto">
-          Buy data
-        </Link>
-        <Link to="/track-order" className="mk-btn mk-btn-ghost w-full sm:w-auto">
-          Track an order
-        </Link>
-      </div>
-
       <p className="mt-6 text-[13.5px] text-faint-foreground">
         No account needed. Buy as a guest and still track the order.
       </p>
@@ -28,10 +34,10 @@ function Actions({ onInvite }: { onInvite: () => void }) {
       <button
         type="button"
         onClick={onInvite}
-        className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-primary-glow underline-offset-4 hover:underline"
+        className="mt-4 inline-flex items-center gap-2 text-[14px] font-semibold text-primary-glow underline-offset-4 hover:underline"
       >
         <Gift size={15} aria-hidden="true" />
-        Invite friends and earn free data
+        Invite &amp; earn GHS 6.00 in data
       </button>
     </>
   );
@@ -43,19 +49,22 @@ export default function Hero() {
   return (
     <section className="mk-hero !pt-0" aria-labelledby="hero-h">
       <div className="mk-wrap">
-        <div className="grid items-center gap-10 py-10 sm:py-14 lg:grid-cols-12 lg:gap-10 lg:py-20">
+        <div className="grid gap-6 py-8 sm:py-14 lg:grid-cols-12 lg:items-start lg:gap-10 lg:py-16">
           <div className="lg:col-span-6">
             <h1 id="hero-h" className="mk-hero-title max-w-[12ch]">
               Buy data for any Ghana number.
             </h1>
-            <p className="mk-lead mt-7">
-              MTN, Telecel and AirtelTigo bundles at prices that make sense. Pay with Mobile Money or card.
-              Every order has a reference you can track.
+            <p className="mk-lead mt-5 lg:mt-7">
+              MTN, Telecel and AirtelTigo bundles for any number. Pay with Mobile Money or card.
             </p>
 
-            {/* On phones the board comes straight after the headline; the buttons follow it. */}
+            {/* Phones: a short row of the two actions right here, then the board. Desktop: full-size buttons. */}
+            <div className="mt-5 lg:hidden">
+              <Buttons compact />
+            </div>
             <div className="hidden lg:block">
-              <Actions onInvite={() => setInviteOpen(true)} />
+              <Buttons />
+              <Notes onInvite={() => setInviteOpen(true)} />
             </div>
           </div>
 
@@ -63,8 +72,8 @@ export default function Hero() {
             <PriceBoard />
           </div>
 
-          <div className="-mt-4 lg:hidden">
-            <Actions onInvite={() => setInviteOpen(true)} />
+          <div className="-mt-2 lg:hidden">
+            <Notes onInvite={() => setInviteOpen(true)} />
           </div>
           <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />
         </div>

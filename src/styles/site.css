@@ -214,6 +214,9 @@
 .board-price small { font-size: 12px; font-weight: 600; color: hsl(var(--faint-foreground)); margin-right: 3px; letter-spacing: 0; }
 .board-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; background: rgb(var(--veil) / 0.03); font-size: 13px; color: hsl(var(--muted-foreground)); }
 
+/* Desktop: the hero stays one screen; the list scrolls inside the board. Phones show the whole list. */
+@media (min-width: 1024px) { .board-panel { max-height: 560px; overflow-y: auto; overscroll-behavior: contain; } }
+
 /* Hero entrance: the board rows step in once. */
 @keyframes board-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .board-row { animation: board-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 45ms); }

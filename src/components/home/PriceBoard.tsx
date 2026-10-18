@@ -50,7 +50,7 @@ export default function PriceBoard() {
         ))}
       </div>
 
-      <div id="board-panel" role="tabpanel" aria-labelledby={`board-tab-${networkId}`}>
+      <div id="board-panel" role="tabpanel" aria-labelledby={`board-tab-${networkId}`} className="board-panel">
         {rows.length === 0 ? (
           <p className="px-5 py-10 text-center text-sm text-muted-foreground">
             {network.name} bundles are off the board right now.{" "}
