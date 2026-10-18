@@ -29,7 +29,7 @@ const PAGES: Record<NetworkId, NetworkPageConfig> = {
   mtn: {
     path: "/mtn-data-bundles",
     h1: "MTN data bundles in Ghana — live prices, buy online",
-    intro: "Buy MTN data online for any Ghana number — yours, family, friends or customers. Pick a bundle below, pay with Mobile Money or card, and the bundle is sent to that number automatically. The prices you see are the live prices you pay at checkout.",
+    intro: "Buy MTN data online for any Ghana number: yours, family, friends or customers. Pay with Mobile Money or card; the price you see is the price at checkout.",
     bullets: [
       "Works for any MTN number in Ghana — buy for yourself or someone else",
       "Pay with MTN MoMo, other Mobile Money, or card (secured by Paystack)",
@@ -47,7 +47,7 @@ const PAGES: Record<NetworkId, NetworkPageConfig> = {
   telecel: {
     path: "/telecel-data-bundles",
     h1: "Telecel data bundles (formerly Vodafone)",
-    intro: "Buy Telecel Ghana data online — the network formerly known as Vodafone Ghana. Choose a bundle below, pay with Mobile Money or card, and it's sent to any Telecel number automatically. Prices come straight from our live catalogue, so what you see is what you pay.",
+    intro: "Buy Telecel Ghana data online (formerly Vodafone Ghana) for any Telecel number. Pay with Mobile Money or card; the price you see is the price at checkout.",
     bullets: [
       "Works for any Telecel (ex-Vodafone) number in Ghana",
       "Pay with Telecel Cash, MTN MoMo, other Mobile Money, or card",
@@ -64,7 +64,7 @@ const PAGES: Record<NetworkId, NetworkPageConfig> = {
   at: {
     path: "/airteltigo-data-bundles",
     h1: "AirtelTigo data bundles, built for value",
-    intro: "Buy AirtelTigo (AT) data online for any Ghana number. AT bundles stretch further for students, teams and heavy browsers — pick one below, pay with Mobile Money or card, and it's sent to the number automatically. Prices are live from our catalogue.",
+    intro: "Buy AirtelTigo (AT) data online for any AT number. Pay with Mobile Money or card; the price you see is the price at checkout.",
     bullets: [
       "Works for any AirtelTigo (AT) number in Ghana",
       "Pay with AT Money, MTN MoMo, other Mobile Money, or card",
@@ -105,32 +105,18 @@ export default function NetworkBundles({ network }: { network: NetworkId }) {
 
       {/* Hero: the copy on the left, the whole price list on the right. */}
       <section className="mk-wrap" aria-labelledby="network-title">
-        <div className="grid gap-10 py-10 sm:py-14 lg:grid-cols-12 lg:gap-12 lg:py-20">
+        {/* Phones: headline, then the prices, then the detail. Desktop: copy left, prices right. */}
+        <div className="grid gap-8 py-10 sm:py-14 lg:grid-cols-12 lg:gap-x-12 lg:gap-y-6 lg:py-20">
           <div className="lg:col-span-6">
             <div className="flex items-center gap-3">
               <span className="net-mark" aria-hidden="true">{NET_MARK[network]}</span>
               <span className="mk-eyebrow !text-foreground">{networkName} · Ghana</span>
             </div>
             <h1 id="network-title" className="mk-h2 mt-5 max-w-[18ch] !text-[clamp(32px,5.2vw,58px)]">{config.h1}</h1>
-            <p className="mk-lead mt-6">{config.intro}</p>
-            <ul className="mt-8 grid gap-3">
-              {config.bullets.map((bullet) => (
-                <li key={bullet} className="flex items-start gap-3 text-[15px] leading-6 text-muted-foreground">
-                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-primary-glow" aria-hidden="true" />{bullet}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <a href="#prices" className="mk-btn mk-btn-primary w-full sm:w-auto">See {networkName} prices</a>
-              {network === "mtn" ? (
-                <Link to="/check-mtn" className="mk-btn mk-btn-ghost w-full sm:w-auto">Check an MTN number first</Link>
-              ) : (
-                <Link to="/prices" className="mk-btn mk-btn-ghost w-full sm:w-auto">Compare all networks</Link>
-              )}
-            </div>
+            <p className="mk-lead mt-5">{config.intro}</p>
           </div>
 
-          <div className="lg:col-span-6" id="prices">
+          <div className="lg:col-span-6 lg:col-start-7 lg:row-span-2 lg:row-start-1" id="prices">
             <div className="board">
               <div className="flex items-center justify-between gap-3 border-b border-[hsl(var(--border))] px-5 py-4">
                 <p className="font-display text-[15px] font-bold text-foreground">{networkName} bundle prices today</p>
@@ -162,6 +148,23 @@ export default function NetworkBundles({ network }: { network: NetworkId }) {
               </div>
             </div>
             <p className="mt-3 text-[13px] leading-5 text-faint-foreground">Wallet payments skip the card and MoMo processing fee: top up once and buy in two taps.</p>
+          </div>
+
+          <div className="lg:col-span-6">
+            <ul className="grid gap-3">
+              {config.bullets.map((bullet) => (
+                <li key={bullet} className="flex items-start gap-3 text-[15px] leading-6 text-muted-foreground">
+                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-primary-glow" aria-hidden="true" />{bullet}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              {network === "mtn" ? (
+                <Link to="/check-mtn" className="mk-btn mk-btn-ghost w-full sm:w-auto">Check an MTN number first</Link>
+              ) : (
+                <Link to="/prices" className="mk-btn mk-btn-ghost w-full sm:w-auto">Compare all networks</Link>
+              )}
+            </div>
           </div>
         </div>
       </section>

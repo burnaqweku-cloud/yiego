@@ -47,7 +47,7 @@ export default function Shop() {
   const { openBuyData } = useFlows();
 
   return (
-    <div ref={ref} className="space-y-8 lg:space-y-11">
+    <div ref={ref} className="space-y-6 lg:space-y-10">
       <Seo {...metaFor("/shop")} />
       {isAuthenticated ? (
         <>
@@ -82,7 +82,7 @@ export default function Shop() {
             className="group inline-flex items-center gap-2 text-[13.5px] font-semibold text-primary-glow"
           >
             <Gift size={15} aria-hidden="true" />
-            Invite &amp; earn GHS 6.00 in data
+            Invite friends, earn free data
             <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
           </button>
           <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />
@@ -91,15 +91,11 @@ export default function Shop() {
         </>
       ) : (
         <header data-reveal>
-          <p className="text-[13.5px] font-semibold text-muted-foreground">
-            Data bundles
-          </p>
-          <h1 className="mt-1.5 font-display text-[24px] font-semibold tracking-tight text-foreground sm:text-[30px]">
+          <h1 className="font-display text-[26px] font-semibold tracking-tight text-foreground sm:text-[32px]">
             Buy Ghana data online
           </h1>
-          <p className="mt-2 max-w-[62ch] text-sm leading-6 text-muted-foreground">
-            Pick a bundle below, enter the recipient number and pay. Delivery starts the moment payment
-            clears — to your own number or anyone else&rsquo;s.
+          <p className="mt-1.5 max-w-[62ch] text-[14px] leading-6 text-muted-foreground">
+            Tap a bundle, enter the number, pay with MoMo or card. No account needed.
           </p>
         </header>
       )}

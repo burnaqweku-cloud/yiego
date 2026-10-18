@@ -1,36 +1,56 @@
+import { useEffect, useState } from "react";
 import WhatsAppFab from "@/components/layout/WhatsAppFab";
 import { WHATSAPP_CHANNEL_URL } from "@/lib/site";
 import { Link } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 import { useContactSettings } from "@/hooks/useContactSettings";
 
-/** The public DataYego WhatsApp channel — announcements and updates. The
- *  floating bubble opens this; person-to-person chat stays on the support
- *  number via the Support page's "Chat on WhatsApp" button. */
-
-/** WhatsApp brand glyph — lucide ships no brand icons, so it's inlined. */
-
 /**
- * Two floating action buttons on every customer-facing page:
- * WhatsApp (bottom-left) and AI support (bottom-right). The WhatsApp bubble
- * opens the DataYego channel; it only appears while WhatsApp support is
- * enabled in contact settings, so one admin switch still controls both the
- * bubble and the Support page. Sits below modals (z-40).
+ * Floating help on every customer-facing page.
+ *
+ * Phones get one small "Help" pill, bottom right, that slides away while the
+ * page scrolls down and comes back when it stops, so it never sits on top of
+ * the prices. Larger screens also get the WhatsApp channel bubble, bottom
+ * left (only while WhatsApp support is enabled in contact settings). Both sit
+ * below modals (z-40).
  */
 export default function FloatingSupport() {
   const { whatsappUrl } = useContactSettings();
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    let last = window.scrollY;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y > last + 6 && y > 80) setHidden(true);
+      else if (y < last - 6) setHidden(false);
+      last = y;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setHidden(false), 900);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { window.removeEventListener("scroll", onScroll); if (timer) clearTimeout(timer); };
+  }, []);
+
+  const shift = hidden ? "translate-y-24 opacity-0" : "translate-y-0 opacity-100";
 
   return (
     <>
-      {whatsappUrl && <div className="fixed bottom-5 left-5 z-40" style={{ marginBottom: "env(safe-area-inset-bottom)" }}><WhatsAppFab href={WHATSAPP_CHANNEL_URL} label="DataYego on WhatsApp" /></div>}
+      {whatsappUrl && (
+        <div className={`fixed bottom-5 left-5 z-40 hidden transition-all duration-300 sm:block ${shift}`} style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
+          <WhatsAppFab href={WHATSAPP_CHANNEL_URL} label="DataYego on WhatsApp" />
+        </div>
+      )}
 
       <Link
-        to="/support/ai"
-        aria-label="Get support"
-        className="fixed bottom-5 right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-primary text-[#04120c] shadow-[0_8px_24px_rgba(34,195,135,0.4)] transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-glow"
+        to="/support"
+        aria-label="Get help"
+        className={`fixed bottom-4 right-4 z-40 inline-flex h-11 items-center gap-2 rounded-full bg-primary pl-3.5 pr-4 text-[13.5px] font-semibold text-[#04120c] shadow-[0_8px_24px_rgba(34,195,135,0.35)] transition-all duration-300 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-glow sm:bottom-5 sm:right-5 ${shift}`}
         style={{ marginBottom: "env(safe-area-inset-bottom)" }}
       >
-        <MessageCircle size={26} />
+        <MessageCircle size={18} />
+        Help
       </Link>
     </>
   );

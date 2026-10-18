@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, Globe, Megaphone, ShoppingBag, Users, UsersRound } from "lucide-react";
 import { metaFor } from "@/lib/site";
+import { faqPageLd } from "@/lib/structuredData";
 import Seo from "@/components/seo/Seo";
 import { headlineSavings, useAgentSavings } from "@/hooks/useAgentSavings";
 import { planQuote, type PlanQuote } from "@/lib/agents";
@@ -70,6 +71,35 @@ const SECTIONS: Section[] = [
   },
 ];
 
+/** The questions people ask before applying; also published as FAQ rich-result markup. */
+const FAQ = [
+  {
+    q: "Do I need a deposit to become an agent?",
+    a: "No. Your customers pay first, with Mobile Money or card on your store. Your profit on each sale is saved for you and you withdraw it to Mobile Money from GH₵20 (1% payout fee, minimum GH₵1). If a bundle fails, the customer is refunded and nothing comes out of your pocket.",
+  },
+  {
+    q: "How much does an agent earn per bundle?",
+    a: "You set your own prices, so you decide. The agent price for MTN 10GB is GH₵41.00 against a public price of GH₵43.00, so selling at the public price keeps GH₵2.00; sell higher and keep more. The live agent prices are on this page.",
+  },
+  {
+    q: "What does the agent plan cost?",
+    a: "GH₵30 a month, due only after you are approved. Longer plans cost less per month and can be paid from your dashboard. The usual 4% checkout fee applies to each sale and is paid by the customer at checkout.",
+  },
+  {
+    q: "Will my customers know the store runs on DataYego?",
+    a: "Your store carries your name, your logo, your prices and your link, and the WhatsApp preview shows your store, not ours. DataYego is not mentioned inside it.",
+  },
+  {
+    q: "What happens if I miss a month?",
+    a: "Your store pauses until the plan is paid. Your earnings, your customers and your settings stay exactly as they were.",
+  },
+  {
+    q: "Can I use my own domain name?",
+    a: "Yes. Connect a domain you already own, or buy a .com straight from your dashboard; we set it up for you.",
+  },
+];
+
+
 function FeatureRow({ item }: { item: Item }) {
   const [open, setOpen] = useState(false);
   return (
@@ -96,7 +126,7 @@ export default function AgentsStore() {
 
   return (
     <div className="mk-wrap py-8 sm:py-14">
-      <Seo {...metaFor("/agents/store")} />
+      <Seo {...metaFor("/agents/store")} jsonLd={faqPageLd(FAQ)} />
       <div className="mx-auto max-w-2xl">
         {/* Hero */}
         <span className="mk-eyebrow">Agents</span>
@@ -147,6 +177,30 @@ export default function AgentsStore() {
             <Link to="/agents" className="mk-btn mk-btn-primary">Apply to be an agent</Link>
             <Link to="/help/agents" className="text-[12.5px] text-muted-foreground hover:text-foreground">How earnings and payouts work</Link>
           </div>
+          {quote && quote.plans.length > 1 && (
+            <ul className="mt-6 grid gap-2 sm:grid-cols-3">
+              {quote.plans.map((p) => (
+                <li key={p.months} className="rounded-2xl border border-[hsl(var(--border))] px-4 py-3">
+                  <p className="font-display text-[16px] font-bold text-foreground">{p.months} month{p.months > 1 ? "s" : ""} · {formatGHS(p.pay_now)}</p>
+                  <p className="text-[12.5px] text-muted-foreground">GH₵{p.per_month.toFixed(2)} a month{p.saving_pct > 0 ? `, ${p.saving_pct}% less` : ""}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Questions, written out in full. */}
+        <section className="mt-12" aria-labelledby="agents-faq">
+          <h2 id="agents-faq" className="mk-h3 !text-[24px] sm:!text-[28px]">Before you apply</h2>
+          <dl className="mt-6 grid gap-7">
+            {FAQ.map((f) => (
+              <div key={f.q} className="fact">
+                <dt className="text-[16px] font-semibold text-foreground">{f.q}</dt>
+                <dd className="mk-body mt-1.5">{f.a}</dd>
+              </div>
+            ))}
+          </dl>
+          <Link to="/agents" className="mk-btn mk-btn-primary mt-8 inline-flex">Apply now</Link>
         </section>
       </div>
     </div>

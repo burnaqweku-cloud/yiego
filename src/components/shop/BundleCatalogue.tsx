@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { ArrowRight, RotateCw, Search, X } from "lucide-react";
+import { RotateCw, Search, X } from "lucide-react";
 import { NETWORKS, type Network, type NetworkId } from "@/data/bundles";
 import { formatGHS } from "@/lib/format";
 import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
@@ -86,19 +86,12 @@ function BundleCard({ row, onBuy }: { row: Row; onBuy: () => void }) {
     <button
       type="button"
       onClick={onBuy}
-      className="mk-bundle group min-h-[126px] !p-4 sm:min-h-[136px] sm:!p-5"
+      className="mk-bundle group min-h-[112px] !p-4 sm:min-h-[124px] sm:!p-5"
       aria-label={`Buy ${row.network.name} ${row.size} for ${formatGHS(row.price)}`}
     >
       <span
-        className="mk-cat-mark h-6 w-auto shrink-0 self-start rounded-full px-2.5 text-[10px] tracking-[0.09em]"
-        style={{ "--brand": row.network.color } as CSSProperties}
-      >
-        {row.network.name.toUpperCase()}
-      </span>
-
-      <span
         className={cn(
-          "mt-4 block break-words font-display font-semibold leading-[1.04] tracking-[-0.035em] text-foreground",
+          "block break-words font-display font-semibold leading-[1.04] tracking-[-0.035em] text-foreground",
           row.size.length > 9 ? "text-[19px] sm:text-[21px]" : "text-[26px] sm:text-[30px]",
         )}
       >
@@ -114,9 +107,8 @@ function BundleCard({ row, onBuy }: { row: Row; onBuy: () => void }) {
         <span className="tnum font-display text-[15px] font-semibold text-foreground sm:text-[17px]">
           {formatGHS(row.price)}
         </span>
-        <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary-glow">
-          <span className="hidden sm:inline">Buy</span>
-          <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
+        <span className="inline-flex items-center rounded-full bg-primary/[0.14] px-3 py-1 text-[12.5px] font-semibold text-primary-glow">
+          Buy
         </span>
       </span>
     </button>
@@ -168,6 +160,7 @@ export default function BundleCatalogue() {
   const [checkInfoOpen, setCheckInfoOpen] = useState(false);
   const { openBuyData } = useFlows();
   const [filter, setFilter] = useState<Filter>("all");
+  const [mtnCheckOpen, setMtnCheckOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [attempt, setAttempt] = useState(0);
 
@@ -241,37 +234,39 @@ export default function BundleCatalogue() {
 
   return (
     <section aria-labelledby="catalogue-title" className="scroll-mt-24" id="bundles">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
-        <div className="min-w-0">
-          <h2
-            id="catalogue-title"
-            className="font-display text-[20px] font-semibold tracking-tight text-foreground sm:text-[24px]"
-          >
-            Choose a bundle
-          </h2>
-          <p className="mt-1.5 text-[13.5px] leading-6 text-muted-foreground">
-            Live prices straight from the catalogue. What you see is what you pay.
-          </p>
+      {/* Network tabs first: the first thing on the page is the thing to choose. Search is the small tool beside them. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar" role="tablist" aria-label="Network">
+          {filters.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              role="tab"
+              aria-selected={filter === f.id}
+              onClick={() => setFilter(f.id)}
+              className={cn(
+                "shrink-0 rounded-full border px-4 py-2 text-[13.5px] font-semibold transition-colors",
+                filter === f.id ? "border-transparent bg-foreground text-background" : "border-white/[0.12] text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {f.label}
+              <span className="ml-1.5 tnum text-[11.5px] opacity-60">{counts.get(f.id) ?? 0}</span>
+            </button>
+          ))}
         </div>
 
         {state === "ready" && (
-          <label className="onyx-search flex w-full shrink-0 items-center gap-2.5 sm:w-[254px]">
-            <Search size={16} className="shrink-0 text-faint-foreground" aria-hidden="true" />
+          <label className="onyx-search flex w-full shrink-0 items-center gap-2.5 !py-2 sm:w-[220px]">
+            <Search size={15} className="shrink-0 text-faint-foreground" aria-hidden="true" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search 5GB, MTN…"
+              placeholder="Search 5GB…"
               aria-label="Search bundles"
               className="w-full min-w-0 bg-transparent text-[16px] tracking-tight text-foreground outline-none placeholder:text-faint-foreground sm:text-[14px]"
             />
             {query && (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                aria-label="Clear search"
-                className="shrink-0 text-faint-foreground transition-colors hover:text-foreground"
-              >
+              <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="shrink-0 text-faint-foreground transition-colors hover:text-foreground">
                 <X size={15} />
               </button>
             )}
@@ -364,7 +359,12 @@ export default function BundleCatalogue() {
                         </>)}
                       </h3>
                     </div>
-                    {group.network.name === "MTN" && (
+                    {group.network.name === "MTN" && !mtnCheckOpen && (
+                      <button type="button" onClick={() => setMtnCheckOpen(true)} className="mb-5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary-glow underline-offset-4 hover:underline">
+                        First time buying for this MTN number? Check it first
+                      </button>
+                    )}
+                    {group.network.name === "MTN" && mtnCheckOpen && (
                       <div className="mb-5 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
                         <div className="mb-2 flex items-center gap-1.5"><p className="text-[13px] font-semibold text-foreground">Check if your MTN number is approved before you buy</p><button type="button" onClick={() => setCheckInfoOpen(true)} aria-label="About the MTN number check" className="text-faint-foreground hover:text-primary-glow"><Info size={15} /></button></div>
                         <MtnCheckField source="shop" />

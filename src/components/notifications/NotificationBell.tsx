@@ -26,6 +26,8 @@ export default function NotificationBell({ className = "" }: { className?: strin
   }, [open]);
   const unread = items.filter((a) => !a.read).length;
   const openItem = async (a: Announcement) => { if (!a.read) { await markRead(a.id); setItems((l) => l.map((x) => x.id === a.id ? { ...x, read: true } : x)); } };
+  // Nothing to show, nothing to tap: the bell only appears once there is at least one announcement.
+  if (items.length === 0) return null;
   return (
     <div ref={ref} className={`relative ${className}`}>
       <button type="button" aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} onClick={() => setOpen((o) => !o)} className="relative flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground hover:bg-white/[0.05]">
