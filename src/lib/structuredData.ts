@@ -15,7 +15,7 @@ export function organizationLd() {
     url: SITE_ORIGIN,
     logo: SITE_OG_IMAGE,
     areaServed: { "@type": "Country", name: "Ghana" },
-    description: "DataYego sells MTN, Telecel and AirtelTigo data bundles online in Ghana, delivered to any number in minutes.",
+    description: "DataYego sells MTN, Telecel and AirtelTigo data bundles online in Ghana, delivered automatically to any Ghana number.",
   };
 }
 
