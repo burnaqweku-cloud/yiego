@@ -20,15 +20,17 @@ export async function sendSms(opts: { to: string | string[]; message: string; me
   if (!key) return { ok: false, skipped: true, reason: "no_api_key" };
   const recipients = (Array.isArray(opts.to) ? opts.to : [opts.to]).map(toGhanaMsisdn).filter(Boolean) as string[];
   if (!recipients.length) return { ok: false, skipped: true, reason: "no_valid_number" };
-  const res = await fetch(BASE, {
+  if (!opts.message || opts.message.length > 650) return { ok: false, skipped: true, reason: "invalid_message" };
+  let res: Response;
+  try { res = await fetch(BASE, {
     method: "POST",
     headers: { "X-API-Key": key, "Content-Type": "application/json" },
-    body: JSON.stringify({ sender: SENDER.slice(0, 11), recipients, message: opts.message.slice(0, 650), metadata: opts.metadata }),
-  });
+    body: JSON.stringify({ sender: SENDER.slice(0, 11), recipients, message: opts.message, metadata: opts.metadata }),
+    signal: AbortSignal.timeout(15000),
+  }); } catch { return { ok: false, reason: "delivery_unknown" }; }
   const body = await res.json().catch(() => ({}));
   if (!res.ok || body?.success === false) {
-    console.error(`Vynfy send failed [${res.status}]: ${JSON.stringify(body)}`);
-    return { ok: false, reason: body?.message ?? body?.error ?? "send_failed", status: res.status };
+    return { ok: false, reason: "provider_rejected", status: res.status };
   }
   return { ok: true, jobId: body?.data?.job_id, remaining: body?.balance?.remaining };
 }

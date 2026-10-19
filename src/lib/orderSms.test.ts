@@ -1,0 +1,11 @@
+import { describe, it, expect } from "vitest";
+import { buildOrderSms, eligibleSms, type OrderSmsRecord } from "../../supabase/functions/_shared/orderSmsTemplates";
+const order: OrderSmsRecord = { order_reference: "YG-TEST", created_at: "2026-10-19T23:30:00Z", status: "processing", payment_status: "succeeded", recipient_phone: "+233536529090", capacity_gb: 2, capacity_mb: null, network_name: "MTN", supplier_order_reference: "accepted", supplier_purchase_id: null, admin_resolution_status: null };
+describe("Order SMS rules", () => {
+  it("does not notify unpaid purchases", () => { expect(eligibleSms({ ...order, payment_status: "pending" }, "purchase")).toBe(false); expect(eligibleSms(order, "purchase")).toBe(true); });
+  it("only confirms actual delivered status", () => { expect(eligibleSms(order, "delivered")).toBe(false); expect(eligibleSms({ ...order, status: "delivered" }, "delivered")).toBe(true); });
+  it("does not call a verification hold or unsent order on its way", () => { expect(eligibleSms({ ...order, admin_resolution_status: "awaiting_verification" }, "verified")).toBe(false); expect(eligibleSms({ ...order, supplier_order_reference: null }, "verified")).toBe(false); expect(eligibleSms(order, "verified")).toBe(true); });
+  it("keeps both routine texts within one GSM segment for all networks", () => { for (const network_name of ["MTN", "AirtelTigo", "Telecel"]) for (const kind of ["purchase", "delivered"] as const) { const message = buildOrderSms({ ...order, network_name, capacity_gb: 1000 }, kind); expect(message.length).toBeLessThanOrEqual(160); expect(/^[\x20-\x7e]+$/.test(message)).toBe(true); } });
+  it("uses the real purchase date and time in Accra, not Lagos", () => { expect(buildOrderSms(order, "purchase")).toContain("19 Oct 23:30"); expect(buildOrderSms({ ...order, capacity_gb: 50 }, "delivered")).toContain("50GB"); });
+  it("uses the matching delivered or on-way verification variant", () => { expect(buildOrderSms(order, "verified")).toContain("2GB from 19th October is on its way"); expect(buildOrderSms({ ...order, status: "delivered" }, "verified")).toContain("2GB from 19th October is delivered"); });
+});

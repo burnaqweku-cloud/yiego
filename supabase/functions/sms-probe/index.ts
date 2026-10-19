@@ -1,7 +1,11 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
+import { createSupabaseAdmin } from '../_shared/supabaseAdmin.ts'
+import { requireCronSecret } from '../_shared/internal.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  const denied = await requireCronSecret(req, createSupabaseAdmin())
+  if (denied) return denied
   const key = Deno.env.get('VYNFY_API_KEY')
   if (!key) return new Response(JSON.stringify({ error: 'no_vynfy_key' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
@@ -17,9 +21,9 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ sender, recipients: [], message: 'probe' }),
       })
       const text = await res.text()
-      results[sender] = { status: res.status, body: text.slice(0, 400) }
-    } catch (e) {
-      results[sender] = { error: String(e) }
+      results[sender] = { status: res.status }
+    } catch {
+      results[sender] = { error: 'Provider unavailable' }
     }
   }
 
