@@ -48,15 +48,16 @@ Deno.serve(async req => {
         const { error } = await db.from("order_sms_outbox").update({ status, reason, provider_job_id: jobId ?? null, sent_at: status === "sent" ? new Date().toISOString() : null }).eq("id", job.id).eq("claim_token", job.claim_token).eq("status", "sending");
         if (error) throw new Error("Cannot save SMS result");
       };
-      const { data: o, error } = await db.from("orders").select("order_reference,created_at,status,payment_status,recipient_phone,product_id,network_id,supplier_order_reference,supplier_purchase_id,admin_resolution_status").eq("id", job.order_id).maybeSingle();
+      const { data: o, error } = await db.from("orders").select("order_reference,created_at,status,payment_status,recipient_phone,product_id,network_id,agent_id,supplier_order_reference,supplier_purchase_id,admin_resolution_status").eq("id", job.order_id).maybeSingle();
       if (error) { await finish("failed", "order_read_failed"); failed++; continue; }
       if (!o) { await finish("skipped", "order_missing"); skipped++; continue; }
-      const [{ data: product, error: productError }, { data: network, error: networkError }] = await Promise.all([
+      const [{ data: product, error: productError }, { data: network, error: networkError }, { data: agent, error: agentError }] = await Promise.all([
         db.from("data_products").select("capacity_gb,capacity_mb").eq("id", o.product_id).maybeSingle(),
         db.from("networks").select("name").eq("id", o.network_id).maybeSingle(),
+        o.agent_id ? db.from("agents").select("slug").eq("id", o.agent_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
       ]);
-      const record: OrderSmsRecord = { ...o, capacity_gb: product?.capacity_gb ?? null, capacity_mb: product?.capacity_mb ?? null, network_name: network?.name ?? "" };
-      if (productError || networkError) { await finish("failed", "details_read_failed"); failed++; continue; }
+      const record: OrderSmsRecord = { ...o, capacity_gb: product?.capacity_gb ?? null, capacity_mb: product?.capacity_mb ?? null, network_name: network?.name ?? "", agent_slug: agent?.slug ?? null };
+      if (productError || networkError || agentError || (o.agent_id && !agent?.slug)) { await finish("failed", "details_read_failed"); failed++; continue; }
       if (!eligibleSms(record, job.kind as OrderSmsKind) || !toGhanaMsisdn(record.recipient_phone)) { await finish("skipped", "ineligible_order"); skipped++; continue; }
       if (job.kind === "delivered") {
         const { data: verified, error: dedupeError } = await db.from("order_sms_outbox").select("id").eq("order_id", job.order_id).eq("kind", "verified").eq("status", "sent").eq("reason", "verified_delivered").maybeSingle();

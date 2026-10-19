@@ -4,7 +4,7 @@ The active external database has a private `phase1.order_sms_outbox`. An order t
 
 Verification candidates require MTN, successful payment, approval/cleared/email evidence and either actual delivery or supplier handover after clearance. One verification SMS per order chooses the current status at send time. Failed/review/unpaid/unhanded-over orders are excluded. When the verification message already confirms delivery, a queued duplicate routine delivery message is suppressed.
 
-All dates/times come from the order's `created_at` in Africa/Accra. Recipients come from the order's recipient phone, normalized by the Ghana sender helper. Routine messages stay within one ASCII/GSM segment. Verification uses the approved fuller wording and two segments for typical orders.
+All dates/times come from the order's `created_at` in Africa/Accra. Recipients come from the order's recipient phone, normalized by the Ghana sender helper. Purchase and delivered texts include the actual order reference as Order ID. All four variants link to `https://datayego.com/s/{slug}` for agent store orders, using the agent attached to the order; otherwise they link to the main site. Missing agent details fail closed instead of substituting an unrelated store. Routine messages stay within one ASCII/GSM segment. Verification uses the approved fuller wording and two segments for typical orders.
 
 ## Activation gate
 
