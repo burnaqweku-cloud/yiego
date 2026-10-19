@@ -1,4 +1,10 @@
-import { ArrowLeft, ArrowRight, Clock3, Info } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock3, Info, Zap } from "lucide-react";
+
+const BUY_BOX = {
+  mtn: { name: "MTN", code: "*138#", to: "/mtn-data-bundles" },
+  telecel: { name: "Telecel", code: "*700#", to: "/telecel-data-bundles" },
+  at: { name: "AirtelTigo", code: "*111#", to: "/airteltigo-data-bundles" },
+} as const;
 import { Link, useParams } from "react-router-dom";
 import Seo from "@/components/seo/Seo";
 import InlineText from "@/components/blog/InlineText";
@@ -66,6 +72,20 @@ function Block({ block }: { block: BlogBlock }) {
           <Link to={block.to} className="mk-btn mk-btn-primary group mt-4">{block.label}<ArrowRight size={17} className="mk-arrow" aria-hidden="true" /></Link>
         </div>
       );
+    case "buyBox": {
+      const net = BUY_BOX[block.network];
+      return (
+        <aside aria-label={`Buy ${net.name} data`} className="not-prose rounded-[20px] border border-[var(--gold)]/30 bg-[var(--gold)]/[0.06] p-5 sm:p-6">
+          <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--gold)]"><Zap size={14} aria-hidden="true" />Skip the code</p>
+          <p className="mt-2 font-display text-[19px] font-semibold leading-snug tracking-tight text-foreground">Buy {net.name} data online, often cheaper than {net.code}</p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">Send a bundle to any {net.name} number, yours or someone else's. Pay with Mobile Money or card, no account needed, delivered automatically.</p>
+          <div className="mt-4 flex flex-wrap gap-2.5">
+            <Link to={net.to} className="mk-btn mk-btn-primary group !no-underline">See {net.name} prices<ArrowRight size={17} className="mk-arrow" aria-hidden="true" /></Link>
+            <Link to="/shop" className="mk-btn mk-btn-ghost !no-underline">Buy data now</Link>
+          </div>
+        </aside>
+      );
+    }
     default:
       return <p><InlineText text={block.text} /></p>;
   }
