@@ -54,8 +54,8 @@ const STATIC_ROUTES: PublicRoute[] = [
     path: "/shop",
     priority: 0.9,
     changefreq: "daily",
-    title: "Buy Data Bundles Online — MTN, Telecel & AirtelTigo | DataYego",
-    description: "Browse live data bundles for every Ghana network and buy in two taps. Pay with Mobile Money, card or your DataYego wallet. Every order tracked.",
+    title: "Buy MTN Data Bundles Online in Ghana — Cheap 1GB to 50GB",
+    description: "Cheap MTN data bundles from GH₵4.10 for 1GB, delivered automatically to any MTN number. Telecel and AirtelTigo too. Pay with MoMo or card, no account needed.",
   },
   {
     path: "/prices",
