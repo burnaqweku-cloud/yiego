@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     for (const o of (queue ?? []) as Array<{ id: string; order_reference: string; recipient_phone: string; supplier_purchase_id: string | null }>) {
       const s = status.get(normalize(o.recipient_phone));
       if (!s || (s.status !== "approved" && s.status !== "not_enforced")) continue;
-      await supabase.from("orders").update({ supplier_purchase_id: null, supplier_order_reference: null, supplier_transaction_reference: null, supplier_status: null, supplier_idempotency_key: null, failure_reason: null, supplier_id: targetId, supplier_retry_after: now, supplier_retry_count: 0, updated_at: now }).eq("id", o.id);
+      await supabase.from("orders").update({ admin_resolution_status: null, admin_resolution_reason: null, admin_resolution_updated_at: now, supplier_purchase_id: null, supplier_order_reference: null, supplier_transaction_reference: null, supplier_status: null, supplier_idempotency_key: null, failure_reason: null, supplier_id: targetId, supplier_retry_after: now, supplier_retry_count: 0, updated_at: now }).eq("id", o.id);
       await supabase.from("order_events").insert({ order_id: o.id, event_type: "supplier.number_approved", from_status: "processing", to_status: "processing", message: `MTN has approved this number. Re-sending to ${targetName} now.` + (o.supplier_purchase_id ? ` Previous attempt ${o.supplier_purchase_id} set aside.` : ""), metadata: { source: "verify-mtn-numbers" } });
       resent.push(o.order_reference);
     }
