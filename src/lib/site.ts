@@ -55,7 +55,7 @@ const STATIC_ROUTES: PublicRoute[] = [
     priority: 0.9,
     changefreq: "daily",
     title: "Buy MTN Data Bundles Online in Ghana — Cheap 1GB to 50GB",
-    description: "Cheap MTN data bundles from GH₵4 for 1GB, delivered to any MTN number in minutes. Telecel and AirtelTigo too. Pay with MoMo or card, no account needed.",
+    description: "Cheap MTN data bundles from GH₵4.10 for 1GB, delivered to any MTN number in minutes. Telecel and AirtelTigo too. Pay with MoMo or card, no account needed.",
   },
   {
     path: "/prices",
