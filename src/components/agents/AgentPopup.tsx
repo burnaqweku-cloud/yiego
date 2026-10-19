@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Banknote, Lock, Store, Wallet, X } from "lucide-react";
 import { agentsStatus, myAgentStatus, planQuote, previewRequested, rememberPreview, type PlanQuote } from "@/lib/agents";
 import { loadPhase1Networks, loadPhase1Products } from "@/lib/phase1-api";
+import { useFlows } from "@/store/flows";
 
 /** Small strip for signed-in agents who still need to pay: shown wherever the popup is mounted. */
 export function AgentNudge() {
@@ -55,6 +56,7 @@ async function loadRows(): Promise<Row[]> {
 }
 
 export default function AgentPopup() {
+  const { flowOpen } = useFlows();
   const [due, setDue] = useState(false);
   const [closed, setClosed] = useState(false);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -91,7 +93,8 @@ export default function AgentPopup() {
     return () => { mounted = false; if (timer) clearTimeout(timer); document.removeEventListener("visibilitychange", onVisibility); };
   }, []);
 
-  const open = due && !closed && rows !== null;
+  // Never pop up behind the buy sheet; wait until the customer closes it.
+  const open = due && !closed && rows !== null && !flowOpen;
   const dismiss = useCallback(() => { setClosed(true); }, []);
 
   useEffect(() => {
