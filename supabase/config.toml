@@ -88,3 +88,6 @@ verify_jwt = false
 
 [functions.reconcile-pending-wallet-deposits]
 verify_jwt = false
+
+[functions.notify-mtn-verified]
+verify_jwt = false
