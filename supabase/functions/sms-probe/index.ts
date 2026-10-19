@@ -5,17 +5,21 @@ Deno.serve(async (req) => {
   const key = Deno.env.get('VYNFY_API_KEY')
   if (!key) return new Response(JSON.stringify({ error: 'no_vynfy_key' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-  const base = 'https://sms.vynfy.com'
+  const base = 'https://sms.vynfy.com/api/v1/send'
   const results: Record<string, unknown> = {}
 
-  // Read-only probes with the key
-  for (const p of ['/api/v1/balance', '/api/v1/sender-ids', '/api/v1/senders', '/api/v1/sender', '/api/v1/me']) {
+  // Sender validation probe: empty recipients => no SMS is sent, but we see which error comes first (sender vs recipients)
+  for (const sender of ['DataYego', 'YieGo', 'DATAYEGO', 'datayego']) {
     try {
-      const res = await fetch(`${base}${p}`, { headers: { 'X-API-Key': key, 'Accept': 'application/json' } })
+      const res = await fetch(base, {
+        method: 'POST',
+        headers: { 'X-API-Key': key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sender, recipients: [], message: 'probe' }),
+      })
       const text = await res.text()
-      results[`GET ${p}`] = { status: res.status, body: text.slice(0, 500) }
+      results[sender] = { status: res.status, body: text.slice(0, 400) }
     } catch (e) {
-      results[`GET ${p}`] = { error: String(e) }
+      results[sender] = { error: String(e) }
     }
   }
 
