@@ -129,7 +129,7 @@ const AGENT_ROUTES = <><Route index element={<AgentHome />} /><Route path="buy" 
 
 /* A connected custom domain or slug.datayego.com: that store lives at the root. */
 const StoreHostApp = ({ slug }: { slug: string }) => (
-  <BrowserRouter><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
+  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
     <Route path="/" element={<StoreShell hostSlug={slug} />}>{STORE_ROUTES}</Route>
     <Route path="/s/:slug" element={<StoreShell />}>{STORE_ROUTES}</Route>
     <Route path="/agent" element={<AgentShell />}>{AGENT_ROUTES}</Route>
@@ -197,5 +197,8 @@ export const MainSite = () => (
   </Routes></Suspense></FlowsProvider></ProfileProvider></WalletProvider></AuthProvider></ThemeProvider></>
 );
 
-const App = () => isStoreHost() ? <StoreHostGate /> : <BrowserRouter><MainSite /></BrowserRouter>;
+/* v7_startTransition: while the next page's code downloads, keep showing the current page instead of swapping to a
+   full-screen loader and back — that swap is the "wrong screen for a split second" flash. */
+const ROUTER_FUTURE = { v7_startTransition: true, v7_relativeSplatPath: true } as const;
+const App = () => isStoreHost() ? <StoreHostGate /> : <BrowserRouter future={ROUTER_FUTURE}><MainSite /></BrowserRouter>;
 export default App;

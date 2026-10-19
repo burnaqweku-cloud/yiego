@@ -82,7 +82,10 @@ async function prerenderRoutes(outDir: string) {
         const body = await mod.render(route.path);
         if (!body || body.length < 200) throw new Error("empty render");
         const shell = fs.readFileSync(file, "utf8");
-        fs.writeFileSync(file, shell.replace('<div id="root"></div>', `<div id="root">${body}</div>`));
+        // data-prerendered names the page this markup belongs to. index.html is also the fallback for every other address
+        // (/admin, /wallet, …), so the client must only reuse the markup when the address matches — otherwise the home
+        // page flashes before the real page appears.
+        fs.writeFileSync(file, shell.replace('<div id="root"></div>', `<div id="root" data-prerendered="${route.path}">${body}</div>`));
         ok += 1;
       } catch (err) {
         console.warn(`[seo] prerender skipped ${route.path}:`, err instanceof Error ? err.message : err);
