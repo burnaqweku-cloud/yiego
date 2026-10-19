@@ -77,7 +77,7 @@ export default function PriceBoard() {
       </div>
 
       <div className="board-foot">
-        <span>Tap a bundle to buy it.</span>
+        <Link to="/cheap-data-bundles-ghana" className="font-semibold text-foreground underline-offset-4 hover:underline">Cheapest data per GB</Link>
         <Link to={NETWORK_PATH[networkId]} className="font-semibold text-foreground underline-offset-4 hover:underline">
           About {network.name} bundles
         </Link>

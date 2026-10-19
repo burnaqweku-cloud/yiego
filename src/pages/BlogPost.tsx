@@ -81,7 +81,7 @@ function Block({ block }: { block: BlogBlock }) {
           <p className="mt-2 text-sm leading-6 text-muted-foreground">Send a bundle to any {net.name} number, yours or someone else's. Pay with Mobile Money or card, no account needed, delivered automatically.</p>
           <div className="mt-4 flex flex-wrap gap-2.5">
             <Link to={net.to} className="mk-btn mk-btn-primary group !no-underline">See {net.name} prices<ArrowRight size={17} className="mk-arrow" aria-hidden="true" /></Link>
-            <Link to="/shop" className="mk-btn mk-btn-ghost !no-underline">Buy data now</Link>
+            <Link to="/cheap-data-bundles-ghana" className="mk-btn mk-btn-ghost !no-underline">Compare cheapest prices</Link>
           </div>
         </aside>
       );
