@@ -24,6 +24,8 @@ export type BlogBlock =
   | { type: "table"; head: string[]; rows: string[][] }
   | { type: "callout"; text: string }
   | { type: "cta"; label: string; to: string; text: string }
+  /** Prominent buy box near the top of a guide, linking to that network's live bundle list and the shop. */
+  | { type: "buyBox"; network: "mtn" | "telecel" | "at" }
   /* Renders the live catalogue ranked by price per GB. A post carrying this
      block re-dates itself every time it loads, so the recurring "what is
      cheapest right now" article never needs rewriting by hand. */
@@ -377,15 +379,16 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "mtn-data-codes-ghana",
-    title: "MTN Data Bundle Codes Ghana: All Short Codes | DataYego",
+    title: "MTN Data Codes Ghana 2026: *138#, Balance & All Codes",
     heading: "MTN Ghana short codes and data bundle codes",
-    description: "Every MTN Ghana short code that still works: *138# for data bundles, *124# for airtime, *156# for your own number, plus AFA and customer care.",
+    description: "Every working MTN Ghana code in one table: *138# to buy data, data and airtime balance, *156# for your number, Me2U, AFA and care. Checked 2026, plus cheaper bundles online.",
     excerpt: "The MTN Ghana short codes that actually work, from *138# for data bundles to *156# for your own number, each one checked against MTN's own channels.",
     category: "Codes",
     published: "2026-08-17",
     readMinutes: 5,
     body: [
     { type: "p", text: "Dial *138# to buy an MTN data bundle, *124# to check your airtime balance and *156# to see your own MTN number. Those three cover most of what people need day to day. Everything below was checked against MTN Ghana's own channels and other recent sources, because a wrong code wastes your time and sometimes your airtime." },
+    { type: "buyBox", network: "mtn" },
     { type: "h2", text: "Every MTN code worth saving" },
     { type: "p", text: "Dial each one exactly as written, with the star and the hash." },
     { type: "table", head: ["What you want", "Dial"], rows: [["Buy an MTN data bundle (main data menu)", "*138#"], ["Check your data bundle balance", "*138#"], ["Check your airtime balance", "*124#"], ["Check your own MTN number", "*156#"], ["Social media bundles (WhatsApp, Facebook, X, TikTok)", "*138*1*5#"], ["Unlimited bundles", "*138*1*4#"], ["Video and YouTube bundles", "*138*16#"], ["MTN Zone daily bundles", "*135#"], ["Personalised offers for your number", "*141#"], ["MTN Pulse (discounted calls and data)", "*567#"], ["MTN AFA bundles and registration", "*1848#"], ["Borrow airtime or data (Xtratime)", "*506#"], ["Share airtime credit with another MTN number (Me2U)", "*198#"], ["Recharge with a voucher PIN", "*134*voucher PIN#"], ["Recharge someone else's number with a voucher", "*144*their number*voucher PIN#"], ["MTN Mobile Money menu", "*170#"], ["Check your SIM registration status", "*400#"], ["Internet settings and 4G check", "*585#"], ["MTN customer care from an MTN line", "100"], ["MTN customer care from any line", "0244 300 000"]] },
@@ -416,15 +419,16 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "telecel-data-codes-ghana",
-    title: "Telecel Data Codes Ghana: Full Short Code List | DataYego",
+    title: "All Telecel Codes Ghana 2026: Data, Airtime & Balance",
     heading: "Telecel Ghana short codes and data bundle codes",
-    description: "Verified Telecel Ghana short codes: *700# for data bundles, *126# for your data balance, *124# for airtime, *127# for your own number, and 100 for care.",
+    description: "Every working Telecel (ex-Vodafone) code: *700# to buy data, *126# data balance, *124# airtime, *127# your number, *516# airtime transfer. Checked 2026, plus cheaper bundles.",
     excerpt: "The Telecel Ghana short codes that actually work, including the data bundle menu, balance checks and customer care, with the old Vodafone names explained.",
     category: "Codes",
     published: "2026-08-17",
     readMinutes: 5,
     body: [
     { type: "p", text: "The two you probably came for: dial *700# to open the Telecel data bundle menu and buy data, and *126# to check how much data you have left. For your airtime balance, dial *124#. To see your own Telecel number, dial *127#. To reach a human, dial **100** from your Telecel line." },
+    { type: "buyBox", network: "telecel" },
     { type: "p", text: "If you searched for a Vodafone Ghana code and landed here, you are still in the right place. **Vodafone Ghana is now Telecel Ghana.** Telecel Group completed the purchase of a 70 per cent stake in February 2023, and the Telecel brand was launched in Ghana on 13 March 2024. Same network, same SIM card, same number. New name." },
     { type: "p", text: "That rename is exactly why so many people are searching. Shops, adverts and the app all changed. Most of the everyday USSD codes did not: *124#, *126# and *127# carried over from the Vodafone days and still work. But some promotional menus were retired or renamed along the way, which is why an old blog post can send you to a code that no longer exists. Everything below is either stated on Telecel's own website or confirmed by at least two independent sources." },
     { type: "h2", text: "Telecel Ghana short codes at a glance" },
@@ -458,15 +462,16 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "airteltigo-data-codes-ghana",
-    title: "AirtelTigo Data Code: All AT Ghana Short Codes | DataYego",
+    title: "AirtelTigo Codes Ghana 2026: Data, Balance & All AT Codes",
     heading: "AirtelTigo (AT) Ghana data codes and short codes",
-    description: "Verified AirtelTigo (AT) Ghana short codes: dial *111# for data bundles, *504# for your data balance, *124# for airtime and *703# for your own number.",
+    description: "Every working AT (AirtelTigo) code: *111# to buy data and BigTime, *504# data balance, *124# airtime, *703# your number. Checked 2026, plus cheaper bundles online.",
     excerpt: "The AT (AirtelTigo) short codes worth saving, checked against the network's own channels, plus what to do when a code refuses to work.",
     category: "Codes",
     published: "2026-08-17",
     readMinutes: 5,
     body: [
     { type: "p", text: "On AT, the network most people still call AirtelTigo, four codes cover almost everything. Dial *111# for the data bundle menu, *504# to check your data balance, *124# to check your airtime, and *703# to see your own number. Every code on this page was checked against AT's own channels or the regulator. Anything we could not confirm has been left out rather than guessed." },
+    { type: "buyBox", network: "at" },
     { type: "table", head: ["What you want", "Dial"], rows: [["Buy a data bundle, including BigTime", "*111#"], ["Check your data balance", "*504#"], ["Check your airtime balance", "*124#"], ["Check your own number", "*703#"], ["AT Money menu", "*110#"], ["Check your SIM registration details", "*400#"], ["Customer care", "100"]] },
     { type: "h2", text: "Buying data on AT: *111#" },
     { type: "p", text: "*111# is the main data menu. Dial it, pick the bundle you want, choose whether the data is for yourself or another number, then choose how to pay. Payment usually comes off your airtime or your AT Money wallet. The data lands on the SIM straight away, and you get an SMS confirming it." },
