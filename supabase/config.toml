@@ -91,3 +91,8 @@ verify_jwt = false
 
 [functions.notify-mtn-verified]
 verify_jwt = false
+
+# The verification texts are sent by the scheduled job, which authenticates with
+# its own secret header rather than a user sign-in.
+[functions.notify-mtn-verified-sms]
+verify_jwt = false
