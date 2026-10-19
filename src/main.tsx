@@ -49,5 +49,11 @@ void (async () => {
 // it, so the first paint is instant and crawlers and humans see the same page. Anything else starts from the empty div.
 const rootEl = document.getElementById("root")!;
 const tree = <AppErrorBoundary><App /></AppErrorBoundary>;
+// The host serves index.html (the pre-rendered home page) for any address it has no file for. Only reuse markup that
+// was rendered for this exact address; otherwise drop it so the home page never flashes before /admin, /wallet, etc.
+const trimSlash = (p: string) => (p.length > 1 ? p.replace(/\/+$/, "") : p);
+const prerenderedFor = rootEl.dataset.prerendered;
+const markupFits = prerenderedFor !== undefined && trimSlash(prerenderedFor) === trimSlash(window.location.pathname);
+if (rootEl.hasChildNodes() && !markupFits) { rootEl.replaceChildren(); }
 if (rootEl.hasChildNodes()) hydrateRoot(rootEl, tree, { onRecoverableError(err) { document.documentElement.dataset.hydration = "recovered"; document.documentElement.dataset.hydrationNote = String((err as Error)?.message ?? err).slice(0, 200); if (import.meta.env.DEV) console.warn(err); } });
 else createRoot(rootEl).render(tree);
