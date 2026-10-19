@@ -80,8 +80,8 @@ function Block({ block }: { block: BlogBlock }) {
           <p className="mt-2 font-display text-[19px] font-semibold leading-snug tracking-tight text-foreground">Buy {net.name} data online, often cheaper than {net.code}</p>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">Send a bundle to any {net.name} number, yours or someone else's. Pay with Mobile Money or card, no account needed, delivered automatically.</p>
           <div className="mt-4 flex flex-wrap gap-2.5">
-            <Link to={net.to} className="mk-btn mk-btn-primary group">See {net.name} prices<ArrowRight size={17} className="mk-arrow" aria-hidden="true" /></Link>
-            <Link to="/shop" className="mk-btn mk-btn-ghost">Buy data now</Link>
+            <Link to={net.to} className="mk-btn mk-btn-primary group !no-underline">See {net.name} prices<ArrowRight size={17} className="mk-arrow" aria-hidden="true" /></Link>
+            <Link to="/shop" className="mk-btn mk-btn-ghost !no-underline">Buy data now</Link>
           </div>
         </aside>
       );
