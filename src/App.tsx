@@ -24,6 +24,7 @@ import RequireAuth from "@/components/auth/RequireAuth";
 const About = lazy(() => import("./pages/About"));
 const Prices = lazy(() => import("./pages/Prices"));
 const NetworkBundles = lazy(() => import("./pages/NetworkBundles"));
+const CheapData = lazy(() => import("./pages/CheapData"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
@@ -175,6 +176,7 @@ export const MainSite = () => (
       <Route path="/mtn-data-bundles" element={<NetworkBundles network="mtn" />} />
       <Route path="/telecel-data-bundles" element={<NetworkBundles network="telecel" />} />
       <Route path="/airteltigo-data-bundles" element={<NetworkBundles network="at" />} />
+      <Route path="/cheap-data-bundles-ghana" element={<CheapData />} />
       {/* Guides — the informational searches the media blogs currently own. */}
       <Route path="/blog" element={<Blog />} />
       <Route path="/blog/:slug" element={<BlogPost />} />

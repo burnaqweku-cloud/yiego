@@ -86,6 +86,13 @@ const STATIC_ROUTES: PublicRoute[] = [
     description: "Live AirtelTigo data bundle prices in Ghana, 1GB to 50GB. Buy AT data online with Mobile Money or card for any AirtelTigo number, no account needed.",
   },
   {
+    path: "/cheap-data-bundles-ghana",
+    priority: 0.9,
+    changefreq: "daily",
+    title: "Cheap Data Bundles in Ghana — Fast MTN, Telecel & AT Data",
+    description: "Cheap data bundles in Ghana with the price per GB shown. Compare with MTN's own rate, buy for any number with MoMo or card, delivered automatically.",
+  },
+  {
     path: "/faq",
     priority: 0.7,
     changefreq: "monthly",
