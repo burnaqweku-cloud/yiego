@@ -18,6 +18,14 @@ async function fetchStatus(key: string, taskId: string): Promise<{ http: number;
   return { http: res.status, body };
 }
 
+/** The per-message id and error text from a status reply (one recipient per task in our use). */
+function readMessage(body: unknown): { messageId: string | null; reason: string | null } {
+  const m = (body as { messages?: Array<Record<string, unknown>> } | null)?.messages?.[0];
+  const id = m && typeof m.message_id === "string" ? m.message_id : null;
+  const err = m && typeof m.error_message === "string" ? m.error_message.slice(0, 200) : null;
+  return { messageId: id, reason: err };
+}
+
 /** Find a delivery word anywhere in the reply: top level, under data, or per recipient. */
 function readDelivery(body: unknown): string | null {
   const seen: string[] = [];
@@ -73,13 +81,14 @@ Deno.serve(async (req) => {
 
     const counts: Record<string, number> = {};
     for (const row of rows ?? []) {
-      let delivery = "unknown"; let raw: unknown = null;
-      try { const r = await fetchStatus(key, row.provider_job_id); raw = r.body; delivery = r.http === 200 ? DELIVERY(readDelivery(r.body)) : "unknown"; }
+      let delivery = "unknown"; let raw: unknown = null; let messageId: string | null = null; let reason: string | null = null;
+      try { const r = await fetchStatus(key, row.provider_job_id); raw = r.body; delivery = r.http === 200 ? DELIVERY(readDelivery(r.body)) : "unknown"; ({ messageId, reason } = readMessage(r.body)); }
       catch { delivery = "unknown"; }
       counts[delivery] = (counts[delivery] ?? 0) + 1;
       await db.from("order_sms_outbox").update({
         delivery_status: delivery, delivery_checked_at: new Date().toISOString(),
         delivery_checks: (row.delivery_checks ?? 0) + 1, delivery_raw: raw,
+        ...(messageId ? { provider_message_id: messageId } : {}), ...(reason ? { delivery_reason: reason } : {}),
       }).eq("id", row.id);
     }
     return jsonResponse({ checked: (rows ?? []).length, counts });
