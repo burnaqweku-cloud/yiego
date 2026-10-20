@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText } from "lucide-react";
+import { BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText, Send, History } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
 export interface AdminPage {
@@ -24,7 +24,6 @@ export const ADMIN_GROUPS: AdminGroup[] = [
   ] },
   { id: "operations", label: "Operations", icon: ClipboardList, pages: [
     { id: "orders", label: "Orders", to: "/admin/orders", icon: ClipboardList, keywords: ["order", "refund", "retry", "failed", "delivered", "processing", "verification", "mtn"] },
-    { id: "submitted-numbers", label: "Submitted numbers", to: "/admin/orders/submitted-numbers", icon: PhoneForwarded, keywords: ["mtn", "verification", "submitted", "beneficiary", "check"] },
     { id: "reviews", label: "Review queue", to: "/admin/reviews", icon: ShieldCheck, keywords: ["needs review", "failed", "stuck"] },
     { id: "disputes", label: "Disputes", to: "/admin/disputes", icon: MessageSquareWarning, keywords: ["complaint", "chargeback"] },
     { id: "status", label: "Status", to: "/admin/status", icon: Activity, keywords: ["delay", "slow", "apology", "processing", "outage"] },
@@ -62,6 +61,12 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "announcements", label: "Announcements", to: "/admin/announcements", icon: Megaphone, keywords: ["notification", "announce", "update", "notice", "bell", "broadcast"] },
     { id: "giveaways", label: "Giveaways", to: "/admin/giveaways", icon: Gift, keywords: ["giveaway", "campaign", "promo", "free", "discount"] },
     { id: "help", label: "Help Center", to: "/admin/help", icon: LifeBuoy, keywords: ["help", "article", "faq", "docs", "guide", "agents"] },
+  ] },
+  { id: "mtn-verification", label: "MTN verification", icon: ShieldCheck, pages: [
+    { id: "mtn-queue", label: "Queue", to: "/admin/mtn-verification", icon: ShieldCheck, end: true, keywords: ["mtn", "verification", "approved", "hold", "check", "send", "dbh"] },
+    { id: "mtn-sent", label: "Sent", to: "/admin/mtn-verification/sent", icon: Send, keywords: ["mtn", "verification", "sent", "delivered"] },
+    { id: "submitted-numbers", label: "Submitted numbers", to: "/admin/orders/submitted-numbers", icon: PhoneForwarded, keywords: ["mtn", "verification", "submitted", "beneficiary", "check"] },
+    { id: "mtn-history", label: "History", to: "/admin/mtn-verification/history", icon: History, keywords: ["mtn", "verification", "history", "checks", "report"] },
   ] },
   { id: "sms", label: "SMS", icon: MessageSquareText, pages: [
     { id: "sms", label: "Overview", to: "/admin/sms", icon: MessageSquareText, end: true, keywords: ["sms", "text", "vynfy", "credits", "switch"] },

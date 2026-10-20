@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ChevronDown, ChevronUp, Clipboard, ClipboardCheck, ClipboardList, Clock, FilterX, Loader2, RefreshCw, RotateCcw, Save, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import AdminListPagination from "@/components/admin/AdminListPagination";
@@ -295,7 +295,7 @@ export default function AdminOrders() {
         <div className="flex min-w-0 items-center gap-2"><Clock size={15} className="shrink-0 text-primary-glow" /><h2 className="truncate font-display text-base font-semibold text-white">MTN verification queue</h2><Badge variant="mint">{verificationQueue.length}</Badge></div>
         <Button variant="ghost" size="sm" onClick={copyQueue} title="Copy every number, one per line, for the DBH portal">{queueCopied ? <ClipboardCheck /> : <Clipboard />}<span className="hidden sm:inline">{queueCopied ? "Copied" : queueSearch.trim() ? `Copy ${queueMatches.length}` : "Copy all"}</span></Button>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">MTN numbers DBH is still verifying. Nothing is re-sent on its own: once a number shows <span className="font-semibold text-success">Approved</span>, open the order and press Retry.</p>
+      <p className="mt-1 text-xs text-muted-foreground">MTN numbers DBH is still verifying. Nothing is re-sent on its own. Check and send them from <Link to="/admin/mtn-verification" className="font-semibold text-primary-glow hover:underline">MTN verification</Link>.</p>
       <label className="mt-3 flex items-center gap-2 rounded-lg border border-white/10 bg-black/10 px-3 py-2"><Search size={14} className="shrink-0 text-faint-foreground" /><input value={queueSearch} onChange={(event) => setQueueSearch(event.target.value)} placeholder="Find a number or order ID" inputMode="search" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-faint-foreground" />{queueSearch && <button type="button" onClick={() => setQueueSearch("")} aria-label="Clear search" className="text-faint-foreground hover:text-foreground"><X size={14} /></button>}</label>
       <ul className="mt-2 divide-y divide-white/[0.055]">
         {queueShown.length === 0 && <li className="py-3 text-center text-xs text-muted-foreground">No number in the queue matches.</li>}

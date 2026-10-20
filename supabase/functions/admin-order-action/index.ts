@@ -165,10 +165,13 @@ Deno.serve(async (req) => {
 
     if (action === "retry") {
       const retryableStatuses = new Set(["failed", "failed_needs_review", "cancelled"]);
-      // MTN verification orders may be re-sent too: once MTN approves the number the re-send goes through.
-      const awaitingVerification = order.admin_resolution_status === "awaiting_verification";
-      if (!retryableStatuses.has(order.status) && !awaitingVerification) {
-        return jsonResponse({ error: "Only failed, cancelled or verification-held orders can be retried" }, { status: 409 });
+      // Verification-held orders are sent only from Admin → MTN verification, which locks each order so it can't
+      // be bought twice (19 Oct: 123 double purchases). Retry here is refused for them.
+      if (order.admin_resolution_status === "awaiting_verification") {
+        return jsonResponse({ error: "This order is on MTN verification hold. Send it from Admin → MTN verification, not from here." }, { status: 409 });
+      }
+      if (!retryableStatuses.has(order.status)) {
+        return jsonResponse({ error: "Only failed or cancelled orders can be retried" }, { status: 409 });
       }
       if (order.payment_status !== "succeeded") {
         return jsonResponse({ error: "Only successfully paid orders can be retried" }, { status: 409 });
