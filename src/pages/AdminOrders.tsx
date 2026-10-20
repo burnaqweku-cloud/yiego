@@ -295,13 +295,13 @@ export default function AdminOrders() {
         <div className="flex min-w-0 items-center gap-2"><Clock size={15} className="shrink-0 text-primary-glow" /><h2 className="truncate font-display text-base font-semibold text-white">MTN verification queue</h2><Badge variant="mint">{verificationQueue.length}</Badge></div>
         <Button variant="ghost" size="sm" onClick={copyQueue} title="Copy every number, one per line, for the DBH portal">{queueCopied ? <ClipboardCheck /> : <Clipboard />}<span className="hidden sm:inline">{queueCopied ? "Copied" : queueSearch.trim() ? `Copy ${queueMatches.length}` : "Copy all"}</span></Button>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">Silent DBH refunds on MTN numbers. Resubmit on the DBH portal once MTN clears the number, then mark delivered.</p>
+      <p className="mt-1 text-xs text-muted-foreground">MTN numbers DBH is still verifying. Nothing is re-sent on its own: once a number shows <span className="font-semibold text-success">Approved</span>, open the order and press Retry.</p>
       <label className="mt-3 flex items-center gap-2 rounded-lg border border-white/10 bg-black/10 px-3 py-2"><Search size={14} className="shrink-0 text-faint-foreground" /><input value={queueSearch} onChange={(event) => setQueueSearch(event.target.value)} placeholder="Find a number or order ID" inputMode="search" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-faint-foreground" />{queueSearch && <button type="button" onClick={() => setQueueSearch("")} aria-label="Clear search" className="text-faint-foreground hover:text-foreground"><X size={14} /></button>}</label>
       <ul className="mt-2 divide-y divide-white/[0.055]">
         {queueShown.length === 0 && <li className="py-3 text-center text-xs text-muted-foreground">No number in the queue matches.</li>}
         {queueShown.map((order) => <li key={order.id} className="flex items-center gap-3 py-2">
           <button type="button" onClick={() => openDetails(order)} className="min-w-0 flex-1 text-left" title={`View order ${order.order_reference}`}>
-            <span className="flex items-baseline gap-2"><span className="font-mono text-sm font-semibold text-white">{order.recipient_phone}</span><span className="truncate text-xs text-muted-foreground">{(order.data_products?.name ?? "").replace(/^MTN Data — /, "") || "—"}</span></span>
+            <span className="flex items-baseline gap-2"><span className="font-mono text-sm font-semibold text-white">{order.recipient_phone}</span>{(order.admin_resolution_reason ?? "").startsWith("MTN approved") && <Badge variant="success">Approved</Badge>}<span className="truncate text-xs text-muted-foreground">{(order.data_products?.name ?? "").replace(/^MTN Data — /, "") || "—"}</span></span>
             <span className="block truncate text-[11px] text-faint-foreground"><CopyRef value={order.order_reference} /> · {formatAdminDate(order.admin_resolution_updated_at ?? order.created_at)}</span>
           </button>
           <AdminDetailsButton label={`View order ${order.order_reference}`} onClick={() => openDetails(order)} />

@@ -4,9 +4,9 @@ import { requireCronSecret } from "../_shared/internal.ts";
 import * as hub from "../_shared/databundleshub.ts";
 
 /* Hourly. Asks DBH which held MTN numbers are now approved.
-   - Verification-queue orders whose number is approved are re-sent (the DBH resend loop picks them up).
-   - Submitted numbers (no order) are simply marked approved.
-   Nothing else is retried. */
+   - Verification-queue orders whose number is approved are MARKED approved and left in the queue for an admin to
+     press Retry. They are never re-sent automatically (19 Oct: automatic re-sends bought 123 orders twice).
+   - Submitted numbers (no order) are simply marked approved. */
 const normalize = (v: string) => { const d = String(v ?? "").replace(/\D/g, ""); return d.startsWith("233") ? `0${d.slice(3)}` : d; };
 
 Deno.serve(async (req) => {
@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     // The approval is on DBH's channel, so the re-send goes through DBH (its resend loop sends by its own supplier id,
     // whichever supplier is "main" for MTN at the time).
     const targetId = dbh?.id ?? null; const targetName = "DataBundlesHub";
-    const { data: queue } = await supabase.from("orders").select("id, order_reference, recipient_phone, supplier_purchase_id").eq("admin_resolution_status", "awaiting_verification").eq("status", "processing").eq("payment_status", "succeeded");
+    const { data: queue } = await supabase.from("orders").select("id, order_reference, recipient_phone, supplier_purchase_id, admin_resolution_reason").eq("admin_resolution_status", "awaiting_verification").eq("status", "processing").eq("payment_status", "succeeded");
     const { data: submitted } = await supabase.from("submitted_numbers").select("msisdn").eq("status", "pending");
     const numbers = [...new Set([...(queue ?? []).map((o: { recipient_phone: string }) => normalize(o.recipient_phone)), ...(submitted ?? []).map((s: { msisdn: string }) => s.msisdn)])];
     const status = new Map<string, { status: string; message: string | null }>();
@@ -33,28 +33,17 @@ Deno.serve(async (req) => {
     const now = new Date().toISOString();
     for (const [n, s] of status) await supabase.from("beneficiary_checks").upsert({ msisdn: n, status: s.status, message: s.message, checked_at: now });
 
-    const resent: string[] = []; const kept: string[] = [];
-    for (const o of (queue ?? []) as Array<{ id: string; order_reference: string; recipient_phone: string; supplier_purchase_id: string | null }>) {
+    // Approved numbers are NOT re-sent automatically any more (19 Oct: automatic re-sends bought 123 orders twice).
+    // The order stays in the verification queue, marked approved; an admin presses Retry when ready.
+    const approved: string[] = [];
+    for (const o of (queue ?? []) as Array<{ id: string; order_reference: string; recipient_phone: string; supplier_purchase_id: string | null; admin_resolution_reason: string | null }>) {
       const s = status.get(normalize(o.recipient_phone));
       if (!s || (s.status !== "approved" && s.status !== "not_enforced")) continue;
-      // An earlier DBH attempt may still be alive (19 Oct: 123 orders were bought twice because the hold was cleared
-      // and re-sent while the first purchase was pending). Ask DBH about it first; only a dead attempt is set aside.
-      if (o.supplier_purchase_id) {
-        const look = await hub.checkOrderStatus(o.supplier_purchase_id);
-        const dbhStatus = String(look.payload?.data?.status ?? look.payload?.data?.orderStatus ?? "").toLowerCase();
-        await supabase.from("supplier_api_logs").insert({ supplier_id: targetId, order_id: o.id, action: "check_order_status", endpoint: "/api/developer/purchase-status", request_payload: { request_id: o.supplier_purchase_id, reason: "number approved: is the earlier attempt still alive?" }, response_payload: look.payload ?? {}, call_status: look.ok ? "success" : "error", http_status: look.status ?? null });
-        const dead = look.ok && ["failed", "refunded", "refund", "rejected", "cancelled", "reversed"].includes(dbhStatus);
-        if (!dead) {
-          // Alive (pending/verified/delivered) or unknown: keep the attempt, just lift the hold. The status sync finishes it.
-          await supabase.from("orders").update({ admin_resolution_status: null, admin_resolution_reason: null, admin_resolution_updated_at: now, failure_reason: null, updated_at: now }).eq("id", o.id);
-          await supabase.from("order_events").insert({ order_id: o.id, event_type: "supplier.number_approved", from_status: "processing", to_status: "processing", message: `MTN has approved this number. Earlier ${targetName} attempt ${o.supplier_purchase_id} is ${look.ok ? (dbhStatus || "still open") : "unreachable"}, so it is kept and not sent again.`, metadata: { source: "verify-mtn-numbers", dbhStatus: dbhStatus || null, lookupOk: look.ok } });
-          kept.push(o.order_reference);
-          continue;
-        }
-      }
-      await supabase.from("orders").update({ admin_resolution_status: null, admin_resolution_reason: null, admin_resolution_updated_at: now, supplier_purchase_id: null, supplier_order_reference: null, supplier_transaction_reference: null, supplier_status: null, supplier_idempotency_key: null, failure_reason: null, supplier_id: targetId, supplier_retry_after: now, supplier_retry_count: 0, updated_at: now }).eq("id", o.id);
-      await supabase.from("order_events").insert({ order_id: o.id, event_type: "supplier.number_approved", from_status: "processing", to_status: "processing", message: `MTN has approved this number. Re-sending to ${targetName} now.` + (o.supplier_purchase_id ? ` Previous attempt ${o.supplier_purchase_id} set aside.` : ""), metadata: { source: "verify-mtn-numbers" } });
-      resent.push(o.order_reference);
+      if ((o.admin_resolution_reason ?? "").startsWith("MTN approved")) continue; // already marked on an earlier run
+      const stamp = new Date().toLocaleString("en-GB", { timeZone: "Africa/Accra", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      await supabase.from("orders").update({ admin_resolution_reason: `MTN approved this number on ${stamp}. Not sent again automatically: open the order and press Retry.`, admin_resolution_updated_at: now, updated_at: now }).eq("id", o.id);
+      await supabase.from("order_events").insert({ order_id: o.id, event_type: "supplier.number_approved", from_status: "processing", to_status: "processing", message: `MTN has approved this number. Waiting for an admin to press Retry; nothing was sent.${o.supplier_purchase_id ? ` Earlier ${targetName} attempt ${o.supplier_purchase_id} left as is.` : ""}`, metadata: { source: "verify-mtn-numbers", autoResend: false } });
+      approved.push(o.order_reference);
     }
     const approvedSubmitted: string[] = [];
     for (const sN of (submitted ?? []) as Array<{ msisdn: string }>) {
@@ -64,6 +53,6 @@ Deno.serve(async (req) => {
       else if (s.status === "blocked") await supabase.from("submitted_numbers").update({ status: "blocked", last_checked_at: now, dbh_message: s.message }).eq("msisdn", sN.msisdn);
       else await supabase.from("submitted_numbers").update({ last_checked_at: now, dbh_message: s.message }).eq("msisdn", sN.msisdn);
     }
-    return jsonResponse({ checked: numbers.length, queueOrders: (queue ?? []).length, resent, kept, approvedSubmitted });
+    return jsonResponse({ checked: numbers.length, queueOrders: (queue ?? []).length, approved, approvedSubmitted });
   } catch (e) { return jsonResponse({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 }); }
 });
