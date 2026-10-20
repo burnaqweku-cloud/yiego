@@ -6,7 +6,7 @@ import { z } from "npm:zod@3.25.76";
 
 /* Owner-only SMS test: sends one custom message to the approved test number. Internal secret required.
    Never touches orders, the outbox or the activation switch. */
-const Input = z.object({ to: z.enum(["+233557375894", "+233536529090"]), message: z.string().min(1).max(300), sender: z.enum(["Datayego", "DTYEGO"]).optional() }).strict();
+const Input = z.object({ to: z.enum(["+233557375894", "+233536529090", "+233533533414"]), message: z.string().min(1).max(300), sender: z.enum(["Datayego", "DTYEGO"]).optional() }).strict();
 
 Deno.serve(async (req) => {
   const options = handleOptions(req); if (options) return options;
