@@ -33,10 +33,25 @@ Deno.serve(async (req) => {
     const now = new Date().toISOString();
     for (const [n, s] of status) await supabase.from("beneficiary_checks").upsert({ msisdn: n, status: s.status, message: s.message, checked_at: now });
 
-    const resent: string[] = [];
+    const resent: string[] = []; const kept: string[] = [];
     for (const o of (queue ?? []) as Array<{ id: string; order_reference: string; recipient_phone: string; supplier_purchase_id: string | null }>) {
       const s = status.get(normalize(o.recipient_phone));
       if (!s || (s.status !== "approved" && s.status !== "not_enforced")) continue;
+      // An earlier DBH attempt may still be alive (19 Oct: 123 orders were bought twice because the hold was cleared
+      // and re-sent while the first purchase was pending). Ask DBH about it first; only a dead attempt is set aside.
+      if (o.supplier_purchase_id) {
+        const look = await hub.checkOrderStatus(o.supplier_purchase_id);
+        const dbhStatus = String(look.payload?.data?.status ?? look.payload?.data?.orderStatus ?? "").toLowerCase();
+        await supabase.from("supplier_api_logs").insert({ supplier_id: targetId, order_id: o.id, action: "check_order_status", endpoint: "/api/developer/purchase-status", request_payload: { request_id: o.supplier_purchase_id, reason: "number approved: is the earlier attempt still alive?" }, response_payload: look.payload ?? {}, call_status: look.ok ? "success" : "error", http_status: look.status ?? null });
+        const dead = look.ok && ["failed", "refunded", "refund", "rejected", "cancelled", "reversed"].includes(dbhStatus);
+        if (!dead) {
+          // Alive (pending/verified/delivered) or unknown: keep the attempt, just lift the hold. The status sync finishes it.
+          await supabase.from("orders").update({ admin_resolution_status: null, admin_resolution_reason: null, admin_resolution_updated_at: now, failure_reason: null, updated_at: now }).eq("id", o.id);
+          await supabase.from("order_events").insert({ order_id: o.id, event_type: "supplier.number_approved", from_status: "processing", to_status: "processing", message: `MTN has approved this number. Earlier ${targetName} attempt ${o.supplier_purchase_id} is ${look.ok ? (dbhStatus || "still open") : "unreachable"}, so it is kept and not sent again.`, metadata: { source: "verify-mtn-numbers", dbhStatus: dbhStatus || null, lookupOk: look.ok } });
+          kept.push(o.order_reference);
+          continue;
+        }
+      }
       await supabase.from("orders").update({ admin_resolution_status: null, admin_resolution_reason: null, admin_resolution_updated_at: now, supplier_purchase_id: null, supplier_order_reference: null, supplier_transaction_reference: null, supplier_status: null, supplier_idempotency_key: null, failure_reason: null, supplier_id: targetId, supplier_retry_after: now, supplier_retry_count: 0, updated_at: now }).eq("id", o.id);
       await supabase.from("order_events").insert({ order_id: o.id, event_type: "supplier.number_approved", from_status: "processing", to_status: "processing", message: `MTN has approved this number. Re-sending to ${targetName} now.` + (o.supplier_purchase_id ? ` Previous attempt ${o.supplier_purchase_id} set aside.` : ""), metadata: { source: "verify-mtn-numbers" } });
       resent.push(o.order_reference);
@@ -49,6 +64,6 @@ Deno.serve(async (req) => {
       else if (s.status === "blocked") await supabase.from("submitted_numbers").update({ status: "blocked", last_checked_at: now, dbh_message: s.message }).eq("msisdn", sN.msisdn);
       else await supabase.from("submitted_numbers").update({ last_checked_at: now, dbh_message: s.message }).eq("msisdn", sN.msisdn);
     }
-    return jsonResponse({ checked: numbers.length, queueOrders: (queue ?? []).length, resent, approvedSubmitted });
+    return jsonResponse({ checked: numbers.length, queueOrders: (queue ?? []).length, resent, kept, approvedSubmitted });
   } catch (e) { return jsonResponse({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 }); }
 });

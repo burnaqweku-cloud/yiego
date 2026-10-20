@@ -105,6 +105,12 @@ Deno.serve(async (req) => {
       .limit(MAX_RESENDS_PER_RUN);
     for (const row of due ?? []) {
       try {
+        // Claim the order before sending. Two runs of this job overlapped on 19 Oct and both sent the same orders
+        // (DBH charged twice). Pushing the cooldown forward atomically means only one run gets each order.
+        const nowIso = new Date().toISOString();
+        const { data: claimed } = await supabase.from("orders").update({ supplier_retry_after: new Date(Date.now() + 3 * 60_000).toISOString() })
+          .eq("id", row.id).eq("status", "processing").is("supplier_purchase_id", null).is("supplier_order_reference", null).lte("supplier_retry_after", nowIso).select("id");
+        if (!claimed?.length) { resent.push({ reference: row.order_reference, outcome: "claimed_by_another_run" }); continue; }
         const r = await fulfillOrder(supabase, row.id, { supplierId: supplier.id });
         resent.push({ reference: row.order_reference, outcome: r.skipped ? `skipped_${r.reason}` : r.status });
       } catch (error) {
