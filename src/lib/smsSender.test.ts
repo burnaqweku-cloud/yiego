@@ -1,5 +1,9 @@
 import { afterEach, expect, it, vi } from "vitest";
 
+declare global {
+  var Deno: { env: { get(name: string): string | undefined } };
+}
+
 afterEach(() => vi.unstubAllGlobals());
 
 it("sends the approved Datayego sender to the owner-approved Ghana test number", async () => {
