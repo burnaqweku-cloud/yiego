@@ -1,3 +1,4 @@
+import { earlierAttemptOpen, releaseSendLock, takeSendLock } from "./sendGuard.ts";
 import { mapDataMartGHStatusToYieGo } from "./datamartgh.ts";
 import { adapterFor, isAmbiguousOutcome, type PurchaseContext, type PurchaseOutcome } from "./supplierAdapters.ts";
 import { sendOrderConfirmation } from "./email.ts";
@@ -130,6 +131,7 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
     const fb = await fallbackFor(supabase, order, routedSupplierId);
     if (!fb) return null;
     await supabase.from("order_events").insert({ order_id: order.id, event_type: FALLBACK_EVENT, from_status: order.status, to_status: "processing", message: `${fromName} could not take this order (${why}). Sending to ${fb.name} instead.`, metadata: { from: fromName, to: fb.code, why, stage: "at_purchase" } });
+    await releaseSendLock(supabase, order.id); // the fallback send takes its own lock
     return await sendToSupplier(supabase, orderId, { supplierId: fb.id, viaFallback: true });
   };
   const hold = async (why: string, reason: string) => {
@@ -160,6 +162,16 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
   const adapter = adapterFor(supplier.code);
   if (!adapter) throw new Error(`no_adapter_for_supplier_${supplier.code}`);
   if (!adapter.isConfigured()) throw new Error(`supplier_not_configured_${supplier.code}`);
+
+  // One payment, one bundle (sendGuard.ts): one send at a time per order, and never a second purchase while an
+  // earlier one may still be alive at any supplier.
+  if (!(await takeSendLock(supabase, order.id))) return { skipped: true, reason: "send_in_progress", order };
+  try {
+    const verdict = await earlierAttemptOpen(supabase, order.id);
+    if (!verdict.ok) {
+      await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.fulfillment_blocked", from_status: order.status, to_status: order.status, message: `Not sent: ${verdict.detail}`, metadata: { supplier: supplier.code, reason: verdict.reason } });
+      return { skipped: true, reason: verdict.reason, orderId: order.id, status: order.status };
+    }
 
   // Claim the order atomically before anything is sent. Two callers (the
   // Paystack webhook and the tracker page's reconcile) can both see the order
@@ -466,6 +478,7 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
     status: nextStatus,
     supplierReference: outcome.supplierReference,
   };
+  } finally { await releaseSendLock(supabase, order.id); }
 }
 
 /** Previous name, kept so existing call sites keep working. */

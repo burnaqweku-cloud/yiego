@@ -16,3 +16,11 @@ Send guards, in order: a lock row per order in `mtn_verification_sends` (unique;
 never); the number must be approved on a check less than 24h old; an existing DBH attempt is looked up and adopted if alive;
 no successful DBH purchase to that number in the last 10 minutes; then `fulfillOrder` (which also refuses when supplier ids
 are set and asks DBH for an order held under our reference). Admin → Orders → Retry refuses verification-held orders.
+
+## One payment, one bundle (all suppliers)
+
+`_shared/sendGuard.ts`, called by `fulfillment.sendToSupplier` before any purchase: (1) an atomic per-order lock
+(`orders.send_lock_until`, 3-minute expiry) so two callers cannot send at once; (2) if any supplier ever accepted a
+purchase for the order, a new purchase is refused until that supplier is on record — in the timeline or a logged status
+check — as having refunded / rejected / cancelled it. "failed" is not enough (Emma and DBH re-run failed orders).
+Refusals are written as `supplier.fulfillment_blocked` with reason `earlier_attempt_open` or `send_in_progress`.
