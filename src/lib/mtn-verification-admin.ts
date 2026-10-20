@@ -10,7 +10,10 @@ export interface QueueOrder {
   paid_at: string; held_since: string | null; days_waiting: number;
   check_status: CheckStatus | null; check_message: string | null; checked_at: string | null;
   supplier_purchase_id: string | null; send: { outcome: string; sent_at: string; detail: string | null } | null;
+  /** What DataBundlesHub charges us for this bundle (their price list, kept in step with every purchase reply). */
+  dbh_cost: number | null;
 }
+export interface DbhWallet { balance: number | null; checked_at: string | null }
 export interface SentOrder {
   id: string; order_reference: string; phone: string; bundle: string; amount: number; store_name: string | null;
   sent_at: string; sent_by: string | null; outcome: "sending" | "sent" | "adopted" | "refused" | "failed"; detail: string | null;
@@ -29,6 +32,7 @@ const tidy = <T extends { bundle: string }>(rows: T[]) => rows.map((r) => ({ ...
 
 export async function loadQueue(): Promise<QueueOrder[]> { const { data, error } = await rpc("admin_mtn_queue"); fail(error); return tidy((data ?? []) as QueueOrder[]); }
 export async function loadSent(limit = 100): Promise<SentOrder[]> { const { data, error } = await rpc("admin_mtn_sent", { p_limit: limit }); fail(error); return tidy((data ?? []) as SentOrder[]); }
+export async function loadDbhWallet(): Promise<DbhWallet> { const { data, error } = await rpc("admin_mtn_dbh_wallet"); fail(error); return { balance: data?.balance == null ? null : Number(data.balance), checked_at: data?.checked_at ?? null }; }
 export async function loadSubmitted(): Promise<SubmittedNumber[]> { const { data, error } = await rpc("admin_mtn_submitted"); fail(error); return (data ?? []) as SubmittedNumber[]; }
 export async function loadChecks(limit = 30): Promise<CheckRun[]> { const { data, error } = await rpc("admin_mtn_checks", { p_limit: limit }); fail(error); return (data ?? []) as CheckRun[]; }
 export async function loadHistory(limit = 200): Promise<HistoryRow[]> { const { data, error } = await rpc("admin_mtn_history", { p_limit: limit }); fail(error); return (data ?? []) as HistoryRow[]; }
