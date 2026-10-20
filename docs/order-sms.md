@@ -4,14 +4,14 @@ The active external database has a private `phase1.order_sms_outbox`. An order t
 
 Verification candidates require MTN, successful payment, approval/cleared/email evidence and either actual delivery or supplier handover after clearance. One verification SMS per order chooses the current status at send time. Failed/review/unpaid/unhanded-over orders are excluded. When the verification message already confirms delivery, a queued duplicate routine delivery message is suppressed.
 
-All dates/times come from the order's `created_at` in Africa/Accra. Recipients come from the order's recipient phone, normalized by the Ghana sender helper. Purchase and delivered texts include the actual order reference as Order ID. All four variants link to `https://datayego.com/s/{slug}` for agent store orders, using the agent attached to the order; otherwise they link to the main site. Missing agent details fail closed instead of substituting an unrelated store. Routine messages stay within one ASCII/GSM segment. Verification uses the approved fuller wording and two segments for typical orders.
+All dates/times come from the order's `created_at` in Africa/Accra. Recipients come from the order's recipient phone, normalized by the Ghana sender helper. Purchase and delivered texts include the actual order reference as Order ID. All four variants link to `https://datayego.com/s/{slug}` for agent store orders, using the agent attached to the order; otherwise they link to the main site. Missing agent details fail closed instead of substituting an unrelated store. Wording approved 20 Oct 2026 after delivery tests on MTN (sender `DTYEGO`; texts that named the network, said GB/bundles or carried an https link were dropped by the network): sizes read `2G`, main-site texts say `on DTYEGO` and end with `datayego.com`; store orders say `on <store name>` and end with the store's own address (custom domain if active, else `<slug>.datayego.com`). Routine messages stay within one segment for normal store names, two at most. Verification is two segments. "On its way" is only sent for orders under 48 hours old.
 
 ## Activation gate
 
 Sending is disabled. The internal-only POST endpoint accepts strict request bodies:
 - `{ "dryRun": true }`: four sample previews, never sends or activates.
 - `{ "test": "+233557375894", "dryRun": true }`: sample verification preview.
-- `{ "test": "+233557375894" }`: sends one explicit sample using the approved sender `Datayego`; records provider acceptance but does not activate customers.
+- `{ "test": "+233557375894" }`: sends one explicit sample using the approved sender `DTYEGO`; records provider acceptance but does not activate customers.
 - After the owner confirms the test arrived, `{ "activate": true }` enables customer dispatch; a successful test is required.
 - `{}`: processes queued messages, or returns zero sends while disabled.
 

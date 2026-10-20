@@ -54,9 +54,9 @@ Deno.serve(async req => {
       const [{ data: product, error: productError }, { data: network, error: networkError }, { data: agent, error: agentError }] = await Promise.all([
         db.from("data_products").select("capacity_gb,capacity_mb").eq("id", o.product_id).maybeSingle(),
         db.from("networks").select("name").eq("id", o.network_id).maybeSingle(),
-        o.agent_id ? db.from("agents").select("slug").eq("id", o.agent_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
+        o.agent_id ? db.from("agents").select("slug,store_name,custom_domain,custom_domain_status").eq("id", o.agent_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
       ]);
-      const record: OrderSmsRecord = { ...o, capacity_gb: product?.capacity_gb ?? null, capacity_mb: product?.capacity_mb ?? null, network_name: network?.name ?? "", agent_slug: agent?.slug ?? null };
+      const record: OrderSmsRecord = { ...o, capacity_gb: product?.capacity_gb ?? null, capacity_mb: product?.capacity_mb ?? null, network_name: network?.name ?? "", agent_slug: agent?.slug ?? null, store_name: agent?.store_name ?? null, store_domain: agent?.custom_domain_status === "active" ? agent?.custom_domain ?? null : null };
       if (productError || networkError || agentError || (o.agent_id && !agent?.slug)) { await finish("failed", "details_read_failed"); failed++; continue; }
       if (!eligibleSms(record, job.kind as OrderSmsKind) || !toGhanaMsisdn(record.recipient_phone)) { await finish("skipped", "ineligible_order"); skipped++; continue; }
       if (job.kind === "delivered") {
