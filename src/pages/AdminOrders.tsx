@@ -45,6 +45,19 @@ function routeLabel(order: AdminOrderRow) {
   return supplier.public_name ?? supplier.name;
 }
 
+/* Delivered but the customer says nothing came: the note we paste to the supplier's support. Plain words, every
+   detail they ask for (number, bundle, their refs, when we sent it, when they said delivered), nothing else. */
+const clock = (iso: string | null | undefined) => iso ? new Date(iso).toLocaleString("en-GB", { timeZone: "Africa/Accra", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).replace(",", "").replace(/ (am|pm)$/i, "$1") : null;
+function supplierNote(order: AdminOrderRow, events: AdminOrderEventRow[]) {
+  const size = (order.data_products?.name ?? "").replace(/^.*?—\s*/, "").trim() || `${order.data_products?.capacity_gb ?? "?"}GB`;
+  const net = order.networks?.name ?? "";
+  const sent = events.filter((e) => e.event_type === "supplier.fulfillment_response").sort((a, b) => a.created_at < b.created_at ? 1 : -1)[0]?.created_at ?? null;
+  const delivered = events.filter((e) => e.event_type === "supplier.status_update" && /delivered|completed/i.test(e.message ?? "")).sort((a, b) => a.created_at < b.created_at ? 1 : -1)[0]?.created_at ?? null;
+  const refs = [order.supplier_order_reference ? `ref ${order.supplier_order_reference}` : null, order.supplier_purchase_id && order.supplier_purchase_id !== order.supplier_order_reference ? `order ID ${order.supplier_purchase_id}` : null].filter(Boolean).join(", ");
+  const when = [sent ? `Sent ${clock(sent)}` : null, delivered ? `your side shows delivered ${clock(delivered)}` : "your side shows delivered"].filter(Boolean).join(", ");
+  return `${order.recipient_phone}, ${net} ${size}${refs ? `, ${refs}` : ""}. ${when}, but the customer says nothing came. Please check.`;
+}
+
 function supportMessage(order: AdminOrderRow, processingDelay = false) {
   const reference = order.order_reference;
   const status = displayedStatus(order);
@@ -210,14 +223,25 @@ export default function AdminOrders() {
     const match = orders.find((order) => order.order_reference.toLowerCase() === needle || order.recipient_phone.replace(/\s/g, "").includes(needle.replace(/\s/g, "")) || order.supplier_order_reference?.toLowerCase() === needle);
     if (!match) { setLookedUp(null); setMessage(""); return toast.error("No matching order was found."); }
     setLookedUp(match);
+    setSupplierText(""); setSupplierCopied(false);
     const ops = await loadOpsStatus().catch(() => null);
     setMessage(supportMessage(match, Boolean(ops?.processing_delay)));
     setCopied(false);
+    if (match.status === "delivered") {
+      const { data } = await adminDatabase().from<AdminOrderEventRow>("order_events").select("id, event_type, from_status, to_status, message, created_at").eq("order_id", match.id);
+      setSupplierText(supplierNote(match, (data ?? []) as AdminOrderEventRow[]));
+    }
   };
 
   const copyMessage = async () => {
     try { await navigator.clipboard.writeText(message); setCopied(true); toast.success("Message copied."); }
     catch { toast.error("Could not copy the message."); }
+  };
+  const [supplierText, setSupplierText] = useState("");
+  const [supplierCopied, setSupplierCopied] = useState(false);
+  const copySupplierText = async () => {
+    try { await navigator.clipboard.writeText(supplierText); setSupplierCopied(true); toast.success("Copied for the supplier."); }
+    catch { toast.error("Could not copy."); }
   };
 
   // Default refund message: depends on how they paid. Anything typed in the box replaces it.
@@ -313,7 +337,9 @@ export default function AdminOrders() {
     <Card><CardContent>
       <div className="flex items-start justify-between gap-4"><div><h2 className="font-display text-lg font-semibold text-white">Track and assist with an order</h2><p className="mt-1 text-sm text-muted-foreground">Search by DataYego reference, recipient phone or supplier reference.</p></div><Badge variant="mint">AI-ready fallback</Badge></div>
       <div className="mt-4 flex gap-2"><label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-white/10 bg-black/10 px-4 py-3"><Search size={17} className="text-faint-foreground" /><input value={lookup} onChange={(event) => setLookup(event.target.value)} onKeyDown={(event) => event.key === "Enter" && void findOrder()} placeholder="YG-..., phone or supplier reference" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-faint-foreground" /></label><Button onClick={() => void findOrder()}>Check</Button></div>
-      {lookedUp && <div className="mt-5 grid gap-4 lg:grid-cols-2"><div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-semibold text-white">{lookedUp.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{lookedUp.recipient_phone} · {lookedUp.networks?.name ?? "Network"}</p></div><div className="flex shrink-0 items-center gap-2">{canRetry(lookedUp) && <Button size="sm" variant="ghost" disabled={retryingRef === lookedUp.order_reference} onClick={() => void retryOrder(lookedUp)}><RotateCcw />{retryingRef === lookedUp.order_reference ? "Sending…" : "Retry"}</Button>}<AdminDetailsButton label={`View ${lookedUp.order_reference}`} onClick={() => openDetails(lookedUp)} /></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><p className="text-faint-foreground">Order</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.status)}</p></div><div><p className="text-faint-foreground">Payment</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.payment_status)}</p></div><div><p className="text-faint-foreground">Supplier</p><p className="mt-1 font-semibold text-foreground">{readableStatus(normalizedSupplierStatus(lookedUp))}</p></div><div><p className="text-faint-foreground">Customer sees</p><p className="mt-1 font-semibold text-foreground">{readableStatus(displayedStatus(lookedUp))}</p></div></div></div><div className="rounded-2xl border border-primary-glow/15 bg-primary/[0.045] p-4"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-glow">Suggested customer response</p><Button variant="ghost" size="sm" onClick={copyMessage} disabled={!message}>{copied ? <ClipboardCheck /> : <Clipboard />}{copied ? "Copied" : "Copy"}</Button></div><textarea value={message} onChange={(event) => { setMessage(event.target.value); setCopied(false); }} className="onyx-field mt-4 min-h-36 resize-y text-sm leading-6" /></div></div>}
+      {lookedUp && <div className="mt-5 grid gap-4 lg:grid-cols-2"><div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-semibold text-white">{lookedUp.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{lookedUp.recipient_phone} · {lookedUp.networks?.name ?? "Network"}</p></div><div className="flex shrink-0 items-center gap-2">{canRetry(lookedUp) && <Button size="sm" variant="ghost" disabled={retryingRef === lookedUp.order_reference} onClick={() => void retryOrder(lookedUp)}><RotateCcw />{retryingRef === lookedUp.order_reference ? "Sending…" : "Retry"}</Button>}<AdminDetailsButton label={`View ${lookedUp.order_reference}`} onClick={() => openDetails(lookedUp)} /></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><p className="text-faint-foreground">Order</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.status)}</p></div><div><p className="text-faint-foreground">Payment</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.payment_status)}</p></div><div><p className="text-faint-foreground">Supplier</p><p className="mt-1 font-semibold text-foreground">{readableStatus(normalizedSupplierStatus(lookedUp))}</p></div><div><p className="text-faint-foreground">Customer sees</p><p className="mt-1 font-semibold text-foreground">{readableStatus(displayedStatus(lookedUp))}</p></div></div></div><div className="rounded-2xl border border-primary-glow/15 bg-primary/[0.045] p-4"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-glow">Suggested customer response</p><Button variant="ghost" size="sm" onClick={copyMessage} disabled={!message}>{copied ? <ClipboardCheck /> : <Clipboard />}{copied ? "Copied" : "Copy"}</Button></div><textarea value={message} onChange={(event) => { setMessage(event.target.value); setCopied(false); }} className="onyx-field mt-4 min-h-36 resize-y text-sm leading-6" />
+        {lookedUp.status === "delivered" && supplierText && <div className="mt-4 border-t border-white/[0.08] pt-4"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber">Customer says no data? Send this to {lookedUp.suppliers?.name ?? "the supplier"}</p><p className="mt-0.5 text-[11px] text-faint-foreground">Their refs and times, ready to paste to their support.</p></div><Button variant="ghost" size="sm" onClick={copySupplierText}>{supplierCopied ? <ClipboardCheck /> : <Clipboard />}{supplierCopied ? "Copied" : "Copy"}</Button></div><textarea value={supplierText} onChange={(event) => { setSupplierText(event.target.value); setSupplierCopied(false); }} className="onyx-field mt-3 min-h-24 resize-y text-sm leading-6" /></div>}
+      </div></div>}
     </CardContent></Card>
 
     <Card><CardContent>
