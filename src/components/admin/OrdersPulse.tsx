@@ -41,13 +41,14 @@ export default function OrdersPulse() {
   const [loading, setLoading] = useState(true);
   const [start, end] = useMemo(() => rangeFor(preset, from, to), [preset, from, to]);
   // Profit on the range's delivered orders only (bundle margin after agents' share + the checkout fees on
-  // those orders), dated by purchase day. Running costs (top-up fees, subscriptions, other spending) live on Finance.
+  // those orders), dated by purchase day. Only entries tied to an order count — supplier wallet corrections,
+  // top-up fees, subscriptions and other spending live on Finance and never move this number.
   const [profit, setProfit] = useState<number | null>(null);
   useEffect(() => {
     let mounted = true; setProfit(null);
-    (db() as unknown as { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: { period?: { gross_profit?: number | string; fee_income?: number | string } } | null }> })
+    (db() as unknown as { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: { period?: { order_profit?: number | string; order_fee_income?: number | string } } | null }> })
       .rpc("finance_overview", { p_from: iso(startOfDay(start)), p_to: iso(new Date(endOfDay(end).getTime() + 1)) })
-      .then((r) => { const p = r.data?.period; if (mounted) setProfit(p?.gross_profit == null ? null : Number(p.gross_profit) + Number(p.fee_income ?? 0)); })
+      .then((r) => { const p = r.data?.period; if (mounted) setProfit(p?.order_profit == null ? null : Number(p.order_profit) + Number(p.order_fee_income ?? 0)); })
       .catch(() => { if (mounted) setProfit(null); });
     return () => { mounted = false; };
   }, [start, end]);
