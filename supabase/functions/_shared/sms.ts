@@ -13,8 +13,8 @@ export function toGhanaMsisdn(phone: string): string | null {
 }
 
 export type SmsResult =
-  | { ok: true; jobId?: string; remaining?: number }
-  | { ok: false; skipped?: boolean; reason: string; status?: number };
+  | { ok: true; jobId?: string; remaining?: number; raw?: unknown }
+  | { ok: false; skipped?: boolean; reason: string; status?: number; raw?: unknown };
 
 export async function sendSms(opts: { to: string | string[]; message: string; metadata?: Record<string, unknown>; sender?: string }): Promise<SmsResult> {
   const key = Deno.env.get("VYNFY_API_KEY");
@@ -31,7 +31,9 @@ export async function sendSms(opts: { to: string | string[]; message: string; me
   }); } catch { return { ok: false, reason: "delivery_unknown" }; }
   const body = await res.json().catch(() => ({}));
   if (!res.ok || body?.success === false) {
-    return { ok: false, reason: "provider_rejected", status: res.status };
+    return { ok: false, reason: "provider_rejected", status: res.status, raw: body };
   }
-  return { ok: true, jobId: body?.data?.job_id, remaining: body?.balance?.remaining };
+  // The docs call it job_id; the status endpoint calls it task_id. Accept either, wherever it sits.
+  const jobId = body?.data?.job_id ?? body?.data?.task_id ?? body?.job_id ?? body?.task_id;
+  return { ok: true, jobId: jobId ? String(jobId) : undefined, remaining: body?.balance?.remaining, raw: body };
 }
