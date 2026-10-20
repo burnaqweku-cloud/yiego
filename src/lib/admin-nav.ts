@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2 } from "lucide-react";
+import { BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
 export interface AdminPage {
@@ -62,6 +62,12 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "announcements", label: "Announcements", to: "/admin/announcements", icon: Megaphone, keywords: ["notification", "announce", "update", "notice", "bell", "broadcast"] },
     { id: "giveaways", label: "Giveaways", to: "/admin/giveaways", icon: Gift, keywords: ["giveaway", "campaign", "promo", "free", "discount"] },
     { id: "help", label: "Help Center", to: "/admin/help", icon: LifeBuoy, keywords: ["help", "article", "faq", "docs", "guide", "agents"] },
+  ] },
+  { id: "sms", label: "SMS", icon: MessageSquareText, pages: [
+    { id: "sms", label: "Overview", to: "/admin/sms", icon: MessageSquareText, end: true, keywords: ["sms", "text", "vynfy", "credits", "switch"] },
+    { id: "sms-messages", label: "Messages", to: "/admin/sms/messages", icon: Inbox, keywords: ["sms", "delivered", "failed", "re-queue", "phone"] },
+    { id: "sms-templates", label: "Templates", to: "/admin/sms/templates", icon: FileText, keywords: ["sms", "wording", "text", "template", "preview"] },
+    { id: "sms-settings", label: "Settings", to: "/admin/sms/settings", icon: Settings2, keywords: ["sms", "sender", "test number", "switch", "store"] },
   ] },
   { id: "support", label: "Support", icon: LifeBuoy, pages: [
     { id: "support-inbox", label: "Support inbox", to: "/admin/support-inbox", icon: Inbox, keywords: ["message", "ticket", "whatsapp", "website", "site assistant"] },
