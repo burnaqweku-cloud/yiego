@@ -5,8 +5,8 @@ import { sendSms, toGhanaMsisdn } from "../_shared/sms.ts";
 import { buildOrderSms, eligibleSms, type OrderSmsKind, type OrderSmsRecord } from "../_shared/orderSmsTemplates.ts";
 import { z } from "npm:zod@3.25.76";
 
-const Input = z.object({ dryRun: z.boolean().optional(), test: z.literal("0536529090").optional(), activate: z.boolean().optional() }).strict();
-const sample: OrderSmsRecord = { order_reference: "SAMPLE", created_at: "2026-10-16T12:00:00Z", status: "delivered", payment_status: "succeeded", recipient_phone: "0536529090", capacity_gb: 2, capacity_mb: null, network_name: "MTN", supplier_order_reference: null, supplier_purchase_id: null, admin_resolution_status: null };
+const Input = z.object({ dryRun: z.boolean().optional(), test: z.literal("+233557375894").optional(), activate: z.boolean().optional() }).strict();
+const sample: OrderSmsRecord = { order_reference: "SAMPLE", created_at: "2026-10-16T12:00:00Z", status: "delivered", payment_status: "succeeded", recipient_phone: "+233557375894", capacity_gb: 2, capacity_mb: null, network_name: "MTN", supplier_order_reference: null, supplier_purchase_id: null, admin_resolution_status: null };
 
 Deno.serve(async req => {
   const options = handleOptions(req); if (options) return options;

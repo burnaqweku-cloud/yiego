@@ -10,8 +10,8 @@ All dates/times come from the order's `created_at` in Africa/Accra. Recipients c
 
 Sending is disabled. The internal-only POST endpoint accepts strict request bodies:
 - `{ "dryRun": true }`: four sample previews, never sends or activates.
-- `{ "test": "0536529090", "dryRun": true }`: sample verification preview.
-- `{ "test": "0536529090" }`: sends one explicit sample after sender approval; records provider acceptance but does not activate customers.
+- `{ "test": "+233557375894", "dryRun": true }`: sample verification preview.
+- `{ "test": "+233557375894" }`: sends one explicit sample using the approved sender `Datayego`; records provider acceptance but does not activate customers.
 - After the owner confirms the test arrived, `{ "activate": true }` enables customer dispatch; a successful test is required.
 - `{}`: processes queued messages, or returns zero sends while disabled.
 

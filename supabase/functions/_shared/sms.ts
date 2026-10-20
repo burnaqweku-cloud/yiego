@@ -1,6 +1,7 @@
 /* Vynfy SMS (https://sms.vynfy.com). Key lives in the VYNFY_API_KEY secret. */
+declare const Deno: { env: { get(name: string): string | undefined } };
 const BASE = "https://sms.vynfy.com/api/v1/send";
-const SENDER = Deno.env.get("VYNFY_SENDER") ?? "DataYego";
+const SENDER = Deno.env.get("VYNFY_SENDER") ?? "Datayego";
 
 /** Normalise Ghana numbers to 233XXXXXXXXX. */
 export function toGhanaMsisdn(phone: string): string | null {
