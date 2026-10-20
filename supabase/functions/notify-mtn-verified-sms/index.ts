@@ -1,7 +1,7 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { requireCronSecret } from "../_shared/internal.ts";
-import { sendSms, toGhanaMsisdn } from "../_shared/sms.ts";
+import { sendSms, smsCallbackUrl, toGhanaMsisdn } from "../_shared/sms.ts";
 import { buildOrderSms, eligibleSms, type OrderSmsKind, type OrderSmsRecord } from "../_shared/orderSmsTemplates.ts";
 import { z } from "npm:zod@3.25.76";
 
@@ -42,6 +42,7 @@ Deno.serve(async req => {
     if (seeded.error) throw new Error("Cannot queue verification messages");
     const { data: jobs, error: claimError } = await db.rpc("claim_order_sms", { batch_size: 20 });
     if (claimError) throw new Error("Cannot claim SMS queue");
+    const callbackUrl = await smsCallbackUrl(db);
     let sent = 0, skipped = 0, failed = 0;
     for (const job of jobs ?? []) {
       const finish = async (status: string, reason: string | null, jobId?: string) => {
@@ -66,7 +67,7 @@ Deno.serve(async req => {
       }
       let message: string;
       try { message = buildOrderSms(record, job.kind as OrderSmsKind); } catch { await finish("skipped", "invalid_order_details"); skipped++; continue; }
-      const result = await sendSms({ to: record.recipient_phone, message, metadata: { notification_id: job.id, purpose: job.kind } });
+      const result = await sendSms({ to: record.recipient_phone, message, metadata: { notification_id: job.id, purpose: job.kind }, callbackUrl });
       if (result.ok) {
         await finish("sent", job.kind === "verified" ? (record.status === "delivered" ? "verified_delivered" : "verified_on_way") : null, result.jobId);
         await db.from("order_events").insert({ order_id: job.order_id, event_type: job.kind === "verified" ? "notification.verified_sms_sent" : `notification.${job.kind}_sms_sent`, message: "SMS accepted by provider", metadata: { notification_id: job.id, job_id: result.jobId ?? null } });

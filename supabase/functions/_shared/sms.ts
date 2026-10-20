@@ -16,7 +16,7 @@ export type SmsResult =
   | { ok: true; jobId?: string; remaining?: number; raw?: unknown }
   | { ok: false; skipped?: boolean; reason: string; status?: number; raw?: unknown };
 
-export async function sendSms(opts: { to: string | string[]; message: string; metadata?: Record<string, unknown>; sender?: string }): Promise<SmsResult> {
+export async function sendSms(opts: { to: string | string[]; message: string; metadata?: Record<string, unknown>; sender?: string; callbackUrl?: string }): Promise<SmsResult> {
   const key = Deno.env.get("VYNFY_API_KEY");
   if (!key) return { ok: false, skipped: true, reason: "no_api_key" };
   const recipients = (Array.isArray(opts.to) ? opts.to : [opts.to]).map(toGhanaMsisdn).filter(Boolean) as string[];
@@ -26,7 +26,7 @@ export async function sendSms(opts: { to: string | string[]; message: string; me
   try { res = await fetch(BASE, {
     method: "POST",
     headers: { "X-API-Key": key, "Content-Type": "application/json" },
-    body: JSON.stringify({ sender: (opts.sender ?? SENDER).slice(0, 11), recipients, message: opts.message, metadata: opts.metadata }),
+    body: JSON.stringify({ sender: (opts.sender ?? SENDER).slice(0, 11), recipients, message: opts.message, metadata: opts.metadata, ...(opts.callbackUrl ? { callback_url: opts.callbackUrl } : {}) }),
     signal: AbortSignal.timeout(15000),
   }); } catch { return { ok: false, reason: "delivery_unknown" }; }
   const body = await res.json().catch(() => ({}));
@@ -36,4 +36,14 @@ export async function sendSms(opts: { to: string | string[]; message: string; me
   // The docs call it job_id; the status endpoint calls it task_id. Accept either, wherever it sits.
   const jobId = body?.data?.job_id ?? body?.data?.task_id ?? body?.job_id ?? body?.task_id;
   return { ok: true, jobId: jobId ? String(jobId) : undefined, remaining: body?.balance?.remaining, raw: body };
+}
+
+/** Where Vynfy reports status changes. The key in the URL is a dedicated secret (internal_secrets 'sms_callback'),
+    not the cron secret, so a leaked callback URL cannot run anything else. Absent secret → no callback, polling still works. */
+// deno-lint-ignore no-explicit-any
+export async function smsCallbackUrl(db: any): Promise<string | undefined> {
+  const base = Deno.env.get("SUPABASE_URL");
+  if (!base) return undefined;
+  const { data } = await db.from("internal_secrets").select("value").eq("key", "sms_callback").maybeSingle();
+  return data?.value ? `${base.replace(/\/$/, "")}/functions/v1/sms-callback?key=${encodeURIComponent(data.value)}` : undefined;
 }
