@@ -22,3 +22,6 @@ Provider acceptance is not proof of handset delivery. Unique order/kind keys plu
 SQL source: `docs/sql/order-sms-outbox.sql` (already applied to the external phase1 database). Do not apply this source to the unused managed database.
 
 Validation: `bunx vitest run src/lib/orderSms.test.ts`; `node scripts/test-order-sms-db.cjs` uses the external secure DB environment and rolls back every test change. The DB test is a pre-activation check.
+## Delivery reports (added 20 Oct 2026)
+
+Vynfy's send reply carries `data.task_id` (their docs say `job_id`; `sendSms` accepts either) and it is stored as `provider_job_id`. The scheduled job `sync-order-sms-delivery` (every 5 minutes) calls `sms-status-sync`, which asks `GET /api/v1/status/<task_id>` for accepted texts from the last 3 days that have no final report (at most 12 checks each) and records `delivery_status` (`delivered` / `not_delivered` / `failed` / `sent` / `pending` / `unknown`), `delivery_checked_at`, `delivery_checks` and the raw reply on the outbox row. It is read-only: nothing is re-queued or re-sent from a report. Texts sent before this change (the 20 Oct verification batch) have no task id and can only be checked in the Vynfy dashboard. `{ "probe": "<task_id>" }` returns one raw report.
