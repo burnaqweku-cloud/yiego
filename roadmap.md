@@ -5,4 +5,5 @@
 - [x] Wire only four order SMS notifications: paid purchase, delivered, MTN verified/delivered, MTN verified/on its way.
 - [x] Use real bundle, purchase date/time and recipient records; secure the queue and prevent duplicates.
 - [x] Deploy and validate wiring without sending customer SMS while sender approval is pending.
-- [ ] Send test to 0536529090 after DataYego sender approval; only then enable customer sending.
+- [ ] Switch sender to approved Datayego and send one sample to +233557375894.
+- [ ] Enable customer sending only after the owner confirms test receipt and explicitly requests activation.
