@@ -16,7 +16,7 @@ export type SmsResult =
   | { ok: true; jobId?: string; remaining?: number }
   | { ok: false; skipped?: boolean; reason: string; status?: number };
 
-export async function sendSms(opts: { to: string | string[]; message: string; metadata?: Record<string, unknown> }): Promise<SmsResult> {
+export async function sendSms(opts: { to: string | string[]; message: string; metadata?: Record<string, unknown>; sender?: string }): Promise<SmsResult> {
   const key = Deno.env.get("VYNFY_API_KEY");
   if (!key) return { ok: false, skipped: true, reason: "no_api_key" };
   const recipients = (Array.isArray(opts.to) ? opts.to : [opts.to]).map(toGhanaMsisdn).filter(Boolean) as string[];
@@ -26,7 +26,7 @@ export async function sendSms(opts: { to: string | string[]; message: string; me
   try { res = await fetch(BASE, {
     method: "POST",
     headers: { "X-API-Key": key, "Content-Type": "application/json" },
-    body: JSON.stringify({ sender: SENDER.slice(0, 11), recipients, message: opts.message, metadata: opts.metadata }),
+    body: JSON.stringify({ sender: (opts.sender ?? SENDER).slice(0, 11), recipients, message: opts.message, metadata: opts.metadata }),
     signal: AbortSignal.timeout(15000),
   }); } catch { return { ok: false, reason: "delivery_unknown" }; }
   const body = await res.json().catch(() => ({}));
