@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Gift } from "lucide-react";
 import InviteSheet from "@/components/referrals/InviteSheet";
+import { AgentNudgeLine } from "@/components/agents/AgentPopup";
 import PriceBoard from "@/components/home/PriceBoard";
 
 /**
@@ -58,9 +59,16 @@ export default function Hero() {
               MTN, Telecel and AirtelTigo bundles for any number. Pay with Mobile Money or card.
             </p>
 
-            {/* Phones: a short row of the two actions right here, then the board. Desktop: full-size buttons. */}
+            {/* Phones: a short row of the two actions, one line of small links, then the board. Desktop: full-size buttons. */}
             <div className="mt-5 lg:hidden">
               <Buttons compact />
+              <div className="mt-3 flex flex-col items-start gap-1.5">
+                <button type="button" onClick={() => setInviteOpen(true)} className="inline-flex items-center gap-2 text-[13px] font-semibold text-primary-glow underline-offset-4 hover:underline">
+                  <Gift size={14} aria-hidden="true" />
+                  Invite &amp; earn GHS 6.00 in data
+                </button>
+                <AgentNudgeLine />
+              </div>
             </div>
             <div className="hidden lg:block">
               <Buttons />
@@ -72,9 +80,7 @@ export default function Hero() {
             <PriceBoard />
           </div>
 
-          <div className="-mt-2 lg:hidden">
-            <Notes onInvite={() => setInviteOpen(true)} />
-          </div>
+          <p className="-mt-2 text-[12.5px] text-faint-foreground lg:hidden">No account needed. Buy as a guest and still track the order.</p>
           <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />
         </div>
       </div>

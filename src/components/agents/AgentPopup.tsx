@@ -6,12 +6,28 @@ import { loadPhase1Networks, loadPhase1Products } from "@/lib/phase1-api";
 import { useFlows } from "@/store/flows";
 
 /** Small strip for signed-in agents who still need to pay: shown wherever the popup is mounted. */
-export function AgentNudge() {
+function useAgentNudgeState() {
   const [state, setState] = useState<"awaiting_payment" | "paused" | null>(null);
   useEffect(() => { void agentsStatus().then(async ({ launched }) => { if (!(launched || previewRequested())) return; const me = await myAgentStatus(); if (me?.is_agent && (me.agent_status === "awaiting_payment" || me.agent_status === "paused")) setState(me.agent_status); }); }, []);
+  return state;
+}
+export function AgentNudge({ className = "" }: { className?: string }) {
+  const state = useAgentNudgeState();
   if (!state) return null;
   return (
-    <div className="mk-wrap mt-3"><Link to="/agent" className="flex items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-[13px] text-foreground"><span><b>{state === "paused" ? "Your agent store is paused." : "Your agent application is approved."}</b> {state === "paused" ? "Pay this month's fee to reopen it." : "Pay the monthly fee to open your store."}</span><span className="shrink-0 font-semibold text-primary-glow">Pay now →</span></Link></div>
+    <div className={`mk-wrap mt-3 ${className}`}><Link to="/agent" className="flex items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-[13px] text-foreground"><span><b>{state === "paused" ? "Your agent store is paused." : "Your agent application is approved."}</b> {state === "paused" ? "Pay this month's fee to reopen it." : "Pay the monthly fee to open your store."}</span><span className="shrink-0 font-semibold text-primary-glow">Pay now →</span></Link></div>
+  );
+}
+/** One-line version of the nudge for tight spots (the phone hero, above the price board). */
+export function AgentNudgeLine() {
+  const state = useAgentNudgeState();
+  if (!state) return null;
+  return (
+    <Link to="/agent" className="inline-flex items-center gap-2 text-[13px] font-semibold text-primary-glow underline-offset-4 hover:underline">
+      <Store size={14} aria-hidden="true" />
+      {state === "paused" ? "Store paused: pay to reopen" : "Application approved: pay to open your store"}
+      <span aria-hidden="true">→</span>
+    </Link>
   );
 }
 

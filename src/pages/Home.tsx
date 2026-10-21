@@ -36,7 +36,7 @@ export default function Home() {
     <>
       <Seo {...metaFor("/")} jsonLd={[organizationLd(), websiteLd()]} />
       <Hero />
-      <AgentNudge />
+      <AgentNudge className="hidden lg:block" />
       <Facts />
       <div className="mk-wrap"><hr className="mk-rule" /></div>
       <HowItWorks />
