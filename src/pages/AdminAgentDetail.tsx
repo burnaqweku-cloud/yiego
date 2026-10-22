@@ -15,7 +15,7 @@ import { useAuth } from "@/store/auth-context";
 
 /* One agent, in full: who they are, their plan, every order through them
    (store sale vs their own purchase), earnings, payouts, free months. */
-interface Agent { id: string; user_id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; created_at: string; parent_agent_id: string | null; network_on: boolean | null; network_fee: number | null; network_paused_at: string | null }
+interface Agent { id: string; user_id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; created_at: string; parent_agent_id: string | null; network_on: boolean | null; network_fee: number | null; network_paused_at: string | null; redirect_to_main?: boolean; redirect_to_main_at?: string | null }
 interface NetInfo { parent: { id: string; store_name: string; slug: string; network_fee: number } | null; subs: Array<{ id: string; store_name: string; slug: string; status: string; paid_until: string | null }>; parentMargin: number; feeIncome: number }
 interface Ord { id: string; order_reference: string; recipient_phone: string; amount: number; agent_price: number | null; agent_margin: number | null; status: string; supplier_status: string | null; admin_resolution_status: string | null; paid_at: string; user_id: string | null; guest_email: string | null; data_products: { name: string; capacity_gb: number } | null; networks: { name: string } | null; suppliers: { code: string; name: string } | null }
 interface Payout { id: string; amount: number; fee: number; net: number; status: string; created_at: string; paid_at: string | null }
@@ -62,6 +62,16 @@ export default function AdminAgentDetail() {
     if (error) return toast.error(error.message.includes("taken") ? "That link is taken." : error.message.includes("reserved") ? "That name is reserved." : error.message.includes("too_") ? "Use 3 to 30 letters or numbers." : error.message.replace(/_/g, " "));
     toast.success(`Now /s/${(data as { slug: string }).slug}. The old link still works for 90 days.`); void load();
   };
+  const [redirBusy, setRedirBusy] = useState(false);
+  const toggleRedirect = async () => {
+    if (!a) return; const on = !a.redirect_to_main;
+    if (!window.confirm(on ? `Send everyone who opens ${a.store_name}'s store to the main DataYego site?` : `Open ${a.store_name}'s store again for visitors?`)) return;
+    setRedirBusy(true);
+    const { error } = await db().rpc("admin_set_store_redirect", { p_agent: a.id, p_on: on });
+    setRedirBusy(false);
+    if (error) return toast.error(error.message.replace(/_/g, " "));
+    toast.success(on ? "Store visitors now go to the main site." : "Store is showing again."); void load();
+  };
 
   const isSelf = (o: Ord) => a != null && o.user_id === a.user_id && Number(o.agent_margin ?? 0) === 0;
   const shown = useMemo(() => orders.filter((o) => source === "all" || (source === "self" ? isSelf(o) : !isSelf(o))), [orders, source, a]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -95,6 +105,10 @@ export default function AdminAgentDetail() {
         <Stat label="Contact" value={a.whatsapp ?? a.momo_number ?? "—"} note={a.momo_number ? `MoMo ${a.momo_number}${a.momo_name ? ` (${a.momo_name})` : ""}` : "no MoMo yet"} />
         <Stat label="Tagline" value={a.tagline ?? "—"} note={`slug ${a.slug}`} />
       </StatGrid>
+
+      <Panel title="Send store visitors to main site" note={a.redirect_to_main ? `on since ${a.redirect_to_main_at ? formatAdminDate(a.redirect_to_main_at) : "—"}` : "off"} action={<Button size="sm" variant={a.redirect_to_main ? "soft" : "ghost"} disabled={redirBusy} onClick={() => void toggleRedirect()}>{redirBusy ? "Saving…" : a.redirect_to_main ? "Turn off" : "Turn on"}</Button>}>
+        <p className="text-[12.5px] text-muted-foreground">{a.redirect_to_main ? <>Anyone opening <span className="text-foreground">/s/{a.slug}</span> (or this store's own domain) is sent to datayego.com. Works even if the plan has run out.</> : "When on, anyone opening this agent's store link goes straight to datayego.com, even if the agent's plan has run out."}</p>
+      </Panel>
 
       {net && (net.parent || net.subs.length > 0 || a.network_on) && (
         <Panel title="Sub-agent network" note={net.parent ? "this is a sub-agent" : "this agent recruits sub-agents"} action={<Link to={net.parent ? "/admin/sub-agents/list" : "/admin/sub-agents/parents"}><Button variant="ghost" size="sm">Open Sub-agents</Button></Link>}>
