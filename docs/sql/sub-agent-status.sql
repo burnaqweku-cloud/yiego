@@ -41,3 +41,24 @@ BEGIN
 END;
 $$;
 NOTIFY pgrst, 'reload schema';
+CREATE OR REPLACE FUNCTION phase1.my_network()
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'phase1', 'public'
+AS $function$
+  with me as (select id from phase1.agents where user_id = auth.uid())
+  select jsonb_build_object(
+    'agents', (select coalesce(jsonb_agg(jsonb_build_object('id', s.id, 'slug', s.slug, 'store_name', s.store_name, 'status', s.status, 'parent_deactivated_at', s.parent_deactivated_at, 'paid_until', s.paid_until, 'created_at', s.created_at, 'whatsapp', s.whatsapp,
+        'orders', (select count(*) from phase1.orders o where o.agent_id = s.id and o.payment_status = 'succeeded'),
+        'sales', (select coalesce(sum(o.amount),0) from phase1.orders o where o.agent_id = s.id and o.status = 'delivered'),
+        'my_margin', (select coalesce(sum(o.parent_margin),0) from phase1.orders o where o.agent_id = s.id and o.status = 'delivered'),
+        'fees_paid', (select coalesce(sum(l.amount),0) from phase1.agent_ledger_entries l where l.agent_id = (select id from me) and l.type = 'sale' and l.note like 'Agent fee from%' and l.reference in (select provider_reference from phase1.payment_intents where (metadata->>'agent_id')::uuid = s.id))
+      ) order by s.created_at desc), '[]'::jsonb) from phase1.agents s where s.parent_agent_id = (select id from me)),
+    'totals', (select jsonb_build_object('agents', count(*), 'active', count(*) filter (where s.status = 'active'),
+        'sales', (select coalesce(sum(o.amount),0) from phase1.orders o where o.parent_agent_id = (select id from me) and o.status = 'delivered'),
+        'my_margin', (select coalesce(sum(o.parent_margin),0) from phase1.orders o where o.parent_agent_id = (select id from me) and o.status = 'delivered'),
+        'fee_income', (select coalesce(sum(l.amount),0) from phase1.agent_ledger_entries l where l.agent_id = (select id from me) and l.type = 'sale' and l.note like 'Agent fee from%'))
+      from phase1.agents s where s.parent_agent_id = (select id from me)))
+$function$
+;
