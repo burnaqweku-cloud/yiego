@@ -65,6 +65,15 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("agent_store", { p_slug: slug, p_preview: true }).then((r: { data: StoreData | null; error: unknown }) => { if (r.error) setLoadFailed(true); else setStore(r.data ?? null); }).catch(() => setLoadFailed(true));
   }, [slug]);
+  // Admin switch: this store sends every visitor to the main DataYego site (works even when the plan has lapsed).
+  const [redirecting, setRedirecting] = useState<boolean | undefined>(undefined);
+  useEffect(() => {
+    if (!slug) { setRedirecting(false); return; }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("store_redirects_to_main", { p_slug: slug }).then((r: { data: boolean | null }) => {
+      if (r.data === true) { setRedirecting(true); window.location.replace(hostSlug ? "https://datayego.com/" : "/"); } else setRedirecting(false);
+    }, () => setRedirecting(false));
+  }, [slug, hostSlug]);
   // A store with its own domain lives there: datayego.com/s/<slug>/… (receipts, old links, shares) jumps to it, same page.
   useEffect(() => {
     if (hostSlug || !slug) return;
@@ -89,6 +98,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
     document.body.classList.add(cls, "st-body"); if (store.accent_color) document.body.classList.add("has-accent"); Object.entries(vars).forEach(([k, v]) => document.body.style.setProperty(k, v));
     return () => { document.body.classList.remove(cls, "st-body", "has-accent"); Object.keys(vars).forEach((k) => document.body.style.removeProperty(k)); };
   }, [store]);
+  if (redirecting !== false) return <div className="min-h-dvh bg-[#0b1512]" />;
   if (loadFailed && !store) return <StoreMissing kind="could-not-load" />;
   if (store === undefined) return <div className="min-h-dvh bg-[#0b1512]" />;
   if (store === null) return <StoreMissing kind="not-open" />;
