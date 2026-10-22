@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { AppWindow, Copy, Network as NetIcon, Megaphone, MessagesSquare, Inbox, ListChecks } from "lucide-react";
+import { AppWindow, Copy, Network as NetIcon, Megaphone, MessagesSquare, Inbox, ListChecks, PauseCircle, PlayCircle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Modal from "@/components/ui/modal";
 import NetworkApplications from "@/components/agent/NetworkApplications";
 import NetworkQuestions from "@/components/agent/NetworkQuestions";
 import { toast } from "sonner";
@@ -10,7 +12,7 @@ import RecruitPopup from "@/components/agent/RecruitPopup";
 import { formatGHS } from "@/lib/format";
 
 /* Parent agents: recruit agents under them, free. Pitch, invite link, their agents, announcements, read-only support. */
-interface Sub { id: string; slug: string; store_name: string; status: string; paid_until: string | null; created_at: string; whatsapp: string | null; orders: number; sales: number; my_margin: number; fees_paid: number }
+interface Sub { id: string; slug: string; store_name: string; status: string; parent_deactivated_at?: string | null; paid_until: string | null; created_at: string; whatsapp: string | null; orders: number; sales: number; my_margin: number; fees_paid: number }
 interface Net { agents: Sub[]; totals: { agents: number; active: number; sales: number; my_margin: number; fee_income: number } }
 interface Conv { id: string; status: string; mode: string; name: string; last_message_at: string; messages: Array<{ sender: string; body: string; created_at: string }> }
 
@@ -20,12 +22,29 @@ export default function AgentNetwork() {
   const [net, setNet] = useState<Net | null>(null); 
   const [annTitle, setAnnTitle] = useState(""); const [annBody, setAnnBody] = useState(""); const [anns, setAnns] = useState<Array<{ id: string; title: string; body: string; created_at: string }>>([]);
   const [peek, setPeek] = useState<Sub | null>(null); const [convs, setConvs] = useState<Conv[] | null>(null);
+  const [statusTarget, setStatusTarget] = useState<Sub | null>(null);
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [statusError, setStatusError] = useState("");
   const load = async () => { const [n, a] = await Promise.all([p1().rpc("my_network", {}), p1().from("network_announcements").select("*").order("created_at", { ascending: false }).limit(20)]); setNet(n.data as Net); setAnns(a.data ?? []); };
   useEffect(() => { void load(); }, []);
   const save = async () => { const { error } = await p1().rpc("agent_set_network", { p: { network_on: on, network_pitch: pitch } }); if (error) return toast.error(error.message.replace(/_/g, " ")); toast.success(on ? "Your agent programme is open." : "Agent programme closed to new sign-ups."); void reload(); };
   const joinUrl = `${storeUrl}/join`;
   const postAnn = async () => { if (!annTitle.trim() || !annBody.trim()) return; const { error } = await p1().from("network_announcements").insert({ agent_id: agent.id, title: annTitle.trim(), body: annBody.trim() }); if (error) return toast.error("Couldn't post."); setAnnTitle(""); setAnnBody(""); toast.success("Posted to your agents."); void load(); };
   const openPeek = async (s: Sub) => { setPeek(s); setConvs(null); const { data } = await p1().rpc("network_inbox", { p_sub: s.id }); setConvs((data as Conv[]) ?? []); };
+  const changeStatus = async () => {
+    if (!statusTarget || statusBusy) return;
+    setStatusBusy(true); setStatusError("");
+    const active = statusTarget.status === "paused";
+    try {
+      const { error } = await p1().rpc("agent_set_sub_active", { p_sub: statusTarget.id, p_active: active });
+      if (error) { setStatusError("Couldn't change this agent's status. Refresh and try again, or contact support."); return; }
+      setNet((current) => current ? { ...current, agents: current.agents.map((s) => s.id === statusTarget.id ? { ...s, status: active ? "active" : "paused", parent_deactivated_at: active ? null : new Date().toISOString() } : s), totals: { ...current.totals, active: current.totals.active + (active ? 1 : -1) } } : current);
+      toast.success(active ? "Sub-agent reactivated." : "Sub-agent deactivated.");
+      setStatusTarget(null);
+      await load();
+    } catch { setStatusError("Couldn't confirm the change. Refresh before trying again."); }
+    finally { setStatusBusy(false); }
+  };
   const d = (iso: string | null) => iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "—";
   if (!networkOpen) return (<div className="space-y-6"><div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Your agents</p><h1 className="font-display text-[24px] font-semibold text-foreground">Build your own network</h1></div><ComingSoon title="Coming soon" blurb="Soon you'll be able to recruit agents who sell under you: they get their own store free, buy at the prices you set for agents, and you earn a margin on everything they sell." /></div>);
   return (
@@ -57,7 +76,7 @@ export default function AgentNetwork() {
       </Section>
       <Section page="network" id="agents" title="Agents">
         {!net ? <p className="mt-2 text-[13px] text-muted-foreground">Loading…</p> : net.agents.length === 0 ? <p className="mt-2 text-[13px] text-muted-foreground">No agents yet. Share your invite link.</p> : (
-          <ul className="mt-2 divide-y divide-white/[0.06]">{net.agents.map((s) => <li key={s.id} className="flex items-start justify-between gap-3 py-3"><div className="min-w-0"><p className="truncate text-[13.5px] font-semibold text-foreground">{s.store_name} <span className={`ml-1 rounded-full px-2 py-0.5 text-[10.5px] ${s.status === "active" ? "bg-primary/15 text-primary-glow" : "bg-amber/15 text-amber"}`}>{s.status}</span></p><p className="text-[11.5px] text-faint-foreground">{s.slug}.datayego.com{s.whatsapp ? ` · ${s.whatsapp}` : ""} · joined {d(s.created_at)}</p><p className="text-[11.5px] text-faint-foreground">{s.orders} orders · sales {formatGHS(Number(s.sales))} · your margin {formatGHS(Number(s.my_margin))}</p></div><button type="button" onClick={() => void openPeek(s)} className="shrink-0 rounded-full border border-white/[0.12] px-2.5 py-1 text-[11.5px] text-foreground"><MessagesSquare size={12} className="mr-1 inline" />Support</button></li>)}</ul>
+          <ul className="mt-2 divide-y divide-border">{net.agents.map((s) => <li key={s.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0"><p className="break-words text-[13.5px] font-semibold text-foreground">{s.store_name} <span className={`ml-1 rounded-full px-2 py-0.5 text-[10.5px] ${s.status === "active" ? "bg-primary/15 text-primary-glow" : "bg-amber/15 text-amber"}`}>{s.status === "paused" && s.parent_deactivated_at ? "Deactivated" : s.status.replace(/_/g, " ")}</span></p><p className="break-words text-[11.5px] text-faint-foreground">{s.slug}.datayego.com{s.whatsapp ? ` · ${s.whatsapp}` : ""} · joined {d(s.created_at)}</p><p className="text-[11.5px] text-faint-foreground">{s.orders} orders · sales {formatGHS(Number(s.sales))} · your margin {formatGHS(Number(s.my_margin))}</p></div><div className="flex shrink-0 flex-wrap gap-2"><Button size="sm" variant="ghost" onClick={() => void openPeek(s)}><MessagesSquare />Support</Button>{(s.status === "active" || (s.status === "paused" && s.parent_deactivated_at)) && <Button size="sm" variant={s.status === "active" ? "ghost" : "soft"} disabled={statusBusy} onClick={() => { setStatusTarget(s); setStatusError(""); }}>{s.status === "active" ? <PauseCircle /> : <PlayCircle />}{s.status === "active" ? "Deactivate" : "Reactivate"}</Button>}</div></li>)}</ul>
         )}
       </Section>
 
@@ -66,6 +85,9 @@ export default function AgentNetwork() {
         {anns.length > 0 && <ul className="mt-3 divide-y divide-white/[0.06]">{anns.map((a) => <li key={a.id} className="py-2.5"><p className="text-[13.5px] font-semibold text-foreground">{a.title}</p><p className="text-[12.5px] text-muted-foreground">{a.body}</p><p className="text-[11px] text-faint-foreground">{d(a.created_at)}</p></li>)}</ul>}
       </Section>
 
+      <Modal open={!!statusTarget} onClose={() => { if (!statusBusy) setStatusTarget(null); }} label={statusTarget?.status === "active" ? "Deactivate sub-agent" : "Reactivate sub-agent"}>
+        {statusTarget && <div className="space-y-4"><h3 className="break-words text-[18px] font-semibold text-foreground">{statusTarget.status === "active" ? "Deactivate" : "Reactivate"} {statusTarget.store_name}?</h3><p className="text-[13px] text-muted-foreground">{statusTarget.status === "active" ? "Their store will stop accepting new orders. Their existing orders, earnings and store records will be kept. You can reactivate them later." : "Their store will be able to accept new orders again."}</p>{statusError && <p role="alert" className="text-[13px] text-danger">{statusError}</p>}<div className="flex flex-wrap justify-end gap-2"><Button size="sm" variant="ghost" disabled={statusBusy} onClick={() => setStatusTarget(null)}>Cancel</Button><Button size="sm" disabled={statusBusy} onClick={() => void changeStatus()}>{statusBusy ? <Loader2 className="animate-spin" /> : statusTarget.status === "active" ? <PauseCircle /> : <PlayCircle />}{statusBusy ? "Saving…" : statusTarget.status === "active" ? "Deactivate" : "Reactivate"}</Button></div></div>}
+      </Modal>
       {peek && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4" onClick={() => setPeek(null)}>
           <div className="onyx-panel max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
