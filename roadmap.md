@@ -1,5 +1,9 @@
 # Roadmap
 
+## Sub-agent controls
+- [ ] Add confirmed deactivate/reactivate actions for parent-owned sub-agents.
+- [ ] Enforce ownership and preserve administrator suspensions; validate status changes and store blocking.
+
 ## SMS (Vynfy)
 - [x] Add purchase/delivery order IDs and agent store links to all four variants; test and deploy.
 - [x] Wire only four order SMS notifications: paid purchase, delivered, MTN verified/delivered, MTN verified/on its way.
