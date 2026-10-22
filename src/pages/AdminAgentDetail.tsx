@@ -106,6 +106,10 @@ export default function AdminAgentDetail() {
         <Stat label="Tagline" value={a.tagline ?? "—"} note={`slug ${a.slug}`} />
       </StatGrid>
 
+      <Panel title="Send store visitors to main site" note={a.redirect_to_main ? `on since ${a.redirect_to_main_at ? formatAdminDate(a.redirect_to_main_at) : "—"}` : "off"} action={<Button size="sm" variant={a.redirect_to_main ? "soft" : "ghost"} disabled={redirBusy} onClick={() => void toggleRedirect()}>{redirBusy ? "Saving…" : a.redirect_to_main ? "Turn off" : "Turn on"}</Button>}>
+        <p className="text-[12.5px] text-muted-foreground">{a.redirect_to_main ? <>Anyone opening <span className="text-foreground">/s/{a.slug}</span> (or this store's own domain) is sent to datayego.com. Works even if the plan has run out.</> : "When on, anyone opening this agent's store link goes straight to datayego.com, even if the agent's plan has run out."}</p>
+      </Panel>
+
       {net && (net.parent || net.subs.length > 0 || a.network_on) && (
         <Panel title="Sub-agent network" note={net.parent ? "this is a sub-agent" : "this agent recruits sub-agents"} action={<Link to={net.parent ? "/admin/sub-agents/list" : "/admin/sub-agents/parents"}><Button variant="ghost" size="sm">Open Sub-agents</Button></Link>}>
           {net.parent
