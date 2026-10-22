@@ -31,13 +31,13 @@ export default function MasterAdjustments({ isMaster, onChanged }: { isMaster: b
     <Panel title="Adjustments" note={isMaster ? "master admin only · every admin sees the history" : "only the master admin can add or remove money"}>
       {isMaster && (
         <div className="mb-4 grid gap-2 sm:grid-cols-[auto_1fr]">
-          <div className="flex flex-wrap gap-1.5">{(["spend", "withdraw", "add"] as const).map((k) => <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-full px-3 py-1.5 text-[12.5px] font-medium ${kind === k ? "bg-primary/20 text-primary-glow" : "border border-white/[0.08] text-muted-foreground"}`}>{k === "spend" ? "Spend (a cost)" : k === "withdraw" ? "Withdraw (not a cost)" : "Add money"}</button>)}</div>
+          <div className="flex flex-wrap gap-1.5">{(["spend", "withdraw", "add"] as const).map((k) => <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-full px-3 py-1.5 text-[12.5px] font-medium ${kind === k ? "bg-primary/20 text-primary-glow" : "border border-white/[0.08] text-muted-foreground"}`}>{k === "spend" ? "Business cost · comes off profit" : k === "withdraw" ? "Partner withdrawal · comes off capital" : "Add money · raises capital"}</button>)}</div>
           <div className="grid gap-2 sm:grid-cols-[140px_1fr_auto]">
             <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))} inputMode="decimal" placeholder="GH₵" className="onyx-field w-full" />
             <input value={reason} onChange={(e) => setReason(e.target.value.slice(0, 300))} placeholder={kind === "spend" ? "Reason, e.g. 1GB giveaway, 100 bundles" : kind === "withdraw" ? "Reason, e.g. partner drawing" : "Reason, e.g. top-up from Larry"} className="onyx-field w-full" />
             <Button size="sm" disabled={busy} onClick={() => void save()}>{busy ? "Saving…" : "Record"}</Button>
           </div>
-          <p className="text-[11.5px] text-faint-foreground sm:col-span-2">Spend lowers the pot and counts as a business cost in profit. Withdraw lowers the pot without touching profit (money leaving to a partner). Add raises the pot.</p>
+          <p className="text-[12px] text-muted-foreground sm:col-span-2">{kind === "spend" ? "Use for anything the business pays for: SMS, adverts, subscriptions, giveaways. It comes off the master balance AND off profit. Capital stays the same." : kind === "withdraw" ? "Use ONLY when money goes to a partner's pocket. It comes off the master balance AND off capital. Profit stays the same. Do not use this for business costs." : "Use when a partner puts fresh money in. It raises the master balance and capital."}</p>
         </div>
       )}
       <Rows empty="No adjustments yet.">
