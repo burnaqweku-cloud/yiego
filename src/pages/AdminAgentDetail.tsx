@@ -15,7 +15,7 @@ import { useAuth } from "@/store/auth-context";
 
 /* One agent, in full: who they are, their plan, every order through them
    (store sale vs their own purchase), earnings, payouts, free months. */
-interface Agent { id: string; user_id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; created_at: string; parent_agent_id: string | null; network_on: boolean | null; network_fee: number | null; network_paused_at: string | null }
+interface Agent { id: string; user_id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; created_at: string; parent_agent_id: string | null; network_on: boolean | null; network_fee: number | null; network_paused_at: string | null; redirect_to_main?: boolean; redirect_to_main_at?: string | null }
 interface NetInfo { parent: { id: string; store_name: string; slug: string; network_fee: number } | null; subs: Array<{ id: string; store_name: string; slug: string; status: string; paid_until: string | null }>; parentMargin: number; feeIncome: number }
 interface Ord { id: string; order_reference: string; recipient_phone: string; amount: number; agent_price: number | null; agent_margin: number | null; status: string; supplier_status: string | null; admin_resolution_status: string | null; paid_at: string; user_id: string | null; guest_email: string | null; data_products: { name: string; capacity_gb: number } | null; networks: { name: string } | null; suppliers: { code: string; name: string } | null }
 interface Payout { id: string; amount: number; fee: number; net: number; status: string; created_at: string; paid_at: string | null }
@@ -61,6 +61,16 @@ export default function AdminAgentDetail() {
     const { data, error } = await db().rpc("admin_set_agent_slug", { p_agent: a.id, p_slug: next });
     if (error) return toast.error(error.message.includes("taken") ? "That link is taken." : error.message.includes("reserved") ? "That name is reserved." : error.message.includes("too_") ? "Use 3 to 30 letters or numbers." : error.message.replace(/_/g, " "));
     toast.success(`Now /s/${(data as { slug: string }).slug}. The old link still works for 90 days.`); void load();
+  };
+  const [redirBusy, setRedirBusy] = useState(false);
+  const toggleRedirect = async () => {
+    if (!a) return; const on = !a.redirect_to_main;
+    if (!window.confirm(on ? `Send everyone who opens ${a.store_name}'s store to the main DataYego site?` : `Open ${a.store_name}'s store again for visitors?`)) return;
+    setRedirBusy(true);
+    const { error } = await db().rpc("admin_set_store_redirect", { p_agent: a.id, p_on: on });
+    setRedirBusy(false);
+    if (error) return toast.error(error.message.replace(/_/g, " "));
+    toast.success(on ? "Store visitors now go to the main site." : "Store is showing again."); void load();
   };
 
   const isSelf = (o: Ord) => a != null && o.user_id === a.user_id && Number(o.agent_margin ?? 0) === 0;
