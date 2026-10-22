@@ -85,7 +85,7 @@ export default function AdminAgents() {
 
   const q = search.trim().toLowerCase();
   const visibleApps = useMemo(() => apps.filter((a) => (appFilter === "all" || a.status === "pending") && (!q || a.full_name.toLowerCase().includes(q) || a.phone.includes(q) || (emails.get(a.user_id) ?? "").toLowerCase().includes(q))), [apps, appFilter, q, emails]);
-  type AgentFilter = "subscribed" | "sold" | "lapsed" | "unpaid" | "expiring" | "all";
+  type AgentFilter = "subscribed" | "sold" | "lapsed" | "unpaid" | "expiring" | "expired" | "all";
   const [agentFilter, setAgentFilter] = useState<AgentFilter>("subscribed");
   const [agentSort, setAgentSort] = useState<"sales" | "recent" | "balance">("sales");
   const daysLeft = (g: Agent) => g.paid_until ? Math.ceil((+new Date(g.paid_until) - Date.now()) / 86400000) : null;
@@ -96,11 +96,12 @@ export default function AdminAgents() {
       case "sold": return (st?.orders ?? 0) > 0;
       case "lapsed": return g.status !== "active" && (st?.orders ?? 0) > 0;
       case "unpaid": return g.status === "awaiting_payment";
-      case "expiring": return g.status === "active" && dl != null && dl <= 7;
+      case "expiring": return g.status === "active" && dl != null && dl >= 0 && dl <= 7;
+      case "expired": return dl != null && dl < 0;
       default: return true;
     }
   };
-  const counts = { subscribed: agents.filter((g) => g.status === "active").length, sold: agents.filter((g) => (agentStats[g.id]?.orders ?? 0) > 0).length, lapsed: agents.filter((g) => g.status !== "active" && (agentStats[g.id]?.orders ?? 0) > 0).length, unpaid: agents.filter((g) => g.status === "awaiting_payment").length, expiring: agents.filter((g) => { const d = daysLeft(g); return g.status === "active" && d != null && d <= 7; }).length, all: agents.length };
+  const counts = { subscribed: agents.filter((g) => g.status === "active").length, sold: agents.filter((g) => (agentStats[g.id]?.orders ?? 0) > 0).length, lapsed: agents.filter((g) => g.status !== "active" && (agentStats[g.id]?.orders ?? 0) > 0).length, unpaid: agents.filter((g) => g.status === "awaiting_payment").length, expiring: agents.filter((g) => { const d = daysLeft(g); return g.status === "active" && d != null && d >= 0 && d <= 7; }).length, expired: agents.filter((g) => { const d = daysLeft(g); return d != null && d < 0; }).length, all: agents.length };
   const visibleAgents = useMemo(() => agents.filter((g) => matchesFilter(g) && (!q || g.store_name.toLowerCase().includes(q) || g.slug.includes(q) || (emails.get(g.user_id) ?? "").toLowerCase().includes(q))).sort((a, b) => agentSort === "sales" ? ((agentStats[b.id]?.sales ?? 0) + (agentStats[b.id]?.own ?? 0)) - ((agentStats[a.id]?.sales ?? 0) + (agentStats[a.id]?.own ?? 0)) : agentSort === "balance" ? Number(b.earnings_balance) - Number(a.earnings_balance) : b.created_at.localeCompare(a.created_at)), [agents, q, emails, agentFilter, agentSort, agentStats]); // eslint-disable-line react-hooks/exhaustive-deps
   const pending = apps.filter((a) => a.status === "pending").length;
   const payoutsWaiting = payouts.filter((p) => p.status === "requested" || p.status === "approved").length;
@@ -200,7 +201,7 @@ export default function AdminAgents() {
       {tab === "agents" && (
         <>
         <div className="flex flex-wrap gap-2">
-          <Segmented<AgentFilter> value={agentFilter} onChange={setAgentFilter} options={[{ value: "subscribed", label: `On subscription (${counts.subscribed})` }, { value: "sold", label: `Have sold (${counts.sold})` }, { value: "expiring", label: `Expiring ≤7d (${counts.expiring})` }, { value: "unpaid", label: `Approved, unpaid (${counts.unpaid})` }, { value: "lapsed", label: `Lapsed, sold before (${counts.lapsed})` }, { value: "all", label: `All (${counts.all})` }]} />
+          <Segmented<AgentFilter> value={agentFilter} onChange={setAgentFilter} options={[{ value: "subscribed", label: `On subscription (${counts.subscribed})` }, { value: "sold", label: `Have sold (${counts.sold})` }, { value: "expiring", label: `Expiring ≤7d (${counts.expiring})` }, { value: "expired", label: `Expired (${counts.expired})` }, { value: "unpaid", label: `Approved, unpaid (${counts.unpaid})` }, { value: "lapsed", label: `Lapsed, sold before (${counts.lapsed})` }, { value: "all", label: `All (${counts.all})` }]} />
           <Segmented<"sales" | "recent" | "balance"> value={agentSort} onChange={setAgentSort} options={[{ value: "sales", label: "Top sales" }, { value: "balance", label: "Balance" }, { value: "recent", label: "Newest" }]} />
         </div>
         <Panel title="Agents" note={`${visibleAgents.length} shown · sub-agents are under Sub-agents`} action={isMaster ? <Button size="sm" variant="soft" onClick={() => setMaking(true)}>Make someone an agent</Button> : undefined}>
