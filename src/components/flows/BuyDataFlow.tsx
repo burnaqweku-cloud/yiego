@@ -18,6 +18,7 @@ import { checkNumbers, isMtn, STATUS_COPY, type CheckResult } from "@/lib/mtnChe
 import { Check, Clock } from "lucide-react";
 import { formatGHS } from "@/lib/format";
 import { paystackFee } from "@/lib/fees";
+import { preparePromotionOrder } from "@/lib/promotions";
 import {
   createGuestDataPayment,
   listPendingOrders,
@@ -39,7 +40,7 @@ type PaymentMethod = "wallet" | "paystack" | "shared";
  *  of truth for what actually gets ordered. Omit it and the flow opens exactly
  *  where it always has. */
 export type BuyPreselect =
-  | { kind: "bundle"; networkId: NetworkId; productCode: string; campaign?: { token: string; price: number; phone: string; title: string } }
+  | { kind: "bundle"; networkId: NetworkId; productCode: string; campaign?: { token: string; price: number; phone: string; title: string }; promotion?: { productId: string; price: number } }
   | { kind: "payOrder" };
 
 interface ActiveOrder {
@@ -199,7 +200,8 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   // Guests may leave the email empty: the order reference is shown on screen and the order can be tracked by phone.
   const emailValid = guestEmail.trim() === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim());
   const campaign = preselect?.kind === "bundle" ? preselect.campaign : undefined;
-  const price = activeOrder?.amount ?? (campaign && bundle ? campaign.price : bundle?.price) ?? 0;
+  const promotion = preselect?.kind === "bundle" ? preselect.promotion : undefined;
+  const price = activeOrder?.amount ?? (promotion && bundle ? promotion.price : campaign && bundle ? campaign.price : bundle?.price) ?? 0;
   const canPay = balance >= price;
   // A Paystack payment (guest, or a signed-in user choosing Paystack) carries a
   // 4% fee on top of the bundle price. Paying from the wallet has no fee.
@@ -214,7 +216,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       id: product.app_product_code ?? product.id,
       size: product.name.replace(/^.*?—\s*/, ""),
       validity: product.validity ?? "Supplier terms",
-      price: agent ? Number(agent.prices[product.id] ?? product.customer_price) : friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price),
+      price: preselect?.kind === "bundle" && preselect.promotion?.productId === product.id ? preselect.promotion.price : agent ? Number(agent.prices[product.id] ?? product.customer_price) : friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price),
       wasPrice: !agent && friendPrice && product.agent_price != null && Number(product.agent_price) < Number(product.customer_price) ? Number(product.customer_price) : undefined,
       tag: !agent && Number(product.customer_price) <= 10 ? "Popular" : !agent && Number(product.customer_price) >= 40 ? "Best value" : undefined,
       unavailable: product.is_paused ? (product.pause_reason ?? "Currently unavailable. Please try again later.") : undefined,
@@ -229,6 +231,19 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
 
   async function continueFromPhone() {
     if (!network || !bundle || !phoneValid || (prefixMismatch && !prefixOk)) return;
+    if (promotion) {
+      if (!isAuthenticated) { toast.error("Sign in to purchase this offer."); return; }
+      setStep("processing");
+      const result = await preparePromotionOrder(promotion.productId, digits, prefixConfirmed);
+      if (result.error || !result.data) {
+        const message = result.error?.message ?? "";
+        toast.error(message.includes("already_purchased") ? "This offer is for your first purchase only. Visit the shop for normal prices." : message.includes("unpaid_order") ? "You have an unpaid order. Continue payment or cancel it before purchasing this offer." : message.includes("promotion_closed") ? "This promotion is not available right now." : "Couldn’t prepare this offer. Refresh and try again.");
+        setStep("phone"); return;
+      }
+      const prepared = result.data;
+      setActiveOrder({ id: prepared.orderId, orderReference: prepared.orderReference, recipientPhone: prepared.recipientPhone, amount: Number(prepared.amount), networkName: network.name, bundleName: bundle.size, expiresAt: prepared.expiresAt, paymentArrangement: "self", paymentStatus: "pending", status: "awaiting_payment" });
+      setPaymentMethod("paystack"); setStep("review"); return;
+    }
     if (!isAuthenticated) { setStep("review"); return; }
     setStep("processing");
     const result = await prepareDataOrder({ productId: bundle.id, recipientPhone: digits, agentSelf: selfBuy || undefined, prefixMismatchConfirmed: prefixConfirmed || undefined });

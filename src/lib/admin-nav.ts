@@ -58,6 +58,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "sub-agent-settings", label: "Settings", to: "/admin/sub-agents/settings", icon: Settings2, keywords: ["switch", "enable", "allow list", "coming soon"] },
   ] },
   { id: "announcements", label: "Announcements", icon: Megaphone, pages: [
+    { id: "promotions", label: "Promotions", to: "/admin/promotions", icon: BadgePercent, keywords: ["tiktok", "promotion", "first purchase", "offer", "discount", "ad"] },
     { id: "announcements", label: "Announcements", to: "/admin/announcements", icon: Megaphone, keywords: ["notification", "announce", "update", "notice", "bell", "broadcast"] },
     { id: "giveaways", label: "Giveaways", to: "/admin/giveaways", icon: Gift, keywords: ["giveaway", "campaign", "promo", "free", "discount"] },
     { id: "help", label: "Help Center", to: "/admin/help", icon: LifeBuoy, keywords: ["help", "article", "faq", "docs", "guide", "agents"] },

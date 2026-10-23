@@ -1,4 +1,5 @@
 # Architecture rules
+- First-purchase promotions prepare snapshot-priced orders via an authenticated phase1 RPC and use the existing prepared-order payment flow; per-account transaction locks, paid-history checks and immutable redemption snapshots prevent repeat discounts without a separate fulfillment pipeline.
 - Unpaid cancellation uses a row-locked, ownership/MFA-checked phase1 RPC; guest management requires a private device capability or checkout email plus order reference, and late payments on cancelled orders stay closed for manual reconciliation to prevent duplicate delivery.
 - Parent sub-agent controls use an ownership-checked RPC and parent pause marker; administrator status decisions clear that marker so parents cannot override suspensions.
 - Apply application SQL and deploy functions to the active external database's phase1 schema, never the unused managed backend, because production data lives externally.
