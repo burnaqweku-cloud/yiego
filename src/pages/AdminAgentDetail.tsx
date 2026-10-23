@@ -78,6 +78,17 @@ export default function AdminAgentDetail() {
     toast.success(on ? "Store visitors now go to the main site." : "Store is showing again."); void load();
   };
 
+  const [takeoverBusy, setTakeoverBusy] = useState(false);
+  const toggleTakeover = async () => {
+    if (!a) return; const on = !a.profit_to_platform;
+    if (!window.confirm(on ? `Keep ${a.store_name}'s store open, but send all profit from its sales (and its sub-agents' sales, if this is a parent) to DataYego instead of the agent?` : `Give ${a.store_name} their profit again from new deliveries?`)) return;
+    setTakeoverBusy(true);
+    const { error } = await db().rpc("admin_set_profit_takeover", { p_agent: a.id, p_on: on });
+    setTakeoverBusy(false);
+    if (error) return toast.error(error.message.replace(/_/g, " "));
+    toast.success(on ? "Profit from this store now comes to DataYego." : "Agent earns their profit again."); void load();
+  };
+
   const isSelf = (o: Ord) => a != null && o.user_id === a.user_id && Number(o.agent_margin ?? 0) === 0;
   const shown = useMemo(() => orders.filter((o) => source === "all" || (source === "self" ? isSelf(o) : !isSelf(o))), [orders, source, a]); // eslint-disable-line react-hooks/exhaustive-deps
   const storeOrders = orders.filter((o) => !isSelf(o)); const selfOrders = orders.filter(isSelf);
