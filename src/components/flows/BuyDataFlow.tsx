@@ -222,14 +222,33 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       size: product.name.replace(/^.*?—\s*/, ""),
       validity: product.validity ?? "Supplier terms",
       price: preselect?.kind === "bundle" && preselect.promotion?.productId === product.id ? preselect.promotion.price : promoPriceFor(product.id) ?? basePrice(product),
-    }));
-  }
-  function basePrice(product: Phase1Product): number {
-    return agent ? Number(agent.prices[product.id] ?? product.customer_price) : friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price),
-      wasPrice: !agent && friendPrice && product.agent_price != null && Number(product.agent_price) < Number(product.customer_price) ? Number(product.customer_price) : undefined,
+      wasPrice: !agent && promoPriceFor(product.id) == null && friendPrice && product.agent_price != null && Number(product.agent_price) < Number(product.customer_price) ? Number(product.customer_price) : undefined,
       tag: !agent && Number(product.customer_price) <= 10 ? "Popular" : !agent && Number(product.customer_price) >= 40 ? "Best value" : undefined,
       unavailable: product.is_paused ? (product.pause_reason ?? "Currently unavailable. Please try again later.") : undefined,
     }));
+  }
+  function basePrice(product: Phase1Product): number {
+    return agent ? Number(agent.prices[product.id] ?? product.customer_price) : friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price);
+  }
+  function promoPriceFor(productId: string): number | null {
+    if (agent || campaign || promoDeclined.has(productId)) return null;
+    return promoPrices[productId] ?? null;
+  }
+  const productForBundle = (b: Bundle | null) => (b ? products.find((p) => (p.app_product_code ?? p.id) === b.id) ?? null : null);
+  // Promotion prices can land after a bundle was picked: keep the chosen bundle's price in step until an order exists.
+  useEffect(() => {
+    if (!bundle || activeOrder || !network) return;
+    const fresh = bundlesFor(network.id).find((b) => b.id === bundle.id);
+    if (fresh && fresh.price !== bundle.price) setBundle(fresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [promoPrices, promoDeclined, friendPrice]);
+  /** The offer isn't available for this device/number/account: drop to the normal price, without blocking. */
+  function declinePromo(productId: string) {
+    setGuestPromoToken(null);
+    setPromoDeclined((have) => new Set(have).add(productId));
+    const product = products.find((p) => p.id === productId);
+    if (bundle && product) setBundle({ ...bundle, price: basePrice(product) });
+    toast.info("The special price has already been used on this phone, number or account, so the normal price applies.");
   }
 
   async function refreshPending() {
