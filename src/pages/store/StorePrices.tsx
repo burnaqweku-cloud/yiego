@@ -59,7 +59,7 @@ export default function StorePrices() {
       <div className="onyx-panel mt-6 rounded-[22px] p-5 text-center">
         <p className="text-[14px] font-semibold text-foreground">Want to earn with these prices?</p>
         <p className="mx-auto mt-1 max-w-[46ch] text-[12.5px] text-muted-foreground">Apply to open your own store under {store.store_name}. You set your own prices above these and keep the difference.</p>
-        <Link to={`${base}/join`} className="onyx-btn-primary mt-4 inline-block px-5 py-2.5 text-[13px]">Apply now</Link>
+        <Link to={`${base}/join`} className={`${cta} mt-4 inline-block`}>Apply now</Link>
       </div>
     </StorePage>
   );
