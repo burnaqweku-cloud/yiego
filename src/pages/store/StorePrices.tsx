@@ -5,7 +5,7 @@ import { useHomeData, netOf, prefixOf } from "@/pages/store/homeData";
 import { NETWORKS } from "@/data/bundles";
 import { formatGHS } from "@/lib/format";
 import { storeBase } from "@/lib/storeHost";
-import { Seo } from "@/components/seo/Seo";
+import Seo from "@/components/seo/Seo";
 
 /* Public price list for a store — the page shared on the channel so people who
    want to sell under this agent can see the exact prices before they apply.
