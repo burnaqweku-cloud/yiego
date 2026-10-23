@@ -63,6 +63,11 @@ export default function AdminAgentDetail() {
     toast.success(`Now /s/${(data as { slug: string }).slug}. The old link still works for 90 days.`); void load();
   };
   const [redirBusy, setRedirBusy] = useState(false);
+  const [impact, setImpact] = useState<{ customers: number; wallet_balance: number } | null>(null);
+  useEffect(() => {
+    if (!a) return;
+    void db().rpc("store_customer_impact", { p_agent_id: a.id }).then(({ data }) => setImpact((data as { customers: number; wallet_balance: number } | null) ?? null));
+  }, [a?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const toggleRedirect = async () => {
     if (!a) return; const on = !a.redirect_to_main;
     if (!window.confirm(on ? `Send everyone who opens ${a.store_name}'s store to the main DataYego site?` : `Open ${a.store_name}'s store again for visitors?`)) return;
