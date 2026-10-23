@@ -113,6 +113,13 @@ export default function AdminAgentDetail() {
 
       <Panel title="Send store visitors to main site" note={a.redirect_to_main ? `on since ${a.redirect_to_main_at ? formatAdminDate(a.redirect_to_main_at) : "—"}` : "off"} action={<Button size="sm" variant={a.redirect_to_main ? "soft" : "ghost"} disabled={redirBusy} onClick={() => void toggleRedirect()}>{redirBusy ? "Saving…" : a.redirect_to_main ? "Turn off" : "Turn on"}</Button>}>
         <p className="text-[12.5px] text-muted-foreground">{a.redirect_to_main ? <>Anyone opening <span className="text-foreground">/s/{a.slug}</span> (or this store's own domain) is sent to datayego.com. Works even if the plan has run out.</> : "When on, anyone opening this agent's store link goes straight to datayego.com, even if the agent's plan has run out."}</p>
+        <p className="mt-2 text-[12.5px] text-muted-foreground">
+          {impact === null
+            ? "Checking this store's customer accounts…"
+            : impact.customers === 0
+              ? "This store has no signed-up customers, so nobody loses access to an account or wallet."
+              : <>This store has <span className="font-semibold text-foreground">{impact.customers} customer account{impact.customers === 1 ? "" : "s"}</span> with <span className="font-semibold text-foreground">{formatGHS(Number(impact.wallet_balance))}</span> in their wallets. While the redirect is on, those customers cannot reach their accounts or spend that money.</>}
+        </p>
       </Panel>
 
       {net && (net.parent || net.subs.length > 0 || a.network_on) && (
