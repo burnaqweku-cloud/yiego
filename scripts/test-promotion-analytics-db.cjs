@@ -20,7 +20,7 @@ const marker='ROLLBACK_ANALYTICS_TEST';
    let forbidden=false;
    try {await tx.savepoint(sp=>sp`select phase1.admin_promotion_report(current_date,current_date)`)}catch{forbidden=true}
    assert.equal(forbidden,true,'Anonymous reporting is refused');
-   await tx`insert into auth.users(id,email,raw_user_meta_data,created_at,updated_at) values(${user},${'analytics-'+user+'@example.invalid'},${JSON.stringify({full_name:'Analytics rollback fixture',promo_visit_id:visit,promo_visit_token:token})}::jsonb,now(),now())`;
+   await tx`insert into auth.users(id,email,raw_user_meta_data,created_at,updated_at) values(${user},${'analytics-'+user+'@example.invalid'},${tx.json({full_name:'Analytics rollback fixture',promo_visit_id:visit,promo_visit_token:token})},now(),now())`;
    const [account]=await tx`select new_account_id from phase1.promotion_visits where id=${visit}`;
    assert.equal(account.new_account_id,user,'Actual auth insert attributes the new account');
    await tx`select set_config('request.jwt.claims',${JSON.stringify({role:'authenticated',sub:user,aal:'aal1'})},true)`;
