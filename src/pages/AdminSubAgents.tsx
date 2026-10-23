@@ -14,9 +14,9 @@ import { formatGHS } from "@/lib/format";
    This section is the admin's window into all of it: who runs a programme, who sells under whom, the applications
    funnel, and the master switch. */
 
-type Tab = "overview" | "parents" | "subs" | "applications" | "settings";
-const TAB_PATH: Record<Tab, string> = { overview: "/admin/sub-agents", parents: "/admin/sub-agents/parents", subs: "/admin/sub-agents/list", applications: "/admin/sub-agents/applications", settings: "/admin/sub-agents/settings" };
-const TAB_TITLE: Record<Tab, string> = { overview: "Sub-agents", parents: "Parents", subs: "All sub-agents", applications: "Applications", settings: "Settings" };
+type Tab = "overview" | "performance" | "parents" | "subs" | "applications" | "settings";
+const TAB_PATH: Record<Tab, string> = { overview: "/admin/sub-agents", performance: "/admin/sub-agents/performance", parents: "/admin/sub-agents/parents", subs: "/admin/sub-agents/list", applications: "/admin/sub-agents/applications", settings: "/admin/sub-agents/settings" };
+const TAB_TITLE: Record<Tab, string> = { overview: "Sub-agents", performance: "Performance", parents: "Parents", subs: "All sub-agents", applications: "Applications", settings: "Settings" };
 type Period = "7d" | "30d" | "month" | "all";
 
 interface Overview { tier: { enabled: boolean; allow: string[] } | null; parents: { programmes_on: number; with_subs: number; paused: number }; subs: { total: number; active: number; awaiting_payment: number; lapsed: number; suspended: number; new_in_period: number }; applications: { pending: number; approved: number; declined: number }; fees: { count: number; gross: number; to_parents: number; ours: number }; sales: { orders: number; amount: number; parent_margin: number; sub_margin: number; our_cost: number }; errors: number }
@@ -24,6 +24,7 @@ interface Parent { id: string; slug: string; store_name: string; status: string;
 interface Sub { id: string; slug: string; store_name: string; status: string; paid_until: string | null; created_at: string; whatsapp: string | null; user_id: string; earnings_balance: number; parent_id: string; parent_slug: string; parent_name: string; parent_fee: number; email: string | null; orders: number; sales: number; parent_margin: number; own_margin: number; fees_paid: number; last_order_at: string | null }
 interface Application { id: string; status: "pending" | "approved" | "declined"; applicant_name: string | null; applicant_email: string | null; applicant_phone: string | null; store_name: string; requested_slug: string; whatsapp: string | null; answers: Array<{ label: string; answer: string }> | null; decision_note: string | null; decided_at: string | null; agent_id: string | null; created_at: string; parent_id: string; parent_slug: string; parent_name: string; parent_fee: number; network_auto_approve: boolean; agent_slug: string | null }
 interface AgentLite { id: string; slug: string; store_name: string; status: string }
+interface SubPerf { id: string; slug: string; store_name: string; status: string; parent_id: string; parent_name: string; parent_slug: string; orders: number; delivered: number; sales: number; parent_margin: number; own_margin: number; last_order_at: string | null }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a?: Record<string, unknown>) => any };
@@ -43,15 +44,18 @@ export default function AdminSubAgents() {
   const [apps, setApps] = useState<Application[]>([]);
   const [agents, setAgents] = useState<AgentLite[]>([]);
   const [search, setSearch] = useState("");
+  const [perf, setPerf] = useState<SubPerf[]>([]);
 
   const load = useCallback(async () => {
-    const [o, p, s, a, al] = await Promise.all([
+    const [o, p, s, a, al, pf] = await Promise.all([
       db().rpc("admin_network_overview", { p_from: periodFrom(period), p_to: null }),
       db().rpc("admin_network_parents"), db().rpc("admin_network_subs"), db().rpc("admin_network_applications", { p_status: null }),
       db().from("agents").select("id, slug, store_name, status").is("parent_agent_id", null).order("store_name"),
+      db().rpc("admin_network_sub_performance", { p_from: periodFrom(period), p_to: null }),
     ]);
-    const first = [o, p, s, a].find((r) => r.error); if (first?.error) toast.error(err(first.error));
+    const first = [o, p, s, a, pf].find((r) => r.error); if (first?.error) toast.error(err(first.error));
     setOv((o.data as Overview) ?? null); setParents((p.data as Parent[]) ?? []); setSubs((s.data as Sub[]) ?? []); setApps((a.data as Application[]) ?? []); setAgents((al.data as AgentLite[]) ?? []);
+    setPerf((pf.data as SubPerf[]) ?? []);
     setLoading(false);
   }, [period]);
   useEffect(() => { void load(); }, [load]);
@@ -64,9 +68,10 @@ export default function AdminSubAgents() {
   return (
     <div className="space-y-5">
       <AdminPageHeader title={TAB_TITLE[tab]} description="Agents recruited by a paid agent, free. Subs get their own store and buy at the price the parent sets for agents; the parent keeps that margin, we keep our usual agent-price margin." />
-      <Segmented<Tab> value={tab} onChange={setTab} options={[{ value: "overview", label: "Overview" }, { value: "parents", label: "Parents" }, { value: "subs", label: "Sub-agents" }, { value: "applications", label: `Applications${ov?.applications.pending ? ` (${ov.applications.pending})` : ""}` }, { value: "settings", label: "Settings" }]} />
+      <Segmented<Tab> value={tab} onChange={setTab} options={[{ value: "overview", label: "Overview" }, { value: "performance", label: "Performance" }, { value: "parents", label: "Parents" }, { value: "subs", label: "Sub-agents" }, { value: "applications", label: `Applications${ov?.applications.pending ? ` (${ov.applications.pending})` : ""}` }, { value: "settings", label: "Settings" }]} />
 
       {tab === "overview" && <OverviewTab ov={ov} loading={loading} period={period} setPeriod={setPeriod} parents={parents} subs={subs} onTab={setTab} />}
+      {tab === "performance" && <PerformanceTab perf={perf} loading={loading} period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} match={match} />}
       {tab === "parents" && <ParentsTab parents={parents} loading={loading} search={search} setSearch={setSearch} match={match} act={act} />}
       {tab === "subs" && <SubsTab subs={subs} agents={agents} loading={loading} search={search} setSearch={setSearch} match={match} act={act} />}
       {tab === "applications" && <ApplicationsTab apps={apps} loading={loading} search={search} setSearch={setSearch} match={match} />}
@@ -109,6 +114,45 @@ function OverviewTab({ ov, loading, period, setPeriod, parents, subs, onTab }: {
           <Rows empty={loading ? "Loading…" : "No sub-agents yet."}>{recentSubs.map((s) => <Row key={s.id} primary={<>{s.store_name} <Pill tone={statusTone(s.status)}>{readable(s.status)}</Pill></>} secondary={`under ${s.parent_name} · joined ${formatAdminDate(s.created_at)}`} right={formatGHS(Number(s.sales))} rightNote={`${s.orders} orders`} />)}</Rows>
         </Panel>
       </div>
+    </>
+  );
+}
+
+/* ── Performance ──────────────────────────────────────────────────────────────────────────── */
+function PerformanceTab({ perf, loading, period, setPeriod, search, setSearch, match }: { perf: SubPerf[]; loading: boolean; period: Period; setPeriod: (p: Period) => void; search: string; setSearch: (s: string) => void; match: (...xs: Array<string | null | undefined>) => boolean }) {
+  const groups = useMemo(() => {
+    const list = perf.filter((s) => match(s.store_name, s.slug, s.parent_name));
+    const byParent = new Map<string, { parent_id: string; parent_name: string; parent_slug: string; subs: SubPerf[]; sales: number; orders: number; margin: number }>();
+    for (const s of list) {
+      const g = byParent.get(s.parent_id) ?? { parent_id: s.parent_id, parent_name: s.parent_name, parent_slug: s.parent_slug, subs: [], sales: 0, orders: 0, margin: 0 };
+      g.subs.push(s); g.sales += Number(s.sales); g.orders += Number(s.orders); g.margin += Number(s.parent_margin);
+      byParent.set(s.parent_id, g);
+    }
+    return [...byParent.values()].sort((a, b) => b.sales - a.sales);
+  }, [perf, search]);
+  const selling = perf.filter((s) => Number(s.orders) > 0).length;
+  return (
+    <>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Segmented<Period> value={period} onChange={setPeriod} options={[{ value: "7d", label: "7 days" }, { value: "30d", label: "30 days" }, { value: "month", label: "This month" }, { value: "all", label: "All time" }]} />
+        <label className={`${inputCls} flex items-center gap-2 !py-1.5 sm:w-64`}><Search size={13} className="shrink-0 text-faint-foreground" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Store or parent" className="min-w-0 flex-1 bg-transparent text-[12.5px] outline-none" /></label>
+      </div>
+      <StatGrid cols={3}>
+        <Stat loading={loading} label="Sub-agents selling" value={selling} note={`of ${perf.length} total, this period`} icon={Store} />
+        <Stat loading={loading} label="Sub-agent sales" value={<Money value={perf.reduce((a, s) => a + Number(s.sales), 0)} />} note={`${perf.reduce((a, s) => a + Number(s.orders), 0)} paid orders`} icon={Users} />
+        <Stat loading={loading} label="Parents earned" value={<Money value={perf.reduce((a, s) => a + Number(s.parent_margin), 0)} />} note="margin on delivered orders" icon={Network} tone="muted" />
+      </StatGrid>
+      {loading ? <p className="text-[12.5px] text-muted-foreground">Loading…</p> : groups.length === 0 ? <p className="text-[12.5px] text-muted-foreground">No sub-agents match.</p> : groups.map((g) => (
+        <Panel key={g.parent_id} title={g.parent_name} icon={Network} note={`${g.parent_slug}.datayego.com · ${g.subs.length} sub-agent${g.subs.length === 1 ? "" : "s"}`}
+          action={<span className="text-[12px] text-muted-foreground">{g.orders} orders · <b className="text-foreground">{formatGHS(g.sales)}</b> sales · parent earned <b className="text-foreground">{formatGHS(g.margin)}</b></span>}>
+          <Rows empty="No sub-agents.">{g.subs.sort((a, b) => Number(b.sales) - Number(a.sales)).map((s) => (
+            <Row key={s.id} onClick={() => { window.location.href = `/admin/agents/${s.id}`; }}
+              primary={<>{s.store_name} <span className="text-faint-foreground">· {s.slug}</span> <Pill tone={statusTone(s.status)}>{readable(s.status)}</Pill> {Number(s.orders) === 0 && <Pill tone="muted">no sales</Pill>}</>}
+              secondary={`${s.orders} paid · ${s.delivered} delivered${s.last_order_at ? ` · last ${formatAdminDate(s.last_order_at)}` : ""} · their markup ${formatGHS(Number(s.own_margin))}`}
+              right={formatGHS(Number(s.sales))} rightNote={`parent earned ${formatGHS(Number(s.parent_margin))}`} />
+          ))}</Rows>
+        </Panel>
+      ))}
     </>
   );
 }
