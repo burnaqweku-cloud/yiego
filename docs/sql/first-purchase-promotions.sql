@@ -97,7 +97,7 @@ begin
   if p_active and not exists(select 1 from jsonb_array_elements(p_offers) v where (v->>'enabled')::boolean) then raise exception 'enable_a_bundle'; end if;
   insert into phase1.promotion_settings(id,title,blurb,active,updated_by) values(true,trim(p_title),coalesce(p_blurb,''),p_active,auth.uid())
     on conflict(id) do update set title=excluded.title,blurb=excluded.blurb,active=excluded.active,updated_at=now(),updated_by=excluded.updated_by;
-  update phase1.promotion_offers set enabled=false,updated_at=now();
+  update phase1.promotion_offers set enabled=false,updated_at=now() where enabled;
   for offer in select * from jsonb_array_elements(p_offers) loop
     product:=(offer->>'product_id')::uuid; price:=(offer->>'price')::numeric;
     if price is null or price<=0 or price>10000 or price<>round(price,2) or not exists(select 1 from phase1.data_products where id=product and is_active) then raise exception 'invalid_offer_price'; end if;
