@@ -19,6 +19,7 @@ export default function AdminPromotions() {
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [prices, setPrices] = useState<Record<string, string>>({});
+  const [netFilter, setNetFilter] = useState("all");
   const load = async () => {
     const r = await loadPromotionAdmin(); setFailed(Boolean(r.error)); setData(r.data);
     setPrices(Object.fromEntries((r.data?.offers ?? []).map(o => [o.product_id, String(o.price)])));
