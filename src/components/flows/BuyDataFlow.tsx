@@ -18,7 +18,7 @@ import { checkNumbers, isMtn, STATUS_COPY, type CheckResult } from "@/lib/mtnChe
 import { Check, Clock } from "lucide-react";
 import { formatGHS } from "@/lib/format";
 import { paystackFee } from "@/lib/fees";
-import { preparePromotionOrder } from "@/lib/promotions";
+import { claimGuestPromotion, preparePromotionOrder, usePromoPrices } from "@/lib/promotions";
 import {
   createGuestDataPayment,
   listPendingOrders,
@@ -134,10 +134,15 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   const [lookupReference, setLookupReference] = useState("");
   const [unpaidReference, setUnpaidReference] = useState<string | null>(null);
   const [receiptRef, setReceiptRef] = useState<string | null>(null);
+  // Promotion link prices (main site only). The server decides at checkout; this only drives what is shown.
+  const promoPrices = usePromoPrices(user?.id ?? null, !agent);
+  const [guestPromoToken, setGuestPromoToken] = useState<string | null>(null);
+  const [promoDeclined, setPromoDeclined] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setStep("network"); setNetwork(null); setBundle(null); setPhone(profile.phone);
     setGuestEmail(user?.email ?? profile.email); setPaymentMethod("wallet");
+    setGuestPromoToken(null); setPromoDeclined(new Set());
     setUnpaidReference(null); setActiveOrder(null); setHighlightOrder(null); setLookupReference(""); setReceiptRef(null);
     if (open && auth.isAuthenticated && !agent) { void friendPriceEligible().then(setFriendPrice); void recordDevice(); } else setFriendPrice(false);
   }, [open, profile.email, profile.phone, user?.email, auth.isAuthenticated, agent]);
@@ -216,7 +221,11 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       id: product.app_product_code ?? product.id,
       size: product.name.replace(/^.*?—\s*/, ""),
       validity: product.validity ?? "Supplier terms",
-      price: preselect?.kind === "bundle" && preselect.promotion?.productId === product.id ? preselect.promotion.price : agent ? Number(agent.prices[product.id] ?? product.customer_price) : friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price),
+      price: preselect?.kind === "bundle" && preselect.promotion?.productId === product.id ? preselect.promotion.price : promoPriceFor(product.id) ?? basePrice(product),
+    }));
+  }
+  function basePrice(product: Phase1Product): number {
+    return agent ? Number(agent.prices[product.id] ?? product.customer_price) : friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price),
       wasPrice: !agent && friendPrice && product.agent_price != null && Number(product.agent_price) < Number(product.customer_price) ? Number(product.customer_price) : undefined,
       tag: !agent && Number(product.customer_price) <= 10 ? "Popular" : !agent && Number(product.customer_price) >= 40 ? "Best value" : undefined,
       unavailable: product.is_paused ? (product.pause_reason ?? "Currently unavailable. Please try again later.") : undefined,
