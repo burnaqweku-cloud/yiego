@@ -82,7 +82,7 @@ export function usePromoPrices(userId: string | null | undefined, enabled = true
     if (!enabled) { setPrices({}); return; }
     listeners.add(setPrices);
     const key = userId ?? "guest";
-    if (promoKey !== key || !promoLoading) void refreshPromoPrices(key); else setPrices(promoPrices);
+    if (promoKey !== key || !promoLoading || (!landingTracked && isPromoLanding())) void refreshPromoPrices(key); else setPrices(promoPrices);
     return () => { listeners.delete(setPrices); };
   }, [userId, enabled]);
   return enabled ? prices : {};
