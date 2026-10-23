@@ -44,15 +44,18 @@ export default function AdminSubAgents() {
   const [apps, setApps] = useState<Application[]>([]);
   const [agents, setAgents] = useState<AgentLite[]>([]);
   const [search, setSearch] = useState("");
+  const [perf, setPerf] = useState<SubPerf[]>([]);
 
   const load = useCallback(async () => {
-    const [o, p, s, a, al] = await Promise.all([
+    const [o, p, s, a, al, pf] = await Promise.all([
       db().rpc("admin_network_overview", { p_from: periodFrom(period), p_to: null }),
       db().rpc("admin_network_parents"), db().rpc("admin_network_subs"), db().rpc("admin_network_applications", { p_status: null }),
       db().from("agents").select("id, slug, store_name, status").is("parent_agent_id", null).order("store_name"),
+      db().rpc("admin_network_sub_performance", { p_from: periodFrom(period), p_to: null }),
     ]);
-    const first = [o, p, s, a].find((r) => r.error); if (first?.error) toast.error(err(first.error));
+    const first = [o, p, s, a, pf].find((r) => r.error); if (first?.error) toast.error(err(first.error));
     setOv((o.data as Overview) ?? null); setParents((p.data as Parent[]) ?? []); setSubs((s.data as Sub[]) ?? []); setApps((a.data as Application[]) ?? []); setAgents((al.data as AgentLite[]) ?? []);
+    setPerf((pf.data as SubPerf[]) ?? []);
     setLoading(false);
   }, [period]);
   useEffect(() => { void load(); }, [load]);
