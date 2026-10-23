@@ -117,7 +117,7 @@ begin
   if not exists(select 1 from phase1.profiles where id=u and status='active') then raise exception 'account_not_active'; end if;
   perform pg_advisory_xact_lock(hashtextextended('promotion:'||u::text,0));
   perform phase1.close_expired_unpaid_orders();
-  update phase1.promotion_redemptions r set status='released' from phase1.orders o where r.order_id=o.id and r.user_id=u and r.status='reserved' and not o.is_open and o.payment_status not in ('succeeded','refunded');
+  update phase1.promotion_redemptions r set status='released' from phase1.orders expired_order where r.order_id=expired_order.id and r.user_id=u and r.status='reserved' and not expired_order.is_open and expired_order.payment_status not in ('succeeded','refunded');
   if phase1.promotion_customer_has_purchased(u) then raise exception 'already_purchased'; end if;
   phone:=regexp_replace(coalesce(p_phone,''),'[^0-9]','','g');
   if phone ~ '^233[0-9]{9}$' then phone:='0'||substr(phone,4); end if;
