@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { storeBase } from "@/lib/storeHost";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { CheckCircle2, Clock, MessageCircle, Search, ShoppingBag, XCircle } from "lucide-react";
+import UnpaidOrderActions from "@/components/shop/UnpaidOrderActions";
 import Seo from "@/components/seo/Seo";
 import StorePage from "@/components/store/StorePage";
 import { useStore, waLink } from "@/components/store/StoreShell";
@@ -51,10 +52,10 @@ export default function StoreOrder() {
   const st = order?.deliveryStatus ?? "";
   const tone = st === "completed" ? "good" : st === "refunded" || st === "cancelled" || st === "needs_support" || st === "wrong_network" ? "bad" : "wait";
   const Icon = tone === "good" ? CheckCircle2 : tone === "bad" ? XCircle : Clock;
-  const title = isSuccess && phase === "ok" ? "Payment received" : st === "completed" ? "Delivered" : st === "awaiting_verification" ? "Being verified by MTN" : st === "refunded" ? "Refunded" : st === "needs_support" ? "Needs attention" : st === "wrong_network" ? "Wrong network" : st === "waiting_for_payment" ? "Waiting for payment" : "On its way";
+  const title = isSuccess && phase === "ok" && st !== "waiting_for_payment" && st !== "cancelled" ? "Payment received" : st === "completed" ? "Delivered" : st === "awaiting_verification" ? "Being verified by MTN" : st === "refunded" ? "Refunded" : st === "needs_support" ? "Needs attention" : st === "wrong_network" ? "Wrong network" : st === "cancelled" ? "Order cancelled" : st === "waiting_for_payment" ? "Waiting for payment" : "On its way";
 
   return (
-    <StorePage title={isSuccess ? "Thank you" : "Track your order"} lead={isSuccess ? `Your payment to ${store.store_name} went through. Here's where your order is.` : "Enter the order ID from your receipt (starts with AG-) or the phone number the data was sent to."}>
+    <StorePage title={isSuccess ? "Thank you" : "Track your order"} lead={isSuccess ? `Check your payment and order status at ${store.store_name}.` : "Enter the order ID from your receipt (starts with AG-) or the phone number the data was sent to."}>
     <div className="space-y-4">
       <Seo path={`${storeBase(store.slug)}/${isSuccess ? "success" : "track"}`} title={`${isSuccess ? "Payment received" : "Track your order"} · ${store.store_name}`} description={`Order status from ${store.store_name}.`} />
       {!isSuccess && (
@@ -86,6 +87,7 @@ export default function StoreOrder() {
           <div className="mx-auto mt-4 max-w-sm rounded-2xl border border-white/[0.08] text-left text-[13px]">
             {[["Order ID", order.reference], ["Bundle", `${order.network ?? ""} ${order.product?.replace(/^.*?—\s*/, "") ?? ""}`.trim()], ["Recipient", order.recipient ?? "—"], ["Amount", order.amount != null ? formatGHS(Number(order.amount)) : "—"]].map(([l, v], i) => <div key={l} className={`flex items-center justify-between gap-4 px-3.5 py-2.5 ${i ? "border-t border-white/[0.06]" : ""}`}><span className="text-faint-foreground">{l}</span><span className={`font-semibold text-foreground ${l === "Order ID" ? "font-mono" : ""}`}>{v}</span></div>)}
           </div>
+          {st === "waiting_for_payment" && <UnpaidOrderActions key={order.reference} reference={order.reference} onCancelled={() => { setOrder({ ...order, deliveryStatus: "cancelled", statusMessage: "Order cancelled. You can place a new order for this number." }); }} />}
           {st === "wrong_network" && <Link to={`/track-order?reference=${encodeURIComponent(order.reference)}`} className="mx-auto mt-3 block max-w-sm rounded-2xl border border-amber/40 bg-amber/10 px-4 py-3 text-left text-[12.5px] leading-5 text-foreground"><b>This number isn't on the network you chose.</b> Tap here to enter the correct number and we'll send your bundle straight away.</Link>}
           {isSuccess && <p className="mt-3 text-[11.5px] text-faint-foreground">Keep your Order ID — it's how you check this order any time. We've emailed it to you too.</p>}
           <div className="mx-auto mt-5 grid max-w-sm gap-2 sm:grid-cols-2">

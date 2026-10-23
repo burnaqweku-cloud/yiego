@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
-import { orderPaymentAction } from "@/lib/phase1-api";
+import UnpaidOrderActions from "@/components/shop/UnpaidOrderActions";
 import { useAuth } from "@/store/auth-context";
 
 interface PublicOrderStatus {
@@ -99,7 +99,6 @@ export default function TrackOrder({ embedded = false, fixedReference }: { embed
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState<PublicOrderStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [paying, setPaying] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
 
   useEffect(() => setRecent(getRecent()), []);
@@ -178,19 +177,6 @@ export default function TrackOrder({ embedded = false, fixedReference }: { embed
     setLoading(false);
   };
 
-  const continuePayment = async () => {
-    if (!order) return;
-    setPaying(true);
-    const { data, error: actionError } = await orderPaymentAction<{ authorizationUrl?: string }>(
-      "pay_paystack",
-      order.reference,
-    );
-    setPaying(false);
-    const url = data?.data?.authorizationUrl;
-    if (url) window.location.href = url;
-    else setError(actionError ?? data?.error ?? "Sign in with the account used at checkout to continue this payment.");
-  };
-
   useEffect(() => {
     const initialReference = fixedReference ?? searchParams.get("reference");
     if (initialReference) { setReference(initialReference.toUpperCase()); void lookup(initialReference); }
@@ -264,12 +250,7 @@ export default function TrackOrder({ embedded = false, fixedReference }: { embed
                   <p className="mt-1.5 text-[13px] leading-5 text-foreground">Not failed, just on hold: MTN checks numbers receiving a bundle for the first time, usually a few days. Your data is delivered automatically once cleared, and future orders to this number go through normally.</p>
                 </div>
               ) : order.statusMessage && <div className="mt-3 rounded-xl border border-primary-glow/15 bg-primary/[0.06] px-3.5 py-3"><p className="text-[12px] font-semibold text-primary-glow">Latest update</p><p className="mt-1 text-sm leading-6 text-foreground">{order.statusMessage}</p></div>}
-              {order.paymentStatus !== "succeeded" && !["cancelled", "refunded"].includes(order.orderStatus) && (
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <Button onClick={continuePayment} disabled={paying}>{paying ? <Loader2 className="animate-spin" /> : <CreditCard />}Continue payment</Button>
-                  {!isAuthenticated && <p className="text-xs text-muted-foreground">Sign in with the account used at checkout to continue this payment.</p>}
-                </div>
-              )}
+              {order.deliveryStatus === "waiting_for_payment" && <UnpaidOrderActions key={order.reference} reference={order.reference} onCancelled={() => { setOrder({ ...order, orderStatus: "cancelled", deliveryStatus: "cancelled", statusMessage: "Order cancelled. You can place a new order for this number." }); }} />}
             </div>}
 
           </CardContent>
