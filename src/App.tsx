@@ -101,6 +101,7 @@ const StoreCheckMtn = lazy(() => import("./pages/store/StoreCheckMtn"));
 const StoreAuth = lazy(() => import("./pages/store/StoreAuth"));
 const StoreAccount = lazy(() => import("./pages/store/StoreAccount"));
 const StoreJoin = lazy(() => import("./pages/store/StoreJoin"));
+const StorePrices = lazy(() => import("./pages/store/StorePrices"));
 const AgentNetwork = lazy(() => import("./pages/agent/AgentNetwork"));
 const AgentNetworkPrices = lazy(() => import("./pages/agent/AgentNetworkPrices"));
 const AgentPopups = lazy(() => import("./pages/agent/AgentPopups"));
