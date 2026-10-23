@@ -15,7 +15,7 @@ import { useAuth } from "@/store/auth-context";
 
 /* One agent, in full: who they are, their plan, every order through them
    (store sale vs their own purchase), earnings, payouts, free months. */
-interface Agent { id: string; user_id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; created_at: string; parent_agent_id: string | null; network_on: boolean | null; network_fee: number | null; network_paused_at: string | null; redirect_to_main?: boolean; redirect_to_main_at?: string | null }
+interface Agent { id: string; user_id: string; slug: string; store_name: string; tagline: string | null; status: string; paid_until: string | null; momo_number: string | null; momo_name: string | null; whatsapp: string | null; earnings_balance: number; created_at: string; parent_agent_id: string | null; network_on: boolean | null; network_fee: number | null; network_paused_at: string | null; redirect_to_main?: boolean; redirect_to_main_at?: string | null; profit_to_platform?: boolean; profit_to_platform_at?: string | null }
 interface NetInfo { parent: { id: string; store_name: string; slug: string; network_fee: number } | null; subs: Array<{ id: string; store_name: string; slug: string; status: string; paid_until: string | null }>; parentMargin: number; feeIncome: number }
 interface Ord { id: string; order_reference: string; recipient_phone: string; amount: number; agent_price: number | null; agent_margin: number | null; status: string; supplier_status: string | null; admin_resolution_status: string | null; paid_at: string; user_id: string | null; guest_email: string | null; data_products: { name: string; capacity_gb: number } | null; networks: { name: string } | null; suppliers: { code: string; name: string } | null }
 interface Payout { id: string; amount: number; fee: number; net: number; status: string; created_at: string; paid_at: string | null }
@@ -78,6 +78,17 @@ export default function AdminAgentDetail() {
     toast.success(on ? "Store visitors now go to the main site." : "Store is showing again."); void load();
   };
 
+  const [takeoverBusy, setTakeoverBusy] = useState(false);
+  const toggleTakeover = async () => {
+    if (!a) return; const on = !a.profit_to_platform;
+    if (!window.confirm(on ? `Keep ${a.store_name}'s store open, but send all profit from its sales (and its sub-agents' sales, if this is a parent) to DataYego instead of the agent?` : `Give ${a.store_name} their profit again from new deliveries?`)) return;
+    setTakeoverBusy(true);
+    const { error } = await db().rpc("admin_set_profit_takeover", { p_agent: a.id, p_on: on });
+    setTakeoverBusy(false);
+    if (error) return toast.error(error.message.replace(/_/g, " "));
+    toast.success(on ? "Profit from this store now comes to DataYego." : "Agent earns their profit again."); void load();
+  };
+
   const isSelf = (o: Ord) => a != null && o.user_id === a.user_id && Number(o.agent_margin ?? 0) === 0;
   const shown = useMemo(() => orders.filter((o) => source === "all" || (source === "self" ? isSelf(o) : !isSelf(o))), [orders, source, a]); // eslint-disable-line react-hooks/exhaustive-deps
   const storeOrders = orders.filter((o) => !isSelf(o)); const selfOrders = orders.filter(isSelf);
@@ -120,6 +131,10 @@ export default function AdminAgentDetail() {
               ? "This store has no signed-up customers, so nobody loses access to an account or wallet."
               : <>This store has <span className="font-semibold text-foreground">{impact.customers} customer account{impact.customers === 1 ? "" : "s"}</span> with <span className="font-semibold text-foreground">{formatGHS(Number(impact.wallet_balance))}</span> in their wallets. While the redirect is on, those customers cannot reach their accounts or spend that money.</>}
         </p>
+      </Panel>
+
+      <Panel title="Profit goes to DataYego" note={a.profit_to_platform ? `on since ${a.profit_to_platform_at ? formatAdminDate(a.profit_to_platform_at) : "—"}` : "off"} action={<Button size="sm" variant={a.profit_to_platform ? "soft" : "ghost"} disabled={takeoverBusy} onClick={() => void toggleTakeover()}>{takeoverBusy ? "Saving…" : a.profit_to_platform ? "Turn off" : "Turn on"}</Button>}>
+        <p className="text-[12.5px] text-muted-foreground">{a.profit_to_platform ? <>The store stays open and customers can keep buying, but the agent's share of every new delivered sale is booked to DataYego instead of the agent's earnings. Money already in their balance is untouched.</> : "When on, the store stays open and keeps selling, but the agent's profit on new deliveries comes to DataYego instead of the agent. Their existing balance is not touched. Works even if the agent's plan has run out."}</p>
       </Panel>
 
       {net && (net.parent || net.subs.length > 0 || a.network_on) && (
