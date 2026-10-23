@@ -4,6 +4,7 @@ import { startCheckout } from "../_shared/gateway.ts";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
+import { canManageUnpaidOrder } from "../_shared/unpaidOrder.ts";
 import { recordPrefixConfirmation } from "../_shared/numberPrefix.ts";
 
 function makeOrderReference(prefix = "YG") {
@@ -149,7 +150,7 @@ Deno.serve(async (req) => {
     // matching open order rather than surfacing the index as a raw 500.
     const { data: existingOpen } = await supabase
       .from("orders")
-      .select("id, order_reference, product_id, payment_status")
+      .select("id, order_reference, product_id, payment_status, user_id, guest_email, management_token, agent_id")
       .eq("recipient_phone_normalized", recipientPhone)
       .eq("is_open", true)
       .order("created_at", { ascending: false })
@@ -168,14 +169,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (existingOpen && existingOpen.product_id !== product.id) {
-      return jsonResponse(
-        {
-          error: "This number already has an open order for a different bundle. Pay or track that order using its reference, or try again after it expires.",
-          code: "phone_has_open_order",
-        },
-        { status: 409 },
-      );
+    if (existingOpen) {
+      const allowed = canManageUnpaidOrder(existingOpen, authenticatedUser?.id ?? null, String(body.managementToken ?? ""), guestEmail);
+      return jsonResponse({
+        error: allowed ? "You have an order awaiting payment. Continue payment or cancel it before placing another order." : "This number has an order awaiting payment. Open it using the Order ID saved at checkout, or ask support to cancel it.",
+        code: "phone_has_open_order",
+        ...(allowed ? { pendingOrderReference: existingOpen.order_reference } : {}),
+      }, { status: 409 });
     }
 
     // Ported number: the customer ticked the confirmation. Saved only when the prefix really points elsewhere.
@@ -212,6 +212,7 @@ Deno.serve(async (req) => {
 
     const orderReference = existingOpen ? existingOpen.order_reference : makeOrderReference(agent ? "AG" : "YG");
     const paystackReference = makePaystackReference("YGDATA");
+    const managementToken = crypto.randomUUID() + crypto.randomUUID();
     let order: { id: string; order_reference: string };
 
     if (existingOpen) {
@@ -232,6 +233,7 @@ Deno.serve(async (req) => {
         .from("orders")
         .insert({
           order_reference: orderReference,
+          management_token: managementToken,
           user_id: authenticatedUser?.id ?? null,
           guest_email: receiptEmail,
           guest_phone: authenticatedUser ? null : guestPhone,
@@ -381,6 +383,7 @@ Deno.serve(async (req) => {
         accessCode: paystack.accessCode,
         gateway: paystack.gateway,
         paymentReference: paystackReference,
+        managementToken,
       },
     });
   } catch (error) {

@@ -11,6 +11,7 @@ function networkForPrefix(phone: string | null) {
 
 function customerDeliveryStatus(orderStatus: string, paymentStatus: string, adminStatus: string | null) {
   if (paymentStatus === "refunded" || orderStatus === "refunded") return "refunded";
+  if (orderStatus === "cancelled") return "cancelled";
   if (paymentStatus !== "succeeded") return "waiting_for_payment";
   // An MTN number under first-time verification is held, not failed — this
   // outranks whatever the lifecycle status says.
@@ -27,7 +28,8 @@ function customerDeliveryStatus(orderStatus: string, paymentStatus: string, admi
 
 function customerMessage(orderStatus: string, paymentStatus: string, adminStatus: string | null, paidAt: string | null, updatedAt: string, who = "DataYego support") {
   if (paymentStatus === "refunded" || orderStatus === "refunded") return "Your payment has been refunded.";
-  if (paymentStatus !== "succeeded") return "Complete payment to continue this order.";
+  if (orderStatus === "cancelled") return "This order is cancelled. You can place a new order.";
+  if (paymentStatus !== "succeeded") return "You have not paid for this order. Continue payment or cancel it to place a new order.";
   if (adminStatus === AWAITING_VERIFICATION) return AWAITING_VERIFICATION_CUSTOMER_MESSAGE;
   if (adminStatus === "wrong_network") return "The number you entered is not on the network you chose, so this bundle can't be delivered to it. Enter the correct number below and we'll send it straight away.";
   if (orderStatus === "delivered") return "Your data order has been completed.";

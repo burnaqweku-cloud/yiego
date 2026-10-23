@@ -62,9 +62,8 @@ Deno.serve(async (req) => {
     }
     if (action === "cancel") {
       if (order.user_id !== auth.user.id) return json({ error: "Only the order creator can cancel it" }, 403);
-      if (order.payment_status === "succeeded") return json({ error: "Paid orders cannot be cancelled here" }, 409);
-      const { error } = await supabase.from("orders").update({ status: "cancelled", payment_status: "abandoned", is_open: false, closed_at: new Date().toISOString(), closed_reason: "cancelled_by_creator", updated_at: new Date().toISOString() }).eq("id", order.id);
-      return error ? json({ error: error.message }, 500) : json({ status: "success" });
+      const { data, error } = await supabase.rpc("cancel_unpaid_order", { p_reference: orderReference, p_actor: auth.user.id, p_token: null, p_email: null, p_admin: false });
+      return error ? json({ error: "This order can no longer be cancelled. Refresh to check its payment status." }, 409) : json({ status: "success", data });
     }
     if (action === "pay_wallet") {
       if (expired) return json({ error: "This order has expired or is closed" }, 410);
