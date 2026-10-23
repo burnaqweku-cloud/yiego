@@ -10,7 +10,7 @@ create table if not exists phase1.promotion_settings (
 grant select on phase1.promotion_settings to authenticated;
 grant all on phase1.promotion_settings to service_role;
 alter table phase1.promotion_settings enable row level security;
-create policy promotion_settings_admin_read on phase1.promotion_settings for select to authenticated using (phase1.admin_role(auth.uid()) in ('admin','master_admin'));
+create policy promotion_settings_admin_read on phase1.promotion_settings for select to authenticated using (phase1.admin_role(auth.uid()) in ('admin','master'));
 
 create table if not exists phase1.promotion_offers (
   product_id uuid primary key references phase1.data_products(id),
@@ -21,7 +21,7 @@ create table if not exists phase1.promotion_offers (
 grant select on phase1.promotion_offers to authenticated;
 grant all on phase1.promotion_offers to service_role;
 alter table phase1.promotion_offers enable row level security;
-create policy promotion_offers_admin_read on phase1.promotion_offers for select to authenticated using (phase1.admin_role(auth.uid()) in ('admin','master_admin'));
+create policy promotion_offers_admin_read on phase1.promotion_offers for select to authenticated using (phase1.admin_role(auth.uid()) in ('admin','master'));
 
 create table if not exists phase1.promotion_redemptions (
   id uuid primary key default gen_random_uuid(),
@@ -37,8 +37,10 @@ create table if not exists phase1.promotion_redemptions (
 grant select on phase1.promotion_redemptions to authenticated;
 grant all on phase1.promotion_redemptions to service_role;
 alter table phase1.promotion_redemptions enable row level security;
-create policy promotion_redemptions_admin_read on phase1.promotion_redemptions for select to authenticated using (phase1.admin_role(auth.uid()) in ('admin','master_admin'));
-create unique index promotion_one_customer_claim on phase1.promotion_redemptions(user_id) where status in ('reserved','paid');
+create policy promotion_redemptions_admin_read on phase1.promotion_redemptions for select to authenticated using (phase1.admin_role(auth.uid()) in ('admin','master'));
+-- Paid history remains permanent; only reservations need uniqueness so a late
+-- payment on a cancelled order can still be recorded for manual reconciliation.
+create unique index promotion_one_customer_claim on phase1.promotion_redemptions(user_id) where status='reserved';
 
 create function phase1.promotion_customer_has_purchased(p_user uuid)
 returns boolean language sql stable security definer set search_path='' as $$
@@ -74,7 +76,7 @@ create function phase1.admin_promotion_overview()
 returns jsonb language plpgsql stable security definer set search_path='' as $$
 declare result jsonb; offers jsonb;
 begin
-  if coalesce(phase1.admin_role(auth.uid()),'') not in ('admin','master_admin') then raise exception 'admin_required'; end if;
+  if coalesce(phase1.admin_role(auth.uid()),'') not in ('admin','master') then raise exception 'admin_required'; end if;
   result:=phase1.promotion_public();
   select coalesce(jsonb_agg(jsonb_build_object('product_id',p.id,'product_code',p.app_product_code,'name',p.name,'network',n.code,'validity',p.validity,'normal_price',p.customer_price,'price',coalesce(f.price,p.customer_price),'enabled',coalesce(f.enabled,false),'available',not p.is_paused and not n.is_paused and n.is_active) order by p.display_order),'[]'::jsonb)
   into offers from phase1.data_products p join phase1.networks n on n.id=p.network_id left join phase1.promotion_offers f on f.product_id=p.id where p.is_active;
@@ -90,7 +92,7 @@ create function phase1.admin_promotion_save(p_title text,p_blurb text,p_active b
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare offer jsonb; price numeric; product uuid;
 begin
-  if coalesce(phase1.admin_role(auth.uid()),'') not in ('admin','master_admin') or coalesce(auth.jwt()->>'aal','')<>'aal2' then raise exception 'admin_mfa_required'; end if;
+  if coalesce(phase1.admin_role(auth.uid()),'') not in ('admin','master') or coalesce(auth.jwt()->>'aal','')<>'aal2' then raise exception 'admin_mfa_required'; end if;
   if length(trim(p_title)) not between 1 and 100 or length(coalesce(p_blurb,''))>240 or jsonb_typeof(p_offers)<>'array' or jsonb_array_length(p_offers)>300 then raise exception 'invalid_promotion'; end if;
   if p_active and not exists(select 1 from jsonb_array_elements(p_offers) v where (v->>'enabled')::boolean) then raise exception 'enable_a_bundle'; end if;
   insert into phase1.promotion_settings(id,title,blurb,active,updated_by) values(true,trim(p_title),coalesce(p_blurb,''),p_active,auth.uid())
@@ -169,4 +171,16 @@ begin
 end;$$;
 revoke all on function phase1.settle_promotion_redemption() from public,anon,authenticated;
 create trigger settle_promotion_order after update of payment_status,status,is_open on phase1.orders for each row execute function phase1.settle_promotion_redemption();
+
+create function phase1.guard_promotion_order_snapshot()
+returns trigger language plpgsql security definer set search_path='' as $$
+begin
+  if exists(select 1 from phase1.promotion_redemptions r where r.order_id=old.id)
+    and (new.amount is distinct from old.amount or new.product_id is distinct from old.product_id or new.user_id is distinct from old.user_id or new.recipient_phone is distinct from old.recipient_phone) then
+    raise exception 'promotion_order_details_are_fixed';
+  end if;
+  return new;
+end;$$;
+revoke all on function phase1.guard_promotion_order_snapshot() from public,anon,authenticated;
+create trigger guard_promotion_order_snapshot before update on phase1.orders for each row execute function phase1.guard_promotion_order_snapshot();
 notify pgrst,'reload schema';

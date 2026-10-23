@@ -216,7 +216,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       id: product.app_product_code ?? product.id,
       size: product.name.replace(/^.*?—\s*/, ""),
       validity: product.validity ?? "Supplier terms",
-      price: agent ? Number(agent.prices[product.id] ?? product.customer_price) : friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price),
+      price: preselect?.kind === "bundle" && preselect.promotion?.productId === product.id ? preselect.promotion.price : agent ? Number(agent.prices[product.id] ?? product.customer_price) : friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price),
       wasPrice: !agent && friendPrice && product.agent_price != null && Number(product.agent_price) < Number(product.customer_price) ? Number(product.customer_price) : undefined,
       tag: !agent && Number(product.customer_price) <= 10 ? "Popular" : !agent && Number(product.customer_price) >= 40 ? "Best value" : undefined,
       unavailable: product.is_paused ? (product.pause_reason ?? "Currently unavailable. Please try again later.") : undefined,
