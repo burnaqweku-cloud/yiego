@@ -1,6 +1,7 @@
 # Roadmap
 
 ## First-purchase promotions
+- [ ] Add visit → signup → purchase reporting, source/campaign links, date filters, daily/source/bundle breakdowns and export; validate real event ingestion and server-derived account/payment counts.
 - [x] Add /promo and Admin → Promotions with per-bundle prices, activation, editable message, copied link and paid/pending/sales/discount totals. MTN 1GB initialized at GHS 3.95.
 - [x] Apply account-only first-purchase reservations, permanent paid/refunded history, immutable price snapshots and late-repeat-payment reconciliation to the external database; reuse deployed prepared-order payments without new functions.
 - [x] Pass seven unit tests and rolled-back external database tests; public offer, signup return link and mobile layout verified; latest build OK.
