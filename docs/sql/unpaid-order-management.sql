@@ -18,8 +18,8 @@ begin
   if not p_admin then
     if o.user_id is not null then
       if actor is null or actor <> o.user_id then raise exception 'not_allowed'; end if;
-    elsif not ((p_token is not null and length(p_token)>0 and p_token=o.management_token)
-       or (p_email is not null and length(trim(p_email))>0 and lower(trim(p_email))=lower(o.guest_email))) then
+    elsif not coalesce(((p_token is not null and length(p_token)>0 and p_token=o.management_token)
+       or (p_email is not null and length(trim(p_email))>0 and lower(trim(p_email))=lower(o.guest_email))),false) then
       raise exception 'not_allowed';
     end if;
   end if;
@@ -33,4 +33,23 @@ begin
 end; $$;
 revoke all on function phase1.cancel_unpaid_order(text,uuid,text,text,boolean) from public,anon;
 grant execute on function phase1.cancel_unpaid_order(text,uuid,text,text,boolean) to authenticated,service_role;
+
+-- A provider link already opened cannot be revoked locally. Preserve a late
+-- successful payment for manual reconciliation, but never auto-send the cancelled order.
+create or replace function phase1.guard_cancelled_unpaid_payment()
+returns trigger language plpgsql security definer set search_path='' as $$
+begin
+  if old.closed_reason in ('cancelled_by_admin_unpaid','cancelled_by_customer_unpaid') and old.status='cancelled'
+     and new.payment_status='succeeded' then
+    new.status := 'cancelled'; new.is_open := false;
+    new.failure_reason := 'Payment received after unpaid cancellation. Administrator must reconcile; do not automatically send.';
+    if old.payment_status is distinct from 'succeeded' then
+      insert into phase1.order_events(order_id,event_type,from_status,to_status,message)
+        values(old.id,'payment.received_after_cancellation','cancelled','cancelled','Late payment recorded for administrator reconciliation. No automatic delivery.');
+    end if;
+  end if;
+  return new;
+end; $$;
+create trigger guard_cancelled_unpaid_payment before update on phase1.orders
+for each row execute function phase1.guard_cancelled_unpaid_payment();
 notify pgrst,'reload schema';
