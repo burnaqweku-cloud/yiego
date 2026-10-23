@@ -14,9 +14,9 @@ import { formatGHS } from "@/lib/format";
    This section is the admin's window into all of it: who runs a programme, who sells under whom, the applications
    funnel, and the master switch. */
 
-type Tab = "overview" | "parents" | "subs" | "applications" | "settings";
-const TAB_PATH: Record<Tab, string> = { overview: "/admin/sub-agents", parents: "/admin/sub-agents/parents", subs: "/admin/sub-agents/list", applications: "/admin/sub-agents/applications", settings: "/admin/sub-agents/settings" };
-const TAB_TITLE: Record<Tab, string> = { overview: "Sub-agents", parents: "Parents", subs: "All sub-agents", applications: "Applications", settings: "Settings" };
+type Tab = "overview" | "performance" | "parents" | "subs" | "applications" | "settings";
+const TAB_PATH: Record<Tab, string> = { overview: "/admin/sub-agents", performance: "/admin/sub-agents/performance", parents: "/admin/sub-agents/parents", subs: "/admin/sub-agents/list", applications: "/admin/sub-agents/applications", settings: "/admin/sub-agents/settings" };
+const TAB_TITLE: Record<Tab, string> = { overview: "Sub-agents", performance: "Performance", parents: "Parents", subs: "All sub-agents", applications: "Applications", settings: "Settings" };
 type Period = "7d" | "30d" | "month" | "all";
 
 interface Overview { tier: { enabled: boolean; allow: string[] } | null; parents: { programmes_on: number; with_subs: number; paused: number }; subs: { total: number; active: number; awaiting_payment: number; lapsed: number; suspended: number; new_in_period: number }; applications: { pending: number; approved: number; declined: number }; fees: { count: number; gross: number; to_parents: number; ours: number }; sales: { orders: number; amount: number; parent_margin: number; sub_margin: number; our_cost: number }; errors: number }
@@ -24,6 +24,7 @@ interface Parent { id: string; slug: string; store_name: string; status: string;
 interface Sub { id: string; slug: string; store_name: string; status: string; paid_until: string | null; created_at: string; whatsapp: string | null; user_id: string; earnings_balance: number; parent_id: string; parent_slug: string; parent_name: string; parent_fee: number; email: string | null; orders: number; sales: number; parent_margin: number; own_margin: number; fees_paid: number; last_order_at: string | null }
 interface Application { id: string; status: "pending" | "approved" | "declined"; applicant_name: string | null; applicant_email: string | null; applicant_phone: string | null; store_name: string; requested_slug: string; whatsapp: string | null; answers: Array<{ label: string; answer: string }> | null; decision_note: string | null; decided_at: string | null; agent_id: string | null; created_at: string; parent_id: string; parent_slug: string; parent_name: string; parent_fee: number; network_auto_approve: boolean; agent_slug: string | null }
 interface AgentLite { id: string; slug: string; store_name: string; status: string }
+interface SubPerf { id: string; slug: string; store_name: string; status: string; parent_id: string; parent_name: string; parent_slug: string; orders: number; delivered: number; sales: number; parent_margin: number; own_margin: number; last_order_at: string | null }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a?: Record<string, unknown>) => any };
