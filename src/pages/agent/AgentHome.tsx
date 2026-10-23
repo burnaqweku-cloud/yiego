@@ -91,6 +91,16 @@ export default function AgentHome() {
       {sub.state === "lapsed"
         ? <Link to="/agent/buy" className="onyx-panel flex items-center gap-3 rounded-2xl p-4 opacity-80"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-muted-foreground"><Lock size={18} /></span><span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">Agent prices locked</span><span className="block text-[12px] text-muted-foreground">Renew your plan to buy at agent price again.</span></span><ArrowRight size={16} className="text-muted-foreground" /></Link>
         : <Link to="/agent/buy" className="onyx-panel flex items-center gap-3 rounded-2xl p-4 hover:border-primary/40"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-glow"><ShoppingBag size={20} /></span><span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">Buy data at your agent price</span><span className="block text-[12px] text-muted-foreground">For yourself or anyone. Pay from your wallet, MoMo or card.</span></span><ArrowRight size={16} className="text-primary-glow" /></Link>}
+      {isSub ? (
+        /* Sub-agents don't pay a subscription — no countdown, no renew. */
+        <div className="onyx-panel flex items-center gap-3 rounded-2xl p-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-glow"><CalendarCheck size={19} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14.5px] font-semibold text-foreground">Free store · no subscription</span>
+            <span className="block text-[12px] text-muted-foreground">Your store under {agent.parent?.store_name ?? "your parent store"} is free — there's nothing to pay and it doesn't expire.</span>
+          </span>
+        </div>
+      ) : (
       <button type="button" onClick={openRenew} className="onyx-panel flex w-full items-center gap-3 rounded-2xl p-4 text-left hover:border-primary/40">
         <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${sub.state === "active" ? "bg-primary/15 text-primary-glow" : "bg-amber/15 text-amber"}`}><CalendarCheck size={19} /></span>
         <span className="min-w-0 flex-1">
@@ -99,6 +109,7 @@ export default function AgentHome() {
         </span>
         <span className="text-[12.5px] font-semibold text-primary-glow">{sub.state === "active" ? "Extend" : "Renew"}</span>
       </button>
+      )}
       <div className="grid grid-cols-3 gap-2">
         {[["Today", today.length, earned(today)], ["7 days", week.length, earned(week)], ["All time", orders.length, earned(orders)]].map(([l, n, e]) => <div key={String(l)} className="onyx-panel rounded-2xl p-3"><p className="text-[11px] text-faint-foreground">{String(l)}</p><p className="text-[20px] font-semibold text-foreground">{String(n)}</p><p className="text-[11px] text-primary-glow">+{formatGHS(Number(e))}</p></div>)}
       </div>
