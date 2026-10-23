@@ -1,5 +1,10 @@
 # Roadmap
 
+## Unpaid orders
+- [ ] Add admin unpaid-only cancellation by order ID or recipient search, closing the order without money movement.
+- [ ] Give storefront customers clear unpaid-order details, continue-payment and cancel actions; surface existing unpaid orders during checkout.
+- [ ] Test paid-order protection, ownership and cancellation release; deploy to the external backend and verify the available customer flow.
+
 ## Sub-agent controls
 - [x] Add confirmed deactivate/reactivate actions for parent-owned sub-agents; frontend awaits publishing.
 - [x] Apply ownership checks and preserve administrator suspensions; rollback tests validate status changes, record preservation and store blocking.
