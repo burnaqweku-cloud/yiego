@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Switch from "@/components/admin/Switch";
 import { loadPromotionAdmin, promotionBasePrice, savePromotion, type PromotionAdmin } from "@/lib/promotions";
 import { formatGHS } from "@/lib/format";
+import PromotionPerformance from "@/components/admin/PromotionPerformance";
 
 const url = "https://datayego.com/promo";
 export default function AdminPromotions() {
@@ -36,6 +37,7 @@ export default function AdminPromotions() {
     <section className="border-b border-border pb-5">
       <div className="flex flex-wrap items-center gap-2"><code className="break-all text-sm text-foreground">{url}</code><Button size="icon" variant="ghost" aria-label="Copy promotion link" title="Copy promotion link" onClick={() => { void navigator.clipboard.writeText(url).then(() => toast.success("Link copied.")); }}><Copy size={15} /></Button><Button size="icon" variant="ghost" asChild><a href="/promo" target="_blank" rel="noreferrer" aria-label="Open promotion page" title="Open promotion page"><ExternalLink size={15} /></a></Button></div>
     </section>
+    <PromotionPerformance />
     {!data ? failed ? <div><p className="text-sm text-muted-foreground">Couldn’t load promotion settings.</p><Button className="mt-3" variant="soft" onClick={() => void load()}>Try again</Button></div> : <Loader2 className="animate-spin text-primary-glow" aria-label="Loading promotion settings" /> : <>
       <StatGrid cols={4}><Stat label="Paid promotion orders" value={data.paid_orders} /><Stat label="Awaiting payment" value={data.pending_orders} /><Stat label="Sales" value={formatGHS(Number(data.sales))} /><Stat label="Discount given" value={formatGHS(Number(data.discount))} /></StatGrid>
       <section className="space-y-4 border-b border-border pb-6">
