@@ -133,6 +133,10 @@ export default function AdminAgentDetail() {
         </p>
       </Panel>
 
+      <Panel title="Profit goes to DataYego" note={a.profit_to_platform ? `on since ${a.profit_to_platform_at ? formatAdminDate(a.profit_to_platform_at) : "—"}` : "off"} action={<Button size="sm" variant={a.profit_to_platform ? "soft" : "ghost"} disabled={takeoverBusy} onClick={() => void toggleTakeover()}>{takeoverBusy ? "Saving…" : a.profit_to_platform ? "Turn off" : "Turn on"}</Button>}>
+        <p className="text-[12.5px] text-muted-foreground">{a.profit_to_platform ? <>The store stays open and customers can keep buying, but the agent's share of every new delivered sale is booked to DataYego instead of the agent's earnings. Money already in their balance is untouched.</> : "When on, the store stays open and keeps selling, but the agent's profit on new deliveries comes to DataYego instead of the agent. Their existing balance is not touched. Works even if the agent's plan has run out."}</p>
+      </Panel>
+
       {net && (net.parent || net.subs.length > 0 || a.network_on) && (
         <Panel title="Sub-agent network" note={net.parent ? "this is a sub-agent" : "this agent recruits sub-agents"} action={<Link to={net.parent ? "/admin/sub-agents/list" : "/admin/sub-agents/parents"}><Button variant="ghost" size="sm">Open Sub-agents</Button></Link>}>
           {net.parent
