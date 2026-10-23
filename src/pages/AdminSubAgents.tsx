@@ -118,6 +118,45 @@ function OverviewTab({ ov, loading, period, setPeriod, parents, subs, onTab }: {
   );
 }
 
+/* ── Performance ──────────────────────────────────────────────────────────────────────────── */
+function PerformanceTab({ perf, loading, period, setPeriod, search, setSearch, match }: { perf: SubPerf[]; loading: boolean; period: Period; setPeriod: (p: Period) => void; search: string; setSearch: (s: string) => void; match: (...xs: Array<string | null | undefined>) => boolean }) {
+  const groups = useMemo(() => {
+    const list = perf.filter((s) => match(s.store_name, s.slug, s.parent_name));
+    const byParent = new Map<string, { parent_id: string; parent_name: string; parent_slug: string; subs: SubPerf[]; sales: number; orders: number; margin: number }>();
+    for (const s of list) {
+      const g = byParent.get(s.parent_id) ?? { parent_id: s.parent_id, parent_name: s.parent_name, parent_slug: s.parent_slug, subs: [], sales: 0, orders: 0, margin: 0 };
+      g.subs.push(s); g.sales += Number(s.sales); g.orders += Number(s.orders); g.margin += Number(s.parent_margin);
+      byParent.set(s.parent_id, g);
+    }
+    return [...byParent.values()].sort((a, b) => b.sales - a.sales);
+  }, [perf, search]);
+  const selling = perf.filter((s) => Number(s.orders) > 0).length;
+  return (
+    <>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Segmented<Period> value={period} onChange={setPeriod} options={[{ value: "7d", label: "7 days" }, { value: "30d", label: "30 days" }, { value: "month", label: "This month" }, { value: "all", label: "All time" }]} />
+        <label className={`${inputCls} flex items-center gap-2 !py-1.5 sm:w-64`}><Search size={13} className="shrink-0 text-faint-foreground" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Store or parent" className="min-w-0 flex-1 bg-transparent text-[12.5px] outline-none" /></label>
+      </div>
+      <StatGrid cols={3}>
+        <Stat loading={loading} label="Sub-agents selling" value={selling} note={`of ${perf.length} total, this period`} icon={Store} />
+        <Stat loading={loading} label="Sub-agent sales" value={<Money value={perf.reduce((a, s) => a + Number(s.sales), 0)} />} note={`${perf.reduce((a, s) => a + Number(s.orders), 0)} paid orders`} icon={Users} />
+        <Stat loading={loading} label="Parents earned" value={<Money value={perf.reduce((a, s) => a + Number(s.parent_margin), 0)} />} note="margin on delivered orders" icon={Network} tone="muted" />
+      </StatGrid>
+      {loading ? <p className="text-[12.5px] text-muted-foreground">Loading…</p> : groups.length === 0 ? <p className="text-[12.5px] text-muted-foreground">No sub-agents match.</p> : groups.map((g) => (
+        <Panel key={g.parent_id} title={g.parent_name} icon={Network} note={`${g.parent_slug}.datayego.com · ${g.subs.length} sub-agent${g.subs.length === 1 ? "" : "s"}`}
+          action={<span className="text-[12px] text-muted-foreground">{g.orders} orders · <b className="text-foreground">{formatGHS(g.sales)}</b> sales · parent earned <b className="text-foreground">{formatGHS(g.margin)}</b></span>}>
+          <Rows empty="No sub-agents.">{g.subs.sort((a, b) => Number(b.sales) - Number(a.sales)).map((s) => (
+            <Row key={s.id} onClick={() => { window.location.href = `/admin/agents/${s.id}`; }}
+              primary={<>{s.store_name} <span className="text-faint-foreground">· {s.slug}</span> <Pill tone={statusTone(s.status)}>{readable(s.status)}</Pill> {Number(s.orders) === 0 && <Pill tone="muted">no sales</Pill>}</>}
+              secondary={`${s.orders} paid · ${s.delivered} delivered${s.last_order_at ? ` · last ${formatAdminDate(s.last_order_at)}` : ""} · their markup ${formatGHS(Number(s.own_margin))}`}
+              right={formatGHS(Number(s.sales))} rightNote={`parent earned ${formatGHS(Number(s.parent_margin))}`} />
+          ))}</Rows>
+        </Panel>
+      ))}
+    </>
+  );
+}
+
 /* ── Parents ──────────────────────────────────────────────────────────────────────────────── */
 function ParentsTab({ parents, loading, search, setSearch, match, act }: { parents: Parent[]; loading: boolean; search: string; setSearch: (s: string) => void; match: (...xs: Array<string | null | undefined>) => boolean; act: (label: string, fn: () => Promise<{ error?: { message: string } | null }>) => Promise<boolean> }) {
   const [sel, setSel] = useState<Parent | null>(null); const [reason, setReason] = useState("");
