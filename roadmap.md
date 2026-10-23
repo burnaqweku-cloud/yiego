@@ -1,6 +1,8 @@
 # Roadmap
 
 ## First-purchase promotions
+- [x] Promotion link opens the main shop with promo prices shown as normal prices (no banner); old /promo links redirect. Guests and accounts allowed; one use per device, number and account, server-checked; ineligible shoppers get normal prices. Rollback DB tests pass; guest flow verified up to the payment button.
+- [ ] Confirm one real guest promo payment is charged GH₵4.11 (needs a real payment; the live guest checkout function was not redeployed).
 - [x] Split Promotions into its own admin dropdown with separate overview, pricing, settings, traffic, daily results, bundle results and ad-link pages; seven promotion tests passed. Signed-in visual verification remains blocked by unavailable external authenticated browser access.
 - [x] Add visit → signup → purchase reporting, source/campaign links, date filters, daily/source/bundle breakdowns and CSV export; real TikTok visit/signup click ingestion verified, actual account/payment/refund attribution passed external rollback tests.
 - [x] Add /promo and Admin → Promotions with per-bundle prices, activation, editable message, copied link and paid/pending/sales/discount totals. MTN 1GB initialized at GHS 3.95.
