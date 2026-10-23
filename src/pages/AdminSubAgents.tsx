@@ -68,9 +68,10 @@ export default function AdminSubAgents() {
   return (
     <div className="space-y-5">
       <AdminPageHeader title={TAB_TITLE[tab]} description="Agents recruited by a paid agent, free. Subs get their own store and buy at the price the parent sets for agents; the parent keeps that margin, we keep our usual agent-price margin." />
-      <Segmented<Tab> value={tab} onChange={setTab} options={[{ value: "overview", label: "Overview" }, { value: "parents", label: "Parents" }, { value: "subs", label: "Sub-agents" }, { value: "applications", label: `Applications${ov?.applications.pending ? ` (${ov.applications.pending})` : ""}` }, { value: "settings", label: "Settings" }]} />
+      <Segmented<Tab> value={tab} onChange={setTab} options={[{ value: "overview", label: "Overview" }, { value: "performance", label: "Performance" }, { value: "parents", label: "Parents" }, { value: "subs", label: "Sub-agents" }, { value: "applications", label: `Applications${ov?.applications.pending ? ` (${ov.applications.pending})` : ""}` }, { value: "settings", label: "Settings" }]} />
 
       {tab === "overview" && <OverviewTab ov={ov} loading={loading} period={period} setPeriod={setPeriod} parents={parents} subs={subs} onTab={setTab} />}
+      {tab === "performance" && <PerformanceTab perf={perf} loading={loading} period={period} setPeriod={setPeriod} search={search} setSearch={setSearch} match={match} />}
       {tab === "parents" && <ParentsTab parents={parents} loading={loading} search={search} setSearch={setSearch} match={match} act={act} />}
       {tab === "subs" && <SubsTab subs={subs} agents={agents} loading={loading} search={search} setSearch={setSearch} match={match} act={act} />}
       {tab === "applications" && <ApplicationsTab apps={apps} loading={loading} search={search} setSearch={setSearch} match={match} />}
