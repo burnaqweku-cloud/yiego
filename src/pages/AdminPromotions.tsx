@@ -39,6 +39,7 @@ export default function AdminPromotions() {
     </section>
     <PromotionPerformance />
     {!data ? failed ? <div><p className="text-sm text-muted-foreground">Couldn’t load promotion settings.</p><Button className="mt-3" variant="soft" onClick={() => void load()}>Try again</Button></div> : <Loader2 className="animate-spin text-primary-glow" aria-label="Loading promotion settings" /> : <>
+      <h2 className="text-sm font-semibold text-foreground">All-time promotion totals & settings</h2>
       <StatGrid cols={4}><Stat label="Paid promotion orders" value={data.paid_orders} /><Stat label="Awaiting payment" value={data.pending_orders} /><Stat label="Sales" value={formatGHS(Number(data.sales))} /><Stat label="Discount given" value={formatGHS(Number(data.discount))} /></StatGrid>
       <section className="space-y-4 border-b border-border pb-6">
         <div className="flex items-center justify-between gap-4"><div><h2 className="text-sm font-semibold text-foreground">Promotion active</h2><p className="mt-1 text-xs text-muted-foreground">Changes take effect after saving. Existing orders keep their agreed price.</p></div><Switch label="Promotion active" on={data.active} onChange={active => setData({ ...data, active })} /></div>
