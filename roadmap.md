@@ -1,5 +1,10 @@
 # Roadmap
 
+## First-purchase promotions
+- [ ] Add reusable promotion link and dedicated admin controls for per-bundle prices and activation.
+- [ ] Enforce signed-in first-purchase eligibility and single-use reservations server-side; preserve ordinary checkout fee presentation.
+- [ ] Test pricing, eligibility and concurrency; verify public flow and report external deployment blockers.
+
 ## Unpaid orders
 - [x] Add admin unpaid-only cancellation by order ID or recipient search; apply row-locked cancellation and late-payment safeguards to the external database.
 - [x] Build storefront unpaid-order details, continue-payment and cancel controls, and clear duplicate-order handling.
