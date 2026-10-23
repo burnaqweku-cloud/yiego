@@ -15,7 +15,8 @@ const db = () => (supabase as unknown as { schema(name: string): RpcClient }).sc
 const key = "yg-promotion-touch-v1";
 export function conversionRate(part: number, whole: number) { return whole > 0 ? Math.round(part / whole * 10000) / 100 : 0; }
 export function promotionAdLink(source: string, campaign: string) {
-  const url = new URL("https://datayego.com/promo");
+  const url = new URL("https://datayego.com/shop");
+  url.searchParams.set("promo", "1");
   url.searchParams.set("utm_source", source.trim().slice(0, 80) || "tiktok");
   url.searchParams.set("utm_medium", "paid_social");
   if (campaign.trim()) url.searchParams.set("utm_campaign", campaign.trim().slice(0, 120));
