@@ -18,7 +18,8 @@ import { checkNumbers, isMtn, STATUS_COPY, type CheckResult } from "@/lib/mtnChe
 import { Check, Clock } from "lucide-react";
 import { formatGHS } from "@/lib/format";
 import { paystackFee } from "@/lib/fees";
-import { preparePromotionOrder } from "@/lib/promotions";
+import { claimGuestPromotion, preparePromotionOrder, usePromoPrices } from "@/lib/promotions";
+import { trackPromotion } from "@/lib/promotionAnalytics";
 import {
   createGuestDataPayment,
   listPendingOrders,
@@ -134,10 +135,15 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   const [lookupReference, setLookupReference] = useState("");
   const [unpaidReference, setUnpaidReference] = useState<string | null>(null);
   const [receiptRef, setReceiptRef] = useState<string | null>(null);
+  // Promotion link prices (main site only). The server decides at checkout; this only drives what is shown.
+  const promoPrices = usePromoPrices(user?.id ?? null, !agent);
+  const [guestPromoToken, setGuestPromoToken] = useState<string | null>(null);
+  const [promoDeclined, setPromoDeclined] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setStep("network"); setNetwork(null); setBundle(null); setPhone(profile.phone);
     setGuestEmail(user?.email ?? profile.email); setPaymentMethod("wallet");
+    setGuestPromoToken(null); setPromoDeclined(new Set());
     setUnpaidReference(null); setActiveOrder(null); setHighlightOrder(null); setLookupReference(""); setReceiptRef(null);
     if (open && auth.isAuthenticated && !agent) { void friendPriceEligible().then(setFriendPrice); void recordDevice(); } else setFriendPrice(false);
   }, [open, profile.email, profile.phone, user?.email, auth.isAuthenticated, agent]);
@@ -196,6 +202,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   const prefixMismatch = Boolean(network && detectedNetwork && detectedNetwork !== network.id);
   const [prefixOk, setPrefixOk] = useState(false);
   useEffect(() => { setPrefixOk(false); }, [digits, network?.id]);
+  useEffect(() => { setGuestPromoToken(null); }, [digits, bundle?.id]);
   const prefixConfirmed = prefixMismatch && prefixOk;
   // Guests may leave the email empty: the order reference is shown on screen and the order can be tracked by phone.
   const emailValid = guestEmail.trim() === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim());
@@ -216,11 +223,34 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       id: product.app_product_code ?? product.id,
       size: product.name.replace(/^.*?—\s*/, ""),
       validity: product.validity ?? "Supplier terms",
-      price: preselect?.kind === "bundle" && preselect.promotion?.productId === product.id ? preselect.promotion.price : agent ? Number(agent.prices[product.id] ?? product.customer_price) : friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price),
-      wasPrice: !agent && friendPrice && product.agent_price != null && Number(product.agent_price) < Number(product.customer_price) ? Number(product.customer_price) : undefined,
+      price: preselect?.kind === "bundle" && preselect.promotion?.productId === product.id ? preselect.promotion.price : promoPriceFor(product.id) ?? basePrice(product),
+      wasPrice: !agent && promoPriceFor(product.id) == null && friendPrice && product.agent_price != null && Number(product.agent_price) < Number(product.customer_price) ? Number(product.customer_price) : undefined,
       tag: !agent && Number(product.customer_price) <= 10 ? "Popular" : !agent && Number(product.customer_price) >= 40 ? "Best value" : undefined,
       unavailable: product.is_paused ? (product.pause_reason ?? "Currently unavailable. Please try again later.") : undefined,
     }));
+  }
+  function basePrice(product: Phase1Product): number {
+    return agent ? Number(agent.prices[product.id] ?? product.customer_price) : friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price);
+  }
+  function promoPriceFor(productId: string): number | null {
+    if (agent || campaign || promoDeclined.has(productId)) return null;
+    return promoPrices[productId] ?? null;
+  }
+  const productForBundle = (b: Bundle | null) => (b ? products.find((p) => (p.app_product_code ?? p.id) === b.id) ?? null : null);
+  // Promotion prices can land after a bundle was picked: keep the chosen bundle's price in step until an order exists.
+  useEffect(() => {
+    if (!bundle || activeOrder || !network) return;
+    const fresh = bundlesFor(network.id).find((b) => b.id === bundle.id);
+    if (fresh && fresh.price !== bundle.price) setBundle(fresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [promoPrices, promoDeclined, friendPrice]);
+  /** The offer isn't available for this device/number/account: drop to the normal price, without blocking. */
+  function declinePromo(productId: string) {
+    setGuestPromoToken(null);
+    setPromoDeclined((have) => new Set(have).add(productId));
+    const product = products.find((p) => p.id === productId);
+    if (bundle && product) setBundle({ ...bundle, price: basePrice(product) });
+    toast.info("The special price has already been used on this phone, number or account, so the normal price applies.");
   }
 
   async function refreshPending() {
@@ -243,6 +273,34 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       const prepared = result.data;
       setActiveOrder({ id: prepared.orderId, orderReference: prepared.orderReference, recipientPhone: prepared.recipientPhone, amount: Number(prepared.amount), networkName: network.name, bundleName: bundle.size, expiresAt: prepared.expiresAt, paymentArrangement: "self", paymentStatus: "pending", status: "awaiting_payment" });
       setPaymentMethod("paystack"); setStep("review"); return;
+    }
+    const promoProduct = productForBundle(bundle);
+    const promoActive = Boolean(promoProduct && promoPriceFor(promoProduct.id) != null);
+    if (promoActive && promoProduct && !isAuthenticated) {
+      setStep("processing");
+      void trackPromotion("checkout_clicked");
+      const claim = await claimGuestPromotion(promoProduct.id, digits);
+      if (claim.data?.eligible && claim.data.token) setGuestPromoToken(claim.data.token);
+      else declinePromo(promoProduct.id);
+      setStep("review"); return;
+    }
+    if (promoActive && promoProduct && isAuthenticated) {
+      setStep("processing");
+      void trackPromotion("checkout_clicked");
+      const result = await preparePromotionOrder(promoProduct.id, digits, prefixConfirmed);
+      if (!result.error && result.data) {
+        const prepared = result.data;
+        setActiveOrder({ id: prepared.orderId, orderReference: prepared.orderReference, recipientPhone: prepared.recipientPhone, amount: Number(prepared.amount), networkName: network.name, bundleName: bundle.size, expiresAt: prepared.expiresAt, paymentArrangement: "self", paymentStatus: "pending", status: "awaiting_payment" });
+        setPaymentMethod("paystack"); setStep("review"); return;
+      }
+      const message = result.error?.message ?? "";
+      if (message.includes("unpaid_order") || message.includes("recipient_order_open")) {
+        await refreshPending(); setStep("pending");
+        toast.info("You have an unpaid order. Continue payment or cancel it first."); return;
+      }
+      if (!message.includes("not_eligible")) { toast.error("Couldn’t prepare this order. Refresh and try again."); setStep("phone"); return; }
+      declinePromo(promoProduct.id);
+      // fall through to a normal-price order
     }
     if (!isAuthenticated) { setStep("review"); return; }
     setStep("processing");
@@ -290,7 +348,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   async function startGuestPaystack() {
     if (!bundle || !emailValid) { toast.error("That email doesn't look right. Fix it, or leave it empty."); return; }
     setStep("processing");
-    const result = await createGuestDataPayment({ productId: bundle.id, recipientPhone: digits, guestEmail: guestEmail.trim(), guestPhone: digits, campaignToken: campaign?.token, agentSlug: agent?.slug, agentSelf: agent?.self ? true : undefined, prefixMismatchConfirmed: prefixConfirmed || undefined, managementToken: savedOrderToken(savedUnpaidReference(digits)) || undefined });
+    const result = await createGuestDataPayment({ productId: bundle.id, recipientPhone: digits, guestEmail: guestEmail.trim(), guestPhone: digits, campaignToken: campaign?.token ?? guestPromoToken ?? undefined, agentSlug: agent?.slug, agentSelf: agent?.self ? true : undefined, prefixMismatchConfirmed: prefixConfirmed || undefined, managementToken: savedOrderToken(savedUnpaidReference(digits)) || undefined });
     if (result.pendingOrderReference) { setUnpaidReference(result.pendingOrderReference); setStep("review"); return; }
     if (result.error || !result.data?.data?.authorizationUrl) { toast.error("Could not start payment. If this number has an unpaid order, open Track order or ask support to cancel it."); setStep("review"); return; }
     if (result.data.data.orderReference && result.data.data.managementToken) saveOrderToken(result.data.data.orderReference, result.data.data.managementToken, digits);

@@ -7,6 +7,6 @@ describe("promotion reporting rules", () => {
   it("does not invent conversions when there are no visitors", () => { expect(conversionRate(0, 0)).toBe(0); });
   it("keeps TikTok source and campaign in the reusable promotion link", () => {
     const url = new URL(promotionAdLink("tiktok", "1GB October"));
-    expect(url.pathname).toBe("/promo"); expect(url.searchParams.get("utm_source")).toBe("tiktok"); expect(url.searchParams.get("utm_campaign")).toBe("1GB October"); expect(url.searchParams.get("utm_medium")).toBe("paid_social");
+    expect(url.pathname).toBe("/shop"); expect(url.searchParams.get("promo")).toBe("1"); expect(url.searchParams.get("utm_source")).toBe("tiktok"); expect(url.searchParams.get("utm_campaign")).toBe("1GB October"); expect(url.searchParams.get("utm_medium")).toBe("paid_social");
   });
 });

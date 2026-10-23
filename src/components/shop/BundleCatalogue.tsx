@@ -13,6 +13,8 @@ import { reportClientError } from "@/lib/client-errors";
 import { Info } from "lucide-react";
 import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
+import { useAuth } from "@/store/auth-context";
+import { usePromoPrices } from "@/lib/promotions";
 
 /**
  * The shop floor: every live bundle, on the page itself.
@@ -192,7 +194,11 @@ export default function BundleCatalogue() {
 
   const state: LoadState = productsState;
 
-  const rows = useMemo(() => products.map(toRowFromProduct).filter((row): row is Row => row !== null), [products]);
+  // Promotion link visitors see the promotion price as the bundle price, nothing else changes.
+  const { user } = useAuth();
+  const promoPrices = usePromoPrices(user?.id ?? null);
+  const rows = useMemo(() => products.map(toRowFromProduct).filter((row): row is Row => row !== null)
+    .map((row) => (promoPrices[row.id] != null ? { ...row, price: promoPrices[row.id] } : row)), [products, promoPrices]);
 
   const term = query.trim().toLowerCase().replace(/\s+/g, "");
   const matching = useMemo(

@@ -15,7 +15,7 @@ export default function PromotionAdLinks() {
   return <div className="space-y-6">
     <section className="space-y-3 border-b border-border pb-5">
       <h2 className="text-sm font-semibold text-foreground">Promotion page</h2>
-      <div className="flex items-start gap-2"><code className="min-w-0 flex-1 break-all text-sm leading-6 text-foreground">https://datayego.com/promo</code><Button size="icon" variant="soft" aria-label="Copy promotion link" title="Copy promotion link" onClick={() => copy("https://datayego.com/promo")}><Copy size={15} /></Button><Button size="icon" variant="ghost" asChild><a href="/promo" target="_blank" rel="noreferrer" aria-label="Open promotion page" title="Open promotion page"><ExternalLink size={15} /></a></Button></div>
+      <div className="flex items-start gap-2"><code className="min-w-0 flex-1 break-all text-sm leading-6 text-foreground">https://datayego.com/shop?promo=1</code><Button size="icon" variant="soft" aria-label="Copy promotion link" title="Copy promotion link" onClick={() => copy("https://datayego.com/shop?promo=1")}><Copy size={15} /></Button><Button size="icon" variant="ghost" asChild><a href="/shop?promo=1" target="_blank" rel="noreferrer" aria-label="Open promotion link" title="Open promotion link"><ExternalLink size={15} /></a></Button></div>
     </section>
     <section className="space-y-3">
       <h2 className="text-sm font-semibold text-foreground">Social ad link</h2>
