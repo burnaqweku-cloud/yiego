@@ -63,6 +63,11 @@ export default function AdminAgentDetail() {
     toast.success(`Now /s/${(data as { slug: string }).slug}. The old link still works for 90 days.`); void load();
   };
   const [redirBusy, setRedirBusy] = useState(false);
+  const [impact, setImpact] = useState<{ customers: number; wallet_balance: number } | null>(null);
+  useEffect(() => {
+    if (!a) return;
+    void db().rpc("store_customer_impact", { p_agent_id: a.id }).then(({ data }) => setImpact((data as { customers: number; wallet_balance: number } | null) ?? null));
+  }, [a?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const toggleRedirect = async () => {
     if (!a) return; const on = !a.redirect_to_main;
     if (!window.confirm(on ? `Send everyone who opens ${a.store_name}'s store to the main DataYego site?` : `Open ${a.store_name}'s store again for visitors?`)) return;
@@ -108,6 +113,13 @@ export default function AdminAgentDetail() {
 
       <Panel title="Send store visitors to main site" note={a.redirect_to_main ? `on since ${a.redirect_to_main_at ? formatAdminDate(a.redirect_to_main_at) : "—"}` : "off"} action={<Button size="sm" variant={a.redirect_to_main ? "soft" : "ghost"} disabled={redirBusy} onClick={() => void toggleRedirect()}>{redirBusy ? "Saving…" : a.redirect_to_main ? "Turn off" : "Turn on"}</Button>}>
         <p className="text-[12.5px] text-muted-foreground">{a.redirect_to_main ? <>Anyone opening <span className="text-foreground">/s/{a.slug}</span> (or this store's own domain) is sent to datayego.com. Works even if the plan has run out.</> : "When on, anyone opening this agent's store link goes straight to datayego.com, even if the agent's plan has run out."}</p>
+        <p className="mt-2 text-[12.5px] text-muted-foreground">
+          {impact === null
+            ? "Checking this store's customer accounts…"
+            : impact.customers === 0
+              ? "This store has no signed-up customers, so nobody loses access to an account or wallet."
+              : <>This store has <span className="font-semibold text-foreground">{impact.customers} customer account{impact.customers === 1 ? "" : "s"}</span> with <span className="font-semibold text-foreground">{formatGHS(Number(impact.wallet_balance))}</span> in their wallets. While the redirect is on, those customers cannot reach their accounts or spend that money.</>}
+        </p>
       </Panel>
 
       {net && (net.parent || net.subs.length > 0 || a.network_on) && (
