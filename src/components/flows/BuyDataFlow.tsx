@@ -229,7 +229,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
 
   async function continueFromPhone() {
     if (!network || !bundle || !phoneValid || (prefixMismatch && !prefixOk)) return;
-    if (!isAuthenticated) { const saved = savedUnpaidReference(digits); if (saved) setUnpaidReference(saved); setStep("review"); return; }
+    if (!isAuthenticated) { setStep("review"); return; }
     setStep("processing");
     const result = await prepareDataOrder({ productId: bundle.id, recipientPhone: digits, agentSelf: selfBuy || undefined, prefixMismatchConfirmed: prefixConfirmed || undefined });
     if (result.error || !result.data?.data) {

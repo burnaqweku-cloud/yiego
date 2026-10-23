@@ -180,55 +180,12 @@ Deno.serve(async (req) => {
 
     // Ported number: the customer ticked the confirmation. Saved only when the prefix really points elsewhere.
     const prefixConfirmed = body?.prefixMismatchConfirmed === true;
-    if (existingOpen && prefixConfirmed) await recordPrefixConfirmation(supabase, existingOpen.id);
-
-    if (existingOpen) {
-      // Same bundle, still payable. Hand back the payment link we already issued
-      // when one exists, so only a single live Paystack charge can target the order.
-      const { data: pendingIntent } = await supabase
-        .from("payment_intents")
-        .select("authorization_url, provider_reference, metadata")
-        .eq("order_id", existingOpen.id)
-        .eq("status", "pending")
-        .not("authorization_url", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (pendingIntent?.authorization_url) {
-        return jsonResponse({
-          status: "success",
-          data: {
-            orderId: existingOpen.id,
-            orderReference: existingOpen.order_reference,
-            authorizationUrl: pendingIntent.authorization_url,
-            accessCode: pendingIntent.metadata?.accessCode ?? null,
-            paymentReference: pendingIntent.provider_reference,
-            resumed: true,
-          },
-        });
-      }
-    }
-
-    const orderReference = existingOpen ? existingOpen.order_reference : makeOrderReference(agent ? "AG" : "YG");
+    const orderReference = makeOrderReference(agent ? "AG" : "YG");
     const paystackReference = makePaystackReference("YGDATA");
     const managementToken = crypto.randomUUID() + crypto.randomUUID();
     let order: { id: string; order_reference: string };
 
-    if (existingOpen) {
-      // Open order without a live payment link (e.g. a prepared order that never
-      // reached Paystack): point it at a fresh transaction instead of inserting.
-      const { error: reuseError } = await supabase
-        .from("orders")
-        .update({ paystack_reference: paystackReference, updated_at: new Date().toISOString() })
-        .eq("id", existingOpen.id);
-
-      if (reuseError) {
-        return jsonResponse({ error: friendlyError(reuseError.message, "We couldn't reuse your earlier order. Please try again.") }, { status: 500 });
-      }
-
-      order = { id: existingOpen.id, order_reference: existingOpen.order_reference };
-    } else {
+    {
       const { data: inserted, error: orderError } = await supabase
         .from("orders")
         .insert({
