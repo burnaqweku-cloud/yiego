@@ -15,12 +15,14 @@ export default function StorePrices() {
   const store = useStore();
   const { live, priced, loaded } = useHomeData(store);
   const base = storeBase(store.slug);
+  // The apply button wears the store's own template style, like every other button on the shop.
+  const cta = store.template === "studio" ? "st-btn fill" : "onyx-btn-primary px-5 py-2.5 text-[13px]";
 
   return (
     <StorePage
       title={`${store.store_name} prices`}
       lead="Every bundle this store sells and what it costs. Like the prices? Apply to sell under this store — no monthly fee, you earn from your own sales."
-      aside={<Link to={`${base}/join`} className="mk-btn mk-btn-primary inline-flex px-4 py-2 text-[13px]">Apply to sell under {store.store_name}</Link>}
+      aside={<Link to={`${base}/join`} className={cta}>Apply to sell under {store.store_name}</Link>}
     >
       <Seo path={`${base}/prices`} title={`${store.store_name} price list — MTN, Telecel & AirtelTigo data`} description={`See every bundle price at ${store.store_name} and apply to sell under them.`} />
       {!loaded && <p className="py-10 text-center text-[13px] text-muted-foreground">Loading prices…</p>}
@@ -57,7 +59,7 @@ export default function StorePrices() {
       <div className="onyx-panel mt-6 rounded-[22px] p-5 text-center">
         <p className="text-[14px] font-semibold text-foreground">Want to earn with these prices?</p>
         <p className="mx-auto mt-1 max-w-[46ch] text-[12.5px] text-muted-foreground">Apply to open your own store under {store.store_name}. You set your own prices above these and keep the difference.</p>
-        <Link to={`${base}/join`} className="onyx-btn-primary mt-4 inline-block px-5 py-2.5 text-[13px]">Apply now</Link>
+        <Link to={`${base}/join`} className={`${cta} mt-4 inline-block`}>Apply now</Link>
       </div>
     </StorePage>
   );
