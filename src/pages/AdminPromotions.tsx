@@ -37,11 +37,11 @@ export default function AdminPromotions() {
     toast.success("Promotion saved."); void load();
   };
   if (!editing) return <div className="space-y-6">
-    <AdminPageHeader title={`Promotions · ${titles[section] ?? titles.overview}`} />
+    <AdminPageHeader title={`Promotions · ${titles[section] ?? titles.overview}`} description="First-purchase promotions" />
     {section === "links" ? <PromotionAdLinks /> : <PromotionPerformance view={section === "sources" || section === "daily" || section === "bundles" ? section : "overview"} />}
   </div>;
   return <div className="space-y-6">
-    <AdminPageHeader title={`Promotions · ${titles[section]}`} action={<Button size="sm" disabled={!data || busy} onClick={() => void save()}><Save size={14} />{busy ? "Saving…" : "Save changes"}</Button>} />
+    <AdminPageHeader title={`Promotions · ${titles[section]}`} description="First-purchase offers" action={<Button size="sm" disabled={!data || busy} onClick={() => void save()}><Save size={14} />{busy ? "Saving…" : "Save changes"}</Button>} />
     {!data ? failed ? <div><p className="text-sm text-muted-foreground">Couldn’t load promotion settings.</p><Button className="mt-3" variant="soft" onClick={() => void load()}>Try again</Button></div> : <Loader2 className="animate-spin text-primary-glow" aria-label="Loading promotion settings" /> : <>
       {section === "settings" && <section className="space-y-4 border-b border-border pb-6">
         <div className="flex items-center justify-between gap-4"><div><h2 className="text-sm font-semibold text-foreground">Promotion active</h2><p className="mt-1 text-xs text-muted-foreground">Changes take effect after saving. Existing orders keep their agreed price.</p></div><Switch label="Promotion active" on={data.active} onChange={active => setData({ ...data, active })} /></div>
