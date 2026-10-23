@@ -57,8 +57,16 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "sub-agent-applications", label: "Applications", to: "/admin/sub-agents/applications", icon: UserCheck, keywords: ["join", "apply", "network application"] },
     { id: "sub-agent-settings", label: "Settings", to: "/admin/sub-agents/settings", icon: Settings2, keywords: ["switch", "enable", "allow list", "coming soon"] },
   ] },
+  { id: "promotions", label: "Promotions", icon: BadgePercent, pages: [
+    { id: "promotions", label: "Overview & conversions", to: "/admin/promotions", icon: TrendingUp, keywords: ["promotions", "tiktok", "first purchase", "conversion", "buyers", "signups"] },
+    { id: "promotion-pricing", label: "Bundle prices", to: "/admin/promotions/pricing", icon: Tags, keywords: ["promotion", "offers", "discount", "bundle", "price"] },
+    { id: "promotion-settings", label: "Settings", to: "/admin/promotions/settings", icon: Settings2, keywords: ["promotion", "active", "title", "message"] },
+    { id: "promotion-sources", label: "Sources & campaigns", to: "/admin/promotions/sources", icon: Globe, keywords: ["promotion", "traffic", "tiktok", "facebook", "campaign"] },
+    { id: "promotion-daily", label: "Daily results", to: "/admin/promotions/daily", icon: History, keywords: ["promotion", "daily", "report"] },
+    { id: "promotion-bundles", label: "Bundle results", to: "/admin/promotions/bundles", icon: Package, keywords: ["promotion", "sales", "bundle", "results"] },
+    { id: "promotion-links", label: "Ad links", to: "/admin/promotions/links", icon: Megaphone, keywords: ["promotion", "social", "url", "link", "ad"] },
+  ] },
   { id: "announcements", label: "Announcements", icon: Megaphone, pages: [
-    { id: "promotions", label: "Promotions", to: "/admin/promotions", icon: BadgePercent, keywords: ["tiktok", "promotion", "first purchase", "offer", "discount", "ad"] },
     { id: "announcements", label: "Announcements", to: "/admin/announcements", icon: Megaphone, keywords: ["notification", "announce", "update", "notice", "bell", "broadcast"] },
     { id: "giveaways", label: "Giveaways", to: "/admin/giveaways", icon: Gift, keywords: ["giveaway", "campaign", "promo", "free", "discount"] },
     { id: "help", label: "Help Center", to: "/admin/help", icon: LifeBuoy, keywords: ["help", "article", "faq", "docs", "guide", "agents"] },

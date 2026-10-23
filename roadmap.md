@@ -1,6 +1,7 @@
 # Roadmap
 
 ## First-purchase promotions
+- [x] Split Promotions into its own admin dropdown with separate overview, pricing, settings, traffic, daily results, bundle results and ad-link pages; seven promotion tests passed. Signed-in visual verification remains blocked by unavailable external authenticated browser access.
 - [x] Add visit → signup → purchase reporting, source/campaign links, date filters, daily/source/bundle breakdowns and CSV export; real TikTok visit/signup click ingestion verified, actual account/payment/refund attribution passed external rollback tests.
 - [x] Add /promo and Admin → Promotions with per-bundle prices, activation, editable message, copied link and paid/pending/sales/discount totals. MTN 1GB initialized at GHS 3.95.
 - [x] Apply account-only first-purchase reservations, permanent paid/refunded history, immutable price snapshots and late-repeat-payment reconciliation to the external database; reuse deployed prepared-order payments without new functions.
