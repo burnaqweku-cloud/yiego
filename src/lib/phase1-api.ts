@@ -30,6 +30,7 @@ export interface GuestDataPaymentInput {
   campaignToken?: string;
   /** The customer ticked "this number is on the network I picked" for a number whose prefix points elsewhere (ported SIM). */
   prefixMismatchConfirmed?: boolean;
+  managementToken?: string;
 }
 
 export interface WalletDepositInput {
@@ -127,12 +128,14 @@ export interface PaystackCheckoutResponse {
     reference?: string;
     orderReference?: string;
     paymentReference?: string;
+    managementToken?: string;
   };
 }
 
 export interface FunctionResult<T> {
   data: T | null;
   error: string | null;
+  pendingOrderReference?: string;
 }
 
 async function invokePhase1Function<T>(
@@ -152,7 +155,8 @@ async function invokePhase1Function<T>(
   const context = (error as { context?: Response }).context;
   if (context && typeof context.clone === "function") {
     try {
-      const body = (await context.clone().json()) as { error?: string };
+      const body = (await context.clone().json()) as { error?: string; pendingOrderReference?: string };
+      if (body?.pendingOrderReference) return { data: null, error: body.error ?? "You have an order awaiting payment.", pendingOrderReference: body.pendingOrderReference };
       if (body?.error) message = body.error;
     } catch {
       // Body was not JSON — keep the generic message.

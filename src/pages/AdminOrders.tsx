@@ -6,6 +6,7 @@ import AdminListPagination from "@/components/admin/AdminListPagination";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { AdminDetailsButton } from "@/components/admin/AdminRecordModal";
 import OrderDetailSheet, { ActionCard } from "@/components/admin/OrderDetailSheet";
+import { isCancellableUnpaid } from "../../supabase/functions/_shared/unpaidOrder";
 import CopyRef from "@/components/admin/CopyRef";
 import SupplierBadge, { useFallbackOrigins } from "@/components/admin/SupplierBadge";
 import AdminStatStrip from "@/components/admin/AdminStatStrip";
@@ -114,7 +115,7 @@ export default function AdminOrders() {
     // Recent orders for browsing, plus EVERY order that still needs a hand (any age), plus true counts from the whole table.
     const [recent, open, summary] = await Promise.all([
       adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, product_id, recipient_phone, guest_email, amount, cost_amount, paid_at, currency, status, payment_status, supplier_status, supplier_order_reference, supplier_purchase_id, supplier_retry_after, supplier_retry_count, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, wallet_ledger_entry_id, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name), agent_id, agent_price, agent_margin, agents(slug, store_name)").order("created_at", { ascending: false }).limit(1000),
-      adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, product_id, recipient_phone, guest_email, amount, cost_amount, paid_at, currency, status, payment_status, supplier_status, supplier_order_reference, supplier_purchase_id, supplier_retry_after, supplier_retry_count, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, wallet_ledger_entry_id, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name), agent_id, agent_price, agent_margin, agents(slug, store_name)").or("status.eq.failed_needs_review,admin_resolution_status.eq.awaiting_verification,admin_resolution_status.eq.wrong_network").order("created_at", { ascending: false }),
+      adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, product_id, recipient_phone, guest_email, amount, cost_amount, paid_at, currency, status, payment_status, supplier_status, supplier_order_reference, supplier_purchase_id, supplier_retry_after, supplier_retry_count, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, wallet_ledger_entry_id, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name), agent_id, agent_price, agent_margin, agents(slug, store_name)").or("status.eq.failed_needs_review,admin_resolution_status.eq.awaiting_verification,admin_resolution_status.eq.wrong_network,status.eq.awaiting_payment").order("created_at", { ascending: false }),
       (adminDatabase() as unknown as { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown }> }).rpc("admin_orders_summary", {}),
     ]);
     const { data, error } = recent;
@@ -185,6 +186,7 @@ export default function AdminOrders() {
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
+    const phoneNeedle = needle.replace(/\D/g, "").replace(/^\+?233/, "0");
     return orders.filter((order) => {
       const customerStatus = displayedStatus(order);
       const supplierStatus = normalizedSupplierStatus(order);
@@ -193,7 +195,7 @@ export default function AdminOrders() {
       const matchesSupplier = supplierFilter === "all" || supplierStatus === supplierFilter;
       const matchesRoute = routeFilter === "all" || routeLabel(order) === routeFilter;
       const matchesCustomer = customerFilter === "all" || customerStatus === customerFilter;
-      const matchesSearch = !needle || [order.order_reference, order.recipient_phone, order.supplier_order_reference ?? "", order.status, order.payment_status, supplierStatus, customerStatus, order.networks?.name ?? "", order.data_products?.name ?? "", routeLabel(order)].some((value) => value.toLowerCase().includes(needle));
+      const matchesSearch = !needle || (phoneNeedle.length >= 9 && order.recipient_phone.replace(/\D/g, "").replace(/^233/, "0").includes(phoneNeedle)) || [order.order_reference, order.recipient_phone, order.supplier_order_reference ?? "", order.status, order.payment_status, supplierStatus, customerStatus, order.networks?.name ?? "", order.data_products?.name ?? "", routeLabel(order)].some((value) => value.toLowerCase().includes(needle));
       return matchesLifecycle && matchesPayment && matchesSupplier && matchesRoute && matchesCustomer && matchesSearch;
     });
   }, [orders, search, lifecycleFilter, paymentFilter, supplierFilter, routeFilter, customerFilter]);
@@ -220,7 +222,9 @@ export default function AdminOrders() {
   const findOrder = async () => {
     const needle = lookup.trim().toLowerCase();
     if (!needle) return toast.error("Enter an order reference, phone number or supplier reference.");
-    const match = orders.find((order) => order.order_reference.toLowerCase() === needle || order.recipient_phone.replace(/\s/g, "").includes(needle.replace(/\s/g, "")) || order.supplier_order_reference?.toLowerCase() === needle);
+    const normalized = needle.replace(/\D/g, "").replace(/^233/, "0");
+    const candidates = orders.filter((order) => order.order_reference.toLowerCase() === needle || (normalized.length >= 9 && order.recipient_phone.replace(/\D/g, "").replace(/^233/, "0").includes(normalized)) || order.supplier_order_reference?.toLowerCase() === needle);
+    const match = candidates.find(isCancellableUnpaid) ?? candidates[0];
     if (!match) { setLookedUp(null); setMessage(""); return toast.error("No matching order was found."); }
     setLookedUp(match);
     setSupplierText(""); setSupplierCopied(false);
@@ -370,6 +374,14 @@ export default function AdminOrders() {
       ]}
       timeline={events.map((e) => ({ id: e.id, title: readableStatus(e.event_type), at: formatAdminDate(e.created_at), message: e.message }))}
       actions={<>
+        {isCancellableUnpaid(s) && <ActionCard title="Cancel unpaid order" note="No payment has been made. Cancelling closes this order so the customer can place a new order for this number. No money is moved and no data is sent."><Button variant="ghost" disabled={busy} onClick={async () => {
+          if (!window.confirm(`Cancel unpaid order ${s.order_reference} for ${s.recipient_phone}? No money will be moved.`)) return;
+          setRunningAction("cancel_unpaid");
+          const { error } = await (supabase as unknown as { schema: (s: string) => { rpc: (f: string, a: Record<string, unknown>) => Promise<{ error: { message: string } | null }> } }).schema("phase1").rpc("cancel_unpaid_order", { p_reference: s.order_reference, p_actor: null, p_token: null, p_email: null, p_admin: true });
+          setRunningAction(null);
+          if (error) return toast.error("Could not cancel. Refresh the order: it may have been paid or already closed.");
+          toast.success("Unpaid order cancelled. The customer can order again."); await loadOrders(); await loadEvents(s.id);
+        }}><X />Cancel unpaid order</Button></ActionCard>}
         {s.admin_resolution_status === WRONG_NETWORK && s.status === "failed_needs_review" && <ActionCard tone="warn" title="Wrong network hold" note={`The number's prefix doesn't match ${s.networks?.name ?? "the chosen network"}. If the customer's SIM is ported, release it to the supplier. Otherwise refund.`}><div className="flex flex-wrap gap-2"><Button size="sm" onClick={() => { if (window.confirm(`Release ${s.order_reference} as a ported number and send it to the supplier on ${s.networks?.name ?? "the chosen network"}?`)) void runAction("release_ported"); }} disabled={busy}>{runningAction === "release_ported" ? <Loader2 className="animate-spin" /> : <RotateCcw />}Release as ported</Button><Button variant="ghost" size="sm" onClick={() => void refundOrder(false)} disabled={busy}><RotateCcw />Refund</Button></div></ActionCard>}
         <ActionCard title="Customer-visible status" note="Changes what the customer sees. Choosing Delivered also closes the order so the number can buy again."><div className="grid gap-2.5"><select value={displayStatus} onChange={(event) => setDisplayStatus(event.target.value)} className="onyx-field">{CUSTOMER_STATUSES.map((status) => <option key={status} value={status}>{readableStatus(status)}</option>)}</select><textarea className="onyx-field min-h-20 resize-y" value={reason} onChange={(event) => setReason(event.target.value)} placeholder={`Customer update message and audit reason. For a refund you can leave this empty: "${defaultRefundMessage(s, false)}"`} /><div className="grid gap-2 sm:grid-cols-2"><Button onClick={saveDisplayStatus} disabled={busy}>{runningAction === "set_display_status" ? <Loader2 className="animate-spin" /> : <Save />}Save customer status</Button><Button variant="ghost" onClick={clearDisplayStatus} disabled={busy || !s.admin_resolution_status}>{runningAction === "clear_display_status" ? <Loader2 className="animate-spin" /> : <RotateCcw />}Use automatic status</Button></div></div></ActionCard>
         <ActionCard title="Delivery actions"><div className="flex flex-wrap items-center gap-2"><Button variant="ghost" size="sm" onClick={() => void runAction("recheck")} disabled={busy || !s.supplier_order_reference}><RefreshCw />Recheck delivery</Button><Button variant="ghost" size="sm" onClick={() => void runAction("retry")} disabled={busy || !(FAILED_STATUSES.includes(s.status) || s.admin_resolution_status === AWAITING_VERIFICATION)}><RotateCcw />Retry fulfilment</Button>{(() => { const st = (s.supplier_status ?? "").toLowerCase(); const safe = !s.supplier_retry_after && (["refunded", "refund", "not_approved"].includes(st) || s.admin_resolution_status === "awaiting_verification" || (!s.supplier_purchase_id && !s.supplier_order_reference && !s.supplier_status)); const others = supplierOptions.filter((o) => o.code !== s.suppliers?.code && o.product_ids.has(s.product_id ?? "")); return safe && others.length > 0 && !["delivered", "refunded", "cancelled"].includes(s.status) ? <label className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground">Try another supplier<select className="onyx-field !py-1.5 !text-[12.5px]" value="" disabled={busy} onChange={(e) => { const o = others.find((x) => x.code === e.target.value); if (o && window.confirm(`Send ${s.order_reference} to ${o.name} now? The previous supplier has not charged us for it (refunded or held unpaid), so this is a fresh send.`)) void runAction("try_supplier", { supplierCode: o.code, supplierName: o.name }); }}><option value="">choose…</option>{others.map((o) => <option key={o.code} value={o.code}>{o.name}</option>)}</select></label> : null; })()}</div></ActionCard>
