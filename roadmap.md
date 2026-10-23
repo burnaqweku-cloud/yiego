@@ -1,10 +1,11 @@
 # Roadmap
 
 ## First-purchase promotions
+- [x] Add visit → signup → purchase reporting, source/campaign links, date filters, daily/source/bundle breakdowns and CSV export; real TikTok visit/signup click ingestion verified, actual account/payment/refund attribution passed external rollback tests.
 - [x] Add /promo and Admin → Promotions with per-bundle prices, activation, editable message, copied link and paid/pending/sales/discount totals. MTN 1GB initialized at GHS 3.95.
 - [x] Apply account-only first-purchase reservations, permanent paid/refunded history, immutable price snapshots and late-repeat-payment reconciliation to the external database; reuse deployed prepared-order payments without new functions.
 - [x] Pass seven unit tests and rolled-back external database tests; public offer, signup return link and mobile layout verified; latest build OK.
-- [ ] Verify signed-in admin saving and customer checkout end to end, including parallel requests; external authenticated browser access is unavailable. Frontend remains unpublished; do not launch the ad until that final check and publishing.
+- [ ] Verify signed-in admin reporting/saving and customer checkout end to end, including parallel requests; external authenticated browser access is unavailable. Frontend remains unpublished; do not launch the ad until that final check and publishing.
 
 ## Unpaid orders
 - [x] Add admin unpaid-only cancellation by order ID or recipient search; apply row-locked cancellation and late-payment safeguards to the external database.

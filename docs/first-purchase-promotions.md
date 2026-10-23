@@ -12,3 +12,10 @@
 - Not verified: authenticated administrator save, real customer payment through the UI, parallel request stress test. External hosted auth cannot be injected into this preview. Publishing was not requested, so the production frontend has not been published.
 
 Tests: `bunx vitest run src/lib/promotions.test.ts src/lib/unpaidOrders.test.ts` and `node scripts/test-promotions-db.cjs`. Use `--with-schema` only before applying the schema.
+
+## Promotion reporting
+- Admin section includes visitor/signup/account/buyer funnel, conversion percentages, prepared/paid/delivered/pending/cancelled/refunded orders, net bundle sales and discounts, daily/source/campaign/bundle breakdowns, Ghana date filtering, CSV export and tagged TikTok/Facebook/Instagram/WhatsApp/YouTube link generator.
+- Applied `docs/sql/promotion-analytics.sql` externally. Private capability-bound browser visits use first-touch acquisition attribution. Actual new auth rows establish account counts; existing sign-ins and duplicate signup responses cannot create new-account conversions. Redemptions are uniquely keyed by order; purchases and refunds are derived from order records, never browser claims.
+- Date reports are visitor cohorts: first visits in the selected Ghana dates and conversions before the end date. Sessions and order statuses reflect the latest state; session totals are not historical snapshots. Visitor estimates cannot identify the same person across devices or guarantee ad-platform parity. Tracking does not reconstruct previous visits. No ad spend/ROAS is claimed without spend data.
+- Verified live visitor + signup click both returned 200 and persisted as one TikTok visitor, one signup start, zero actual accounts. Test tracking row removed afterwards. Signup, checkout, paid buyer and refund accounting passed rolled-back external fixtures; 7 pricing/reporting unit tests passed. Authenticated administrator UI remains unverified because external browser authentication is unavailable.
+- Tests: `bunx vitest run src/lib/promotionAnalytics.test.ts src/lib/promotions.test.ts` and `node scripts/test-promotion-analytics-db.cjs`.

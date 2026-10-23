@@ -9,6 +9,7 @@ import { useFlows } from "@/store/flows";
 import { formatGHS } from "@/lib/format";
 import { loadPromotion, type Promotion as PromotionData } from "@/lib/promotions";
 import UnpaidOrderActions from "@/components/shop/UnpaidOrderActions";
+import { trackPromotion } from "@/lib/promotionAnalytics";
 
 export default function Promotion() {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
@@ -22,6 +23,7 @@ export default function Promotion() {
     setPromotion(data); setFailed(Boolean(error)); setLoading(false);
   };
   useEffect(() => { if (!authLoading && !flowOpen) void load(); }, [user?.id, authLoading, flowOpen]);
+  useEffect(() => { if (!authLoading) void trackPromotion("visit"); }, [authLoading, user?.id]);
   const usable = promotion?.active && (promotion.eligible || !isAuthenticated);
   return <main className="mx-auto w-full max-w-4xl py-4 sm:py-8">
     <Seo path="/promo" title="First purchase offers · DataYego" description="Buy your first data bundle at a special DataYego price. Sign in or create a free account to purchase." />
@@ -41,7 +43,7 @@ export default function Promotion() {
           <p className="mt-1 text-xs text-muted-foreground">{o.validity}</p>
           <p className="mt-5 font-display text-3xl font-semibold text-foreground">{formatGHS(Number(o.price))}</p>
           {Number(o.normal_price) > Number(o.price) && <p className="mt-1 text-xs text-muted-foreground">Normally <span className="line-through">{formatGHS(Number(o.normal_price))}</span></p>}
-          <div className="mt-5 pt-2">{!o.available ? <Button variant="soft" className="w-full" disabled>Currently unavailable</Button> : !isAuthenticated ? <Button asChild className="w-full"><Link to="/auth?mode=signup&next=%2Fpromo">Create account<ArrowRight size={16} /></Link></Button> : <Button className="w-full" disabled={!usable} onClick={() => openBuyData({ kind: "bundle", networkId: o.network, productCode: o.product_code ?? o.product_id, promotion: { productId: o.product_id, price: Number(o.price) } })}>Purchase<ArrowRight size={16} /></Button>}</div>
+          <div className="mt-5 pt-2">{!o.available ? <Button variant="soft" className="w-full" disabled>Currently unavailable</Button> : !isAuthenticated ? <Button asChild className="w-full"><Link to="/auth?mode=signup&next=%2Fpromo" onClick={() => void trackPromotion("signup_started")}>Create account<ArrowRight size={16} /></Link></Button> : <Button className="w-full" disabled={!usable} onClick={() => { void trackPromotion("checkout_clicked"); openBuyData({ kind: "bundle", networkId: o.network, productCode: o.product_code ?? o.product_id, promotion: { productId: o.product_id, price: Number(o.price) } }); }}>Purchase<ArrowRight size={16} /></Button>}</div>
         </article>)}
       </section>
       {!isAuthenticated && <p className="text-sm text-muted-foreground">Already have an account? <Link className="font-semibold text-primary-glow underline" to="/auth?next=%2Fpromo">Sign in</Link></p>}
