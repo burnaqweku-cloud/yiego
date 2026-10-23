@@ -44,6 +44,10 @@ const rollback = 'PROMOTION_TEST_ROLLBACK';
       await tx`update phase1.orders set payment_status='refunded',status='refunded' where id=${newOrder.result.orderId}`;
       const [eligible] = await tx`select phase1.promotion_customer_has_purchased(${user.id}) as used`;
       assert.equal(eligible.used,true,'Refund does not turn an existing customer into a first-time buyer');
+      await tx`update phase1.orders set payment_status='succeeded',status='paid' where id=${prepared.result.orderId}`;
+      const [late] = await tx`select status,is_open from phase1.orders where id=${prepared.result.orderId}`;
+      assert.equal(late.status,'cancelled','Late second promotion payment cannot start delivery');
+      assert.equal(late.is_open,false,'Late repeat payment stays closed for reconciliation');
       throw new Error(rollback);
     });
   } catch (e) { if (e.message!==rollback) throw e; }

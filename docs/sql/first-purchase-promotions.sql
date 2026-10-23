@@ -136,6 +136,7 @@ begin
   result:=phase1.prepare_data_order(u,p.id::text,phone,null,false);
   if (result->>'existing')::boolean then raise exception 'recipient_order_open'; end if;
   select * into o from phase1.orders where id=(result->>'orderId')::uuid for update;
+  if not found or o.user_id is distinct from u or o.product_id is distinct from p_product or o.recipient_phone_normalized is distinct from phone or o.payment_status not in ('created','pending') then raise exception 'promotion_order_mismatch'; end if;
   update phase1.orders set amount=f.price,payment_arrangement='self',prefix_mismatch_confirmed=coalesce(p_prefix_confirmed,false),prefix_mismatch_confirmed_at=case when p_prefix_confirmed then now() end where id=o.id;
   insert into phase1.promotion_redemptions(user_id,order_id,product_id,price,normal_price) values(u,o.id,p.id,f.price,p.customer_price);
   insert into phase1.order_events(order_id,event_type,from_status,to_status,message,metadata,created_by)
@@ -178,6 +179,14 @@ begin
   if exists(select 1 from phase1.promotion_redemptions r where r.order_id=old.id)
     and (new.amount is distinct from old.amount or new.product_id is distinct from old.product_id or new.user_id is distinct from old.user_id or new.recipient_phone is distinct from old.recipient_phone) then
     raise exception 'promotion_order_details_are_fixed';
+  end if;
+  if new.payment_status='succeeded' and old.payment_status is distinct from 'succeeded'
+    and exists(select 1 from phase1.promotion_redemptions where order_id=old.id) then
+    perform pg_advisory_xact_lock(hashtextextended('promotion:'||old.user_id::text,0));
+    if exists(select 1 from phase1.promotion_redemptions where user_id=old.user_id and order_id<>old.id and status='paid') then
+      new.status:='cancelled'; new.is_open:=false; new.closed_reason:='promotion_repeat_payment_review';
+      new.failure_reason:='Another first-purchase promotion payment was already received. Manual reconciliation required; do not dispatch.';
+    end if;
   end if;
   return new;
 end;$$;
