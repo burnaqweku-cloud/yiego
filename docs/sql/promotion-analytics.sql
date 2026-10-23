@@ -69,7 +69,8 @@ create trigger yiego_promotion_signup after insert on auth.users for each row ex
 create function phase1.attribute_promotion_redemption()
 returns trigger language plpgsql security definer set search_path='' as $$
 begin
-  select id into new.visit_id from phase1.promotion_visits where user_id=new.user_id and created_at>=now()-interval '30 days' order by last_seen_at desc,id limit 1;
+  select id into new.visit_id from phase1.promotion_visits where user_id=new.user_id and created_at>=now()-interval '30 days' and created_at<=new.created_at
+    order by (new_account_id=new.user_id) desc nulls last,created_at,id limit 1;
   return new;
 end;$$;
 revoke all on function phase1.attribute_promotion_redemption() from public,anon,authenticated;
