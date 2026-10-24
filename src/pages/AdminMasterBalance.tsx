@@ -100,11 +100,11 @@ export default function AdminMasterBalance() {
           {agentPayouts > 0 && <Row primary="Agent payouts" secondary="earnings paid out to agents' MoMo" right={`− ${formatGHS(agentPayouts)}`} tone="bad" />}
           {adjustments !== 0 && <Row primary={adjustments < 0 ? "Spent from the pot" : "Added to the pot"} secondary="recorded here with Spend / Add (tools, services, other costs)" right={`${adjustments < 0 ? "−" : "+"} ${formatGHS(Math.abs(adjustments))}`} tone={adjustments < 0 ? "bad" : "good"} />}
           <Row primary="Master balance" secondary="the pot: cash in the account now" right={formatGHS(master)} tone={master >= 0 ? "good" : "bad"} />
-          <Row primary="Held by Paystack" secondary="Paystack's own figure: scheduled payouts after charges + not yet scheduled − refunds not taken back" right={`+ ${formatGHS(atPaystack)}`} tone="muted" />
+          {ready && <Row primary="Held by Paystack" secondary="Paystack's own figure: scheduled payouts after charges + not yet scheduled − refunds not taken back" right={`+ ${formatGHS(atPaystack)}`} tone="muted" />}
           <Row primary="At suppliers" secondary={suppliers.map((s) => `${s.name} ${formatGHS(confirmedFloat(s.code))}`).join(" · ")} right={`+ ${formatGHS(suppliersTotal)}`} tone="warn" />
           <Row primary="Money we owe" secondary={(owedRows ?? []).map((r) => `${r.name} ${formatGHS(Number(r.balance))}`).join(" · ")} right={`− ${formatGHS(owed)}`} tone="muted" />
-          <Row primary="Net worth" secondary="everything that's ours, wherever it sits" right={formatGHS(netWorth)} tone={netWorth >= 0 ? "good" : "bad"} />
-          <Row primary={made >= 0 ? "Made" : "Lost"} secondary="net worth minus what partners put in" right={formatGHS(Math.abs(made))} tone={made >= 0 ? "good" : "bad"} />
+          {ready && <Row primary="Net worth" secondary="everything that's ours, wherever it sits" right={formatGHS(netWorth)} tone={netWorth >= 0 ? "good" : "bad"} />}
+          {ready && <Row primary={made >= 0 ? "Made" : "Lost"} secondary="net worth minus what partners put in" right={formatGHS(Math.abs(made))} tone={made >= 0 ? "good" : "bad"} />}
         </Rows>
       </Panel>
       <MasterAdjustments isMaster={isMaster} onChanged={() => void load()} />
