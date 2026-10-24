@@ -20,7 +20,7 @@ export function usePaystackHeld(enabled: boolean) {
       const res = await supabase.functions.invoke("paystack-holdings", { body: {} });
       if (res.error) throw new Error("unavailable");
       const parsed = schema.parse(res.data);
-      setReading(parsed); setHeld(paystackHeld(parsed));
+      setReading(parsed); setHeld(paystackHeld(parsed as Parameters<typeof paystackHeld>[0]));
     } catch { setReading(null); setHeld(null); setFailed(true); }
     finally { setLoading(false); }
   }, []);

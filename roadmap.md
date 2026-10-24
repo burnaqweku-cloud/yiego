@@ -1,5 +1,8 @@
 # Roadmap
 
+## Rebuilt Finance page
+- [x] Finance (rebuilt) page + Paystack details page with approved profit rules; 10 rule tests passed. Old pages kept for comparison.
+
 ## New Finance Page
 - [x] Add Paystack comparison cards, refresh/error states and currency-safe readings; fifteen calculation tests passed, preview build OK. Keep separate readings out of profit until overlap is proven.
 - [ ] Deploy updated paystack-holdings admin/JWT access to the active external service and verify signed-in live readback; external deployment credential is unavailable. Existing internal-only lookup returned GHS 606.20 pending transfers and GHS 1,485.18 scheduled net at 10:56 UTC; it refuses browser access until redeployed.
