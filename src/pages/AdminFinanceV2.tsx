@@ -2,11 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Banknote, Minus, PiggyBank, Plus, RefreshCw, Store, TrendingUp, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
-import { Field, inputCls, Money, Stat, StatGrid } from "@/components/admin/ui";
+import { Field, inputCls, Money, Panel, Stat, StatGrid } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 import { RecordPartnerCapitalModal, RecordTopupModal } from "@/components/admin/FinanceForms";
-import { adminDatabase } from "@/lib/admin-data";
+import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { financeProfit, type Line } from "@/lib/financeV2";
 import { usePaystackHeld } from "@/lib/usePaystackHeld";
@@ -80,12 +80,12 @@ export default function AdminFinanceV2() {
         Bank {formatGHS(view.bank)} + Paystack {formatGHS(ps.held.total)} + suppliers {formatGHS(view.supplierTotal)} − owed {formatGHS(view.owedTotal)} − capital {formatGHS(view.capital)} = <span className="font-semibold text-foreground">{formatGHS(view.profit)}</span>
       </p>
 
-      <section><h2 className="mb-3 flex items-center gap-2 text-base font-semibold"><Store size={16} />At suppliers</h2>
+      <Panel title="At suppliers" icon={Store} note={`total ${formatGHS(view.supplierTotal)}`}>
         <StatGrid cols={3}>{view.supplierLines.map((s) => {
-          const stale = !s.reported || !s.reportedAt || Date.now() - new Date(s.reportedAt).getTime() > 86400000;
-          return <Stat key={s.code} label={s.name} value={<Money value={s.amount} />} tone={stale ? "warn" : "default"} note={s.reported && s.reportedAt ? `Reported ${when(s.reportedAt)}${stale ? " · may be out of date" : ""}` : "No reading yet · our record"} to={`/admin/finance/suppliers/${s.code}`} />;
+          const tone = s.amount < 30 ? "bad" : s.amount < 80 ? "warn" : "default";
+          return <Stat key={s.code} label={s.name} value={<Money value={s.amount} tone={tone} />} note={s.reported && s.reportedAt ? `reported ${formatAdminDate(s.reportedAt)}` : "not reported"} tone={tone} to={`/admin/finance/suppliers/${s.code}`} />;
         })}</StatGrid>
-      </section>
+      </Panel>
 
       <section><h2 className="mb-3 flex items-center gap-2 text-base font-semibold"><Wallet size={16} />Money we owe</h2>
         <StatGrid>{view.owed.map((l) => <Stat key={l.code} label={l.name} value={<Money value={l.amount} />} tone={l.amount > 0 ? "warn" : "default"}
