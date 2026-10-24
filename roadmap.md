@@ -1,7 +1,7 @@
 # Roadmap
 
 ## New Finance Page
-- [ ] Match the old Finance balance cards and make the current profit arithmetic visible.
+- [x] Match the old Finance balance cards and make the current profit arithmetic visible; signed-in live balance verification remains blocked below.
 - [x] Add separate current-assets-minus-liabilities-and-capital profit page with existing finance left intact; include every liability and opening/net partner funding account, with supplier timestamps and provisional Paystack adjustments.
 - [x] Verify nine calculation rules and recorded bank-spend path; keep historical expenses without re-deducting them and compare since-start totals.
 - [ ] Verify signed-in live page and real expense readback; external authenticated/MFA browser session is unavailable. Public access protection passed; no live money was changed.
