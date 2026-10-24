@@ -1,5 +1,8 @@
 # Roadmap
 
+## Roxy’s store complaint
+- [ ] Restore the existing storefront by disabling its visitor forwarding; preserve saved prices, branding and subscription, then verify the public store.
+
 ## Rebuilt Finance page
 - [x] Finance (rebuilt) page + Paystack details page with approved profit rules; 10 rule tests passed. Old pages kept for comparison.
 - [x] Live Paystack reading (15:36 UTC) parsed through the page's own code: held GHS 2,466.04, profit GHS 315.36. Signed-in browser render still blocked — the preview mints a session for the managed backend while the app is pinned to the external one.
