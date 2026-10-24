@@ -60,6 +60,8 @@ const AdminContact = lazy(() => import("./pages/AdminContact"));
 const AdminLegal = lazy(() => import("./pages/AdminLegal"));
 const AdminFinance = lazy(() => import("./pages/AdminFinance"));
 const AdminNewFinance = lazy(() => import("./pages/AdminNewFinance"));
+const AdminFinanceV2 = lazy(() => import("./pages/AdminFinanceV2"));
+const AdminPaystackHeld = lazy(() => import("./pages/AdminPaystackHeld"));
 const AdminFunding = lazy(() => import("./pages/AdminFunding"));
 const AdminExpenses = lazy(() => import("./pages/AdminExpenses"));
 const Invite = lazy(() => import("./pages/Invite"));
@@ -173,6 +175,7 @@ export const MainSite = () => (
   <><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
     {/* Focused, chrome-free task pages. */}
     <Route path="/admin/new-finance" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<AdminNewFinance />} /></Route>
+    <Route path="/admin/finance-v2" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<AdminFinanceV2 />} /><Route path="paystack" element={<AdminPaystackHeld />} /></Route>
     <Route path="/auth" element={<Auth />} /><Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/admin/promotions" element={<RequireAdmin><AdminShell /></RequireAdmin>}>
       <Route index element={<AdminPromotions />} />

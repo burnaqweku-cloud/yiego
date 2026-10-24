@@ -13,7 +13,7 @@ import { usePaystackHeld } from "@/lib/usePaystackHeld";
 import { useAuth } from "@/store/auth-context";
 
 interface Balance { code: string; name: string; kind: string; balance: number | string }
-interface Supplier { code: string; name: string; confirmed_balance: number | null; confirmed_at: string | null; fee_rate?: number | null }
+interface Supplier { code: string; name: string; confirmed_balance: number | null; confirmed_at: string | null; metadata?: { topup_fee_rate?: number } | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> };
 const when = (v: string) => new Intl.DateTimeFormat("en-GH", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Accra" }).format(new Date(v));
@@ -32,7 +32,7 @@ export default function AdminFinanceV2() {
     setLoading(true); setFailed(false);
     const [b, s, role] = await Promise.all([
       db().from("finance_balances").select("code, name, kind, balance").order("sort_order"),
-      db().from("suppliers").select("code, name, confirmed_balance, confirmed_at, fee_rate").order("display_order"),
+      db().from("suppliers").select("code, name, confirmed_balance, confirmed_at, metadata").order("display_order"),
       actor ? db().rpc("admin_role", { p_user: actor }) : Promise.resolve({ data: null, error: null }),
     ]);
     if (b.error || s.error || !b.data?.length || !b.data.some((x: Balance) => x.code === "bank") || !b.data.some((x: Balance) => x.code === "outside_funding")) { setFailed(true); setBalances(null); }
@@ -93,7 +93,7 @@ export default function AdminFinanceV2() {
       </section>
     </>}
 
-    <RecordTopupModal open={topup} onClose={() => setTopup(false)} actorId={actor} suppliers={suppliers.map((s) => ({ code: s.code, name: s.name, fee_rate: Number(s.fee_rate ?? 0) }))} onDone={() => void load()} />
+    <RecordTopupModal open={topup} onClose={() => setTopup(false)} actorId={actor} suppliers={suppliers.map((s) => ({ code: s.code, name: s.name, fee_rate: Number(s.metadata?.topup_fee_rate ?? 0) }))} onDone={() => void load()} />
     <RecordPartnerCapitalModal open={putIn} onClose={() => setPutIn(false)} actorId={actor} onDone={() => void load()} />
     <TakeOutModal open={out} onClose={() => setOut(false)} onDone={() => void load()} profit={view?.profit ?? null} />
   </div>;
