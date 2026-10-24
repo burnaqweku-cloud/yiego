@@ -1,9 +1,9 @@
 # Roadmap
 
 ## New Finance Page
-- [ ] Add separate current-assets-minus-liabilities-and-capital profit page with existing finance left intact.
-- [ ] Verify calculation rules, data completeness warnings, comparison and expense recording access.
-- [ ] Verify signed-in live page when an external authenticated session is available.
+- [x] Add separate current-assets-minus-liabilities-and-capital profit page with existing finance left intact; include every liability and opening/net partner funding account, with supplier timestamps and provisional Paystack adjustments.
+- [x] Verify nine calculation rules and recorded bank-spend path; keep historical expenses without re-deducting them and compare since-start totals.
+- [ ] Verify signed-in live page and real expense readback; external authenticated/MFA browser session is unavailable. Public access protection passed; no live money was changed.
 
 ## First-purchase promotions
 - [x] Promotion link opens the main shop with promo prices shown as normal prices (no banner); old /promo links redirect. Guests and accounts allowed; one use per device, number and account, server-checked; ineligible shoppers get normal prices. Rollback DB tests pass; guest flow verified up to the payment button.
