@@ -30,6 +30,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
   ] },
   { id: "money", label: "Money", icon: Landmark, pages: [
     { id: "finance", label: "Finance", to: "/admin/finance", icon: TrendingUp, keywords: ["money put in", "top-ups", "funding", "revenue", "profit", "margin", "sales", "reconciliation"] },
+    { id: "new-finance", label: "New Finance Page", to: "/admin/new-finance", icon: Landmark, keywords: ["profit", "assets", "debts", "capital", "comparison", "net worth"] },
     { id: "wallet", label: "Wallet activity", to: "/admin/wallet", icon: WalletCards, keywords: ["deposit", "top up", "balance"] },
     { id: "referrals", label: "Referrals", to: "/admin/referrals", icon: Gift, keywords: ["referral", "invite", "reward", "friend", "flagged"] },
     { id: "suppliers", label: "Suppliers", to: "/admin/suppliers", icon: Store, keywords: ["datamart", "databundleshub", "dbh", "float", "supplier balance"] },

@@ -59,6 +59,7 @@ const AdminStorefrontChats = lazy(() => import("./pages/AdminStorefrontChats"));
 const AdminContact = lazy(() => import("./pages/AdminContact"));
 const AdminLegal = lazy(() => import("./pages/AdminLegal"));
 const AdminFinance = lazy(() => import("./pages/AdminFinance"));
+const AdminNewFinance = lazy(() => import("./pages/AdminNewFinance"));
 const AdminFunding = lazy(() => import("./pages/AdminFunding"));
 const AdminExpenses = lazy(() => import("./pages/AdminExpenses"));
 const Invite = lazy(() => import("./pages/Invite"));
@@ -171,6 +172,7 @@ const StoreHostGate = () => {
 export const MainSite = () => (
   <><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
     {/* Focused, chrome-free task pages. */}
+    <Route path="/admin/new-finance" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<AdminNewFinance />} /></Route>
     <Route path="/auth" element={<Auth />} /><Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/admin/promotions" element={<RequireAdmin><AdminShell /></RequireAdmin>}>
       <Route index element={<AdminPromotions />} />
