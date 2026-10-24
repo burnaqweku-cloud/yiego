@@ -1,6 +1,16 @@
-# Rebuilt Finance Page — brainstorm and plan
+# Rebuilt Finance Page — plan
 
-Your plan is solid. It follows one simple rule: **profit = what we have − what we owe − partner capital.** Below are the cards, the buttons, the gaps I found, and how to close each one.
+## Where we agree, and two points to confirm
+
+1. **Paystack refunds.** Agreed. Paystack's own refund list tells us which refunds it hasn't taken back yet, and we subtract those from the Paystack figure. Once Paystack takes a refund out of a payout, it shows up in Paystack's numbers directly. We keep no record of our own for this.
+2. **Wallet refunds.** I think this one needs correcting. A wallet refund doesn't send any money out of the bank. It puts credit in the customer's wallet on our app, so it adds to **Money we owe** instead.
+   - The bank only drops later, when that credit is used. If they buy data with it, the supplier balance drops. If they withdraw it, the bank drops then.
+   - Taking it from the bank now would count it twice: once from the bank, and again when the credit is used.
+   - Please confirm.
+3. **Agent payouts.** Agreed. On a 21 withdrawal, what we owe drops by 21 and the bank drops by 20. The 1 cedi fee stays in the bank.
+4. **Scheduled payouts.** Agreed. The details page shows the amount before charges, the charges, and the amount after charges.
+5. **Profit counts the scheduled payout after charges.** Your example said 1,005, 50 and 1,050. I'm reading it as Paystack scheduling 1,050, charging 50, and profit counting 1,000. Please confirm.
+6. **Money not yet scheduled.** Taken exactly as Paystack reports it, with no charges taken off. That matches what you said.
 
 ## The page
 
@@ -10,45 +20,36 @@ Your plan is solid. It follows one simple rule: **profit = what we have − what
 Money at bank | Money at Paystack (tap for details) | At suppliers | Money we owe | Profit
 ```
 
-1. **Money at bank** — cash in the account. It starts from today's real bank figure. After that it changes only through:
-   - Paystack payouts arriving: plus the amount actually received, read from Paystack.
-   - Top-ups: minus the amount **plus** charges (1,000 + 10 = 1,010 out).
-   - Taking money out: minus the amount.
-   - Agent withdrawals marked paid: minus what we actually sent (21 requested, 20 sent).
-   - Partner putting money in: plus the amount.
-2. **Money at Paystack** — read live from Paystack only, with no record of our own.
-   - Scheduled payouts after charges, plus money received that isn't scheduled yet, minus refunds Paystack hasn't taken back yet (see gap 1).
-   - **Tapping it opens a details page.** It shows each scheduled payout (before charges, charges, after charges, date), the money not yet scheduled, refunds still waiting to be taken back, and when Paystack was last read.
-   - If Paystack can't be reached, the page shows no totals rather than a guess.
-3. **At suppliers** — each supplier's reported balance (DBH, DataMart, etc.), plus a total. A top-up adds the 1,000 here straight away, until the supplier's next reading comes in.
-4. **Money we owe** — customer wallets, paid but not delivered, refunds due, and agent earnings.
-5. **Profit** — bank + Paystack (after charges) + suppliers − money we owe − partner capital (GHS 2,400 today).
+- **Money at bank**: starts from today's real bank figure.
+  - Plus: Paystack payouts that arrive (the after-charges amount, read from Paystack).
+  - Plus: money partners put in.
+  - Minus: top-ups, amount plus charges (1,000 + 10 = 1,010).
+  - Minus: agent payouts, what we actually sent.
+  - Minus: money taken out.
+- **Money at Paystack** (from Paystack only): scheduled payouts after charges, plus money not yet scheduled, minus Paystack refunds not yet taken back.
+- **Paystack details page**:
+  - Each scheduled payout: before charges, charges, after charges, date.
+  - Money not yet scheduled.
+  - Paystack refunds, with each one's status and whether it has been taken back yet (wallet refunds are not listed here).
+  - When Paystack was last read.
+- **At suppliers**: each supplier's reported balance, plus a total.
+- **Money we owe**: customer and agent wallets, paid but not delivered, refunds due, and agent earnings.
+- **Profit** = bank + scheduled payouts (after charges) + money not yet scheduled − Paystack refunds not yet taken back + suppliers − money we owe − capital (2,400).
 
 ## Buttons
-- **Record top-up**: choose a supplier, enter the amount and the charge. The bank drops by both, and the supplier goes up by the amount. Profit drops only by the charge, which is correct.
+- **Record top-up**: the bank drops by the amount plus charges, and the supplier goes up by the amount.
 - **Take money out**, with two kinds:
-  - **Business cost** (subscriptions, SMS and so on): the bank drops and profit drops.
-  - **Return capital to partners**: the bank drops and partner capital drops too, so profit stays the same.
-- **Partner put in**: the bank goes up and partner capital goes up, so profit stays the same.
+  - **Business cost**: the bank drops and profit drops.
+  - **Return capital**: the bank drops and capital drops, so profit stays the same.
+- **Partner put in**: the bank goes up and capital goes up.
 
-## Refunds — you're right, with one fix
-A refund clears what we owe. We record nothing against Paystack, because Paystack takes it from a future payout itself.
-
-## Gaps found, and fixes
-1. **Refund timing (the important one).** We stop owing the money the moment we refund, but Paystack's figure only drops after it takes the money back from a payout. Without a fix, profit would look too high in between. **Fix:** subtract the refunds Paystack itself lists as "not yet taken back". Today that's one refund of GHS 18.72.
-2. **Charges on unscheduled money.** Paystack doesn't tell us the payout charge until it schedules the money, so profit is slightly high for that short time. It corrects itself when the payout is scheduled. I'll show a small note.
-3. **Supplier readings lag behind.** The top-up adds the amount to the supplier straight away until the next reading arrives, and the page warns when a reading is old.
-4. **Weekend payouts.** These are fine: the money stays in "scheduled" until it lands, then moves to the bank at the after-charges amount. Profit doesn't move.
-5. **Bank starting figure.** The page starts from one figure we agree on today. Old top-ups, SMS costs and other history stay saved but aren't counted again.
-6. **Paystack refusing to answer.** The page shows no totals rather than wrong ones.
-
-## Old pages
-The current Finance and New Finance pages stay untouched and reachable for comparison. The new page gets its own menu item. We decide later which one to retire.
+## Safety
+- If Paystack can't be reached, the page shows no totals rather than a guess.
+- Before building, I'll re-read Paystack's docs on Settlements, Transaction Totals and Refunds, and check each figure against a live reading.
+- Old finance pages stay untouched for comparison. Past history is kept but not counted again; the page starts from today's figures.
 
 ## Technical details
-- Paystack figure = pending_transfers (GHS) + net of pending/processing settlements − sum(amount − deducted_amount) of refunds where fully_deducted is false. All read from Paystack's API in the existing protected read-only function, extended to return the full refund list.
-- New page plus a details page for the Paystack card. These reuse the existing bank, top-up, partner capital, master spend, agent payout and liability records, so history is kept and no cash is deducted twice.
-- Add a "return capital" kind to taking money out, so it reduces partner funding instead of booking a cost.
-- The starting point is a dated snapshot. Earlier entries stay readable but are left out of the new page.
-- Tests: top-up 1,000 + 10 lowers profit by exactly 10; a business cost of 100 lowers profit by 100; returning capital leaves profit unchanged; a refund not yet taken back leaves profit unchanged.
-- The function must be deployed to the live backend on your side. This sandbox can't deploy there.
+- Paystack figure = pending_transfers (GHS) + net of pending/processing settlements − Σ(amount − deducted_amount) for refunds where fully_deducted is false.
+- Wallet refunds stay as wallet liabilities, with no bank movement.
+- These reuse the existing top-up, partner capital, master spend, agent payout and liability records, with a dated starting snapshot. The function must be deployed to the live backend on your side.
+- Tests: a top-up of 1,000 + 10 lowers profit by 10; a business cost of 100 lowers profit by 100; returning capital and putting capital in leave profit unchanged; a 21 agent payout gives owed −21 and bank −20; a Paystack refund not yet taken back leaves profit unchanged.
