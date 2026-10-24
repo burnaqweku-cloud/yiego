@@ -10,6 +10,8 @@ import { adminDatabase } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { calculateNetAssets, type FinanceBalance, type FinanceSupplier } from "@/lib/netAssetsFinance";
 import { useAuth } from "@/store/auth-context";
+import { supabase } from "@/integrations/supabase/client";
+import { paystackComparison, paystackHoldingsSchema, type PaystackHoldings } from "@/lib/paystackHoldings";
 
 interface Overview { start: string; period: { net: number } }
 interface Expense { id: string; occurred_at: string; amount: number; kind: string; note: string | null; metadata: { kind?: string } }
@@ -37,6 +39,19 @@ export default function AdminNewFinance() {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [holdings, setHoldings] = useState<PaystackHoldings | null>(null);
+  const [holdingsError, setHoldingsError] = useState(false);
+  const [holdingsLoading, setHoldingsLoading] = useState(false);
+  const loadPaystack = useCallback(async () => {
+    setHoldingsLoading(true); setHoldingsError(false); setHoldings(null);
+    try {
+      const response = await supabase.functions.invoke("paystack-holdings", { body: {} });
+      if (response.error) throw new Error("unavailable");
+      setHoldings(paystackHoldingsSchema.parse(response.data));
+    } catch { setHoldingsError(true); }
+    finally { setHoldingsLoading(false); }
+  }, []);
+  const provider = holdings ? paystackComparison(holdings) : null;
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -59,6 +74,7 @@ export default function AdminNewFinance() {
     } finally { setLoading(false); }
   }, [user]);
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => { if (user) void loadPaystack(); }, [user, loadPaystack]);
   const result = useMemo(() => {
     if (!snapshot) return null;
      try { return calculateNetAssets(snapshot.balances, snapshot.suppliers); } catch { return null; }
@@ -103,6 +119,23 @@ export default function AdminNewFinance() {
         <p className="mt-2 text-xs leading-5 text-muted-foreground">Bank money is the recorded bank balance, not a live bank statement. Paystack is the recorded balance after deductions already booked; any unbooked deductions still need checking.</p>
         {uncertainSuppliers.length > 0 && <p className="mt-2 text-xs leading-5 text-muted-foreground">Supplier readings missing or over 24 hours old: {uncertainSuppliers.map((line) => line.name).join(", ")}.</p>}
       </div>
+
+      <section className="border-t border-border pt-5" aria-label="Paystack live comparison">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="text-base font-semibold">Paystack · reported directly</h2><Button variant="ghost" size="sm" aria-label="Refresh Paystack figures" disabled={holdingsLoading} onClick={() => void loadPaystack()}><RefreshCw size={14} className={holdingsLoading ? "animate-spin" : ""} /></Button></div>
+        {holdingsLoading && <p role="status" className="text-sm text-muted-foreground">Asking Paystack…</p>}
+        {holdingsError && <p role="alert" className="text-sm text-danger">Paystack’s figures could not be loaded. No live balance is assumed; refresh to try again.</p>}
+        {provider && holdings && <>
+          <p className="mb-3 text-xs text-muted-foreground">Read {date(holdings.read_at)} · GHS</p>
+          <StatGrid cols={3}>
+            <Stat label="Paystack pending transfers" value={provider.pending === null ? "Unavailable" : <Money value={provider.pending} />} note="Paystack transaction totals · account-wide" icon={PiggyBank} />
+            <Stat label="Scheduled payouts · net" value={provider.scheduledNet === null ? "Unavailable" : <Money value={provider.scheduledNet} />} note="Pending / processing payouts · duplicate IDs excluded" icon={Banknote} />
+            <Stat label="Our Paystack record" value={<Money value={result.assets.find((line) => line.code === "paystack_transit")?.amount ?? 0} />} note="Recorded after booked deductions · used in profit" icon={Wallet} />
+          </StatGrid>
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">These Paystack readings are shown separately: overlap, refund deductions and subaccount coverage are not confirmed. They are not added together or used to replace the recorded profit balance.</p>
+          {provider.wallet !== null && <p className="mt-2 text-xs text-muted-foreground">Paystack transfer wallet: {formatGHS(provider.wallet)} · not the same as collected money awaiting payout.</p>}
+          {provider.payouts.map((payout) => <AmountRow key={payout.id} label={`Paystack payout #${payout.id} · ${payout.status}`} amount={payout.net} note={`Gross ${formatGHS(payout.gross)} · reported fees ${formatGHS(payout.fees)}${payout.date ? ` · ${date(payout.date)}` : ""}`} />)}
+        </>}
+      </section>
 
       <div className="space-y-6">
         <section><h2 className="mb-3 flex items-center gap-2 text-base font-semibold"><Banknote size={16} className="text-primary-glow" />Where the money is</h2>
