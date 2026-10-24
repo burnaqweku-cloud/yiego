@@ -3,8 +3,8 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AdminNewFinance from "./AdminNewFinance";
 
-const state = vi.hoisted(() => ({ bank: 3400, rpc: vi.fn() }));
-vi.mock("@/store/auth-context", () => ({ useAuth: () => ({ user: { id: "test-master" } }) }));
+const state = vi.hoisted(() => ({ bank: 3400, rpc: vi.fn(), user: { id: "test-master" } }));
+vi.mock("@/store/auth-context", () => ({ useAuth: () => ({ user: state.user }) }));
 vi.mock("@/components/ui/modal", () => ({ default: ({ open, children }: { open: boolean; children: React.ReactNode }) => open ? <div>{children}</div> : null }));
 vi.mock("@/lib/admin-data", () => ({ adminDatabase: () => ({
   rpc: state.rpc,
