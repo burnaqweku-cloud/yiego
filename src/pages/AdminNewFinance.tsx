@@ -121,7 +121,7 @@ export default function AdminNewFinance() {
       <div className="space-y-6">
         <section><h2 className="mb-3 flex items-center gap-2 text-base font-semibold"><Banknote size={16} className="text-primary-glow" />Where the money is</h2>
           <StatGrid>
-            {result.assets.filter((line) => !line.code.startsWith("float_")).map((line) => <Stat key={line.code} label={line.code === "bank" ? "Bank / Master balance" : line.name} value={<Money value={line.amount} />} icon={line.code === "paystack_transit" ? PiggyBank : Banknote} tone={line.code === "bank" ? "good" : "default"} note={line.code === "paystack_transit" ? "After booked deductions · awaiting payout" : "Recorded balance"} to={line.code === "bank" ? "/admin/finance/master" : undefined} />)}
+            {result.assets.filter((line) => !line.code.startsWith("float_")).map((line) => <Stat key={line.code} label={line.code === "bank" ? "Bank / Master balance" : line.code === "paystack_transit" ? "Held by Paystack" : line.name} value={<Money value={line.amount} />} icon={line.code === "paystack_transit" ? PiggyBank : Banknote} tone={line.code === "bank" ? "good" : "default"} note={line.code === "paystack_transit" ? `From Paystack${holdings ? ` · ${date(holdings.read_at)}` : ""}` : "Recorded balance"} to={line.code === "bank" ? "/admin/finance/master" : undefined} />)}
           </StatGrid>
           <h3 className="mb-2 mt-4 text-sm font-semibold text-muted-foreground">At suppliers · {formatGHS(supplierLines.reduce((total, line) => total + line.amount, 0))}</h3>
           <StatGrid cols={3}>
@@ -135,9 +135,6 @@ export default function AdminNewFinance() {
         </section>
       </div>
 
-       {snapshot.settlements.length > 0 && <section className="border-t border-border pt-5"><h2 className="text-base font-semibold">Pending Paystack payouts</h2>
-        {snapshot.settlements.map((settlement) => <AmountRow key={settlement.id} label={`Pending payout · ${date(settlement.settlement_date)}`} amount={Number(settlement.net)} note={`Gross ${formatGHS(Number(settlement.gross))} · recorded fees ${formatGHS(Number(settlement.fees))}. Gross minus payout can also include refunds; it is not automatically another fee.`} />)}
-       </section>}
 
       <section className="border-t border-border pt-5"><h2 className="text-base font-semibold">Partner capital and comparison</h2>
         <div className="mt-3"><StatGrid>
@@ -154,7 +151,10 @@ export default function AdminNewFinance() {
         {snapshot.expenses.filter((expense) => expense.kind === "expense" || expense.metadata?.kind === "spend").map((expense) => <AmountRow key={expense.id} label={expense.note ?? "Business expense"} amount={Math.abs(Number(expense.amount))} note={date(expense.occurred_at)} />)}
       </section>
     </>}
-     {!loading && snapshot && !result && <p role="alert" className="text-sm text-danger">Profit could not be calculated from the available balances.</p>}
+     {!loading && snapshot && !result && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm">
+       {holdingsLoading ? <span className="text-muted-foreground">Asking Paystack how much it is holding…</span> : <span className="text-danger">{holdingsError ? "Paystack's figure could not be loaded, so totals are not shown." : "Paystack's figure is incomplete, so totals are not shown."}</span>}
+       {!holdingsLoading && <Button variant="ghost" size="sm" onClick={() => void loadPaystack()}><RefreshCw size={14} />Try again</Button>}
+     </div>}
 
     <Modal open={open} onClose={() => { if (!busy) setOpen(false); }} label="Record business expense">
       <div className="w-[min(92vw,420px)] space-y-4 p-5"><h2 className="text-lg font-semibold">Record business expense</h2>
