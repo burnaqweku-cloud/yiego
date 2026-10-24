@@ -46,8 +46,17 @@ describe("net-assets profit comparison", () => {
     expect(calculateNetAssets(fixture(), [], 38.27).profit).toBe(961.73);
     expect(() => calculateNetAssets(fixture(), [], -1)).toThrow();
   });
-  it("counts opening funds and later partner contributions as capital, not profit", () => {
-    const balances = fixture(3962.7);
+  it("uses GHS 2,400 partner capital without deducting GHS 62.70 carried-in funds", () => {
+    const balances = fixture(3462.7);
+    const opening = balances.find((balance) => balance.code === "opening_balance");
+    if (opening) opening.balance = 62.7;
+    const result = calculateNetAssets(balances, []);
+    expect(result.totalFunding).toBe(2400);
+    expect(result.profit).toBe(1062.7);
+    expect(result.funding.map((line) => line.code)).toEqual(["outside_funding"]);
+  });
+  it("includes later partner contributions without adding carried-in funds", () => {
+    const balances = fixture(3900);
     for (const balance of balances) {
       if (balance.code === "outside_funding") balance.balance = 2900;
       if (balance.code === "opening_balance") balance.balance = 62.7;

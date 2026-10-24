@@ -28,7 +28,7 @@ function money(value: number | string): number {
 const sum = (lines: FinanceLine[]) => Math.round(lines.reduce((total, line) => total + Math.round(line.amount * 100), 0)) / 100;
 
 /** Read-only comparison. Expenses are already reflected in assets; never subtract them again.
- * Funding account balances include contributions less partner drawings, plus opening funds.
+ * Capital uses the existing partner funding account, net of drawings; carried-in funds are excluded.
  * Any extra Paystack deduction is a temporary reconciliation adjustment, not a ledger write.
  */
 export function calculateNetAssets(balances: FinanceBalance[], suppliers: FinanceSupplier[], extraPaystackDeduction = 0) {
@@ -55,7 +55,7 @@ export function calculateNetAssets(balances: FinanceBalance[], suppliers: Financ
     }
   }
   const liabilities: FinanceLine[] = balances.filter((balance) => balance.kind === "liability").map((balance) => ({ code: balance.code, name: balance.name, amount: money(balance.balance) }));
-  const funding: FinanceLine[] = balances.filter((balance) => balance.kind === "funding").map((balance) => ({ code: balance.code, name: balance.name, amount: money(balance.balance) }));
+  const funding: FinanceLine[] = balances.filter((balance) => balance.code === "outside_funding").map((balance) => ({ code: balance.code, name: balance.name, amount: money(balance.balance) }));
   const totalAssets = sum(assets);
   const totalLiabilities = sum(liabilities);
   const totalFunding = sum(funding);
