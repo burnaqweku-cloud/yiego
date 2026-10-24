@@ -48,7 +48,14 @@ Money at bank | Money at Paystack (tap for details) | At suppliers | Money we ow
 - Before building, I'll re-read Paystack's docs on Settlements, Transaction Totals and Refunds, and check each figure against a live reading.
 - Old finance pages stay untouched for comparison. Past history is kept but not counted again; the page starts from today's figures.
 
+## Reconciliation checker (new request)
+- A "Check my figures" panel on the new page. Finance admins type in what they see: the bank statement balance, the Paystack dashboard, each supplier's site, and any debts.
+- An AI compares those figures with the page's live numbers. It lists every gap with its size and the likely cause, for example a refund Paystack hasn't taken back yet, a supplier reading that's out of date, a top-up not recorded, or a payout still on its way.
+- It's advice only. It never changes balances or profit, and it says when a gap can't be explained.
+- Only finance admins can use it. Each check is saved with who ran it and when.
+
 ## Technical details
+- Reconciliation: a protected backend function receives the typed figures plus the page snapshot. It works out the gaps itself first, then asks the AI (default model, structured answer) to explain them. The results are stored in an admin-only table in the live database. The AI key stays on the server, and running out of AI credits or being refused shows a clear message.
 - Paystack figure = pending_transfers (GHS) + net of pending/processing settlements − Σ(amount − deducted_amount) for refunds where fully_deducted is false.
 - Wallet refunds stay as wallet liabilities, with no bank movement.
 - These reuse the existing top-up, partner capital, master spend, agent payout and liability records, with a dated starting snapshot. The function must be deployed to the live backend on your side.
