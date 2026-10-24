@@ -1,5 +1,10 @@
 # Roadmap
 
+## New Finance Page
+- [ ] Add separate current-assets-minus-liabilities-and-capital profit page with existing finance left intact.
+- [ ] Verify calculation rules, data completeness warnings, comparison and expense recording access.
+- [ ] Verify signed-in live page when an external authenticated session is available.
+
 ## First-purchase promotions
 - [x] Promotion link opens the main shop with promo prices shown as normal prices (no banner); old /promo links redirect. Guests and accounts allowed; one use per device, number and account, server-checked; ineligible shoppers get normal prices. Rollback DB tests pass; guest flow verified up to the payment button.
 - [ ] Confirm one real guest promo payment is charged GH₵4.11 (needs a real payment; the live guest checkout function was not redeployed).
