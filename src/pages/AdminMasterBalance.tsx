@@ -9,6 +9,7 @@ import MasterAdjustments from "@/components/admin/MasterAdjustments";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
+import { usePaystackHeld } from "@/lib/usePaystackHeld";
 
 /* Master balance — the pot: money partners put in + payouts received
    − top-ups paid (charges included). It is the cash in the account.
@@ -34,6 +35,8 @@ export default function AdminMasterBalance() {
   const [pot, setPot] = useState<{ partner_money: number; payouts: number; topups: number; agent_payouts?: number; adjustments?: number; pot: number } | null>(null);
   const [adding, setAdding] = useState(false); const [topping, setTopping] = useState(false);
   const [isMaster, setIsMaster] = useState(false);
+  const [owedRows, setOwedRows] = useState<{ code: string; name: string; balance: number }[] | null>(null);
+  const ps = usePaystackHeld(!!user);
 
   const load = useCallback(async () => {
     const [ov, su, last, potRes] = await Promise.all([
@@ -42,6 +45,8 @@ export default function AdminMasterBalance() {
       db().from("supplier_balance_readings").select("observed_at").eq("source", "admin").order("observed_at", { ascending: false }).limit(1).maybeSingle(),
       db().rpc("finance_pot", {}),
     ]);
+    const lb = await db().from("finance_balances").select("code, name, balance").eq("kind", "liability").order("sort_order");
+    setOwedRows(lb.error ? null : (lb.data ?? []));
     if (actor) { const r = await db().rpc("admin_role", { p_user: actor }); setIsMaster(r.data === "master"); }
     setPot((potRes.data as typeof pot) ?? null);
     setO((ov.data as Overview) ?? null); const list: Supplier[] = su.data ?? []; setSuppliers(list);
@@ -49,8 +54,9 @@ export default function AdminMasterBalance() {
   }, [actor]);
   useEffect(() => { void load(); }, [load]);
 
-  const bank = Number(o?.cash.bank ?? 0), atPaystack = Number(o?.cash.paystack_transit ?? 0);
-  const owed = Number(o?.owed.customer_wallets ?? 0) + Number(o?.owed.undelivered ?? 0) + Number(o?.owed.refunds_due ?? 0);
+  const bank = Number(o?.cash.bank ?? 0), atPaystack = Number(ps.held?.total ?? 0);
+  const ready = !!ps.held && !!owedRows;
+  const owed = (owedRows ?? []).reduce((a, r) => a + Number(r.balance), 0);
   const booksFloat = (code: string) => Number(o?.cash.supplier_float?.[code] ?? 0);
   const confirmedFloat = (code: string) => Number(suppliers.find((s) => s.code === code)?.confirmed_balance ?? booksFloat(code));
   const suppliersTotal = suppliers.reduce((a, s) => a + confirmedFloat(s.code), 0);
@@ -75,13 +81,14 @@ export default function AdminMasterBalance() {
           {agentPayouts > 0 && <><span className="text-faint-foreground">−</span><span className="text-ink-rose">Agent payouts {formatGHS(agentPayouts)}</span></>}
           {adjustments !== 0 && <><span className="text-faint-foreground">{adjustments < 0 ? "−" : "+"}</span><span className={adjustments < 0 ? "text-ink-rose" : "text-ink-emerald"}>{adjustments < 0 ? "Spent" : "Added"} {formatGHS(Math.abs(adjustments))}</span></>}
         </p>
-        <p className="mt-1.5 text-[12px] text-muted-foreground">Cash in the account now. {atPaystack > 0 ? `${formatGHS(atPaystack)} more is on its way from Paystack.` : ""}</p>
-        <p className="mt-2 text-[12px] text-muted-foreground">Net worth {formatGHS(netWorth)} <span className="text-faint-foreground">(pot + Paystack {formatGHS(atPaystack)} + suppliers {formatGHS(suppliersTotal)} − customers' money {formatGHS(owed)})</span> · <span className={made >= 0 ? "text-ink-emerald" : "text-ink-rose"}>{made >= 0 ? "made" : "lost"} {formatGHS(Math.abs(made))}</span></p>
+        <p className="mt-1.5 text-[12px] text-muted-foreground">Cash in the account now. {ready && atPaystack > 0 ? `${formatGHS(atPaystack)} more is on its way from Paystack (Paystack's own figure).` : ""}</p>
+        {!ready && <p className="mt-2 text-[12px] text-danger">{ps.loading ? "Asking Paystack…" : "Paystack's figure could not be fully read, so net worth is not shown."}</p>}
+        {ready && <p className="mt-2 text-[12px] text-muted-foreground">Net worth {formatGHS(netWorth)} <span className="text-faint-foreground">(pot + Paystack {formatGHS(atPaystack)} + suppliers {formatGHS(suppliersTotal)} − customers' money {formatGHS(owed)})</span> · <span className={made >= 0 ? "text-ink-emerald" : "text-ink-rose"}>{made >= 0 ? "made" : "lost"} {formatGHS(Math.abs(made))}</span></p>}
       </Panel>
 
       <StatGrid cols={3}>
         <Stat loading={loading} label="Payouts received" value={<Money value={payouts} tone="good" />} note="what Paystack has sent us" tone="good" />
-        <Stat loading={loading} label="Held by Paystack" value={<Money value={atPaystack} tone="bad" />} note="paid by customers, not yet sent to us" tone="bad" />
+        <Stat loading={loading} label="Held by Paystack" value={{ready ? <Money value={atPaystack} tone="bad" /> : "—"}} note="from Paystack · tap for details" tone="bad" to="/admin/finance-v2/paystack" />
         <Stat loading={loading} label="At suppliers" value={<Money value={suppliersTotal} />} note="as the suppliers report it" icon={Store} tone="warn" />
       </StatGrid>
 
@@ -93,9 +100,9 @@ export default function AdminMasterBalance() {
           {agentPayouts > 0 && <Row primary="Agent payouts" secondary="earnings paid out to agents' MoMo" right={`− ${formatGHS(agentPayouts)}`} tone="bad" />}
           {adjustments !== 0 && <Row primary={adjustments < 0 ? "Spent from the pot" : "Added to the pot"} secondary="recorded here with Spend / Add (tools, services, other costs)" right={`${adjustments < 0 ? "−" : "+"} ${formatGHS(Math.abs(adjustments))}`} tone={adjustments < 0 ? "bad" : "good"} />}
           <Row primary="Master balance" secondary="the pot: cash in the account now" right={formatGHS(master)} tone={master >= 0 ? "good" : "bad"} />
-          <Row primary="Held by Paystack" secondary="paid by customers, arriving with the next payout" right={`+ ${formatGHS(atPaystack)}`} tone="muted" />
+          <Row primary="Held by Paystack" secondary="Paystack's own figure: scheduled payouts after charges + not yet scheduled − refunds not taken back" right={`+ ${formatGHS(atPaystack)}`} tone="muted" />
           <Row primary="At suppliers" secondary={suppliers.map((s) => `${s.name} ${formatGHS(confirmedFloat(s.code))}`).join(" · ")} right={`+ ${formatGHS(suppliersTotal)}`} tone="warn" />
-          <Row primary="Customers' money we hold" secondary={`wallets ${formatGHS(Number(o?.owed.customer_wallets ?? 0))} · paid, not delivered ${formatGHS(Number(o?.owed.undelivered ?? 0))} · refunds ${formatGHS(Number(o?.owed.refunds_due ?? 0))}`} right={`− ${formatGHS(owed)}`} tone="muted" />
+          <Row primary="Money we owe" secondary={(owedRows ?? []).map((r) => `${r.name} ${formatGHS(Number(r.balance))}`).join(" · ")} right={`− ${formatGHS(owed)}`} tone="muted" />
           <Row primary="Net worth" secondary="everything that's ours, wherever it sits" right={formatGHS(netWorth)} tone={netWorth >= 0 ? "good" : "bad"} />
           <Row primary={made >= 0 ? "Made" : "Lost"} secondary="net worth minus what partners put in" right={formatGHS(Math.abs(made))} tone={made >= 0 ? "good" : "bad"} />
         </Rows>
