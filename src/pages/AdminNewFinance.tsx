@@ -75,6 +75,11 @@ export default function AdminNewFinance() {
   }, [user]);
   useEffect(() => { void load(); }, [load]);
   useEffect(() => { if (user) void loadPaystack(); }, [user, loadPaystack]);
+  // Keep the figures live: re-read our records and Paystack's own figure every minute.
+  useEffect(() => {
+    const timer = setInterval(() => { void load(); if (user) void loadPaystack(); }, 60000);
+    return () => clearInterval(timer);
+  }, [load, loadPaystack, user]);
   // Paystack money comes straight from Paystack: waiting to be paid + scheduled payouts.
   const paystackHeld = provider && provider.pending !== null && provider.scheduledNet !== null ? Math.round((provider.pending + provider.scheduledNet) * 100) / 100 : null;
   const result = useMemo(() => {
