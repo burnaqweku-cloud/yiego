@@ -1,6 +1,7 @@
 # Roadmap
 
 ## New Finance Page
+- [ ] Confirm the pending Oct 24 payout books bank +1,485.18 and Paystack -1,485.18 with profit unchanged once Paystack marks it paid; the 38.27 in that record is Paystack "deductions" (refunds already booked), not a new fee.
 - [ ] Use Paystack's verified all-held-money figure as the primary asset and retain our ledger for comparison; blocked because documented /balance returns integration available balance, not a verified total of unsettled collections plus scheduled subaccount payouts. Needs Paystack confirmation of a supported all-held-money source before changing profit.
 - [x] Remove the unused manual Paystack deduction section and retain recorded pending payouts; eleven finance tests passed. Payout/withdrawal explanations are source-based, not a live accounting audit.
 - [x] Match the old Finance balance cards and make the current profit arithmetic visible; signed-in live balance verification remains blocked below.
