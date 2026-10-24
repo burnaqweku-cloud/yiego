@@ -88,7 +88,7 @@ export default function AdminMasterBalance() {
 
       <StatGrid cols={3}>
         <Stat loading={loading} label="Payouts received" value={<Money value={payouts} tone="good" />} note="what Paystack has sent us" tone="good" />
-        <Stat loading={loading} label="Held by Paystack" value={{ready ? <Money value={atPaystack} tone="bad" /> : "—"}} note="from Paystack · tap for details" tone="bad" to="/admin/finance-v2/paystack" />
+        <Stat loading={loading} label="Held by Paystack" value={ready ? <Money value={atPaystack} tone="bad" /> : "—"} note="from Paystack · tap for details" tone="bad" to="/admin/finance-v2/paystack" />
         <Stat loading={loading} label="At suppliers" value={<Money value={suppliersTotal} />} note="as the suppliers report it" icon={Store} tone="warn" />
       </StatGrid>
 
