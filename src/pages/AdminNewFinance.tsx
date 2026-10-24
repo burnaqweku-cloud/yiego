@@ -90,11 +90,11 @@ export default function AdminNewFinance() {
       <section className="border-b border-border pb-6" aria-label="New profit calculation">
         <div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-medium text-muted-foreground">Total profit since start</h2><Pill tone="warn">Provisional · reconciliation needed</Pill></div>
         <p data-testid="net-assets-profit" className={`mt-3 break-words text-3xl font-semibold tabular-nums ${result.profit >= 0 ? "text-success" : "text-danger"}`}>{formatGHS(result.profit)}</p>
-        <p className="mt-3 text-sm text-muted-foreground">Business money − everything owed − invested funds.</p>
+        <p className="mt-3 text-sm text-muted-foreground">Business money − everything owed − partner capital.</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <div><p className="text-xs text-muted-foreground">Money after extra deductions</p><Money value={result.totalAssets - result.deduction} className="mt-1 block text-lg font-semibold" /></div>
           <div><p className="text-xs text-muted-foreground">Everything owed</p><Money value={result.totalLiabilities} className="mt-1 block text-lg font-semibold" /></div>
-          <div><p className="text-xs text-muted-foreground">Net invested funds</p><Money value={result.totalFunding} className="mt-1 block text-lg font-semibold" /></div>
+          <div><p className="text-xs text-muted-foreground">Partner capital</p><Money value={result.totalFunding} className="mt-1 block text-lg font-semibold" /></div>
         </div>
       </section>
 
@@ -121,7 +121,7 @@ export default function AdminNewFinance() {
         {snapshot.settlements.map((settlement) => <AmountRow key={settlement.id} label={`Pending payout · ${date(settlement.settlement_date)}`} amount={Number(settlement.net)} note={`Gross ${formatGHS(Number(settlement.gross))} · recorded fees ${formatGHS(Number(settlement.fees))}. Gross minus payout can also include refunds; it is not automatically another fee.`} />)}
       </section>
 
-      <section className="border-t border-border pt-5"><h2 className="text-base font-semibold">Invested funds and comparison</h2>
+      <section className="border-t border-border pt-5"><h2 className="text-base font-semibold">Partner capital and comparison</h2>
         {result.funding.map((line) => <AmountRow key={line.code} label={line.code === "outside_funding" ? "Partner money, net of personal withdrawals" : line.name} amount={line.amount} />)}
         <AmountRow label="Business money after debts" amount={result.netWorth} strong />
         <AmountRow label="New profit" amount={result.profit} strong />
