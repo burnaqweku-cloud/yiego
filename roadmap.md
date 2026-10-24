@@ -1,6 +1,7 @@
 # Roadmap
 
 ## New Finance Page
+- [ ] Use Paystack's verified all-held-money figure as the primary asset and retain our ledger for comparison; first establish an endpoint that actually includes unsettled collections and scheduled payouts for this account.
 - [x] Remove the unused manual Paystack deduction section and retain recorded pending payouts; eleven finance tests passed. Payout/withdrawal explanations are source-based, not a live accounting audit.
 - [x] Match the old Finance balance cards and make the current profit arithmetic visible; signed-in live balance verification remains blocked below.
 - [x] Add separate current-assets-minus-liabilities-and-capital profit page with existing finance left intact; include every liability and opening/net partner funding account, with supplier timestamps and provisional Paystack adjustments.
