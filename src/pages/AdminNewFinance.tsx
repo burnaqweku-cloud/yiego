@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowLeftRight, Banknote, Plus, RefreshCw } from "lucide-react";
+import { AlertTriangle, ArrowLeftRight, Banknote, PiggyBank, Plus, RefreshCw, Wallet } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
-import { Field, inputCls, Money, Pill } from "@/components/admin/ui";
+import { Field, inputCls, Money, Pill, Stat, StatGrid } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 import { adminDatabase } from "@/lib/admin-data";
@@ -91,11 +91,12 @@ export default function AdminNewFinance() {
         <div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-medium text-muted-foreground">Total profit since start</h2><Pill tone="warn">Provisional · reconciliation needed</Pill></div>
         <p data-testid="net-assets-profit" className={`mt-3 break-words text-3xl font-semibold tabular-nums ${result.profit >= 0 ? "text-success" : "text-danger"}`}>{formatGHS(result.profit)}</p>
         <p className="mt-3 text-sm text-muted-foreground">Business money − everything owed − partner capital.</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
-          <div><p className="text-xs text-muted-foreground">Money after extra deductions</p><Money value={result.totalAssets - result.deduction} className="mt-1 block text-lg font-semibold" /></div>
-          <div><p className="text-xs text-muted-foreground">Everything owed</p><Money value={result.totalLiabilities} className="mt-1 block text-lg font-semibold" /></div>
-          <div><p className="text-xs text-muted-foreground">Partner capital</p><Money value={result.totalFunding} className="mt-1 block text-lg font-semibold" /></div>
-        </div>
+        <div className="mt-5"><StatGrid cols={3}>
+          <Stat label="Money after extra deductions" value={<Money value={result.totalAssets - result.deduction} />} icon={Banknote} tone="good" />
+          <Stat label="Everything owed" value={<Money value={result.totalLiabilities} />} icon={Wallet} tone="warn" />
+          <Stat label="Partner capital" value={<Money value={result.totalFunding} />} note="Same capital as Current Finance" />
+        </StatGrid></div>
+        <p className="mt-3 break-words text-xs leading-5 tabular-nums text-muted-foreground">{formatGHS(result.totalAssets - result.deduction)} − {formatGHS(result.totalLiabilities)} − {formatGHS(result.totalFunding)} = {formatGHS(result.profit)}</p>
       </section>
 
       <div className="border-l-2 border-amber bg-amber/10 p-4 text-sm text-foreground">
@@ -104,14 +105,20 @@ export default function AdminNewFinance() {
         {uncertainSuppliers.length > 0 && <p className="mt-2 text-xs leading-5 text-muted-foreground">Supplier readings missing or over 24 hours old: {uncertainSuppliers.map((line) => line.name).join(", ")}.</p>}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section><h2 className="mb-2 flex items-center gap-2 text-base font-semibold"><Banknote size={16} className="text-primary-glow" />All business money</h2>
-          {result.assets.map((line) => <AmountRow key={line.code} label={line.code === "bank" ? "Bank / Master balance (recorded)" : line.name} amount={line.amount} note={line.code.startsWith("float_") ? line.source === "reported" ? `Reported ${line.reportedAt ? date(line.reportedAt) : "date unavailable"}` : "Book estimate · current reading unavailable" : line.code === "paystack_transit" ? "After deductions already recorded; not a guaranteed payout" : undefined} />)}
-          <AmountRow label="Total money before extra deductions" amount={result.totalAssets} strong />
+      <div className="space-y-6">
+        <section><h2 className="mb-3 flex items-center gap-2 text-base font-semibold"><Banknote size={16} className="text-primary-glow" />Where the money is</h2>
+          <StatGrid>
+            {result.assets.filter((line) => !line.code.startsWith("float_")).map((line) => <Stat key={line.code} label={line.code === "bank" ? "Bank / Master balance" : line.name} value={<Money value={line.amount} />} icon={line.code === "paystack_transit" ? PiggyBank : Banknote} tone={line.code === "bank" ? "good" : "default"} note={line.code === "paystack_transit" ? "After booked deductions · awaiting payout" : "Recorded balance"} to={line.code === "bank" ? "/admin/finance/master" : undefined} />)}
+          </StatGrid>
+          <h3 className="mb-2 mt-4 text-sm font-semibold text-muted-foreground">At suppliers · {formatGHS(supplierLines.reduce((total, line) => total + line.amount, 0))}</h3>
+          <StatGrid cols={3}>
+            {supplierLines.map((line) => <Stat key={line.code} label={line.name} value={<Money value={line.amount} />} tone={line.amount < 30 ? "bad" : line.amount < 80 ? "warn" : "default"} note={line.source === "reported" ? `Reported ${line.reportedAt ? date(line.reportedAt) : "date unavailable"}` : "Book estimate · reading unavailable"} to={`/admin/finance/suppliers/${line.code.slice(6)}`} />)}
+          </StatGrid>
         </section>
-        <section><h2 className="mb-2 text-base font-semibold">Everything owed</h2>
-          {result.liabilities.map((line) => <AmountRow key={line.code} label={line.name} amount={line.amount} />)}
-          <AmountRow label="Total owed" amount={result.totalLiabilities} strong />
+        <section><h2 className="mb-3 text-base font-semibold">What we owe · {formatGHS(result.totalLiabilities)}</h2>
+          <StatGrid>
+            {result.liabilities.map((line) => <Stat key={line.code} label={line.name} value={<Money value={line.amount} />} tone={line.amount > 0 ? "warn" : "default"} to={line.code === "customer_wallets" ? "/admin/wallet" : line.code === "owed_to_agents" ? "/admin/agents/payouts" : line.code === "owed_deliveries" ? "/admin/finance/undelivered" : undefined} />)}
+          </StatGrid>
         </section>
       </div>
 
@@ -122,11 +129,13 @@ export default function AdminNewFinance() {
       </section>
 
       <section className="border-t border-border pt-5"><h2 className="text-base font-semibold">Partner capital and comparison</h2>
-        {result.funding.map((line) => <AmountRow key={line.code} label={line.code === "outside_funding" ? "Partner money, net of personal withdrawals" : line.name} amount={line.amount} />)}
-        <AmountRow label="Business money after debts" amount={result.netWorth} strong />
-        <AmountRow label="New profit" amount={result.profit} strong />
-        <AmountRow label="Current Finance profit · since launch" amount={snapshot.overview.period.net} />
-        {difference !== null && <AmountRow label="Difference to investigate" amount={difference} note="Not assumed to be timing or an error. Both methods need matching balances and recognition dates." />}
+        <div className="mt-3"><StatGrid>
+          <Stat label="Partner capital" value={<Money value={result.totalFunding} />} to="/admin/finance/funding" />
+          <Stat label="Business money after debts" value={<Money value={result.netWorth} />} />
+          <Stat label="New profit" value={<Money value={result.profit} />} tone={result.profit < 0 ? "bad" : "good"} />
+          <Stat label="Current Finance profit · since launch" value={<Money value={snapshot.overview.period.net} />} tone={snapshot.overview.period.net < 0 ? "bad" : "good"} to="/admin/finance" />
+          {difference !== null && <Stat label="Difference to investigate" value={<Money value={difference} />} note="Not assumed to be timing or an error" tone="warn" />}
+        </StatGrid></div>
       </section>
 
       <section className="border-t border-border pt-5"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-base font-semibold">Existing spending records</h2><Button variant="ghost" size="sm" asChild><Link to="/admin/finance/expenses">All expense records</Link></Button></div>
