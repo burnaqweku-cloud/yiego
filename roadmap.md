@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Roxy’s store complaint
-- [ ] Restore the existing storefront by disabling its visitor forwarding; preserve saved prices, branding and subscription, then verify the public store.
+- [x] Disabled Roxy’s pre-renewal visitor forwarding only; transaction assertions verified all 37 prices and other settings unchanged. Public browser readback shows the original store name, design and saved bundle prices; renewal is active through 24 November.
 
 ## Rebuilt Finance page
 - [x] Finance (rebuilt) page + Paystack details page with approved profit rules; 10 rule tests passed. Old pages kept for comparison.
