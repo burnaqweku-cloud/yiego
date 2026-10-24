@@ -33,7 +33,6 @@ export default function AdminNewFinance() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMaster, setIsMaster] = useState(false);
-  const [deduction, setDeduction] = useState("0");
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
@@ -62,8 +61,8 @@ export default function AdminNewFinance() {
   useEffect(() => { void load(); }, [load]);
   const result = useMemo(() => {
     if (!snapshot) return null;
-    try { return calculateNetAssets(snapshot.balances, snapshot.suppliers, Number(deduction || 0)); } catch { return null; }
-  }, [snapshot, deduction]);
+     try { return calculateNetAssets(snapshot.balances, snapshot.suppliers); } catch { return null; }
+   }, [snapshot]);
   const supplierLines = result?.assets.filter((line) => line.code.startsWith("float_")) ?? [];
   const uncertainSuppliers = supplierLines.filter((line) => line.source !== "reported" || !line.reportedAt || Date.now() - new Date(line.reportedAt).getTime() > 86400000);
   const difference = result && snapshot ? Math.round((result.profit - snapshot.overview.period.net) * 100) / 100 : null;
@@ -92,7 +91,7 @@ export default function AdminNewFinance() {
         <p data-testid="net-assets-profit" className={`mt-3 break-words text-3xl font-semibold tabular-nums ${result.profit >= 0 ? "text-success" : "text-danger"}`}>{formatGHS(result.profit)}</p>
         <p className="mt-3 text-sm text-muted-foreground">Business money − everything owed − partner capital.</p>
         <div className="mt-5"><StatGrid cols={3}>
-          <Stat label="Money after extra deductions" value={<Money value={result.totalAssets - result.deduction} />} icon={Banknote} tone="good" />
+           <Stat label="All business money" value={<Money value={result.totalAssets} />} icon={Banknote} tone="good" />
           <Stat label="Everything owed" value={<Money value={result.totalLiabilities} />} icon={Wallet} tone="warn" />
           <Stat label="Partner capital" value={<Money value={result.totalFunding} />} note="Same capital as Current Finance" />
         </StatGrid></div>
@@ -122,11 +121,9 @@ export default function AdminNewFinance() {
         </section>
       </div>
 
-      <section className="border-t border-border pt-5"><h2 className="text-base font-semibold">Paystack deductions not yet recorded</h2>
-        <div className="mt-3 max-w-sm"><Field label="Additional deduction (GH₵)"><input className={inputCls} inputMode="decimal" type="number" min="0" step="0.01" value={deduction} onChange={(event) => setDeduction(event.target.value)} /></Field></div>
-        <p className="mt-2 text-xs leading-5 text-muted-foreground">Temporary comparison only; not saved. Enter only an amount confirmed as missing from the recorded Paystack balance. Leave at zero if unknown; the total remains provisional.</p>
+       {snapshot.settlements.length > 0 && <section className="border-t border-border pt-5"><h2 className="text-base font-semibold">Pending Paystack payouts</h2>
         {snapshot.settlements.map((settlement) => <AmountRow key={settlement.id} label={`Pending payout · ${date(settlement.settlement_date)}`} amount={Number(settlement.net)} note={`Gross ${formatGHS(Number(settlement.gross))} · recorded fees ${formatGHS(Number(settlement.fees))}. Gross minus payout can also include refunds; it is not automatically another fee.`} />)}
-      </section>
+       </section>}
 
       <section className="border-t border-border pt-5"><h2 className="text-base font-semibold">Partner capital and comparison</h2>
         <div className="mt-3"><StatGrid>
@@ -143,7 +140,7 @@ export default function AdminNewFinance() {
         {snapshot.expenses.filter((expense) => expense.kind === "expense" || expense.metadata?.kind === "spend").map((expense) => <AmountRow key={expense.id} label={expense.note ?? "Business expense"} amount={Math.abs(Number(expense.amount))} note={date(expense.occurred_at)} />)}
       </section>
     </>}
-    {!loading && snapshot && !result && <p role="alert" className="text-sm text-danger">Enter a valid non-negative Paystack deduction to calculate profit.</p>}
+     {!loading && snapshot && !result && <p role="alert" className="text-sm text-danger">Profit could not be calculated from the available balances.</p>}
 
     <Modal open={open} onClose={() => { if (!busy) setOpen(false); }} label="Record business expense">
       <div className="w-[min(92vw,420px)] space-y-4 p-5"><h2 className="text-lg font-semibold">Record business expense</h2>

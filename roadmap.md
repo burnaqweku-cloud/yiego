@@ -1,6 +1,7 @@
 # Roadmap
 
 ## New Finance Page
+- [ ] Remove the unused manual Paystack deduction section, retain recorded pending payouts, and explain payout/agent withdrawal accounting from existing source.
 - [x] Match the old Finance balance cards and make the current profit arithmetic visible; signed-in live balance verification remains blocked below.
 - [x] Add separate current-assets-minus-liabilities-and-capital profit page with existing finance left intact; include every liability and opening/net partner funding account, with supplier timestamps and provisional Paystack adjustments.
 - [x] Verify nine calculation rules and recorded bank-spend path; keep historical expenses without re-deducting them and compare since-start totals.
