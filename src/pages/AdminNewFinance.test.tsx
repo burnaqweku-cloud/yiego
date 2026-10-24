@@ -20,10 +20,17 @@ vi.mock("@/lib/admin-data", () => ({ adminDatabase: () => ({
     return chain;
   },
 }) }));
+const paystack = vi.hoisted(() => ({ pending: 0, scheduled: 0 }));
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke: async () => ({ error: null, data: {
+  read_at: "2026-10-24T11:00:00.000Z",
+  balance: { ok: true, items: [{ currency: "GHS", amount: 0 }] },
+  totals: { ok: true, pending_transfers: paystack.pending, pending_by_currency: [{ currency: "GHS", amount: paystack.pending }] },
+  settlements: [{ account: "main", ok: true, complete: true, not_yet_paid: paystack.scheduled ? [{ id: 1, status: "pending", currency: "GHS", gross: paystack.scheduled, fees: 0, net: paystack.scheduled, date: null }] : [] }],
+} }) } } }));
 
 describe("new finance expense recording", () => {
   beforeEach(() => {
-    state.bank = 3400;
+    state.bank = 3400; paystack.pending = 0; paystack.scheduled = 0;
     state.rpc.mockReset();
     state.rpc.mockImplementation(async (fn: string, args: Record<string, unknown>) => {
       if (fn === "admin_role") return { data: "master", error: null };
@@ -42,5 +49,11 @@ describe("new finance expense recording", () => {
     await waitFor(() => expect(screen.getByTestId("net-assets-profit").textContent).toMatch(/700\.00/));
     expect(state.bank).toBe(3100);
     expect(state.rpc.mock.calls.filter(([fn]) => fn === "finance_master_adjust")).toEqual([["finance_master_adjust", { p_kind: "spend", p_amount: 300, p_reason: "Business subscription" }]]);
+  });
+  it("uses Paystack's own held money (551.52 waiting + 1,485.18 scheduled) instead of our record", async () => {
+    paystack.pending = 551.52; paystack.scheduled = 1485.18;
+    render(<MemoryRouter><AdminNewFinance /></MemoryRouter>);
+    // 3,400 bank + 2,036.70 Paystack − 2,400 capital = 3,036.70
+    await waitFor(() => expect(screen.getByTestId("net-assets-profit").textContent).toMatch(/3,036\.70/));
   });
 });
