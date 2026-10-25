@@ -2,7 +2,7 @@
 
 ## Pending-fee profit estimate
 - [x] Add a small 2%-of-unscheduled-money estimate inside the existing profit card, preserve main profit/refund rules, and correct payout wording; all 15 calculation tests pass and preview build is OK.
-- [ ] Verify the live signed-in Finance card; browser redirects to /auth and requires an authenticated session for the external backend. No financial records changed and nothing published.
+- [x] Publish confirmed from the live site's own files (datayego.com): the Finance page chunk carries the "Estimated profit after pending fees" line and its 2%-of-unscheduled maths, and the Paystack page chunk carries "Paystack Refund" / "Refund not yet deducted". A signed-in visual look at the rendered card is still blocked by external-backend auth, so figures were checked from records and Paystack's API rather than a rendered page.
 
 ## Roxy’s store complaint
 - [x] Disabled Roxy’s pre-renewal visitor forwarding only; transaction assertions verified all 37 prices and other settings unchanged. Public browser readback shows the original store name, design and saved bundle prices; renewal is active through 24 November.
