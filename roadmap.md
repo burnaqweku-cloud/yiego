@@ -2,7 +2,8 @@
 
 ## Refund policy planning
 - [x] Prepare a plan for full supplier-failure refunds and fee-excluding Paystack refunds on MTN verification holds, with wallet refunds unchanged.
-- [ ] Implement approved refund policy; blocked on the authoritative deployed refund-order source (only its README is local, and no external deployment token/connection is available). Obtain that source, verify current external accounting and deployment access, then implement and test before activating any deduction.
+- [x] Recover authoritative refund source and inspect live phase1 accounting; add shared admin refund preview, exact Paystack fee calculation, supplier credit confirmation and draft checkout/refund notices. Protected refund-policy deployed externally; signed-out/invalid sessions return 401. Ten refund rule tests plus fifteen Finance tests pass; preview build OK.
+- [ ] Activate fee-retaining MTN refunds only after atomic refund/send claims, pending-provider accounting/reserve offsets and confirmed completion are implemented and verified with a safe transaction. Blockers: authenticated external AAL2 administrator test access and applicable policy clearance. Full refunds remain active; no real refund was issued. Published legal documents still override fallback draft notices and need approved policy publication before activation.
 
 ## Pending-fee profit estimate
 - [x] Add a small 2%-of-unscheduled-money estimate inside the existing profit card, preserve main profit/refund rules, and correct payout wording; all 15 calculation tests pass and preview build is OK.

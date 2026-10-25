@@ -229,6 +229,12 @@ Contact support immediately with your order reference. If the order has not yet 
 
 An order that is still processing has not failed. Networks are occasionally slow, and an order can sit in progress for a while before it completes. Check the status first on the Track Order page using your **YG-** reference. If it is still not delivered after a reasonable time, contact support and we will chase it and refund it if it cannot be completed.
 
+## MTN number verification and processing fees
+
+If MTN holds your number for first-time verification, you can wait for verification and delivery instead of requesting a refund. A proposed exception for customer-requested Paystack refunds would deduct only Paystack’s actual recorded transaction fee from the original payment, not an additional 4% checkout fee. This exception is not yet activated. No deduction applies without an applicable published policy and your informed agreement to the exact refund amount. Earlier purchases are not automatically subject to a new deduction.
+
+Supplier-rejected orders receive a full refund after our team confirms that the supplier credited back the cost. Wallet-paid orders return the full order amount to the wallet without a new processing fee deduction. These terms do not limit rights that cannot lawfully be excluded.
+
 ## How to ask for a refund
 
 Contact support through any channel on our Contact page with:
