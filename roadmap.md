@@ -4,7 +4,8 @@
 - [x] Compare screenshots: only AG-9BE935AE0E (0542117427) remains in review with explicit completed credit; two other credited matches already customer-refunded. GHS 15.80 has no identifiable order. Findings in docs/supplier-credit-confirmations.md.
 - [x] Prepare administrator-only supplier-credit controls, evidence/readback in order lookup/details and review queue, and narrow SQL RPC; never issue a refund or change order/finance status.
 - [ ] Activate RPC and save AG-9BE935AE0E confirmation; blocked because available migration/data tools target the unused managed database rather than the active external database. SQL prepared in docs/sql/supplier-credit-confirmation.sql; no markers saved yet.
-- [ ] Test permissions and unchanged financial/order records; verify live marker readback. Authenticated external browser access may remain unavailable.
+- [x] Seven marker-rule tests and ten refund tests pass; preview build OK. Signed-out browser redirects to /auth and shows no private evidence. No live order, refund or financial records changed.
+- [ ] Verify saved confirmation/permissions on the active database and authenticated admin readback; blocked by external RPC activation and unavailable external authenticated browser access.
 
 ## Refund policy planning
 - [x] Prepare a plan for full supplier-failure refunds and fee-excluding Paystack refunds on MTN verification holds, with wallet refunds unchanged.
