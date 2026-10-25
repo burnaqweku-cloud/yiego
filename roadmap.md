@@ -2,7 +2,7 @@
 
 ## Refund policy planning
 - [x] Prepare a plan for full supplier-failure refunds and fee-excluding Paystack refunds on MTN verification holds, with wallet refunds unchanged.
-- [ ] Implement after plan approval; verify the deployed refund engine and accounting before enabling reduced refunds.
+- [ ] Implement approved refund policy; blocked on the authoritative deployed refund-order source (only its README is local, and no external deployment token/connection is available). Obtain that source, verify current external accounting and deployment access, then implement and test before activating any deduction.
 
 ## Pending-fee profit estimate
 - [x] Add a small 2%-of-unscheduled-money estimate inside the existing profit card, preserve main profit/refund rules, and correct payout wording; all 15 calculation tests pass and preview build is OK.
