@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estimateProfitAfterPendingFees, financeProfit, paystackHeld } from "./financeV2";
+import { estimateProfitAfterPendingFees, financeProfit, paystackHeld, profitIfAllDeliver } from "./financeV2";
 
 const base = { bank: 1000, paystack: 2000, suppliers: [{ code: "dbh", name: "DBH", amount: 500 }], owed: [{ code: "w", name: "Wallets", amount: 300 }], capital: 2400 };
 const p = (o: Partial<typeof base>) => financeProfit({ ...base, ...o }).profit;
@@ -62,5 +62,26 @@ describe("display-only pending fee estimate", () => {
     expect(main.profit).toBe(1128.22);
     expect(estimateProfitAfterPendingFees(main.profit, held.notYetScheduled)).toEqual({ pendingFees: 17.94, profit: 1110.28 });
     expect(main.profit).toBe(1128.22);
+  });
+});
+
+describe("display-only profit if all orders deliver", () => {
+  it("adds the locked margin of in-progress orders to the main profit", () => {
+    expect(profitIfAllDeliver(270, [{ amount: 100, cost_amount: 90 }, { amount: 50, cost_amount: 45 }])).toEqual({ profit: 285, lockedMargin: 15, missingCost: 0 });
+  });
+  it("subtracts the agent's share from the locked margin", () => {
+    expect(profitIfAllDeliver(270, [{ amount: 100, cost_amount: 90, agent_margin: 4 }])).toEqual({ profit: 276, lockedMargin: 6, missingCost: 0 });
+  });
+  it("never guesses a supplier cost — orders without one add nothing", () => {
+    expect(profitIfAllDeliver(270, [{ amount: 100, cost_amount: null }])).toEqual({ profit: 270, lockedMargin: 0, missingCost: 1 });
+  });
+  it("equals the main profit when nothing is in progress", () => {
+    expect(profitIfAllDeliver(270, []).profit).toBe(270);
+  });
+  it("does not change the main profit", () => {
+    const main = financeProfit({ ...base, paystack: 500 });
+    const before = main.profit;
+    profitIfAllDeliver(main.profit, [{ amount: 100, cost_amount: 90 }]);
+    expect(main.profit).toBe(before);
   });
 });
