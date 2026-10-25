@@ -141,7 +141,8 @@ export default function CheapData() {
               </div>
             ))}
           </dl>
-          <p className="mk-body mt-10">Guides: <Link className="underline underline-offset-4" to="/blog/mtn-data-codes-ghana">MTN codes</Link> · <Link className="underline underline-offset-4" to="/blog/telecel-data-codes-ghana">Telecel codes</Link> · <Link className="underline underline-offset-4" to="/blog/airteltigo-data-codes-ghana">AirtelTigo codes</Link> · <Link className="underline underline-offset-4" to="/blog/transfer-data-mtn-to-mtn-ghana">Send MTN data to another number</Link></p>
+          <p className="mk-body mt-10">Before you buy: <Link className="underline underline-offset-4" to="/blog/how-to-buy-data-online-ghana">How to buy cheap data bundles in Ghana</Link> — compare value, check validity and review the checkout total.</p>
+          <p className="mk-body mt-5">Guides: <Link className="underline underline-offset-4" to="/blog/mtn-data-codes-ghana">MTN codes</Link> · <Link className="underline underline-offset-4" to="/blog/telecel-data-codes-ghana">Telecel codes</Link> · <Link className="underline underline-offset-4" to="/blog/airteltigo-data-codes-ghana">AirtelTigo codes</Link> · <Link className="underline underline-offset-4" to="/blog/transfer-data-mtn-to-mtn-ghana">Send MTN data to another number</Link></p>
         </div>
       </section>
     </div>
