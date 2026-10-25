@@ -76,6 +76,16 @@ function supportMessage(order: AdminOrderRow, processingDelay = false) {
   return `Hello, your DataYego order ${reference} is currently ${readableStatus(status).toLowerCase()}.`;
 }
 
+/* MTN verification holds paid through Paystack: the second copyable note in the order
+   lookup. It explains the wait option and the refund with Paystack's fee deducted.
+   The fee shown is the recorded ~2% of what the customer paid; the exact fee is
+   confirmed in the refund quote before any money moves. */
+function verificationRefundNote(order: AdminOrderRow) {
+  const paid = Math.round(Number(order.amount) * 104) / 100;
+  const fee = Math.round(paid * 2) / 100;
+  return `Hello, your DataYego order ${order.order_reference} is currently held for MTN verification. You can simply wait: your data will be delivered automatically once MTN completes the check. If you prefer your money back instead, we can refund your payment of GHS ${paid.toFixed(2)}, but because the payment has already been processed by Paystack, Paystack keeps its processing fee (about GHS ${fee.toFixed(2)}), so the refund back to you would be about GHS ${(paid - fee).toFixed(2)}. The exact amount is confirmed with you before any refund is sent.`;
+}
+
 export default function AdminOrders() {
   const [orders, setOrders] = useState<AdminOrderRow[]>([]);
   const origins = useFallbackOrigins(orders);
@@ -105,6 +115,8 @@ export default function AdminOrders() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState(false);
+  const [refundNote, setRefundNote] = useState("");
+  const [refundNoteCopied, setRefundNoteCopied] = useState(false);
   const [selected, setSelected] = useState<AdminOrderRow | null>(null);
   const [events, setEvents] = useState<AdminOrderEventRow[]>([]);
   const [displayStatus, setDisplayStatus] = useState("processing");
@@ -115,8 +127,8 @@ export default function AdminOrders() {
     setLoading(true);
     // Recent orders for browsing, plus EVERY order that still needs a hand (any age), plus true counts from the whole table.
     const [recent, open, summary] = await Promise.all([
-      adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, product_id, recipient_phone, guest_email, amount, cost_amount, paid_at, currency, status, payment_status, supplier_status, supplier_order_reference, supplier_purchase_id, supplier_retry_after, supplier_retry_count, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, wallet_ledger_entry_id, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name), agent_id, agent_price, agent_margin, agents(slug, store_name)").order("created_at", { ascending: false }).limit(1000),
-      adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, product_id, recipient_phone, guest_email, amount, cost_amount, paid_at, currency, status, payment_status, supplier_status, supplier_order_reference, supplier_purchase_id, supplier_retry_after, supplier_retry_count, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, wallet_ledger_entry_id, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name), agent_id, agent_price, agent_margin, agents(slug, store_name)").or("status.eq.failed_needs_review,admin_resolution_status.eq.awaiting_verification,admin_resolution_status.eq.wrong_network,status.eq.awaiting_payment").order("created_at", { ascending: false }),
+      adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, product_id, recipient_phone, guest_email, amount, cost_amount, paid_at, currency, status, payment_status, supplier_status, supplier_order_reference, supplier_purchase_id, supplier_retry_after, supplier_retry_count, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, wallet_ledger_entry_id, payment_provider, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name), agent_id, agent_price, agent_margin, agents(slug, store_name)").order("created_at", { ascending: false }).limit(1000),
+      adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, product_id, recipient_phone, guest_email, amount, cost_amount, paid_at, currency, status, payment_status, supplier_status, supplier_order_reference, supplier_purchase_id, supplier_retry_after, supplier_retry_count, failure_reason, admin_resolution_status, admin_resolution_reason, admin_resolution_updated_at, wallet_ledger_entry_id, payment_provider, created_at, updated_at, data_products(name, capacity_gb), networks(name, code), suppliers(code, name, public_name), agent_id, agent_price, agent_margin, agents(slug, store_name)").or("status.eq.failed_needs_review,admin_resolution_status.eq.awaiting_verification,admin_resolution_status.eq.wrong_network,status.eq.awaiting_payment").order("created_at", { ascending: false }),
       (adminDatabase() as unknown as { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown }> }).rpc("admin_orders_summary", {}),
     ]);
     const { data, error } = recent;
@@ -226,12 +238,14 @@ export default function AdminOrders() {
     const normalized = needle.replace(/\D/g, "").replace(/^233/, "0");
     const candidates = orders.filter((order) => order.order_reference.toLowerCase() === needle || (normalized.length >= 9 && order.recipient_phone.replace(/\D/g, "").replace(/^233/, "0").includes(normalized)) || order.supplier_order_reference?.toLowerCase() === needle);
     const match = candidates.find(isCancellableUnpaid) ?? candidates[0];
-    if (!match) { setLookedUp(null); setMessage(""); return toast.error("No matching order was found."); }
+    if (!match) { setLookedUp(null); setMessage(""); setRefundNote(""); return toast.error("No matching order was found."); }
     setLookedUp(match);
     setSupplierText(""); setSupplierCopied(false);
     const ops = await loadOpsStatus().catch(() => null);
     setMessage(supportMessage(match, Boolean(ops?.processing_delay)));
     setCopied(false);
+    setRefundNote(displayedStatus(match) === AWAITING_VERIFICATION && match.payment_provider === "paystack" ? verificationRefundNote(match) : "");
+    setRefundNoteCopied(false);
     if (match.status === "delivered") {
       const { data } = await adminDatabase().from<AdminOrderEventRow>("order_events").select("id, event_type, from_status, to_status, message, created_at").eq("order_id", match.id);
       setSupplierText(supplierNote(match, (data ?? []) as AdminOrderEventRow[]));
@@ -240,6 +254,10 @@ export default function AdminOrders() {
 
   const copyMessage = async () => {
     try { await navigator.clipboard.writeText(message); setCopied(true); toast.success("Message copied."); }
+    catch { toast.error("Could not copy the message."); }
+  };
+  const copyRefundNote = async () => {
+    try { await navigator.clipboard.writeText(refundNote); setRefundNoteCopied(true); toast.success("Refund explanation copied."); }
     catch { toast.error("Could not copy the message."); }
   };
   const [supplierText, setSupplierText] = useState("");
@@ -327,6 +345,7 @@ export default function AdminOrders() {
       {lookedUp && <div className="mt-5 grid gap-4 lg:grid-cols-2"><div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-semibold text-white">{lookedUp.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{lookedUp.recipient_phone} · {lookedUp.networks?.name ?? "Network"}</p></div><div className="flex shrink-0 items-center gap-2">{canRetry(lookedUp) && <Button size="sm" variant="ghost" disabled={retryingRef === lookedUp.order_reference} onClick={() => void retryOrder(lookedUp)}><RotateCcw />{retryingRef === lookedUp.order_reference ? "Sending…" : "Retry"}</Button>}<AdminDetailsButton label={`View ${lookedUp.order_reference}`} onClick={() => openDetails(lookedUp)} /></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><p className="text-faint-foreground">Order</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.status)}</p></div><div><p className="text-faint-foreground">Payment</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.payment_status)}</p></div><div><p className="text-faint-foreground">Supplier</p><p className="mt-1 font-semibold text-foreground">{readableStatus(normalizedSupplierStatus(lookedUp))}</p></div><div><p className="text-faint-foreground">Customer sees</p><p className="mt-1 font-semibold text-foreground">{readableStatus(displayedStatus(lookedUp))}</p></div></div></div><div className="rounded-2xl border border-primary-glow/15 bg-primary/[0.045] p-4"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-glow">Suggested customer response</p><Button variant="ghost" size="sm" onClick={copyMessage} disabled={!message}>{copied ? <ClipboardCheck /> : <Clipboard />}{copied ? "Copied" : "Copy"}</Button></div><textarea value={message} onChange={(event) => { setMessage(event.target.value); setCopied(false); }} className="onyx-field mt-4 min-h-36 resize-y text-sm leading-6" />
         {lookedUp.payment_status === "succeeded" && (["paid", "failed_needs_review"].includes(lookedUp.status) || lookedUp.admin_resolution_status === AWAITING_VERIFICATION) && <div className="mt-4 border-t border-border pt-3"><p className="text-xs leading-5 text-muted-foreground">{lookedUp.admin_resolution_status === AWAITING_VERIFICATION ? "Wait for MTN verification and delivery, or review the refund quote." : "A full refund can be reviewed after confirming any supplier cost was credited back."}</p><Button variant="ghost" size="sm" className="mt-2" onClick={() => setRefundTarget({ reference: lookedUp.order_reference, manual: false })}><RotateCcw />Review refund</Button></div>}
         {lookedUp.status === "delivered" && supplierText && <div className="mt-4 border-t border-white/[0.08] pt-4"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber">Customer says no data? Send this to {lookedUp.suppliers?.name ?? "the supplier"}</p><p className="mt-0.5 text-[11px] text-faint-foreground">Their refs and times, ready to paste to their support.</p></div><Button variant="ghost" size="sm" onClick={copySupplierText}>{supplierCopied ? <ClipboardCheck /> : <Clipboard />}{supplierCopied ? "Copied" : "Copy"}</Button></div><textarea value={supplierText} onChange={(event) => { setSupplierText(event.target.value); setSupplierCopied(false); }} className="onyx-field mt-3 min-h-24 resize-y text-sm leading-6" /></div>}
+        {refundNote && <div className="rounded-2xl border border-primary-glow/15 bg-primary/[0.045] p-4 lg:col-span-2"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-glow">Refund explanation (fee deducted)</p><Button variant="ghost" size="sm" onClick={copyRefundNote}>{refundNoteCopied ? <ClipboardCheck /> : <Clipboard />}{refundNoteCopied ? "Copied" : "Copy"}</Button></div><p className="mt-1 text-[11px] text-faint-foreground">For MTN verification holds paid through Paystack: the wait option plus the refund with Paystack's fee deducted.</p><textarea value={refundNote} onChange={(event) => { setRefundNote(event.target.value); setRefundNoteCopied(false); }} className="onyx-field mt-4 min-h-36 resize-y text-sm leading-6" /></div>}
       </div></div>}
     </CardContent></Card>
 

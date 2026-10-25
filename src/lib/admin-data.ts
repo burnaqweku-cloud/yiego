@@ -7,6 +7,7 @@ export interface AdminOrderRow {
   recipient_phone: string;
   guest_email: string | null;
   wallet_ledger_entry_id?: string | null;
+  payment_provider?: string | null;
   amount: number | string;
   cost_amount: number | string | null;
   currency: string;
