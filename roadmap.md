@@ -1,5 +1,8 @@
 # Roadmap
 
+## Cheap-data buying guide
+- [ ] Add practical cheap-data buying advice to the existing guide and reciprocal comparison-page links; preserve URLs, metadata and purchase rules, then verify both public pages.
+
 ## Supplier credit confirmations
 - [x] Compare screenshots: only AG-9BE935AE0E (0542117427) remains in review with explicit completed credit; two other credited matches already customer-refunded. GHS 15.80 has no identifiable order. Findings in docs/supplier-credit-confirmations.md.
 - [x] Prepare administrator-only supplier-credit controls, evidence/readback in order lookup/details and review queue, and narrow SQL RPC; never issue a refund or change order/finance status.
