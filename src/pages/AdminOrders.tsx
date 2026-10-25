@@ -238,12 +238,14 @@ export default function AdminOrders() {
     const normalized = needle.replace(/\D/g, "").replace(/^233/, "0");
     const candidates = orders.filter((order) => order.order_reference.toLowerCase() === needle || (normalized.length >= 9 && order.recipient_phone.replace(/\D/g, "").replace(/^233/, "0").includes(normalized)) || order.supplier_order_reference?.toLowerCase() === needle);
     const match = candidates.find(isCancellableUnpaid) ?? candidates[0];
-    if (!match) { setLookedUp(null); setMessage(""); return toast.error("No matching order was found."); }
+    if (!match) { setLookedUp(null); setMessage(""); setRefundNote(""); return toast.error("No matching order was found."); }
     setLookedUp(match);
     setSupplierText(""); setSupplierCopied(false);
     const ops = await loadOpsStatus().catch(() => null);
     setMessage(supportMessage(match, Boolean(ops?.processing_delay)));
     setCopied(false);
+    setRefundNote(displayedStatus(match) === AWAITING_VERIFICATION && match.payment_provider === "paystack" ? verificationRefundNote(match) : "");
+    setRefundNoteCopied(false);
     if (match.status === "delivered") {
       const { data } = await adminDatabase().from<AdminOrderEventRow>("order_events").select("id, event_type, from_status, to_status, message, created_at").eq("order_id", match.id);
       setSupplierText(supplierNote(match, (data ?? []) as AdminOrderEventRow[]));
@@ -252,6 +254,10 @@ export default function AdminOrders() {
 
   const copyMessage = async () => {
     try { await navigator.clipboard.writeText(message); setCopied(true); toast.success("Message copied."); }
+    catch { toast.error("Could not copy the message."); }
+  };
+  const copyRefundNote = async () => {
+    try { await navigator.clipboard.writeText(refundNote); setRefundNoteCopied(true); toast.success("Refund explanation copied."); }
     catch { toast.error("Could not copy the message."); }
   };
   const [supplierText, setSupplierText] = useState("");
@@ -339,6 +345,7 @@ export default function AdminOrders() {
       {lookedUp && <div className="mt-5 grid gap-4 lg:grid-cols-2"><div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-semibold text-white">{lookedUp.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{lookedUp.recipient_phone} · {lookedUp.networks?.name ?? "Network"}</p></div><div className="flex shrink-0 items-center gap-2">{canRetry(lookedUp) && <Button size="sm" variant="ghost" disabled={retryingRef === lookedUp.order_reference} onClick={() => void retryOrder(lookedUp)}><RotateCcw />{retryingRef === lookedUp.order_reference ? "Sending…" : "Retry"}</Button>}<AdminDetailsButton label={`View ${lookedUp.order_reference}`} onClick={() => openDetails(lookedUp)} /></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><p className="text-faint-foreground">Order</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.status)}</p></div><div><p className="text-faint-foreground">Payment</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.payment_status)}</p></div><div><p className="text-faint-foreground">Supplier</p><p className="mt-1 font-semibold text-foreground">{readableStatus(normalizedSupplierStatus(lookedUp))}</p></div><div><p className="text-faint-foreground">Customer sees</p><p className="mt-1 font-semibold text-foreground">{readableStatus(displayedStatus(lookedUp))}</p></div></div></div><div className="rounded-2xl border border-primary-glow/15 bg-primary/[0.045] p-4"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-glow">Suggested customer response</p><Button variant="ghost" size="sm" onClick={copyMessage} disabled={!message}>{copied ? <ClipboardCheck /> : <Clipboard />}{copied ? "Copied" : "Copy"}</Button></div><textarea value={message} onChange={(event) => { setMessage(event.target.value); setCopied(false); }} className="onyx-field mt-4 min-h-36 resize-y text-sm leading-6" />
         {lookedUp.payment_status === "succeeded" && (["paid", "failed_needs_review"].includes(lookedUp.status) || lookedUp.admin_resolution_status === AWAITING_VERIFICATION) && <div className="mt-4 border-t border-border pt-3"><p className="text-xs leading-5 text-muted-foreground">{lookedUp.admin_resolution_status === AWAITING_VERIFICATION ? "Wait for MTN verification and delivery, or review the refund quote." : "A full refund can be reviewed after confirming any supplier cost was credited back."}</p><Button variant="ghost" size="sm" className="mt-2" onClick={() => setRefundTarget({ reference: lookedUp.order_reference, manual: false })}><RotateCcw />Review refund</Button></div>}
         {lookedUp.status === "delivered" && supplierText && <div className="mt-4 border-t border-white/[0.08] pt-4"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber">Customer says no data? Send this to {lookedUp.suppliers?.name ?? "the supplier"}</p><p className="mt-0.5 text-[11px] text-faint-foreground">Their refs and times, ready to paste to their support.</p></div><Button variant="ghost" size="sm" onClick={copySupplierText}>{supplierCopied ? <ClipboardCheck /> : <Clipboard />}{supplierCopied ? "Copied" : "Copy"}</Button></div><textarea value={supplierText} onChange={(event) => { setSupplierText(event.target.value); setSupplierCopied(false); }} className="onyx-field mt-3 min-h-24 resize-y text-sm leading-6" /></div>}
+        {refundNote && <div className="rounded-2xl border border-primary-glow/15 bg-primary/[0.045] p-4 lg:col-span-2"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-glow">Refund explanation (fee deducted)</p><Button variant="ghost" size="sm" onClick={copyRefundNote}>{refundNoteCopied ? <ClipboardCheck /> : <Clipboard />}{refundNoteCopied ? "Copied" : "Copy"}</Button></div><p className="mt-1 text-[11px] text-faint-foreground">For MTN verification holds paid through Paystack: the wait option plus the refund with Paystack's fee deducted.</p><textarea value={refundNote} onChange={(event) => { setRefundNote(event.target.value); setRefundNoteCopied(false); }} className="onyx-field mt-4 min-h-36 resize-y text-sm leading-6" /></div>}
       </div></div>}
     </CardContent></Card>
 
