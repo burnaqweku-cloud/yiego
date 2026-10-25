@@ -8,12 +8,13 @@ import Modal from "@/components/ui/modal";
 import { RecordPartnerCapitalModal, RecordTopupModal } from "@/components/admin/FinanceForms";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
-import { estimateProfitAfterPendingFees, financeProfit, profitIfAllDeliver, type InFlightOrder, type Line } from "@/lib/financeV2";
+import { estimateProfitAfterPendingFees, financeProfit, isHealthyInFlight, profitIfAllDeliver, type InFlightOrder, type Line } from "@/lib/financeV2";
 import { usePaystackHeld } from "@/lib/usePaystackHeld";
 import { useAuth } from "@/store/auth-context";
 
 interface Balance { code: string; name: string; kind: string; balance: number | string }
-interface Supplier { code: string; name: string; confirmed_balance: number | null; confirmed_at: string | null; metadata?: { topup_fee_rate?: number } | null }
+interface Supplier { id: string; code: string; name: string; confirmed_balance: number | null; confirmed_at: string | null; metadata?: { topup_fee_rate?: number } | null }
+type QueuedOrder = InFlightOrder & { order_reference: string; supplier_id: string | null };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> };
 const when = (v: string) => new Intl.DateTimeFormat("en-GH", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Accra" }).format(new Date(v));
@@ -27,18 +28,35 @@ export default function AdminFinanceV2() {
   const [failed, setFailed] = useState(false);
   const [topup, setTopup] = useState(false); const [putIn, setPutIn] = useState(false); const [out, setOut] = useState(false);
   const [inFlight, setInFlight] = useState<InFlightOrder[]>([]);
+  const [inFlightReady, setInFlightReady] = useState(false);
   const ps = usePaystackHeld(!!user);
 
   const load = useCallback(async () => {
-    setLoading(true); setFailed(false);
+    setLoading(true); setFailed(false); setInFlightReady(false);
     const [b, s, role, f] = await Promise.all([
       db().from("finance_balances").select("code, name, kind, balance").order("sort_order"),
-      db().from("suppliers").select("code, name, confirmed_balance, confirmed_at, metadata").order("display_order"),
+      db().from("suppliers").select("id, code, name, confirmed_balance, confirmed_at, metadata").order("display_order"),
       actor ? db().rpc("admin_role", { p_user: actor }) : Promise.resolve({ data: null, error: null }),
       // Everything paid and not finished yet; financeV2 picks out the healthy ones and reports the rest as not counted.
-      db().from("orders").select("amount, cost_amount, agent_margin, status, admin_resolution_status").eq("payment_status", "succeeded").not("status", "in", '("delivered","cancelled","refunded")'),
+      (async () => {
+        const rows: QueuedOrder[] = [];
+        for (let offset = 0; ; offset += 500) {
+          const page = await db().from("orders").select("order_reference, supplier_id, amount, cost_amount, agent_margin, parent_margin, status, admin_resolution_status, supplier_purchase_id, supplier_order_reference, supplier_status").eq("payment_status", "succeeded").not("status", "in", '("delivered","cancelled","refunded")').order("id").range(offset, offset + 499);
+          if (page.error) return { data: null, error: page.error };
+          rows.push(...(page.data ?? []));
+          if ((page.data ?? []).length < 500) return { data: rows, error: null };
+        }
+      })(),
     ]);
-    setInFlight((f.data as InFlightOrder[]) ?? []);
+    const supplierRows = (s.data ?? []) as Supplier[];
+    const queued = await Promise.all(((f.data ?? []) as QueuedOrder[]).map(async (order) => {
+      if (!isHealthyInFlight(order)) return order;
+      const fee = await db().rpc("order_fee_pending", { p_reference: order.order_reference });
+      const supplier = supplierRows.find((x) => x.id === order.supplier_id);
+      return { ...order, pending_fee: Number(fee.data ?? 0), supplier_cost_in_assets: supplier?.confirmed_balance != null, readingFailed: Boolean(fee.error || !supplier || !Number.isFinite(Number(fee.data))) };
+    }));
+    setInFlight(queued);
+    setInFlightReady(!f.error && !s.error && !queued.some((o) => "readingFailed" in o && o.readingFailed));
     if (b.error || s.error || !b.data?.length || !b.data.some((x: Balance) => x.code === "bank") || !b.data.some((x: Balance) => x.code === "outside_funding")) { setFailed(true); setBalances(null); }
     else { setBalances(b.data); setSuppliers(s.data ?? []); }
     setIsMaster(role.data === "master"); setLoading(false);
@@ -83,11 +101,13 @@ export default function AdminFinanceV2() {
           const notCounted = [all.verification ? `${all.verification} waiting on verification` : "", all.review ? `${all.review} under review` : "", all.wrongNetwork ? `${all.wrongNetwork} wrong network` : ""].filter(Boolean);
           return <>
             <span className="block">after {formatGHS(view.capital)} capital</span>
+            {!inFlightReady ? <span className="mt-1 block">Delivery-ahead figure unavailable</span> : <>
             {all.counted > 0
               ? <span className="mt-1 block break-words">If all {all.counted} in-progress order{all.counted === 1 ? "" : "s"} deliver: <span className="font-medium tabular-nums text-foreground">{formatGHS(all.profit)}</span></span>
-              : <span className="mt-1 block break-words">Nothing waiting to be delivered: <span className="font-medium tabular-nums text-foreground">{formatGHS(all.profit)}</span></span>}
-            <span className="block text-faint-foreground">{formatGHS(all.lockedMargin)} margin locked in those orders{all.missingCost > 0 ? ` · ${all.missingCost} without recorded cost not counted` : ""}</span>
+              : <span className="mt-1 block break-words">No healthy queued orders counted: <span className="font-medium tabular-nums text-foreground">{formatGHS(all.profit)}</span></span>}
+            {all.missingCost > 0 && <span className="block text-faint-foreground">{all.missingCost} without recorded cost not counted</span>}
             {notCounted.length > 0 && <span className="block text-faint-foreground">{notCounted.join(" · ")} not counted</span>}
+            </>}
             <span className="mt-1 block break-words">Estimated profit after pending fees: <span className="font-medium tabular-nums text-foreground">{formatGHS(estimateProfitAfterPendingFees(view.profit, ps.held.notYetScheduled).profit)}</span></span>
             <span className="block text-faint-foreground">2% of not-yet-scheduled money</span>
           </>;
