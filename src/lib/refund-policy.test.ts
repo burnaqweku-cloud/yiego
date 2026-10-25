@@ -27,7 +27,7 @@ describe("agreed refund policy", () => {
   it("blocks refunds with a live supplier purchase", () => {
     expect(() => calculateRefundQuote({ ...base, supplierAttemptOpen: true })).toThrow("Supplier funds");
   });
-  it("keeps reduced refunds off until activation is approved", () => {
+  it("still refuses the deduction when the switch is off", () => {
     expect(() => calculateRefundQuote({ ...base, reducedEnabled: false })).toThrow("not activated");
   });
   it("requires informed agreement for fee retention", () => {

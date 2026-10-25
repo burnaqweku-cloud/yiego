@@ -42,7 +42,7 @@ export default function RefundDialog({ reference, manual = false, initialReason 
     });
     setBusy(false);
     if (err || data?.error || data?.status !== "refunded") { setError(data?.error || "Refund outcome was not confirmed. Review the order before retrying."); return; }
-    toast.success(data.method === "wallet" ? "Full refund returned to the wallet." : "Full refund recorded through the original payment channel.");
+    toast.success(data.method === "wallet" ? "Full refund returned to the wallet." : quote.policy === "mtn_verification_fee" ? `Refunded ${formatGHS(quote.refund)} after Paystack's ${formatGHS(quote.processingFee)} fee.` : "Full refund recorded through the original payment channel.");
     onDone(); onClose();
   };
   const disabled = !quote || busy || Boolean(preview?.blockedReason) || !reason.trim()

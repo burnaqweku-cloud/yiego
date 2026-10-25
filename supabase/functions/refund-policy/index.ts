@@ -3,8 +3,8 @@ import { z } from "npm:zod@3.25.76";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { calculateRefundQuote, validateRefundAgreement } from "../_shared/refundPolicy.ts";
 
-// Deliberately off until the external accounting/completion flow and policy are cleared.
-const REDUCED_ENABLED = false;
+// MTN verification fee deduction: refund-order re-verifies the actual fee, locks the order and books the retained fee.
+const REDUCED_ENABLED = true;
 const Body = z.object({
   orderReference: z.string().trim().min(3).max(120),
   action: z.enum(["quote", "refund"]).default("quote"),
@@ -86,13 +86,14 @@ Deno.serve(async (req) => {
     validateRefundAgreement(quote, b);
     if (!b.reason || b.expectedRefund === undefined || Math.round(b.expectedRefund * 100) !== Math.round(quote.refund * 100)) return json({ error: "Refresh the quote and confirm its amount and reason" }, 409);
     if (b.manual && (!b.manualReference || b.policy !== "full")) return json({ error: "Manual refunds require a full refund and transfer reference" }, 400);
-    // Existing full-refund behavior remains authoritative. Never route fee retention through it.
+    // refund-order stays the money authority; it re-verifies the fee and amount before refunding.
     const { data, error } = await db.functions.invoke("refund-order", {
       headers: { Authorization: `Bearer ${token}` },
-      body: { orderReference: order.order_reference, reason: b.reason, ...(b.manual ? { manual: true, manualReference: b.manualReference } : {}) },
+      body: { orderReference: order.order_reference, reason: b.reason, ...(b.manual ? { manual: true, manualReference: b.manualReference } : {}),
+        ...(quote.policy === "mtn_verification_fee" ? { policy: "mtn_verification_fee", refundPesewas: Math.round(quote.refund * 100), customerAcceptanceNote: b.customerAcceptanceNote } : {}) },
     });
     if (error || data?.error) return json({ error: "Refund could not be confirmed. Review the order before retrying." }, 409);
-    checked(await db.from("order_events").insert({ order_id: order.id, event_type: "refund.policy_confirmation", message: "Administrator confirmed the full refund quote", metadata: { adminId: auth.user.id, quote, supplierCreditNote: b.supplierCreditNote, manualReference: b.manualReference } }));
+    checked(await db.from("order_events").insert({ order_id: order.id, event_type: "refund.policy_confirmation", message: quote.policy === "mtn_verification_fee" ? "Administrator confirmed the fee-deducted refund the customer accepted" : "Administrator confirmed the full refund quote", metadata: { adminId: auth.user.id, quote, supplierCreditNote: b.supplierCreditNote, customerAcceptanceNote: b.customerAcceptanceNote, manualReference: b.manualReference } }));
     return json(data);
   } catch (error) { return json({ error: error instanceof Error ? error.message : "Refund quote is unavailable" }, 409); }
 });

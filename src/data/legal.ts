@@ -231,7 +231,7 @@ An order that is still processing has not failed. Networks are occasionally slow
 
 ## MTN number verification and processing fees
 
-If MTN holds your number for first-time verification, you can wait for verification and delivery instead of requesting a refund. A proposed exception for customer-requested Paystack refunds would deduct only Paystack’s actual recorded transaction fee from the original payment, not an additional 4% checkout fee. This exception is not yet activated. No deduction applies without an applicable published policy and your informed agreement to the exact refund amount. Earlier purchases are not automatically subject to a new deduction.
+If MTN holds your number for first-time verification, you can wait for verification and delivery instead of requesting a refund. If you choose a refund while your Paystack-paid order is held for verification, we deduct only Paystack’s actual recorded transaction fee from what you paid — not an extra 4% checkout fee. We tell you the exact refund amount first, and nothing is deducted unless you agree to it.
 
 Supplier-rejected orders receive a full refund after our team confirms that the supplier credited back the cost. Wallet-paid orders return the full order amount to the wallet without a new processing fee deduction. These terms do not limit rights that cannot lawfully be excluded.
 
