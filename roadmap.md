@@ -18,6 +18,9 @@
 - [x] Add a small 2%-of-unscheduled-money estimate inside the existing profit card, preserve main profit/refund rules, and correct payout wording; all 15 calculation tests pass and preview build is OK.
 - [x] Publish confirmed from the live site's own files (datayego.com): the Finance page chunk carries the "Estimated profit after pending fees" line and its 2%-of-unscheduled maths, and the Paystack page chunk carries "Paystack Refund" / "Refund not yet deducted". A signed-in visual look at the rendered card is still blocked by external-backend auth, so figures were checked from records and Paystack's API rather than a rendered page.
 
+## Deliver-all profit estimate
+- [x] Show what profit becomes if every healthy in-progress order delivers, inside the same profit card, with the number of orders it is based on. Verification holds, supplier rejections under review and wrong-network orders are left out and named as not counted; orders with no recorded supplier cost add nothing. 24 calculation tests pass, preview build OK, live records show 1 healthy order (GHS 9.00) of 74 open paid orders (66 verification, 4 review, 3 wrong network). Signed-in visual readback remains blocked by external-backend auth.
+
 ## Roxy’s store complaint
 - [x] Disabled Roxy’s pre-renewal visitor forwarding only; transaction assertions verified all 37 prices and other settings unchanged. Public browser readback shows the original store name, design and saved bundle prices; renewal is active through 24 November.
 
