@@ -8,7 +8,7 @@ import Modal from "@/components/ui/modal";
 import { RecordPartnerCapitalModal, RecordTopupModal } from "@/components/admin/FinanceForms";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
-import { estimateProfitAfterPendingFees, financeProfit, type Line } from "@/lib/financeV2";
+import { estimateProfitAfterPendingFees, financeProfit, profitIfAllDeliver, type InFlightOrder, type Line } from "@/lib/financeV2";
 import { usePaystackHeld } from "@/lib/usePaystackHeld";
 import { useAuth } from "@/store/auth-context";
 
@@ -26,15 +26,19 @@ export default function AdminFinanceV2() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [topup, setTopup] = useState(false); const [putIn, setPutIn] = useState(false); const [out, setOut] = useState(false);
+  const [inFlight, setInFlight] = useState<InFlightOrder[]>([]);
   const ps = usePaystackHeld(!!user);
 
   const load = useCallback(async () => {
     setLoading(true); setFailed(false);
-    const [b, s, role] = await Promise.all([
+    const [b, s, role, f] = await Promise.all([
       db().from("finance_balances").select("code, name, kind, balance").order("sort_order"),
       db().from("suppliers").select("code, name, confirmed_balance, confirmed_at, metadata").order("display_order"),
       actor ? db().rpc("admin_role", { p_user: actor }) : Promise.resolve({ data: null, error: null }),
+      // Healthy in-progress only: paid and with the supplier — failed, verification and wrong-network orders are excluded.
+      db().from("orders").select("amount, cost_amount, agent_margin").eq("payment_status", "succeeded").in("status", ["paid", "processing", "pending_supplier"]).not("admin_resolution_status", "in", '("awaiting_verification","wrong_network")'),
     ]);
+    setInFlight((f.data as InFlightOrder[]) ?? []);
     if (b.error || s.error || !b.data?.length || !b.data.some((x: Balance) => x.code === "bank") || !b.data.some((x: Balance) => x.code === "outside_funding")) { setFailed(true); setBalances(null); }
     else { setBalances(b.data); setSuppliers(s.data ?? []); }
     setIsMaster(role.data === "master"); setLoading(false);
@@ -74,11 +78,16 @@ export default function AdminFinanceV2() {
         <Stat label="Money at Paystack" value={<Money value={ps.held.total} />} icon={PiggyBank} note="From Paystack · tap for details" to="/admin/finance-v2/paystack" />
         <Stat label="At suppliers" value={<Money value={view.supplierTotal} />} icon={Store} tone="warn" note={`${view.supplierLines.length} suppliers`} />
         <Stat label="Money we owe" value={<Money value={view.owedTotal} />} icon={Wallet} tone="bad" />
-        <Stat label="Profit" value={<Money value={view.profit} />} icon={TrendingUp} tone={view.profit >= 0 ? "good" : "bad"} note={<>
-          <span className="block">after {formatGHS(view.capital)} capital</span>
-          <span className="mt-1 block break-words">Estimated profit after pending fees: <span className="font-medium tabular-nums text-foreground">{formatGHS(estimateProfitAfterPendingFees(view.profit, ps.held.notYetScheduled).profit)}</span></span>
-          <span className="block text-faint-foreground">2% of not-yet-scheduled money</span>
-        </>} />
+        <Stat label="Profit" value={<Money value={view.profit} />} icon={TrendingUp} tone={view.profit >= 0 ? "good" : "bad"} note={(() => {
+          const all = profitIfAllDeliver(view.profit, inFlight);
+          return <>
+            <span className="block">after {formatGHS(view.capital)} capital</span>
+            <span className="mt-1 block break-words">If all orders deliver: <span className="font-medium tabular-nums text-foreground">{formatGHS(all.profit)}</span></span>
+            <span className="block text-faint-foreground">{formatGHS(all.lockedMargin)} margin locked in {inFlight.length} in-progress order{inFlight.length === 1 ? "" : "s"}{all.missingCost > 0 ? ` · ${all.missingCost} without recorded cost not counted` : ""}</span>
+            <span className="mt-1 block break-words">Estimated profit after pending fees: <span className="font-medium tabular-nums text-foreground">{formatGHS(estimateProfitAfterPendingFees(view.profit, ps.held.notYetScheduled).profit)}</span></span>
+            <span className="block text-faint-foreground">2% of not-yet-scheduled money</span>
+          </>;
+        })()} />
       </StatGrid>
       <p className="break-words text-xs leading-5 tabular-nums text-muted-foreground">
         Bank {formatGHS(view.bank)} + Paystack {formatGHS(ps.held.total)} + suppliers {formatGHS(view.supplierTotal)} − owed {formatGHS(view.owedTotal)} − capital {formatGHS(view.capital)} = <span className="font-semibold text-foreground">{formatGHS(view.profit)}</span>
