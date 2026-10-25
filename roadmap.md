@@ -1,5 +1,9 @@
 # Roadmap
 
+## Refund policy planning
+- [x] Prepare a plan for full supplier-failure refunds and fee-excluding Paystack refunds on MTN verification holds, with wallet refunds unchanged.
+- [ ] Implement after plan approval; verify the deployed refund engine and accounting before enabling reduced refunds.
+
 ## Pending-fee profit estimate
 - [x] Add a small 2%-of-unscheduled-money estimate inside the existing profit card, preserve main profit/refund rules, and correct payout wording; all 15 calculation tests pass and preview build is OK.
 - [x] Publish confirmed from the live site's own files (datayego.com): the Finance page chunk carries the "Estimated profit after pending fees" line and its 2%-of-unscheduled maths, and the Paystack page chunk carries "Paystack Refund" / "Refund not yet deducted". A signed-in visual look at the rendered card is still blocked by external-backend auth, so figures were checked from records and Paystack's API rather than a rendered page.
