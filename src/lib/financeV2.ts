@@ -43,3 +43,19 @@ export function estimateProfitAfterPendingFees(profit: number, notYetScheduled: 
   const pendingFees = r2(Math.max(0, notYetScheduled) * 0.02);
   return { pendingFees, profit: r2(profit - pendingFees) };
 }
+
+export type InFlightOrder = { amount: number | string; cost_amount: number | string | null; agent_margin?: number | string | null };
+
+/** Display-only: margin locked inside healthy in-progress orders (paid, with the supplier, not failed/needs-a-human).
+ * When they all deliver, the owed liability clears and the main profit rises by this much.
+ * Orders without a recorded supplier cost contribute nothing — never guess a cost. */
+export function lockedInFlightMargin(orders: InFlightOrder[]) {
+  const margin = sum(orders.filter((o) => o.cost_amount != null).map((o) => Number(o.amount) - Number(o.cost_amount) - Number(o.agent_margin ?? 0)));
+  return { margin, missingCost: orders.filter((o) => o.cost_amount == null).length };
+}
+
+/** Display-only: what the main profit becomes if every healthy in-progress order delivers. */
+export function profitIfAllDeliver(profit: number, orders: InFlightOrder[]) {
+  const { margin, missingCost } = lockedInFlightMargin(orders);
+  return { profit: r2(profit + margin), lockedMargin: margin, missingCost };
+}
