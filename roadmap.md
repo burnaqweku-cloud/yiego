@@ -1,8 +1,9 @@
 # Roadmap
 
 ## Supplier credit confirmations
-- [ ] Compare current review orders with the supplied support conversation; mark only unambiguous credited orders.
-- [ ] Add an administrator-only supplier-credit marker with evidence and readback in order lookup/details and review queue; never issue a refund or change order/finance status.
+- [x] Compare screenshots: only AG-9BE935AE0E (0542117427) remains in review with explicit completed credit; two other credited matches already customer-refunded. GHS 15.80 has no identifiable order. Findings in docs/supplier-credit-confirmations.md.
+- [x] Prepare administrator-only supplier-credit controls, evidence/readback in order lookup/details and review queue, and narrow SQL RPC; never issue a refund or change order/finance status.
+- [ ] Activate RPC and save AG-9BE935AE0E confirmation; blocked because available migration/data tools target the unused managed database rather than the active external database. SQL prepared in docs/sql/supplier-credit-confirmation.sql; no markers saved yet.
 - [ ] Test permissions and unchanged financial/order records; verify live marker readback. Authenticated external browser access may remain unavailable.
 
 ## Refund policy planning
