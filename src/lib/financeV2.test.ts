@@ -66,14 +66,40 @@ describe("display-only pending fee estimate", () => {
 });
 
 describe("display-only profit if all orders deliver", () => {
-  it("adds the locked margin of in-progress orders to the main profit", () => {
-    expect(profitIfAllDeliver(270, [{ amount: 100, cost_amount: 90 }, { amount: 50, cost_amount: 45 }])).toEqual({ profit: 285, lockedMargin: 15, missingCost: 0 });
+  it("adds the locked margin of the healthy orders and counts them", () => {
+    expect(profitIfAllDeliver(270, [{ amount: 100, cost_amount: 90, status: "paid" }, { amount: 50, cost_amount: 45, status: "processing" }]))
+      .toEqual({ profit: 285, lockedMargin: 15, counted: 2, missingCost: 0, verification: 0, review: 0, wrongNetwork: 0 });
   });
   it("subtracts the agent's share from the locked margin", () => {
-    expect(profitIfAllDeliver(270, [{ amount: 100, cost_amount: 90, agent_margin: 4 }])).toEqual({ profit: 276, lockedMargin: 6, missingCost: 0 });
+    expect(profitIfAllDeliver(270, [{ amount: 100, cost_amount: 90, agent_margin: 4, status: "paid" }]))
+      .toEqual({ profit: 276, lockedMargin: 6, counted: 1, missingCost: 0, verification: 0, review: 0, wrongNetwork: 0 });
   });
-  it("never guesses a supplier cost — orders without one add nothing", () => {
-    expect(profitIfAllDeliver(270, [{ amount: 100, cost_amount: null }])).toEqual({ profit: 270, lockedMargin: 0, missingCost: 1 });
+  it("never guesses a supplier cost — orders without one add nothing and are not counted", () => {
+    expect(profitIfAllDeliver(270, [{ amount: 100, cost_amount: null, status: "paid" }]))
+      .toEqual({ profit: 270, lockedMargin: 0, counted: 0, missingCost: 1, verification: 0, review: 0, wrongNetwork: 0 });
+  });
+  it("keeps a verification hold out of the estimate and names it as not counted", () => {
+    expect(profitIfAllDeliver(270, [{ amount: 100, cost_amount: 90, status: "processing", admin_resolution_status: "awaiting_verification" }]))
+      .toEqual({ profit: 270, lockedMargin: 0, counted: 0, missingCost: 0, verification: 1, review: 0, wrongNetwork: 0 });
+  });
+  it("keeps a supplier rejection under review out of the estimate", () => {
+    expect(profitIfAllDeliver(270, [{ amount: 100, cost_amount: 90, status: "failed_needs_review", admin_resolution_status: "processing" }]))
+      .toEqual({ profit: 270, lockedMargin: 0, counted: 0, missingCost: 0, verification: 0, review: 1, wrongNetwork: 0 });
+  });
+  it("keeps a wrong-network order out of the estimate", () => {
+    expect(profitIfAllDeliver(270, [{ amount: 100, cost_amount: 90, status: "failed_needs_review", admin_resolution_status: "wrong_network" }]))
+      .toEqual({ profit: 270, lockedMargin: 0, counted: 0, missingCost: 0, verification: 0, review: 0, wrongNetwork: 1 });
+  });
+  it("counts 1 healthy order out of a day shaped like the live records", () => {
+    const rows = (n: number, amount: number, cost: number, status: string, res: string | null) =>
+      Array.from({ length: n }, () => ({ amount, cost_amount: cost, status, admin_resolution_status: res }));
+    const orders = [
+      ...rows(1, 9, 7, "paid", null),
+      ...rows(66, 9.61, 8.65, "processing", "awaiting_verification"),
+      ...rows(4, 12.55, 11.25, "failed_needs_review", "processing"),
+      ...rows(3, 7.05, 6.3, "failed_needs_review", "wrong_network"),
+    ];
+    expect(profitIfAllDeliver(270, orders)).toEqual({ profit: 272, lockedMargin: 2, counted: 1, missingCost: 0, verification: 66, review: 4, wrongNetwork: 3 });
   });
   it("equals the main profit when nothing is in progress", () => {
     expect(profitIfAllDeliver(270, []).profit).toBe(270);
@@ -81,7 +107,7 @@ describe("display-only profit if all orders deliver", () => {
   it("does not change the main profit", () => {
     const main = financeProfit({ ...base, paystack: 500 });
     const before = main.profit;
-    profitIfAllDeliver(main.profit, [{ amount: 100, cost_amount: 90 }]);
+    profitIfAllDeliver(main.profit, [{ amount: 100, cost_amount: 90, status: "paid" }]);
     expect(main.profit).toBe(before);
   });
 });

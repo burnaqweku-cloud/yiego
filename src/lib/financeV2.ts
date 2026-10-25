@@ -44,18 +44,41 @@ export function estimateProfitAfterPendingFees(profit: number, notYetScheduled: 
   return { pendingFees, profit: r2(profit - pendingFees) };
 }
 
-export type InFlightOrder = { amount: number | string; cost_amount: number | string | null; agent_margin?: number | string | null };
+export type InFlightOrder = {
+  amount: number | string;
+  cost_amount: number | string | null;
+  agent_margin?: number | string | null;
+  status?: string | null;
+  admin_resolution_status?: string | null;
+};
 
-/** Display-only: margin locked inside healthy in-progress orders (paid, with the supplier, not failed/needs-a-human).
- * When they all deliver, the owed liability clears and the main profit rises by this much.
+/* Healthy in-progress = paid, still with the supplier and waiting to be delivered, with nothing waiting on a human.
+ * A verification hold, a supplier rejection under review or a wrong-network order is never counted:
+ * any of them can still end up refunded, so their margin is not ours to promise. */
+const DELIVERING = ["paid", "processing", "pending_supplier"];
+const isHealthy = (o: InFlightOrder) => DELIVERING.includes(String(o.status ?? "")) && !o.admin_resolution_status;
+
+/** Display-only breakdown of the money still on its way to customers.
  * Orders without a recorded supplier cost contribute nothing — never guess a cost. */
-export function lockedInFlightMargin(orders: InFlightOrder[]) {
-  const margin = sum(orders.filter((o) => o.cost_amount != null).map((o) => Number(o.amount) - Number(o.cost_amount) - Number(o.agent_margin ?? 0)));
-  return { margin, missingCost: orders.filter((o) => o.cost_amount == null).length };
+export function inFlightBreakdown(orders: InFlightOrder[]) {
+  const healthy = orders.filter(isHealthy);
+  const costed = healthy.filter((o) => o.cost_amount != null);
+  const held = orders.filter((o) => !isHealthy(o));
+  const hold = (kind: string) => held.filter((o) => o.admin_resolution_status === kind).length;
+  const verification = hold("awaiting_verification");
+  const wrongNetwork = hold("wrong_network");
+  return {
+    counted: costed.length,
+    margin: sum(costed.map((o) => Number(o.amount) - Number(o.cost_amount) - Number(o.agent_margin ?? 0))),
+    missingCost: healthy.length - costed.length,
+    verification,
+    wrongNetwork,
+    review: held.length - verification - wrongNetwork,
+  };
 }
 
 /** Display-only: what the main profit becomes if every healthy in-progress order delivers. */
 export function profitIfAllDeliver(profit: number, orders: InFlightOrder[]) {
-  const { margin, missingCost } = lockedInFlightMargin(orders);
-  return { profit: r2(profit + margin), lockedMargin: margin, missingCost };
+  const b = inFlightBreakdown(orders);
+  return { profit: r2(profit + b.margin), lockedMargin: b.margin, counted: b.counted, missingCost: b.missingCost, verification: b.verification, wrongNetwork: b.wrongNetwork, review: b.review };
 }
