@@ -48,6 +48,12 @@ export type InFlightOrder = {
   amount: number | string;
   cost_amount: number | string | null;
   agent_margin?: number | string | null;
+  parent_margin?: number | string | null;
+  supplier_purchase_id?: string | null;
+  supplier_order_reference?: string | null;
+  supplier_status?: string | null;
+  supplier_cost_in_assets?: boolean;
+  pending_fee?: number;
   status?: string | null;
   admin_resolution_status?: string | null;
 };
@@ -56,20 +62,27 @@ export type InFlightOrder = {
  * A verification hold, a supplier rejection under review or a wrong-network order is never counted:
  * any of them can still end up refunded, so their margin is not ours to promise. */
 const DELIVERING = ["paid", "processing", "pending_supplier"];
-const isHealthy = (o: InFlightOrder) => DELIVERING.includes(String(o.status ?? "")) && !o.admin_resolution_status;
+export const isHealthyInFlight = (o: InFlightOrder) => DELIVERING.includes(String(o.status ?? ""))
+  && !o.admin_resolution_status
+  && Boolean(o.supplier_purchase_id || o.supplier_order_reference)
+  && ["pending", "processing", "queued", "accepted", "ongoing", "in_progress", "in progress"].includes(String(o.supplier_status ?? "").toLowerCase());
 
 /** Display-only breakdown of the money still on its way to customers.
  * Orders without a recorded supplier cost contribute nothing — never guess a cost. */
 export function inFlightBreakdown(orders: InFlightOrder[]) {
-  const healthy = orders.filter(isHealthy);
+  const healthy = orders.filter(isHealthyInFlight);
   const costed = healthy.filter((o) => o.cost_amount != null);
-  const held = orders.filter((o) => !isHealthy(o));
+  const held = orders.filter((o) => !isHealthyInFlight(o));
   const hold = (kind: string) => held.filter((o) => o.admin_resolution_status === kind).length;
   const verification = hold("awaiting_verification");
   const wrongNetwork = hold("wrong_network");
   return {
     counted: costed.length,
-    margin: sum(costed.map((o) => Number(o.amount) - Number(o.cost_amount) - Number(o.agent_margin ?? 0))),
+    // Simulate delivery: release delivery + deferred fee liabilities, create agent debts,
+    // and deduct supplier cost ONLY when main assets use the undeducted book float.
+    deliveryIncrease: sum(costed.map((o) => Number(o.amount) + Number(o.pending_fee ?? 0)
+      - Number(o.agent_margin ?? 0) - Number(o.parent_margin ?? 0)
+      - (o.supplier_cost_in_assets ? 0 : Number(o.cost_amount)))),
     missingCost: healthy.length - costed.length,
     verification,
     wrongNetwork,
@@ -80,5 +93,5 @@ export function inFlightBreakdown(orders: InFlightOrder[]) {
 /** Display-only: what the main profit becomes if every healthy in-progress order delivers. */
 export function profitIfAllDeliver(profit: number, orders: InFlightOrder[]) {
   const b = inFlightBreakdown(orders);
-  return { profit: r2(profit + b.margin), lockedMargin: b.margin, counted: b.counted, missingCost: b.missingCost, verification: b.verification, wrongNetwork: b.wrongNetwork, review: b.review };
+  return { profit: r2(profit + b.deliveryIncrease), ...b };
 }
