@@ -21,14 +21,14 @@ export default function AdminPaystackHeld() {
     {held && <>
       <StatGrid cols={3}>
         <Stat label="Total at Paystack" value={<Money value={held.total} />} tone="good" note="Counted in profit" />
-        <Stat label="Scheduled to receive" value={<Money value={held.scheduledNet} />} note={`${formatGHS(held.scheduledGross)} − deductions ${formatGHS(held.scheduledFees)}`} />
+        <Stat label="Scheduled to receive" value={<Money value={held.scheduledNet} />} note={`${formatGHS(held.scheduledGross)} − Paystack Refund ${formatGHS(held.scheduledFees)}`} />
         <Stat label="Not yet scheduled" value={<Money value={held.notYetScheduled} />} note="Received, waiting for a payout" />
       </StatGrid>
-      <p className="text-xs tabular-nums text-muted-foreground">Scheduled {formatGHS(held.scheduledNet)} + not yet scheduled {formatGHS(held.notYetScheduled)} − refunds not taken back {formatGHS(held.refundsNotTakenBack)} = {formatGHS(held.total)}</p>
+      <p className="text-xs tabular-nums text-muted-foreground">Scheduled {formatGHS(held.scheduledNet)} + not yet scheduled {formatGHS(held.notYetScheduled)} − Refund not yet deducted {formatGHS(held.refundsNotTakenBack)} = {formatGHS(held.total)}</p>
       <Panel title="Scheduled payouts">
-        <Rows empty="No payout scheduled right now.">{payouts.map((p) => <Row key={String(p.id)} primary={`${formatGHS(p.gross)} scheduled · deductions ${formatGHS(p.gross - p.net)}`} secondary={`${p.status}${p.date ? ` · ${when(p.date)}` : ""}`} right={formatGHS(p.net)} tone="good" />)}</Rows>
+        <Rows empty="No payout scheduled right now.">{payouts.map((p) => <Row key={String(p.id)} primary={`${formatGHS(p.gross)} scheduled · Paystack Refund ${formatGHS(p.gross - p.net)}`} secondary={`${p.status}${p.date ? ` · ${when(p.date)}` : ""}`} right={formatGHS(p.net)} tone="good" />)}</Rows>
       </Panel>
-      <Panel title="Paystack refunds not yet taken back">
+      <Panel title="Refund not yet deducted">
         <Rows empty="None — every Paystack refund has been taken out of a payout.">{refunds.map((r) => <Row key={String(r.id)} primary={`Refund ${r.id} · ${r.status}`} secondary={`${r.created ? when(r.created) : ""} · taken back so far ${formatGHS(r.deducted)}`} right={`− ${formatGHS(r.amount - r.deducted)}`} tone="bad" />)}</Rows>
         <p className="mt-2 text-xs text-muted-foreground">Paystack takes these out of a coming payout. Wallet refunds never appear here.</p>
       </Panel>
