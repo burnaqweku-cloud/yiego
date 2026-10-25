@@ -84,7 +84,7 @@ export default function AdminFinanceV2() {
             <span className="block">after {formatGHS(view.capital)} capital</span>
             <span className="mt-1 block break-words">If all orders deliver: <span className="font-medium tabular-nums text-foreground">{formatGHS(all.profit)}</span></span>
             <span className="block text-faint-foreground">{formatGHS(all.lockedMargin)} margin locked in {inFlight.length} in-progress order{inFlight.length === 1 ? "" : "s"}{all.missingCost > 0 ? ` · ${all.missingCost} without recorded cost not counted` : ""}</span>
-            <span className="mt-1 block break-words">Estimated profit after pending fees: <span className="font-medium tabular-nums text-foreground">{formatGHS(estimateProfitAfterPendingFees(all.profit, ps.held.notYetScheduled).profit)}</span></span>
+            <span className="mt-1 block break-words">Estimated profit after pending fees: <span className="font-medium tabular-nums text-foreground">{formatGHS(estimateProfitAfterPendingFees(view.profit, ps.held.notYetScheduled).profit)}</span></span>
             <span className="block text-faint-foreground">2% of not-yet-scheduled money</span>
           </>;
         })()} />
