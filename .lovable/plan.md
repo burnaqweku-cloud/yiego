@@ -30,7 +30,7 @@ When an administrator searches an order ID and opens its details, show a clear r
 
 ## How Finance stays correct
 - Keep the main Finance formula, Paystack API readings and the small pending-fee estimate unchanged.
-- On a successfully initiated refund, resolve the full cancelled-order obligation, including its pending checkout fee, through the existing accounting lifecycle. Any refund still owed remains tracked until the refund succeeds.
+- Keep pending or uncertain refunds tracked as obligations. Only finalize the agreed cancellation and resolve its full obligation, including the pending checkout fee, when the provider outcome is confirmed; an accepted or queued refund request alone is not enough.
 - Send only the agreed reduced amount to Paystack. The retained amount covers the original transaction fee; it is not additional order-sales profit.
 - Continue subtracting the actual Paystack refund amount only while the API reports it not fully deducted. Once deducted inside a payout, the separate minus disappears as it does today.
 - Wallet refunds never change the bank balance.
