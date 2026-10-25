@@ -1,5 +1,10 @@
 # Roadmap
 
+## Supplier credit confirmations
+- [ ] Compare current review orders with the supplied support conversation; mark only unambiguous credited orders.
+- [ ] Add an administrator-only supplier-credit marker with evidence and readback in order lookup/details and review queue; never issue a refund or change order/finance status.
+- [ ] Test permissions and unchanged financial/order records; verify live marker readback. Authenticated external browser access may remain unavailable.
+
 ## Refund policy planning
 - [x] Prepare a plan for full supplier-failure refunds and fee-excluding Paystack refunds on MTN verification holds, with wallet refunds unchanged.
 - [x] Recover authoritative refund source and inspect live phase1 accounting; add shared admin refund preview, exact Paystack fee calculation, supplier credit confirmation and draft checkout/refund notices. Protected refund-policy deployed externally; signed-out/invalid sessions return 401. Ten refund rule tests plus fifteen Finance tests pass; preview build OK.
