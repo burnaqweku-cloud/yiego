@@ -6,6 +6,7 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import CopyRef from "@/components/admin/CopyRef";
+import RefundDialog from "@/components/admin/RefundDialog";
 import SupplierBadge, { useFallbackOrigins } from "@/components/admin/SupplierBadge";
 import Modal from "@/components/ui/modal";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +48,7 @@ export default function AdminUndelivered() {
   const [search, setSearch] = useState("");
   const [acting, setActing] = useState<{ order: AdminOrderRow; action: "retry" | "refund" | "mark_delivered" } | null>(null);
   const [reason, setReason] = useState("");
+  const [refundReference, setRefundReference] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
   const refulfilAll = async () => {
@@ -93,11 +95,8 @@ export default function AdminUndelivered() {
     if (action !== "retry" && !reason.trim()) return toast.error("Write a short reason — the customer sees it.");
     setBusy(true);
     let error: string | null = null;
-    if (action === "refund") {
-      const r = await supabase.functions.invoke<{ error?: string; detail?: string; method?: string }>("refund-order", { body: { orderReference: order.order_reference, reason: reason.trim() } });
-      error = r.data?.detail ?? r.data?.error ?? r.error?.message ?? null;
-      if (!error) toast.success(r.data?.method === "wallet" ? "Refunded to their wallet." : "Paystack refund created.");
-    } else if (action === "retry") {
+    if (action === "refund") { setBusy(false); setRefundReference(order.order_reference); setActing(null); return; }
+    if (action === "retry") {
       const r = await supabase.functions.invoke<{ error?: string; result?: { status?: string; skipped?: boolean } }>("admin-order-action", { body: { action: "retry", orderReference: order.order_reference } });
       error = r.data?.error ?? r.error?.message ?? null;
       if (!error) toast.success(r.data?.result?.status === "failed_needs_review" ? "Sent, but the supplier refused it — see the reason on the row." : "Sent to the supplier again.");
@@ -152,13 +151,14 @@ export default function AdminUndelivered() {
               </div>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {b !== "in_progress" && <Button size="sm" variant="soft" onClick={() => { setActing({ order: o, action: "retry" }); setReason(""); }}>Retry</Button>}
-                <Button size="sm" variant="quiet" onClick={() => { setActing({ order: o, action: "refund" }); setReason(""); }}>Refund</Button>
+                <Button size="sm" variant="quiet" onClick={() => { setRefundReference(o.order_reference); }}>Refund</Button>
                 <Button size="sm" variant="quiet" onClick={() => { setActing({ order: o, action: "mark_delivered" }); setReason(""); }}>Mark delivered</Button>
               </div>
             </li>); })}
         </Rows>
       </Panel>
 
+      {refundReference && <RefundDialog key={refundReference} reference={refundReference} onClose={() => setRefundReference(null)} onDone={() => void load()} />}
       <Modal open={acting !== null} onClose={() => setActing(null)} label="Order action">
         <div className="w-[min(92vw,400px)] p-5">
           <h2 className="text-[16px] font-semibold text-foreground">{acting?.action === "retry" ? "Send again" : acting?.action === "refund" ? "Refund the customer" : "Mark as delivered"} · {acting?.order.order_reference}</h2>
