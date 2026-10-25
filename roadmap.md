@@ -3,7 +3,8 @@
 ## Supplier credit confirmations
 - [x] Compare screenshots: only AG-9BE935AE0E (0542117427) remains in review with explicit completed credit; two other credited matches already customer-refunded. GHS 15.80 has no identifiable order. Findings in docs/supplier-credit-confirmations.md.
 - [x] Prepare administrator-only supplier-credit controls, evidence/readback in order lookup/details and review queue, and narrow SQL RPC; never issue a refund or change order/finance status.
-- [ ] Activate RPC and save AG-9BE935AE0E confirmation; blocked because available migration/data tools target the unused managed database rather than the active external database. SQL prepared in docs/sql/supplier-credit-confirmation.sql; no markers saved yet.
+- [x] Activate RPC on the active external phase1 database (anon denied, non-admin/AAL1 rejected).
+- [ ] Save AG-9BE935AE0E confirmation — waiting on the owner to tick it in Admin (needs their own admin sign-in with two-factor; four admins exist, so it is not saved on their behalf).
 - [x] Seven marker-rule tests and ten refund tests pass; preview build OK. Signed-out browser redirects to /auth and shows no private evidence. No live order, refund or financial records changed.
 - [ ] Verify saved confirmation/permissions on the active database and authenticated admin readback; blocked by external RPC activation and unavailable external authenticated browser access.
 
