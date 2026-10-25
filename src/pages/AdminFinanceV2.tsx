@@ -78,11 +78,16 @@ export default function AdminFinanceV2() {
         <Stat label="Money at Paystack" value={<Money value={ps.held.total} />} icon={PiggyBank} note="From Paystack · tap for details" to="/admin/finance-v2/paystack" />
         <Stat label="At suppliers" value={<Money value={view.supplierTotal} />} icon={Store} tone="warn" note={`${view.supplierLines.length} suppliers`} />
         <Stat label="Money we owe" value={<Money value={view.owedTotal} />} icon={Wallet} tone="bad" />
-        <Stat label="Profit" value={<Money value={view.profit} />} icon={TrendingUp} tone={view.profit >= 0 ? "good" : "bad"} note={<>
-          <span className="block">after {formatGHS(view.capital)} capital</span>
-          <span className="mt-1 block break-words">Estimated profit after pending fees: <span className="font-medium tabular-nums text-foreground">{formatGHS(estimateProfitAfterPendingFees(view.profit, ps.held.notYetScheduled).profit)}</span></span>
-          <span className="block text-faint-foreground">2% of not-yet-scheduled money</span>
-        </>} />
+        <Stat label="Profit" value={<Money value={view.profit} />} icon={TrendingUp} tone={view.profit >= 0 ? "good" : "bad"} note={(() => {
+          const all = profitIfAllDeliver(view.profit, inFlight);
+          return <>
+            <span className="block">after {formatGHS(view.capital)} capital</span>
+            <span className="mt-1 block break-words">If all orders deliver: <span className="font-medium tabular-nums text-foreground">{formatGHS(all.profit)}</span></span>
+            <span className="block text-faint-foreground">{formatGHS(all.lockedMargin)} margin locked in {inFlight.length} in-progress order{inFlight.length === 1 ? "" : "s"}{all.missingCost > 0 ? ` · ${all.missingCost} without recorded cost not counted` : ""}</span>
+            <span className="mt-1 block break-words">Estimated profit after pending fees: <span className="font-medium tabular-nums text-foreground">{formatGHS(estimateProfitAfterPendingFees(all.profit, ps.held.notYetScheduled).profit)}</span></span>
+            <span className="block text-faint-foreground">2% of not-yet-scheduled money</span>
+          </>;
+        })()} />
       </StatGrid>
       <p className="break-words text-xs leading-5 tabular-nums text-muted-foreground">
         Bank {formatGHS(view.bank)} + Paystack {formatGHS(ps.held.total)} + suppliers {formatGHS(view.supplierTotal)} − owed {formatGHS(view.owedTotal)} − capital {formatGHS(view.capital)} = <span className="font-semibold text-foreground">{formatGHS(view.profit)}</span>
