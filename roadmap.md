@@ -1,5 +1,9 @@
 # Roadmap
 
+## Pending-fee profit estimate
+- [ ] Add a small 2%-of-unscheduled-money estimate inside the existing profit card, preserve main profit/refund rules, correct payout wording, and test the calculations.
+- [ ] Verify the live signed-in Finance card; requires an authenticated session for the external backend.
+
 ## Roxy’s store complaint
 - [x] Disabled Roxy’s pre-renewal visitor forwarding only; transaction assertions verified all 37 prices and other settings unchanged. Public browser readback shows the original store name, design and saved bundle prices; renewal is active through 24 November.
 

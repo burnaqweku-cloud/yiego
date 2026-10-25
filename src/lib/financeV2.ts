@@ -1,7 +1,7 @@
 import type { PaystackHoldings } from "@/lib/paystackHoldings";
 
 /* Rebuilt finance rules (approved 2026-10-24):
-   profit = bank + Paystack (scheduled after charges + not yet scheduled − Paystack refunds not yet taken back)
+   profit = bank + Paystack (scheduled after deductions + not yet scheduled − Paystack refunds not yet taken back)
           + suppliers − everything owed − partner capital.
    Bank movements (top-ups incl. charges, spending, capital in/out, agent payouts) are booked by existing ledger RPCs;
    wallet refunds only move money between debts and never touch the bank. */
@@ -36,4 +36,10 @@ export function financeProfit(input: { bank: number; paystack: number; suppliers
   const owedTotal = sum(input.owed.map((s) => s.amount));
   const have = sum([input.bank, input.paystack, supplierTotal]);
   return { supplierTotal, owedTotal, have, profit: r2(have - owedTotal - input.capital) };
+}
+
+/** Display-only estimate: assumes unscheduled collections are gross. Never deduct scheduled fees or refunds again. */
+export function estimateProfitAfterPendingFees(profit: number, notYetScheduled: number) {
+  const pendingFees = r2(Math.max(0, notYetScheduled) * 0.02);
+  return { pendingFees, profit: r2(profit - pendingFees) };
 }
