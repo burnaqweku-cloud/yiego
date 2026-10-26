@@ -62,8 +62,9 @@ export type InFlightOrder = {
  * A verification hold, a supplier rejection under review or a wrong-network order is never counted:
  * any of them can still end up refunded, so their margin is not ours to promise. */
 const DELIVERING = ["paid", "processing", "pending_supplier"];
+// "processing" is only the neutral customer-facing marker (set on retries), not a hold.
 export const isHealthyInFlight = (o: InFlightOrder) => DELIVERING.includes(String(o.status ?? ""))
-  && !o.admin_resolution_status
+  && (!o.admin_resolution_status || o.admin_resolution_status === "processing")
   && Boolean(o.supplier_purchase_id || o.supplier_order_reference)
   && ["pending", "processing", "queued", "accepted", "ongoing", "in_progress", "in progress"].includes(String(o.supplier_status ?? "").toLowerCase());
 
