@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Banknote, Minus, PiggyBank, Plus, RefreshCw, Store, TrendingUp, Wallet } from "lucide-react";
+import { Banknote, History, Minus, Receipt, PiggyBank, Plus, RefreshCw, Store, TrendingUp, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Field, inputCls, Money, Panel, Stat, StatGrid } from "@/components/admin/ui";
@@ -79,7 +79,7 @@ export default function AdminFinanceV2() {
     <AdminPageHeader title="Finance" description={ps.reading ? `Paystack read ${when(ps.reading.read_at)}` : "Bank, Paystack, suppliers, debts and profit."}
       action={<div className="flex flex-wrap gap-2">
         <Button variant="ghost" size="sm" onClick={refresh} aria-label="Refresh"><RefreshCw size={14} className={loading || ps.loading ? "animate-spin" : ""} /></Button>
-        <Button size="sm" onClick={() => setTopup(true)}>Record top-up</Button>
+        {isMaster && <Button size="sm" onClick={() => setTopup(true)}>Record top-up</Button>}
         {isMaster && <Button variant="soft" size="sm" onClick={() => setOut(true)}><Minus size={14} />Take money out</Button>}
         {isMaster && <Button variant="soft" size="sm" onClick={() => setPutIn(true)}><Plus size={14} />Partner put in</Button>}
       </div>} />
@@ -127,6 +127,13 @@ export default function AdminFinanceV2() {
       <section><h2 className="mb-3 flex items-center gap-2 text-base font-semibold"><Wallet size={16} />Money we owe</h2>
         <StatGrid>{view.owed.map((l) => <Stat key={l.code} label={l.name} value={<Money value={l.amount} />} tone={l.amount > 0 ? "warn" : "default"}
           to={l.code === "customer_wallets" ? "/admin/wallet" : l.code === "owed_to_agents" ? "/admin/agents/payouts" : l.code === "owed_deliveries" ? "/admin/finance/undelivered" : undefined} />)}</StatGrid>
+      </section>
+
+      <section><h2 className="mb-3 flex items-center gap-2 text-base font-semibold"><History size={16} />History</h2>
+        <StatGrid cols={2}>
+          <Stat label="Top-ups" value="View" icon={Store} note="Every supplier top-up with dates and charges" to="/admin/finance/history/topups" />
+          <Stat label="Money in & out" value="View" icon={Receipt} note="Business costs, capital returned, capital put in" to="/admin/finance/history/money" />
+        </StatGrid>
       </section>
     </>}
 
