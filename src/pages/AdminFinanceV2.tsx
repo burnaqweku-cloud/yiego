@@ -129,13 +129,15 @@ export default function AdminFinanceV2() {
           to={l.code === "customer_wallets" ? "/admin/wallet" : l.code === "owed_to_agents" ? "/admin/agents/payouts" : l.code === "owed_deliveries" ? "/admin/finance/undelivered" : undefined} />)}</StatGrid>
       </section>
 
-      <section><h2 className="mb-3 flex items-center gap-2 text-base font-semibold"><History size={16} />History</h2>
-        <StatGrid cols={2}>
-          <Stat label="Top-ups" value="View" icon={Store} note="Every supplier top-up with dates and charges" to="/admin/finance/history/topups" />
-          <Stat label="Money in & out" value="View" icon={Receipt} note="Business costs, capital returned, capital put in" to="/admin/finance/history/money" />
-        </StatGrid>
-      </section>
     </>}
+
+
+    <section><h2 className="mb-3 flex items-center gap-2 text-base font-semibold"><History size={16} />History</h2>
+      <StatGrid cols={2}>
+        <Stat label="Top-ups" value="View" icon={Store} note="Every supplier top-up with dates and charges" to="/admin/finance/history/topups" />
+        <Stat label="Money in & out" value="View" icon={Receipt} note="Business costs, capital returned, capital put in" to="/admin/finance/history/money" />
+      </StatGrid>
+    </section>
 
     <RecordTopupModal open={topup} onClose={() => setTopup(false)} actorId={actor} suppliers={suppliers.map((s) => ({ code: s.code, name: s.name, fee_rate: Number(s.metadata?.topup_fee_rate ?? 0) }))} onDone={() => void load()} />
     <RecordPartnerCapitalModal open={putIn} onClose={() => setPutIn(false)} actorId={actor} onDone={() => void load()} />
