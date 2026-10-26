@@ -96,6 +96,9 @@ describe("display-only profit if all orders deliver", () => {
   it("keeps rejected orders out even with an old supplier purchase id", () => {
     expect(profitIfAllDeliver(400, [queued({ supplier_status: "rejected" })]).counted).toBe(0);
   });
+  it("counts retried orders that only carry the neutral processing marker", () => {
+    expect(profitIfAllDeliver(400, [queued({ admin_resolution_status: "processing" })]).counted).toBe(1);
+  });
   it("keeps review and wrong-network orders out", () => {
     const result = profitIfAllDeliver(400, [queued({ status: "failed_needs_review" }), queued({ admin_resolution_status: "wrong_network" })]);
     expect(result.counted).toBe(0); expect(result.review).toBe(1); expect(result.wrongNetwork).toBe(1);
