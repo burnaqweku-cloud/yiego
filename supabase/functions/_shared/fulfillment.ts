@@ -418,6 +418,9 @@ async function sendToSupplier(supabase: SupabaseAdminClient, orderId: string, op
     if (fb) {
       await supabase.from("supplier_api_logs").insert({ supplier_id: supplier.id, order_id: order.id, action: "purchase", endpoint: outcome.endpoint, request_payload: outcome.requestPayload, response_payload: outcome.responsePayload, http_status: outcome.httpStatus, call_status: "error", idempotency_key: idempotencyKey, error_message: outcome.message, duration_ms: outcome.durationMs });
       await supabase.from("order_events").insert({ order_id: order.id, event_type: FALLBACK_EVENT, from_status: "processing", to_status: "processing", message: `${supplier.name} refused this order (${outcome.message ?? "no reason given"}). Sending to ${fb.name} instead.`, metadata: { from: supplier.code, to: fb.code, why: outcome.message, httpStatus: outcome.httpStatus, stage: "at_purchase" } });
+      // The supplier refused, so nothing was bought. Release this send's lock first: the fallback send takes its own,
+      // and while we held it the fallback skipped as "send_in_progress" and left the order stuck (27 Oct, 4 orders).
+      await releaseSendLock(supabase, order.id);
       return await sendToSupplier(supabase, orderId, { supplierId: fb.id, viaFallback: true });
     }
   }
