@@ -85,7 +85,7 @@ function supportMessage(order: AdminOrderRow, processingDelay = false) {
 function verificationRefundNote(order: AdminOrderRow) {
   const paid = Math.round(Number(order.amount) * 104) / 100;
   const fee = Math.round(paid * 2) / 100;
-  return `Hello, your DataYego order ${order.order_reference} is currently held for MTN verification. You can simply wait: your data will be delivered automatically once MTN completes the check. If you prefer your money back instead, we can refund your payment of GHS ${paid.toFixed(2)}, but because the payment has already been processed by Paystack, Paystack keeps its processing fee (about GHS ${fee.toFixed(2)}), so the refund back to you would be about GHS ${(paid - fee).toFixed(2)}. The exact amount is confirmed with you before any refund is sent.`;
+  return `About a refund on your order ${order.order_reference}: we can refund your payment of GHS ${paid.toFixed(2)}, but because the payment has already been processed by Paystack, Paystack keeps its processing fee (about GHS ${fee.toFixed(2)}), so the refund back to you would be about GHS ${(paid - fee).toFixed(2)}. The exact amount is confirmed with you before any refund is sent.`;
 }
 
 export default function AdminOrders() {
