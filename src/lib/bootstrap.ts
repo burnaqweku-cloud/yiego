@@ -26,7 +26,7 @@ export function bootstrapOnce(): Promise<void> {
       if (Array.isArray(b.products) && b.products.length) prime("catalog:products", { data: b.products, error: null }, { persist: true });
       if (Array.isArray(b.networks) && b.networks.length) prime("catalog:networks", { data: b.networks, error: null }, { persist: true });
       if (b.contact) prime("public:contact", b.contact, { persist: true });
-      if (b.speed) prime("public:delivery-speed", { data: b.speed, ok: true }, { persist: true });
+      if (b.speed) prime("public:delivery-speed", { data: b.speed, ok: true });   // memory only: the speed is read fresh on every page open
       if (b.settings && "agent_plan" in b.settings) prime("public:settings", b.settings, { persist: true });
     } catch { /* fall back to the individual requests */ }
   })();

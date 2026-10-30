@@ -7,13 +7,15 @@ import { loadPhase1Networks } from "@/lib/phase1-api";
 /* Per-network delivery speed for the catalogue. Middle value of: orders still waiting (time waited so far)
    + orders delivered that were paid in the last hour (time taken). Nothing to measure -> "delivering fast" (the owner resets the figure when deliveries are quick). */
 export interface NetworkSpeed { window: "1h" | "none"; sample: number; median_minutes: number; at_least?: boolean; paused?: boolean }
+const SPEED_SHARE_MS = 10_000;
 export function useDeliverySpeed() {
   const [speeds, setSpeeds] = useState<Record<string, NetworkSpeed>>({});
   useEffect(() => {
     let cancelled = false;
     const p1 = (supabase as unknown as { schema: (s: string) => { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: Record<string, NetworkSpeed> | null; error: unknown }> } }).schema("phase1");
-    // Every bundle card shows the pill: one speed reading per visitor per 2 minutes, networks from the shared catalogue copy.
-    const speed = (isFresh("public:delivery-speed", 2 * 60_000, true) ? Promise.resolve() : bootstrapOnce()).then(() => cached("public:delivery-speed", 2 * 60_000, async () => { const { data, error } = await p1.rpc("delivery_speed_by_network", {}); return { data: data ?? {}, ok: !error }; }, { persist: true, keep: (v) => v.ok }));
+    // A fresh reading on every page open (owner, 30 Oct: keep the speed exactly as live as before). The 10 s copy only
+    // lets the many bundle cards on one page share a single request instead of each asking.
+    const speed = (isFresh("public:delivery-speed", SPEED_SHARE_MS) ? Promise.resolve() : bootstrapOnce()).then(() => cached("public:delivery-speed", SPEED_SHARE_MS, async () => { const { data, error } = await p1.rpc("delivery_speed_by_network", {}); return { data: data ?? {}, ok: !error }; }, { keep: (v) => v.ok }));
     void Promise.all([speed, loadPhase1Networks()]).then(([{ data }, nets]) => {
       if (cancelled) return;
       const next: Record<string, NetworkSpeed> = { ...data };

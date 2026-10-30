@@ -25,11 +25,11 @@ export default function DeliveryProgress({ className = "", compact = false }: { 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      // Shown on the shop and in the buy sheet: one reading per visitor per 2 minutes (each call wakes a server function).
-      const data = await cached("public:delivery-panel", 2 * 60_000, async () => {
+      // A fresh reading on every page open, as before; the 10 s copy only stops the shop and the buy sheet asking twice at once.
+      const data = await cached("public:delivery-panel", 10_000, async () => {
         const { data, error } = await supabase.functions.invoke<Panel>("supplier-delivery-status", { method: "GET" });
         return error ? null : data ?? null;
-      }, { persist: true, keep: (v) => v !== null });
+      }, { keep: (v) => v !== null });
       if (cancelled || !data) return;
       if (!data.banner && (!data.rows || data.rows.length === 0)) return;
       setPanel(data);
