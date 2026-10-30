@@ -158,7 +158,7 @@ const dataBundlesHub: SupplierAdapter = {
       capacityGb: context.supplierCapacity ?? "",
       idempotencyKey: context.idempotencyKey,
     });
-    const data = result.payload?.data ?? {};
+    const data = Array.isArray(result.payload?.data) ? {} : result.payload?.data ?? {};
     return {
       ok: result.ok,
       httpStatus: result.status,
