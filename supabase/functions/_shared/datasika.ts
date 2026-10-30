@@ -44,7 +44,7 @@ export async function findProductId(network: string, gb: string | number) {
   if (!r.ok) return { productId: null, price: null, catalog: r };
   const items: any[] = r.payload?.services?.data_bundles?.items ?? [];
   const want = networkName(network).toLowerCase();
-  const hit = items.find((i) => String(i.network ?? "").toLowerCase() === want && Number(i.bundle_gb) === Number(gb));
+  const hit = r.payload?.services?.data_bundles?.available === false ? undefined : items.find((i) => String(i.network ?? "").toLowerCase() === want && Number(i.bundle_gb) === Number(gb) && Number(gb) > 0 && Number.isFinite(Number(i.price)) && Number(i.price) > 0 && (!i.currency || i.currency === "GHS"));
   return { productId: hit?.product_id ?? null, price: hit?.price ?? null, catalog: r };
 }
 
@@ -75,5 +75,17 @@ export function mapStatus(status?: string | null) {
     case "failed": case "refunded": case "refund_processing": case "cancelled": case "canceled": return "failed_needs_review" as const;
     default: return "processing" as const; // pending, processing, held for review
   }
+}
+/** A paid supplier failure is not safe to resend until the supplier confirms the credit. */
+export function deliveryState(status?: string | null) {
+  const mapped = mapStatus(status);
+  return mapped === "failed_needs_review" && status?.toLowerCase() !== "refunded" ? "processing" as const : mapped;
+}
+
+/** 409 request_in_progress is an uncertain purchase, not a refusal: keep the same key. */
+export function purchaseHttpStatus(status: number, payload: Record<string, any>, accepted: boolean) {
+  if (payload.error === "request_in_progress") return 408;
+  if (!accepted && status >= 200 && status < 300) return 502;
+  return status;
 }
 export function isConfigured() { return Boolean(Deno.env.get("DATASIKA_API_KEY")); }

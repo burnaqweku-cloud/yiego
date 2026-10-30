@@ -4,6 +4,7 @@ import { applySupplierStatusToOrder, fulfillOrder, fulfillOrderWithDataMartGH } 
 import { callDataMartGH } from "../_shared/datamartgh.ts";
 import * as hub from "../_shared/databundleshub.ts";
 import * as instant from "../_shared/instantdatagh.ts";
+import * as ds from "../_shared/datasika.ts";
 
 // Admin sessions must have passed two-factor (aal2). The database applies the same rule.
 const sessionHasMfa = (token: string) => { try { return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")))?.aal === "aal2"; } catch { return false; } };
@@ -132,7 +133,10 @@ Deno.serve(async (req) => {
       const ref = order.supplier_purchase_id ?? order.supplier_order_reference;
       if (!ref) return jsonResponse({ error: "No supplier reference available yet" }, { status: 409 });
       let ok = false; let status = 0; let durationMs = 0; let payload: any = null; let supplierStatus: string | undefined; let endpoint = "";
-      if (supplierCode === "instantdatagh") {
+      if (supplierCode === "datasika") {
+        const r = await ds.checkOrderStatus(ref); ok = r.ok; status = r.status; durationMs = r.durationMs; payload = r.payload; endpoint = "/api-order-status";
+        supplierStatus = String(payload?.status ?? "").toLowerCase() || undefined;
+      } else if (supplierCode === "instantdatagh") {
         const r = await instant.checkOrderStatus(ref); ok = r.ok; status = r.status; durationMs = r.durationMs; payload = r.payload; endpoint = "/order-status";
         supplierStatus = String(payload?.data?.status ?? payload?.status ?? "").toLowerCase() || undefined;
       } else if (supplierCode === "databundleshub") {
@@ -144,6 +148,15 @@ Deno.serve(async (req) => {
       }
       await supabase.from("supplier_api_logs").insert({ supplier_id: order.supplier_id, order_id: order.id, action: "check_order_status", endpoint, response_payload: payload, http_status: status, call_status: ok ? "success" : "error", supplier_reference: String(ref), error_message: ok ? null : payload?.message ?? "Status check failed", duration_ms: durationMs });
       if (!ok) return jsonResponse({ error: payload?.message ?? "Supplier status check failed", provider: payload }, { status: 502 });
+      if (supplierCode === "datasika") {
+        if (!supplierStatus) return jsonResponse({ error: "Supplier returned no order status" }, { status: 502 });
+        if (["delivered", "refunded", "cancelled"].includes(order.status) || order.payment_status !== "succeeded") return jsonResponse({ status: "success", action, data: payload, applied: { changed: false, reason: "terminal_or_unpaid" } });
+        const next = ds.deliveryState(supplierStatus);
+        const { data: changed, error } = await supabase.from("orders").update({ status: next, supplier_status: supplierStatus, failure_reason: next === "delivered" ? null : supplierStatus === "refunded" ? "Supplier refund confirmed; safe to retry or refund" : ["failed", "refund_processing", "cancelled", "canceled"].includes(supplierStatus) ? "Waiting for supplier refund confirmation" : null, updated_at: new Date().toISOString() }).eq("id", order.id).eq("status", order.status).eq("supplier_purchase_id", order.supplier_purchase_id).eq("payment_status", "succeeded").select("id");
+        if (error) throw new Error(error.message);
+        if (changed?.length) await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.status_update", from_status: order.status, to_status: next, message: `Supplier reported ${supplierStatus} (admin recheck)`, metadata: { supplier: "datasika", supplierStatus }, created_by: authData.user.id });
+        return jsonResponse({ status: "success", action, data: payload, applied: { changed: Boolean(changed?.length), mapped: next } });
+      }
       // Normalise the supplier's word into DataMartGH's vocabulary, which applySupplierStatusToOrder understands.
       const normalised = supplierStatus === "delivered" ? "completed" : supplierStatus === "awaiting_delivery" ? "processing" : supplierStatus;
       const applied = await applySupplierStatusToOrder(supabase, order, normalised, `admin_recheck:${supplierCode}`);

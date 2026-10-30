@@ -61,7 +61,9 @@ Deno.serve(async (req) => {
           const fb = await rerouteToFallback(supabase, order, "DataSika", "REFUNDED");
           if (fb) { results.push({ reference: order.order_reference, outcome: `rerouted_to_${fb.code}`, supplierStatus: st }); continue; }
         }
-        await supabase.from("orders").update({ status: next, supplier_status: st, failure_reason: next === "delivered" ? null : "DataSika REFUNDED — money is back on our DataSika wallet; safe to Retry or refund the customer", updated_at: new Date().toISOString() }).eq("id", order.id);
+        const { data: changed, error: updateError } = await supabase.from("orders").update({ status: next, supplier_status: st, failure_reason: next === "delivered" ? null : "Supplier refund confirmed; safe to Retry or refund the customer", updated_at: new Date().toISOString() }).eq("id", order.id).eq("status", order.status).eq("payment_status", "succeeded").eq("supplier_purchase_id", order.supplier_purchase_id).select("id");
+        if (updateError) throw new Error(updateError.message);
+        if (!changed?.length) { results.push({ reference: order.order_reference, outcome: "order_changed_concurrently" }); continue; }
         await supabase.from("order_events").insert({ order_id: order.id, event_type: "supplier.status_update", from_status: order.status, to_status: next, message: `DataSika reported ${st} (status sync)`, metadata: { supplier: "datasika", supplierStatus: st } });
         results.push({ reference: order.order_reference, outcome: next, supplierStatus: st });
       } catch (error) { results.push({ reference: order.order_reference, outcome: "exception", message: error instanceof Error ? error.message : String(error) }); }

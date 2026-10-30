@@ -158,7 +158,7 @@ const dataBundlesHub: SupplierAdapter = {
       capacityGb: context.supplierCapacity ?? "",
       idempotencyKey: context.idempotencyKey,
     });
-    const data = result.payload?.data ?? {};
+    const data = Array.isArray(result.payload?.data) ? {} : result.payload?.data ?? {};
     return {
       ok: result.ok,
       httpStatus: result.status,
@@ -270,6 +270,9 @@ const dataSika: SupplierAdapter = {
     const detected = hub.networkFromPrefix(context.recipientPhone);
     if (!detected) return { ok: false, reason: "unrecognised_number_prefix" };
     const expected = ds.networkName(context.supplierNetworkCode).toUpperCase();
+    if (expected !== "MTN") return { ok: false, reason: "datasika_mtn_only" };
+    if (!/^0\d{9}$/.test(ds.localPhone(context.recipientPhone))) return { ok: false, reason: "invalid_recipient" };
+    if (!Number.isFinite(Number(context.supplierCapacity)) || Number(context.supplierCapacity) <= 0) return { ok: false, reason: "invalid_capacity" };
     if (expected && expected !== detected) return { ok: false, reason: `number_prefix_is_${detected.toLowerCase()}_not_${expected.toLowerCase()}` };
     return { ok: true };
   },
@@ -287,13 +290,15 @@ const dataSika: SupplierAdapter = {
     const r = await ds.buyData({ productId: found.productId, recipient, idempotencyKey: context.idempotencyKey, correlationId: context.orderReference });
     const p = r.payload ?? {};
     const orderId = p.order_id ? String(p.order_id) : null;
-    const accepted = r.ok && Boolean(orderId);
+    // Even an error can carry a paid order receipt (dispatch_failed): retain it and poll;
+    // never send to another supplier until DataSika confirms refunded.
+    const accepted = Boolean(orderId) && (r.ok || p.error === "dispatch_failed");
     // data.amount lets the cost true-up trigger book their live charge, like the other suppliers.
     const responsePayload = { ...p, data: { amount: p.amount_charged ?? null, status: p.status ?? null, order_id: orderId } };
     const errorText = p.error ? `${p.error}${p.message ? `: ${p.message}` : p.detail ? `: ${p.detail}` : ""}` : null;
     return {
       ok: accepted,
-      httpStatus: r.status,
+      httpStatus: ds.purchaseHttpStatus(r.status, p, accepted),
       durationMs: r.durationMs,
       endpoint: "/api-buy-data",
       requestPayload,
@@ -301,11 +306,11 @@ const dataSika: SupplierAdapter = {
       supplierReference: orderId,
       purchaseId: accepted ? orderId : null,
       transactionReference: null,
-      supplierStatus: accepted ? String(p.status ?? "Pending") : (p.error ? String(p.error) : null),
+      supplierStatus: accepted ? String(p.status ?? (p.error === "dispatch_failed" ? (p.refunded === true ? "refunded" : "refund_processing") : "Pending")) : (p.error ? String(p.error) : null),
       message: accepted ? null : (p.error === "insufficient_balance" ? "insufficient balance" : errorText ?? "DataSika purchase failed"),
     };
   },
-  mapStatus: (supplierStatus) => ds.mapStatus(supplierStatus),
+  mapStatus: (supplierStatus) => ds.deliveryState(supplierStatus),
 };
 
 const ADAPTERS: Record<string, SupplierAdapter> = {
