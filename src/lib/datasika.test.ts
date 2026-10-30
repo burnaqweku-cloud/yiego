@@ -1,9 +1,11 @@
 // @vitest-environment node
-/// <reference path="../test/edge-runtime.d.ts" />
 import { afterEach, describe, expect, it, vi } from "vitest";
 vi.hoisted(() => { vi.stubGlobal("Deno", { env: { get: () => undefined } }); });
-import { deliveryState, localPhone, mapStatus, purchaseHttpStatus, findProductId } from "../../supabase/functions/_shared/datasika";
-import { adapterFor } from "../../supabase/functions/_shared/supplierAdapters";
+// Runtime imports keep Deno-only modules out of the browser application's type graph.
+const supplierModule = "../../supabase/functions/_shared/supplierAdapters.ts";
+const dataSikaModule = "../../supabase/functions/_shared/datasika.ts";
+const { deliveryState, localPhone, mapStatus, purchaseHttpStatus, findProductId } = await import(dataSikaModule);
+const { adapterFor } = await import(supplierModule);
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 function mockApi(responses: Array<{ status?: number; body: unknown }>) {
