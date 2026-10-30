@@ -1,5 +1,10 @@
 # Roadmap
 
+## DataSika routing readiness
+- [ ] Finish and test DataSika purchase, retry, status and supplier-cost handling.
+- [ ] Deploy affected sending functions to the active external service and make MTN mappings selectable; preserve all existing routing choices.
+- [ ] Verify live deployment, balance/status lookup and route preservation; report any unverified authenticated or paid-order steps.
+
 ## Cheap-data buying guide
 - [x] Add practical cheap-data buying advice to the existing guide and reciprocal comparison-page links; URLs, title/description and purchase rules unchanged. Browser verified new section, canonical and both links with no runtime errors; build OK. Awaiting publish.
 
