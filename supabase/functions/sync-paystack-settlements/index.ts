@@ -40,18 +40,27 @@ Deno.serve(async (req) => {
       }
     }
     const supabase = createSupabaseAdmin();
+    // What we already hold, in one read. A settlement whose status and amounts haven't changed since last time, and
+    // that is either booked already or not settled yet, needs nothing: skipping it saves ~9,000 database calls a day
+    // (every run used to re-apply all 45 days of settlements one by one).
+    const { data: known } = await supabase.from("paystack_settlements").select("id, status, gross, net, fees, entry_id").in("id", settlements.map((s) => s.id));
+    const stored = new Map((known ?? []).map((k: { id: number; status: string; gross: number; net: number; fees: number; entry_id: string | null }) => [Number(k.id), k]));
     const results: unknown[] = [];
+    let skipped = 0;
     for (const s of settlements) {
       const gross = money(s.total_amount);
       const fees = money(s.total_fees);
       const net = s.effective_amount != null ? money(s.effective_amount) : Math.round((gross - fees) * 100) / 100;
+      const status = String(s.status ?? "").toLowerCase();
+      const k = stored.get(Number(s.id));
+      if (k && k.status === status && Number(k.gross) === gross && Number(k.net) === net && Number(k.fees) === fees && (k.entry_id || status !== "success")) { skipped += 1; continue; }
       const { data, error } = await supabase.rpc("finance_apply_paystack_settlement", {
         p_id: s.id, p_status: String(s.status ?? "").toLowerCase(), p_gross: gross, p_net: net, p_fees: fees,
         p_settlement_date: s.settlement_date ?? s.updated_at ?? s.created_at ?? null, p_raw: s,
       });
       results.push(error ? { id: s.id, action: "error", message: error.message } : data);
     }
-    return jsonResponse({ from, fetched: settlements.length, results });
+    return jsonResponse({ from, fetched: settlements.length, unchanged: skipped, results });
   } catch (error) {
     return jsonResponse({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }
