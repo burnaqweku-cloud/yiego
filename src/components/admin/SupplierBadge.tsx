@@ -9,6 +9,7 @@ const LETTER: Record<string, { letter: string; cls: string }> = {
   emmadataking: { letter: "E", cls: "border-emerald-400/35 bg-emerald-400/[0.12] text-emerald-300" },
   instantdatagh: { letter: "I", cls: "border-violet-400/35 bg-violet-400/[0.12] text-violet-300" },
   datamartgh: { letter: "M", cls: "border-amber/35 bg-amber/[0.12] text-amber" },
+  datasika: { letter: "S", cls: "border-amber/35 bg-amber/[0.12] text-amber" },
 };
 const UNKNOWN = { letter: "?", cls: "border-white/15 bg-white/[0.06] text-muted-foreground" };
 

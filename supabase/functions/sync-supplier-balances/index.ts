@@ -28,6 +28,11 @@ const PROBES: Record<string, { base: string; auth: () => HeadersInit; paths: Pro
     auth: () => ({ "X-API-Key": Deno.env.get("EMMADATAKING_API_KEY") ?? "", Accept: "application/json" }),
     paths: [{ path: "/api/v1/balance", pick: (p) => num(p?.data?.balance ?? p?.balance) }],
   },
+  datasika: {
+    base: (Deno.env.get("DATASIKA_BASE_URL") ?? "https://nrsfvhztpzwkadwciizp.supabase.co/functions/v1").replace(/\/$/, ""),
+    auth: () => ({ Authorization: `Bearer ${Deno.env.get("DATASIKA_API_KEY") ?? ""}`, Accept: "application/json" }),
+    paths: [{ path: "/api-wallet", pick: (p) => num(p?.balance) }],
+  },
   datamartgh: {
     base: (Deno.env.get("DATAMARTGH_BASE_URL") ?? "https://api.datamartgh.shop/api/developer").replace(/\/$/, ""),
     auth: () => ({ "X-API-Key": Deno.env.get("DATAMARTGH_API_KEY") ?? "", Accept: "application/json" }),
