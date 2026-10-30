@@ -14,8 +14,11 @@ const sum = (xs: number[]) => r2(xs.reduce((a, b) => a + Math.round(b * 100), 0)
 
 export type RefundItem = { id: number | string; status: string; amount: number; deducted: number; created?: string | null };
 
-/** Paystack's own figure. Returns null if any part of the reading is missing, so profit never falls back to a guess. */
-export function paystackHeld(reading: PaystackHoldings & { refunds_not_fully_deducted?: { ok: boolean; items: RefundItem[] } }): PaystackHeld | null {
+/** Paystack's own figure. Returns null if any part of the reading is missing, so profit never falls back to a guess.
+ *  originalPaidAt maps refund id → when the refunded payment was received. A refund on a payment received on or after the
+ *  newest scheduled payout's date is on not-yet-scheduled money: Paystack already removes it from pending_transfers
+ *  (verified live 30 Oct 2026), so it must not be subtracted again. Unknown payment dates keep the old (subtract) rule. */
+export function paystackHeld(reading: PaystackHoldings & { refunds_not_fully_deducted?: { ok: boolean; items: RefundItem[] } }, originalPaidAt: Record<string, string> = {}): PaystackHeld | null {
   if (!reading.totals.ok) return null;
   const pending = reading.totals.pending_by_currency?.find((c) => c.currency === "GHS")?.amount;
   if (pending == null) return null;
@@ -27,7 +30,13 @@ export function paystackHeld(reading: PaystackHoldings & { refunds_not_fully_ded
   const payouts = [...seen.values()];
   const scheduledNet = sum(payouts.map((p) => p.net));
   const scheduledGross = sum(payouts.map((p) => p.gross));
-  const refundsNotTakenBack = sum(refunds.items.filter((x) => !["failed", "reversed"].includes(String(x.status).toLowerCase())).map((x) => Math.max(0, x.amount - x.deducted)));
+  const cutoffs = payouts.map((p) => (p.date ? Date.parse(p.date) : NaN)).filter((t) => Number.isFinite(t));
+  const cutoff = cutoffs.length ? Math.max(...cutoffs) : null;
+  const alreadyOutOfPending = (x: RefundItem) => {
+    const paid = originalPaidAt[String(x.id)];
+    return cutoff != null && !!paid && Date.parse(paid) >= cutoff;
+  };
+  const refundsNotTakenBack = sum(refunds.items.filter((x) => !["failed", "reversed"].includes(String(x.status).toLowerCase()) && !alreadyOutOfPending(x)).map((x) => Math.max(0, x.amount - x.deducted)));
   return { scheduledGross, scheduledFees: r2(scheduledGross - scheduledNet), scheduledNet, notYetScheduled: r2(pending), refundsNotTakenBack, total: r2(scheduledNet + pending - refundsNotTakenBack) };
 }
 
