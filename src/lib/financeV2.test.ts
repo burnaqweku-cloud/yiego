@@ -43,6 +43,18 @@ describe("Paystack held money", () => {
     expect(paystackHeld(after)?.total).toBe(paystackHeld(before)?.total);
     expect(paystackHeld(after)?.refundsNotTakenBack).toBe(0);
   });
+  it("does not subtract a 206.96 refund on money received after the newest payout (Paystack already removed it)", () => {
+    const r = reading({ ok: true, items: [{ id: 18925390, status: "processed", amount: 206.96, deducted: 0 }, { id: 18925896, status: "processed", amount: 18.35, deducted: 0 }] });
+    r.settlements[0].not_yet_paid[0].date = "2026-10-30T00:00:00.000Z" as never;
+    const held = paystackHeld(r, { "18925390": "2026-10-30T16:48:32Z", "18925896": "2026-10-23T23:08:42Z" });
+    expect(held?.refundsNotTakenBack).toBe(18.35);
+    expect(held?.total).toBe(2328.59);
+  });
+  it("keeps subtracting a refund whose payment date is unknown", () => {
+    const r = reading({ ok: true, items: [{ id: 5, status: "processed", amount: 10, deducted: 0 }] });
+    r.settlements[0].not_yet_paid[0].date = "2026-10-30T00:00:00.000Z" as never;
+    expect(paystackHeld(r)?.refundsNotTakenBack).toBe(10);
+  });
 });
 
 describe("display-only pending fee estimate", () => {
