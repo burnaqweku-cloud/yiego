@@ -46,6 +46,8 @@ interface Row {
   price: number;
   /** Lowercased and space-stripped so "5gb" matches "5 GB". */
   haystack: string;
+  /** Why it can't be bought right now (paused bundle), or null. */
+  unavailable: string | null;
 }
 
 /** Same mapping the buy flow uses — the network lives in the product code. */
@@ -69,6 +71,7 @@ function toRowFromProduct(product: Phase1Product): Row | null {
     validity: product.validity,
     price: Number(product.customer_price),
     haystack: `${size} ${network.name}`.toLowerCase().replace(/\s+/g, ""),
+    unavailable: product.is_paused ? (product.pause_reason || "Unavailable at the moment. Please try again later.") : null,
   };
 }
 
@@ -84,12 +87,16 @@ function statedValidity(validity: string | null): string | null {
 
 function BundleCard({ row, onBuy }: { row: Row; onBuy: () => void }) {
   const validity = statedValidity(row.validity);
+  // A paused bundle (admin pause, e.g. supplier out of balance) can't be opened: it says why instead.
+  const off = row.unavailable;
   return (
     <button
       type="button"
-      onClick={onBuy}
-      className="mk-bundle group min-h-[112px] !p-4 sm:min-h-[124px] sm:!p-5"
-      aria-label={`Buy ${row.network.name} ${row.size} for ${formatGHS(row.price)}`}
+      onClick={off ? undefined : onBuy}
+      disabled={Boolean(off)}
+      className={cn("mk-bundle group min-h-[112px] !p-4 sm:min-h-[124px] sm:!p-5", off && "cursor-not-allowed opacity-50")}
+      aria-label={off ? `${row.network.name} ${row.size}: ${off}` : `Buy ${row.network.name} ${row.size} for ${formatGHS(row.price)}`}
+      title={off ?? undefined}
     >
       <span
         className={cn(
@@ -99,9 +106,9 @@ function BundleCard({ row, onBuy }: { row: Row; onBuy: () => void }) {
       >
         {row.size}
       </span>
-      {validity && (
+      {(off || validity) && (
         <span className="mt-1.5 block text-[11.5px] leading-4 text-faint-foreground sm:text-[12.5px]">
-          {validity}
+          {off ?? validity}
         </span>
       )}
 
@@ -109,9 +116,15 @@ function BundleCard({ row, onBuy }: { row: Row; onBuy: () => void }) {
         <span className="tnum font-display text-[15px] font-semibold text-foreground sm:text-[17px]">
           {formatGHS(row.price)}
         </span>
-        <span className="inline-flex items-center rounded-full bg-primary/[0.14] px-3 py-1 text-[12.5px] font-semibold text-primary-glow">
-          Buy
-        </span>
+        {off ? (
+          <span className="inline-flex items-center rounded-full bg-white/[0.06] px-3 py-1 text-[12px] font-semibold text-muted-foreground">
+            Unavailable
+          </span>
+        ) : (
+          <span className="inline-flex items-center rounded-full bg-primary/[0.14] px-3 py-1 text-[12.5px] font-semibold text-primary-glow">
+            Buy
+          </span>
+        )}
       </span>
     </button>
   );
@@ -235,7 +248,7 @@ export default function BundleCatalogue() {
   ];
 
   const buy = (row: Row) =>
-    openBuyData({ kind: "bundle", networkId: row.network.id, productCode: row.code });
+    row.unavailable ? undefined : openBuyData({ kind: "bundle", networkId: row.network.id, productCode: row.code });
 
   return (
     <section aria-labelledby="catalogue-title" className="scroll-mt-24" id="bundles">
