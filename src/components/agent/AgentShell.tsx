@@ -15,6 +15,7 @@ import NotificationBell from "@/components/notifications/NotificationBell";
 import PlanPicker from "@/components/agent/PlanPicker";
 import { longDate, subscriptionOf, type SubInfo } from "@/components/agent/subscription";
 import { X } from "lucide-react";
+import { visibleInterval } from "@/lib/requestCache";
 
 /* The agent app. Its own header, its own navigation (bottom bar on phones,
    sidebar on desktop), no public site chrome. Pages read shared data from
@@ -108,7 +109,7 @@ export default function AgentShell() {
     const ok = ["/agent/support", "/agent/orders", "/agent/customers", "/agent/check-mtn", "/agent/help"];
     if (!ok.some((p) => location.pathname === p || location.pathname.startsWith(p + "/"))) navigate("/agent/support", { replace: true });
   }, [role, agent, location.pathname, navigate]);
-  useEffect(() => { if (!agent) return; const tick = () => { void p1().rpc("agent_inbox_unread", {}).then(({ data }) => setUnread(Number(data ?? 0))); if (!agent.parent_agent_id) void p1().rpc("my_network_pending_count", {}).then(({ data }) => setPendingApps(Number(data ?? 0))); }; tick(); const t = setInterval(tick, 20000); return () => clearInterval(t); }, [agent]);
+  useEffect(() => { if (!agent) return; const tick = () => { void p1().rpc("agent_inbox_unread", {}).then(({ data }) => setUnread(Number(data ?? 0))); if (!agent.parent_agent_id) void p1().rpc("my_network_pending_count", {}).then(({ data }) => setPendingApps(Number(data ?? 0))); }; tick(); return visibleInterval(tick, 60_000); }, [agent]);
 
   const legacy = LEGACY_REDIRECTS[location.pathname.replace(/\/$/, "")];
   useEffect(() => { if (legacy) navigate(legacy, { replace: true }); }, [legacy, navigate]);

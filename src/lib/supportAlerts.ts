@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { adminDatabase } from "@/lib/admin-data";
+import { visibleInterval } from "@/lib/requestCache";
 
 /* Support inbox alerts for the admin shell: how many chats need a person right now (badge on the
    menu item) and a toast the moment a new escalation lands while an admin is in the panel. */
@@ -25,7 +26,9 @@ async function tick() {
     state = next; listeners.forEach((l) => l());
   } catch { /* quiet */ }
 }
-export function startSupportAlerts() { if (timer) return; void tick(); timer = setInterval(() => void tick(), 20_000); }
-export function stopSupportAlerts() { if (timer) clearInterval(timer); timer = null; }
+let stopTimer: (() => void) | null = null;
+// Every 30 s while the admin tab is visible; nothing while it sits in the background.
+export function startSupportAlerts() { if (timer || stopTimer) return; void tick(); stopTimer = visibleInterval(() => void tick(), 30_000); }
+export function stopSupportAlerts() { if (timer) clearInterval(timer); timer = null; stopTimer?.(); stopTimer = null; }
 export function refreshSupportAlerts() { void tick(); }
 export function useSupportNeeds() { return useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => state, () => state); }

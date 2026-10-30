@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Bell, ChevronRight, ExternalLink, Pin } from "lucide-react";
 import { KIND_LABEL, loadAnnouncements, markRead, type Announcement } from "@/lib/announcements";
+import { visibleInterval } from "@/lib/requestCache";
 
 /* Bell with unread count; opens a panel listing announcements. Used in the
    public nav (customers) and the agent app header (agents). */
@@ -9,7 +10,7 @@ export default function NotificationBell({ className = "" }: { className?: strin
   const [selected, setSelected] = useState<Announcement | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const load = () => void loadAnnouncements().then(setItems);
-  useEffect(() => { load(); const t = setInterval(load, 5 * 60 * 1000); return () => clearInterval(t); }, []);
+  useEffect(() => { load(); return visibleInterval(load, 5 * 60 * 1000); }, []);
   useEffect(() => { if (!open) { setSelected(null); return; } const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }; document.addEventListener("mousedown", onDoc); return () => document.removeEventListener("mousedown", onDoc); }, [open]);
   // Keep the panel fully on screen: it hangs from the bell's right edge, but on
   // phones the bell sits left of the menu button, so shift it to fit 12px margins.

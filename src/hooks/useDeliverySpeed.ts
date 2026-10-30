@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { cached, isFresh } from "@/lib/requestCache";
+import { bootstrapOnce } from "@/lib/bootstrap";
+import { loadPhase1Networks } from "@/lib/phase1-api";
 
 /* Per-network delivery speed for the catalogue. Middle value of: orders still waiting (time waited so far)
    + orders delivered that were paid in the last hour (time taken). Nothing to measure -> "delivering fast" (the owner resets the figure when deliveries are quick). */
@@ -8,10 +11,12 @@ export function useDeliverySpeed() {
   const [speeds, setSpeeds] = useState<Record<string, NetworkSpeed>>({});
   useEffect(() => {
     let cancelled = false;
-    const p1 = (supabase as unknown as { schema: (s: string) => { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: Record<string, NetworkSpeed> | null }>; from: (t: string) => { select: (c: string) => Promise<{ data: Array<{ name: string; is_paused: boolean }> | null }> } } }).schema("phase1");
-    void Promise.all([p1.rpc("delivery_speed_by_network", {}), p1.from("networks").select("name, is_paused")]).then(([{ data }, nets]) => {
+    const p1 = (supabase as unknown as { schema: (s: string) => { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: Record<string, NetworkSpeed> | null; error: unknown }> } }).schema("phase1");
+    // Every bundle card shows the pill: one speed reading per visitor per 2 minutes, networks from the shared catalogue copy.
+    const speed = (isFresh("public:delivery-speed", 2 * 60_000, true) ? Promise.resolve() : bootstrapOnce()).then(() => cached("public:delivery-speed", 2 * 60_000, async () => { const { data, error } = await p1.rpc("delivery_speed_by_network", {}); return { data: data ?? {}, ok: !error }; }, { persist: true, keep: (v) => v.ok }));
+    void Promise.all([speed, loadPhase1Networks()]).then(([{ data }, nets]) => {
       if (cancelled) return;
-      const next: Record<string, NetworkSpeed> = { ...(data ?? {}) };
+      const next: Record<string, NetworkSpeed> = { ...data };
       for (const n of nets.data ?? []) {
         if (!next[n.name]) next[n.name] = { window: "none", sample: 0, median_minutes: 0 };   // nothing to measure
         if (n.is_paused) next[n.name] = { ...next[n.name], paused: true };

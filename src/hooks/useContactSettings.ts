@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { cached, isFresh } from "@/lib/requestCache";
+import { bootstrapOnce } from "@/lib/bootstrap";
 
 /** The business contact block, managed by admins in the database.
  *  Shared by the footer, the Support page and the Contact page. */
@@ -24,15 +26,21 @@ export function useContactSettings() {
     let active = true;
     void (async () => {
       try {
-        const { data } = await (
-          supabase as unknown as { schema: (name: string) => any }
-        )
-          .schema("phase1")
-          .from("public_contact_settings")
-          .select(COLUMNS)
-          .limit(1)
-          .maybeSingle();
-        if (active) setContact((data as ContactSettings | null) ?? null);
+        // Footer, Support and Contact all ask: one copy per visit for 10 minutes.
+        if (!isFresh("public:contact", 10 * 60_000, true)) await bootstrapOnce();
+        const data = await cached("public:contact", 10 * 60_000, async () => {
+          const { data } = await (
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            supabase as unknown as { schema: (name: string) => any }
+          )
+            .schema("phase1")
+            .from("public_contact_settings")
+            .select(COLUMNS)
+            .limit(1)
+            .maybeSingle();
+          return (data as ContactSettings | null) ?? null;
+        }, { persist: true, keep: (v) => v !== null });
+        if (active) setContact(data);
       } catch {
         // Contact details are decorative here — never block the page.
       } finally {

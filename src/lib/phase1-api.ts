@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { cached, isFresh } from "@/lib/requestCache";
+import { bootstrapOnce } from "@/lib/bootstrap";
 
 export const DATAMARTGH_NETWORK_CODES = {
   mtn: "YELLO",
@@ -184,24 +186,30 @@ export function createWalletDataOrder(input: WalletDataOrderInput) {
   });
 }
 
-export async function loadPhase1Products() {
-  const phase1Client = (supabase as unknown as { schema: (name: string) => Phase1SchemaClient }).schema("phase1");
-  const { data, error } = await phase1Client
-    .from("data_products")
-    .select("id, app_product_code, name, validity, capacity_gb, customer_price, network_id, is_paused, pause_reason, agent_price, store_default_price")
-    .eq("is_active", true)
-    .order("display_order", { ascending: true });
+// Prices and networks change a few times a week; one copy per 2 minutes per visitor is plenty. Checkout re-reads the
+// price and the network pause on the server, so a cached copy can never charge a wrong price.
+const CATALOG_TTL_MS = 2 * 60 * 1000;
 
-  return {
-    data: (data ?? []) as Phase1Product[],
-    error: error?.message ?? null,
-  };
+export async function loadPhase1Products() {
+  if (!isFresh("catalog:products", CATALOG_TTL_MS, true)) await bootstrapOnce();
+  return cached("catalog:products", CATALOG_TTL_MS, async () => {
+    const phase1Client = (supabase as unknown as { schema: (name: string) => Phase1SchemaClient }).schema("phase1");
+    const { data, error } = await phase1Client
+      .from("data_products")
+      .select("id, app_product_code, name, validity, capacity_gb, customer_price, network_id, is_paused, pause_reason, agent_price, store_default_price")
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
+    return { data: (data ?? []) as Phase1Product[], error: error?.message ?? null };
+  }, { persist: true, keep: (r) => !r.error && r.data.length > 0 });
 }
 
 export async function loadPhase1Networks() {
-  const phase1Client = (supabase as unknown as { schema: (name: string) => { from: (t: string) => { select: (c: string) => PromiseLike<{ data: Phase1NetworkRow[] | null; error: { message: string } | null }> } } }).schema("phase1");
-  const { data, error } = await phase1Client.from("networks").select("id, code, name, is_paused, pause_reason");
-  return { data: data ?? [], error: error?.message ?? null };
+  if (!isFresh("catalog:networks", CATALOG_TTL_MS, true)) await bootstrapOnce();
+  return cached("catalog:networks", CATALOG_TTL_MS, async () => {
+    const phase1Client = (supabase as unknown as { schema: (name: string) => { from: (t: string) => { select: (c: string) => PromiseLike<{ data: Phase1NetworkRow[] | null; error: { message: string } | null }> } } }).schema("phase1");
+    const { data, error } = await phase1Client.from("networks").select("id, code, name, is_paused, pause_reason");
+    return { data: data ?? [], error: error?.message ?? null };
+  }, { persist: true, keep: (r) => !r.error && r.data.length > 0 });
 }
 
 /**

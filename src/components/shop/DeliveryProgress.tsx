@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Clock3, Truck, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { cached } from "@/lib/requestCache";
 
 /* ══════════════════════════════════════════════════════════════
    Delivery Progress — how fast bundles are landing right now.
@@ -24,8 +25,12 @@ export default function DeliveryProgress({ className = "", compact = false }: { 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const { data, error } = await supabase.functions.invoke<Panel>("supplier-delivery-status", { method: "GET" });
-      if (cancelled || error || !data) return;
+      // Shown on the shop and in the buy sheet: one reading per visitor per 2 minutes (each call wakes a server function).
+      const data = await cached("public:delivery-panel", 2 * 60_000, async () => {
+        const { data, error } = await supabase.functions.invoke<Panel>("supplier-delivery-status", { method: "GET" });
+        return error ? null : data ?? null;
+      }, { persist: true, keep: (v) => v !== null });
+      if (cancelled || !data) return;
       if (!data.banner && (!data.rows || data.rows.length === 0)) return;
       setPanel(data);
     })();

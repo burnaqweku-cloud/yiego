@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
 import type { PlanOption, PlanQuote } from "@/lib/agents";
 import { useWallet } from "@/store/wallet";
+import { invalidate } from "@/lib/requestCache";
 
 /* Choose 1, 3 or 12 months and pay: through Paystack (4% checkout fee), or, when the balance covers it, straight
    from the wallet or from agent earnings (no fee, instant). Used on the first-pay screen and in the Renew / Extend
@@ -37,7 +38,7 @@ export default function PlanPicker({ quote, verb = "Pay", extending = false, ear
     if (error) { const m = String(error.message); toast.error(m.startsWith("insufficient") ? `Not enough in ${label}.` : m.startsWith("payout_pending") ? "Finish or cancel your pending payout first." : m.replace(/_/g, " ")); return; }
     const r = data as { paid_until?: string };
     toast.success(`Paid from ${label}. Your store is open until ${r?.paid_until ? new Date(r.paid_until).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "the new date"}.`);
-    void wallet.refresh(); onPaid?.();
+    invalidate("agents:"); void wallet.refresh(); onPaid?.();
   };
   const walletCovers = !!chosen && wallet.balance >= Number(chosen.pay_now) && chosen.pay_now > 0;
   const earningsCover = !!chosen && Number(earningsBalance) >= Number(chosen.pay_now) && chosen.pay_now > 0;

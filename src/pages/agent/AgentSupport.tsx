@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Bot, CheckCheck, Send, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { p1, useAgent } from "@/components/agent/AgentShell";
+import { visibleInterval } from "@/lib/requestCache";
 
 /* The store's support inbox (owner and staff). AI answers first; replying here takes the chat over. */
 interface Conv { id: string; status: string; mode: "ai" | "human"; name: string; phone: string | null; email: string | null; last_message_at: string; unanswered: boolean; last: string | null }
@@ -13,8 +14,8 @@ export default function AgentSupport() {
   const [text, setText] = useState(""); const endRef = useRef<HTMLDivElement>(null);
   const loadList = useCallback(async () => { const { data } = await p1().rpc("agent_inbox", { p_status: filter }); setList((data as Conv[]) ?? []); }, [filter]);
   const loadConv = useCallback(async (id: string) => { const { data } = await p1().rpc("agent_conversation", { p_id: id }); setConv(data as Conv & { messages: Msg[] }); }, []);
-  useEffect(() => { void loadList(); const t = setInterval(() => void loadList(), 8000); return () => clearInterval(t); }, [loadList]);
-  useEffect(() => { if (!active) return; void loadConv(active); const t = setInterval(() => void loadConv(active), 5000); return () => clearInterval(t); }, [active, loadConv]);
+  useEffect(() => { void loadList(); return visibleInterval(() => void loadList(), 8000); }, [loadList]);
+  useEffect(() => { if (!active) return; void loadConv(active); return visibleInterval(() => void loadConv(active), 5000); }, [active, loadConv]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [conv?.messages.length]);
   const reply = async () => { const body = text.trim(); if (!body || !active) return; setText(""); const { error } = await p1().rpc("agent_reply", { p_id: active, p_body: body }); if (error) return toast.error("Couldn't send."); await loadConv(active); void loadList(); };
   const set = async (status?: string, mode?: string) => { if (!active) return; await p1().rpc("agent_conversation_set", { p_id: active, p_status: status ?? null, p_mode: mode ?? null }); await loadConv(active); void loadList(); };
