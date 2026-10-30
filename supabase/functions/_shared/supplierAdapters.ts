@@ -2,6 +2,7 @@ import { callDataMartGH, mapDataMartGHStatusToYieGo } from "./datamartgh.ts";
 import * as hub from "./databundleshub.ts";
 import * as instant from "./instantdatagh.ts";
 import * as edk from "./emmadataking.ts";
+import * as ds from "./datasika.ts";
 
 /* ══════════════════════════════════════════════════════════════
    One shape for every supplier.
@@ -260,11 +261,59 @@ const emmaDataKing: SupplierAdapter = {
   },
 };
 
+/* ── DataSika ───────────────────────────────────────────────── */
+
+const dataSika: SupplierAdapter = {
+  code: "datasika",
+  isConfigured: ds.isConfigured,
+  preflight(context) {
+    const detected = hub.networkFromPrefix(context.recipientPhone);
+    if (!detected) return { ok: false, reason: "unrecognised_number_prefix" };
+    const expected = ds.networkName(context.supplierNetworkCode).toUpperCase();
+    if (expected && expected !== detected) return { ok: false, reason: `number_prefix_is_${detected.toLowerCase()}_not_${expected.toLowerCase()}` };
+    return { ok: true };
+  },
+  async purchase(context) {
+    const network = ds.networkName(context.supplierNetworkCode ?? "MTN");
+    const gb = String(context.supplierCapacity ?? "");
+    const recipient = ds.localPhone(context.recipientPhone);
+    const found = await ds.findProductId(network, gb);
+    const requestPayload = { product_id: found.productId, recipient, network, bundle_gb: gb, idempotency_key: context.idempotencyKey };
+    if (!found.productId) {
+      // Catalog unreadable = no answer (nothing was bought); catalog read but no such bundle = a clear "no".
+      const status = found.catalog.ok ? 400 : (found.catalog.status || 0);
+      return { ok: false, httpStatus: found.catalog.ok ? 400 : (status >= 500 || status === 0 ? 400 : status), durationMs: found.catalog.durationMs, endpoint: "/api-catalog", requestPayload, responsePayload: found.catalog.payload, supplierReference: null, purchaseId: null, transactionReference: null, supplierStatus: null, message: found.catalog.ok ? `DataSika does not sell ${network} ${gb}GB` : "DataSika catalog unavailable — nothing was sent" };
+    }
+    const r = await ds.buyData({ productId: found.productId, recipient, idempotencyKey: context.idempotencyKey, correlationId: context.orderReference });
+    const p = r.payload ?? {};
+    const orderId = p.order_id ? String(p.order_id) : null;
+    const accepted = r.ok && Boolean(orderId);
+    // data.amount lets the cost true-up trigger book their live charge, like the other suppliers.
+    const responsePayload = { ...p, data: { amount: p.amount_charged ?? null, status: p.status ?? null, order_id: orderId } };
+    const errorText = p.error ? `${p.error}${p.message ? `: ${p.message}` : p.detail ? `: ${p.detail}` : ""}` : null;
+    return {
+      ok: accepted,
+      httpStatus: r.status,
+      durationMs: r.durationMs,
+      endpoint: "/api-buy-data",
+      requestPayload,
+      responsePayload,
+      supplierReference: orderId,
+      purchaseId: accepted ? orderId : null,
+      transactionReference: null,
+      supplierStatus: accepted ? String(p.status ?? "Pending") : (p.error ? String(p.error) : null),
+      message: accepted ? null : (p.error === "insufficient_balance" ? "insufficient balance" : errorText ?? "DataSika purchase failed"),
+    };
+  },
+  mapStatus: (supplierStatus) => ds.mapStatus(supplierStatus),
+};
+
 const ADAPTERS: Record<string, SupplierAdapter> = {
   [dataMartGH.code]: dataMartGH,
   [dataBundlesHub.code]: dataBundlesHub,
   [instantDataGH.code]: instantDataGH,
   [emmaDataKing.code]: emmaDataKing,
+  [dataSika.code]: dataSika,
 };
 
 export function adapterFor(supplierCode: string): SupplierAdapter | null {
