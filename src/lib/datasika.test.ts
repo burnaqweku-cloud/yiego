@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+vi.hoisted(() => { vi.stubGlobal("Deno", { env: { get: () => undefined } }); });
 import { deliveryState, localPhone, mapStatus, purchaseHttpStatus, findProductId } from "../../supabase/functions/_shared/datasika";
 import { adapterFor } from "../../supabase/functions/_shared/supplierAdapters";
 
