@@ -1,6 +1,5 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
-declare global { const Deno: { env: { get: (key: string) => string | undefined } }; }
 vi.hoisted(() => { vi.stubGlobal("Deno", { env: { get: () => undefined } }); });
 import { deliveryState, localPhone, mapStatus, purchaseHttpStatus, findProductId } from "../../supabase/functions/_shared/datasika";
 import { adapterFor } from "../../supabase/functions/_shared/supplierAdapters";

@@ -1,9 +1,10 @@
 # Roadmap
 
 ## DataSika routing readiness
-- [ ] Finish and test DataSika purchase, retry, status and supplier-cost handling.
-- [ ] Deploy affected sending functions to the active external service and make MTN mappings selectable; preserve all existing routing choices.
-- [ ] Verify live deployment, balance/status lookup and route preservation; report any unverified authenticated or paid-order steps.
+- [x] Finish DataSika purchase/recheck wiring and retry safety: ten DataSika tests and thirty Finance regression tests pass. Paid failure receipts are retained; ambiguous responses cannot trigger fallback. Deployment instructions and activation SQL prepared.
+- [ ] Deploy affected sending functions and enable MTN mappings — blocked by missing external function deployment access; database credentials alone cannot deploy. Compare live entrypoints before replacing them to preserve deployed-only payment/admin changes.
+- [x] Verify existing external status checker returns 200 with no queued orders, DataSika balance is GHS 0, all fourteen mappings remain inactive, and existing routes unchanged (MTN DBH; other networks InstantData). No orders bought or routing changed.
+- [ ] Verify signed-in controls and a real through-app DataSika order — blocked by external deployment, unavailable external authenticated browser session and empty supplier wallet.
 
 ## Cheap-data buying guide
 - [x] Add practical cheap-data buying advice to the existing guide and reciprocal comparison-page links; URLs, title/description and purchase rules unchanged. Browser verified new section, canonical and both links with no runtime errors; build OK. Awaiting publish.
