@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Unavailable network bundle clicks
-- [ ] Apply network pauses to public bundle availability and prevent opening recipient entry; verify paused Telecel/AirtelTigo and available MTN.
+- [x] Apply network pauses to public bundle availability and prevent opening recipient entry. Five availability tests pass; browser verifies all 10 Telecel and 14 AirtelTigo cards disabled, all 14 MTN cards enabled; unavailable labels visible and build OK. Awaiting publish.
 
 ## DataSika routing readiness
 - [x] Finish DataSika purchase/recheck wiring and retry safety: ten DataSika tests and thirty Finance regression tests pass. Paid failure receipts are retained; ambiguous responses cannot trigger fallback. Deployment instructions and activation SQL prepared.
