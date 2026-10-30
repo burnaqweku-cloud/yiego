@@ -61,7 +61,11 @@ function group(products: Phase1Product[]): Record<NetworkId, LiveBundle[]> {
 export const SNAPSHOT_BUNDLES = group(snapshot.products as Phase1Product[]);
 
 export function useLiveBundles() {
-  const [byNetwork, setByNetwork] = useState<Record<NetworkId, LiveBundle[]>>(SNAPSHOT_BUNDLES);
+  const [byNetwork, setByNetwork] = useState<Record<NetworkId, LiveBundle[]>>(() => ({
+    mtn: SNAPSHOT_BUNDLES.mtn.map(b => ({ ...b, paused: true })),
+    telecel: SNAPSHOT_BUNDLES.telecel.map(b => ({ ...b, paused: true })),
+    at: SNAPSHOT_BUNDLES.at.map(b => ({ ...b, paused: true })),
+  }));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

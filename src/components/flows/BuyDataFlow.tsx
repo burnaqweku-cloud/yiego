@@ -120,7 +120,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   const [bundle, setBundle] = useState<Bundle | null>(null);
   // The build-time catalogue snapshot is the first render, so a tapped bundle shows its number box at once; the
   // live catalogue replaces it as soon as it arrives.
-  const [products, setProducts] = useState<Phase1Product[]>(catalogSnapshot.products as Phase1Product[]);
+  const [products, setProducts] = useState<Phase1Product[]>(() => (catalogSnapshot.products as Phase1Product[]).map(p => ({ ...p, is_paused: true, pause_reason: "Checking availability…" })));
   // Referred customer, first order: agent price ("friend price"). Decided by the server; this only affects what is displayed.
   const [friendPrice, setFriendPrice] = useState(false);
   const [networkRows, setNetworkRows] = useState<Phase1NetworkRow[]>([]);
@@ -178,6 +178,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     const chosenNetwork = NETWORKS.find((n) => n.id === preselect.networkId);
     const chosenBundle = bundlesFor(preselect.networkId).find((b) => b.id === preselect.productCode);
     if (!chosenNetwork || !chosenBundle) return;
+    if (chosenBundle.unavailable) { setStep("network"); setNetwork(null); setBundle(null); return; }
     setNetwork(chosenNetwork);
     setBundle(chosenBundle);
     if (preselect.campaign) setPhone(preselect.campaign.phone);

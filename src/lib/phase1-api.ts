@@ -190,7 +190,7 @@ export function createWalletDataOrder(input: WalletDataOrderInput) {
 // price and the network pause on the server, so a cached copy can never charge a wrong price.
 const CATALOG_TTL_MS = 2 * 60 * 1000;
 
-export async function loadPhase1Products() {
+async function loadPhase1ProductRows() {
   if (!isFresh("catalog:products", CATALOG_TTL_MS, true)) await bootstrapOnce();
   return cached("catalog:products", CATALOG_TTL_MS, async () => {
     const phase1Client = (supabase as unknown as { schema: (name: string) => Phase1SchemaClient }).schema("phase1");
@@ -210,6 +210,12 @@ export async function loadPhase1Networks() {
     const { data, error } = await phase1Client.from("networks").select("id, code, name, is_paused, pause_reason");
     return { data: data ?? [], error: error?.message ?? null };
   }, { persist: true, keep: (r) => !r.error && r.data.length > 0 });
+}
+
+export async function loadPhase1Products() {
+  const [products, networks] = await Promise.all([loadPhase1ProductRows(), loadPhase1Networks()]);
+  const { applyNetworkAvailability } = await import("./bundleAvailability");
+  return { data: applyNetworkAvailability(products.data, networks.error ? [] : networks.data), error: products.error ?? networks.error };
 }
 
 /**

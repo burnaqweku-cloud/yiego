@@ -181,7 +181,7 @@ export default function BundleCatalogue() {
   // Bundles and prices come straight from the catalogue; each order routes to
   // the network's supplier behind the scenes. The build-time snapshot is the first render (pre-rendered HTML
   // included), so the grid is never empty; the live catalogue replaces it as soon as it arrives.
-  const [products, setProducts] = useState<Phase1Product[]>(snapshot.products as Phase1Product[]);
+  const [products, setProducts] = useState<Phase1Product[]>(() => (snapshot.products as Phase1Product[]).map(p => ({ ...p, is_paused: true, pause_reason: "Checking availability…" })));
   const [productsState, setProductsState] = useState<LoadState>("ready");
   const [productsError, setProductsError] = useState<string | null>(null);
   useEffect(() => {
