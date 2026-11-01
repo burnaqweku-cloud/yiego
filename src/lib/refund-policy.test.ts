@@ -12,6 +12,9 @@ describe("agreed refund policy", () => {
   it("refunds supplier rejection in full including the checkout fee", () => {
     expect(calculateRefundQuote({ ...base, verificationHold: false, policy: "full" }).refund).toBe(104);
   });
+  it("full refund selection returns all GHS 104 even on an MTN verification hold", () => {
+    expect(calculateRefundQuote({ ...base, policy: "full" })).toMatchObject({ paid: 104, refund: 104, processingFee: 0, policy: "full" });
+  });
   it("returns GHS 100 to wallet without a new payment fee", () => {
     expect(calculateRefundQuote({ ...base, wallet: true })).toMatchObject({ refund: 100, processingFee: 0, policy: "full" });
   });

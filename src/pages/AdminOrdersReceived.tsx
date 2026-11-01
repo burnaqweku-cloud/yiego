@@ -7,6 +7,7 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Money, Panel, Pill, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import CopyRef from "@/components/admin/CopyRef";
+import RefundDialog from "@/components/admin/RefundDialog";
 import SupplierBadge, { useFallbackOrigins } from "@/components/admin/SupplierBadge";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
@@ -46,6 +47,7 @@ export default function AdminOrdersReceived() {
 
   const [tick, setTick] = useState(0);
   const [retrying, setRetrying] = useState<string | null>(null);
+  const [refundReference, setRefundReference] = useState<string | null>(null);
   // "Try another supplier" on a row: every active supplier that sells that order's bundle, other than the current one.
   const [supplierOptions, setSupplierOptions] = useState<{ code: string; name: string; product_ids: Set<string> }[]>([]);
   useEffect(() => {
@@ -136,10 +138,19 @@ export default function AdminOrdersReceived() {
                 <p className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-foreground"><SupplierBadge supplier={o.suppliers} from={origins[o.id]} /><CopyRef value={o.order_reference} /> <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
                 <p className="text-[11px] text-faint-foreground">paid {formatAdminDate(o.paid_at)} · {age(o.paid_at)} ago · {reasonOf(o)}</p>
               </div>
-              <div className="flex flex-col items-end gap-1.5 text-right"><p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</p><Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status === "refunded" ? "refunded" : o.admin_resolution_status === "awaiting_verification" ? "verification" : o.admin_resolution_status === "wrong_network" ? "wrong network" : o.status.startsWith("failed") ? "review" : awaitingRefund(o) ? "awaiting refund" : "in progress"}</Pill>{canTryElsewhere(o) && (() => { const others = supplierOptions.filter((x) => x.code !== o.suppliers?.code && x.product_ids.has(o.product_id ?? "")); return others.length ? <select value="" disabled={retrying === o.id} onChange={(e) => { const x = others.find((y) => y.code === e.target.value); if (x) void trySupplier(o, x.code, x.name); }} className="rounded-full border border-white/10 bg-transparent px-2 py-1 text-[11.5px] text-foreground disabled:opacity-50" aria-label={`Try another supplier for ${o.order_reference}`}><option value="">{retrying === o.id ? "Sending…" : "Try another supplier…"}</option>{others.map((x) => <option key={x.code} value={x.code}>{x.name}</option>)}</select> : null; })()}{stageOf(o) === "no_float" && <button type="button" disabled={retrying === o.id} onClick={() => void retry(o)} className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-[11.5px] font-medium text-foreground disabled:opacity-50"><RotateCcw size={11} />{retrying === o.id ? "Sending…" : "Retry"}</button>}</div>
+              <div className="flex max-w-[55%] flex-col items-end gap-1.5 text-right">
+                <p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</p>
+                <Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status === "refunded" ? "refunded" : o.admin_resolution_status === "awaiting_verification" ? "verification" : o.admin_resolution_status === "wrong_network" ? "wrong network" : o.status.startsWith("failed") ? "review" : awaitingRefund(o) ? "awaiting refund" : "in progress"}</Pill>
+                {canTryElsewhere(o) && (() => { const others = supplierOptions.filter((x) => x.code !== o.suppliers?.code && x.product_ids.has(o.product_id ?? "")); return others.length ? <select value="" disabled={retrying !== null || refundReference !== null} onChange={(e) => { const x = others.find((y) => y.code === e.target.value); if (x) void trySupplier(o, x.code, x.name); }} className="max-w-full rounded-full border border-border bg-transparent px-2 py-1 text-[11.5px] text-foreground disabled:opacity-50" aria-label={`Try another supplier for ${o.order_reference}`}><option value="">{retrying === o.id ? "Sending…" : "Try another supplier…"}</option>{others.map((x) => <option key={x.code} value={x.code}>{x.name}</option>)}</select> : null; })()}
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  {stageOf(o) === "no_float" && <Button size="sm" variant="ghost" disabled={retrying !== null || refundReference !== null} onClick={() => void retry(o)}><RotateCcw size={11} />{retrying === o.id ? "Sending…" : "Retry"}</Button>}
+                  {!["delivered", "refunded", "cancelled", "canceled"].includes(o.status) && <Button size="sm" variant="ghost" aria-label={`Refund ${o.order_reference}`} disabled={retrying !== null || refundReference !== null} onClick={() => setRefundReference(o.order_reference)}><RotateCcw size={11} />Refund</Button>}
+                </div>
+              </div>
             </li>))}
         </ul>
       </Panel>
+      {refundReference && <RefundDialog key={refundReference} reference={refundReference} fullOnly initialReason={`Administrator requested a full refund for undelivered order ${refundReference}.`} onClose={() => setRefundReference(null)} onDone={() => setTick((t) => t + 1)} />}
     </div>
   );
 }
