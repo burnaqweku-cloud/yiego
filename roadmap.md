@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Orders list refund button
-- [ ] Add Refund beside Retry in Orders received; this entry point offers full refunds only and a Process refund confirmation, retaining server permissions/duplicate protection; refresh rows after success and verify without issuing a real refund.
+- [x] Add Refund beside Retry in Orders received; full refunds only with Process refund confirmation and existing server protections. Isolated desktop/phone sample check verified correct quote and cancellation; refund tests/build pass. No real refund sent; live signed-in check unavailable on the external backend. Awaiting publish.
 
 ## Global maintenance
 - [x] Add atomic on/off in-app notices and editable return wording; merge into main/agent bells and store news; store/sub-agent notice resolves its own identity. Thirteen maintenance tests pass; simulated master save preserves plan fields, sub-agent notice/news browser check passes; preview build OK. These updates await publishing.
