@@ -8,8 +8,8 @@ import { formatGHS } from "@/lib/format";
 import type { RefundQuote } from "../../../supabase/functions/_shared/refundPolicy";
 
 type Preview = { quote: RefundQuote; alternative: RefundQuote | null; reducedEnabled: boolean; blockedReason: string | null };
-export default function RefundDialog({ reference, manual = false, initialReason = "", onClose, onDone }: {
-  reference: string; manual?: boolean; initialReason?: string; onClose: () => void; onDone: () => void;
+export default function RefundDialog({ reference, manual = false, fullOnly = false, initialReason = "", onClose, onDone }: {
+  reference: string; manual?: boolean; fullOnly?: boolean; initialReason?: string; onClose: () => void; onDone: () => void;
 }) {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState("");
@@ -53,7 +53,7 @@ export default function RefundDialog({ reference, manual = false, initialReason 
       <header className="flex items-start justify-between gap-3"><div><h2 className="font-display text-lg font-semibold text-foreground">{manual ? "Record full manual refund" : "Refund customer"}</h2><p className="font-mono text-sm text-muted-foreground">{reference}</p></div><Button size="icon" variant="quiet" aria-label="Close refund" onClick={onClose} disabled={busy}><X /></Button></header>
       {!preview && !error && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="animate-spin" size={16} />Checking payment and supplier history…</p>}
       {preview?.quote.verificationHold && <p className="text-sm leading-6 text-amber">The customer can wait for MTN number verification and delivery instead of requesting a refund.</p>}
-      {preview?.alternative && !manual && <>
+      {preview?.alternative && !manual && !fullOnly && <>
         <p className="text-sm leading-6 text-muted-foreground">A fee-excluding refund would return {formatGHS(preview.alternative.refund)} after Paystack's actual {formatGHS(preview.alternative.processingFee)} fee.</p>
         {preview.reducedEnabled ? <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={reduced} onChange={(e) => { setReduced(e.target.checked); setAccepted(false); }} />Apply the agreed MTN verification fee deduction</label> : <p className="text-xs leading-5 text-amber">Fee deduction is not activated. Existing orders still receive full refunds until the policy and accounting checks are cleared.</p>}
       </>}
@@ -61,10 +61,10 @@ export default function RefundDialog({ reference, manual = false, initialReason 
       {quote && <div><p className="text-sm leading-6 text-muted-foreground">{customerMessage}</p><Button variant="ghost" size="sm" className="mt-1" onClick={() => { void navigator.clipboard.writeText(customerMessage).then(() => toast.success("Refund message copied.")); }}><Copy />Copy customer message</Button></div>}
       {quote?.supplierConfirmationRequired && <div className="space-y-2"><label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={credit} onChange={(e) => setCredit(e.target.checked)} />The supplier confirmed our balance was credited back</label><textarea aria-label="Supplier credit confirmation" className="onyx-field" value={creditNote} onChange={(e) => setCreditNote(e.target.value)} maxLength={500} placeholder="Record supplier confirmation or reference" /></div>}
       {reduced && <div className="space-y-2"><label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />Customer requested and accepted this exact reduced refund</label><textarea aria-label="Customer acceptance record" className="onyx-field" value={acceptanceNote} onChange={(e) => setAcceptanceNote(e.target.value)} maxLength={500} placeholder="Record informed agreement, amount and support reference" /></div>}
-      {quote && <label className="block space-y-2 text-sm"><span>Refund reason</span><textarea className="onyx-field" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300} /></label>}
+      {quote && !fullOnly && <label className="block space-y-2 text-sm"><span>Refund reason</span><textarea className="onyx-field" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300} /></label>}
       {manual && <label className="block space-y-2 text-sm"><span>Transfer reference — money already sent in full</span><input className="onyx-field" value={transferReference} onChange={(e) => setTransferReference(e.target.value)} maxLength={120} /></label>}
       {(error || preview?.blockedReason) && <p role="alert" className="text-sm leading-6 text-danger">{error || preview?.blockedReason}</p>}
-      <footer className="flex justify-end gap-2"><Button variant="quiet" disabled={busy} onClick={onClose}>Cancel</Button><Button disabled={disabled} onClick={() => void confirm()}>{busy ? <Loader2 className="animate-spin" /> : <RotateCcw />}{manual ? "Record refund" : "Confirm refund"}</Button></footer>
+      <footer className="flex justify-end gap-2"><Button variant="quiet" disabled={busy} onClick={onClose}>Cancel</Button><Button disabled={disabled} onClick={() => void confirm()}>{busy ? <Loader2 className="animate-spin" /> : <RotateCcw />}{manual ? "Record refund" : fullOnly ? "Process refund" : "Confirm refund"}</Button></footer>
     </div>
   </Modal>;
 }

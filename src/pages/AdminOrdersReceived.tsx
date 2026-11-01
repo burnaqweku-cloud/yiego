@@ -150,7 +150,7 @@ export default function AdminOrdersReceived() {
             </li>))}
         </ul>
       </Panel>
-      {refundReference && <RefundDialog key={refundReference} reference={refundReference} initialReason={`Customer requested a refund for undelivered order ${refundReference}.`} onClose={() => setRefundReference(null)} onDone={() => setTick((t) => t + 1)} />}
+      {refundReference && <RefundDialog key={refundReference} reference={refundReference} fullOnly initialReason={`Administrator requested a full refund for undelivered order ${refundReference}.`} onClose={() => setRefundReference(null)} onDone={() => setTick((t) => t + 1)} />}
     </div>
   );
 }
