@@ -9,6 +9,8 @@ export interface MaintenanceSettings {
   restored_message: string;
 }
 
+export interface MaintenanceAnnouncement { id: string; title: string; body: string; kind: "warning" | "notice"; starts_at: string }
+
 export const DEFAULT_MAINTENANCE: MaintenanceSettings = {
   enabled: false,
   title: "We’re currently under maintenance",
