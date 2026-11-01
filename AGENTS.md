@@ -1,4 +1,5 @@
 # Architecture rules
+- Kora remains isolated preparation: live routing requires explicit readiness approval; report available/pending balances separately and never apply Paystack refund or settlement semantics to Kora funds.
 - Public catalogue loading merges network pauses into product availability and fails closed when network availability is unknown, so all catalogue consumers block purchases consistently without changing server purchase rules.
 - Delivery-ahead profit is display-only: simulate healthy supplier-accepted queued delivery by releasing delivery and pending-fee liabilities, creating agent/parent margin debts, and deducting supplier costs only for ledger-fallback assets; never alter main profit or money records.
 - Supplier credit markers use admin-only audit logs and an AAL2-checked phase1 RPC, bound to the exact supplier attempt; never store evidence in customer-readable order events or change status/financial records, so recording recovery cannot issue a refund.
