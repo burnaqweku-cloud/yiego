@@ -42,7 +42,7 @@ export function maintenanceBlocksRequest(url: string, method: string, body?: unk
     return true;
   }
   const rpc = path.match(/\/rest\/v1\/rpc\/([^/]+)/)?.[1];
-  if (rpc) return !(READ_RPCS.has(rpc) || rpc.startsWith("my_") || rpc.startsWith("staff_store_"));
+  if (rpc) return !(READ_RPCS.has(rpc) || ["my_agent_access", "my_profile", "my_wallet", "my_orders", "my_notifications"].includes(rpc));
   if (path.includes("/rest/v1/") || path.includes("/storage/v1/")) return true;
   return false;
 }
