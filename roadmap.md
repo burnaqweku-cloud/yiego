@@ -1,5 +1,11 @@
 # Roadmap
 
+## Kora readiness (Paystack remains active)
+- [ ] Audit checkout, verification, refunds, wallet/agent payments and Finance against official Kora documentation.
+- [ ] Prepare isolated Kora API helpers, safe payment checks, read-only balance reporting and regression tests without changing the current provider or profit calculation.
+- [ ] Deploy and configure rotated credentials on the active external service — blocked by missing external function deployment access.
+- [ ] Validate test checkout/webhook, refunds and complete settlement reconciliation before owner-approved live activation — blocked by deployment/access and KYC approval.
+
 ## Unavailable network bundle clicks
 - [x] Apply network pauses to public bundle availability and prevent opening recipient entry. Five availability tests pass; browser verifies all 10 Telecel and 14 AirtelTigo cards disabled, all 14 MTN cards enabled; unavailable labels visible and build OK. Awaiting publish.
 
