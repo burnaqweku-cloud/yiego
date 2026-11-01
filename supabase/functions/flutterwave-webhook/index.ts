@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     if (!verified.ok) return jsonResponse({ received: true, verified: false, state: verified.status });
     if ((verified.currency ?? "GHS") !== "GHS") return jsonResponse({ received: true, verified: false, state: `currency_${verified.currency}` });
 
-    const result = await settlePaymentIntent(supabase, { provider: "flutterwave", providerReference: reference, paidAmount: verified.amount, transactionId: verified.transactionId, source: "webhook" });
+    const result = await settlePaymentIntent(supabase, { provider: "flutterwave", providerReference: reference, paidAmount: verified.amount, currency: verified.currency, transactionId: verified.transactionId, source: "webhook" });
     if (result.status !== "error") {
       await supabase.from("payment_events").update({ processed_at: new Date().toISOString() }).eq("provider", "flutterwave").eq("event_type", eventType).eq("provider_reference", reference);
     }

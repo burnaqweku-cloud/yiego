@@ -24,15 +24,16 @@ Deno.serve(async (req) => {
     const data = payload.data ?? {};
     const reference: string | null = data.reference ?? null;
 
-    await supabase.from("payment_events").upsert({ provider: "kora", event_type: eventType, provider_reference: reference, payload }, { onConflict: "provider,event_type,provider_reference" });
+    const { error: eventError } = await supabase.from("payment_events").upsert({ provider: "kora", event_type: eventType, provider_reference: reference, payload }, { onConflict: "provider,event_type,provider_reference" });
+    if (eventError) return jsonResponse({ error: "Payment event could not be saved" }, { status: 500 });
 
     if (eventType !== "charge.success" || !reference) return jsonResponse({ received: true, settled: false });
 
     const verified = await verifyKoraCharge(reference);
-    if (!verified.ok) return jsonResponse({ received: true, verified: false, state: verified.status });
-    if ((verified.currency ?? "GHS") !== "GHS") return jsonResponse({ received: true, verified: false, state: `currency_${verified.currency}` });
+    if (!verified.ok) return jsonResponse({ received: true, verified: false, state: verified.status }, { status: 503 });
+    if (verified.currency !== "GHS") return jsonResponse({ received: true, verified: false }, { status: 409 });
 
-    const result = await settlePaymentIntent(supabase, { provider: "kora", providerReference: reference, paidAmount: verified.amount, transactionId: verified.transactionId, source: "webhook" });
+    const result = await settlePaymentIntent(supabase, { provider: "kora", providerReference: reference, paidAmount: verified.amount, currency: verified.currency, transactionId: verified.transactionId, source: "webhook" });
     if (result.status !== "error") {
       await supabase.from("payment_events").update({ processed_at: new Date().toISOString() }).eq("provider", "kora").eq("event_type", eventType).eq("provider_reference", reference);
     }

@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
       const v = await verifyWithGateway(gw, providerReference);
       if (!v.ok) return jsonResponse({ status: "not_paid", orderReference, gateway: gw, gatewayStatus: v.status });
       await supabase.from("payment_events").upsert({ provider: gw, event_type: "charge.success.reconciled", provider_reference: providerReference, payload: v.payload, processed_at: new Date().toISOString() }, { onConflict: "provider,event_type,provider_reference" });
-      const settled = await settlePaymentIntent(supabase, { provider: gw, providerReference, paidAmount: v.amount, transactionId: v.transactionId, source: "reconcile" });
+      const settled = await settlePaymentIntent(supabase, { provider: gw, providerReference, paidAmount: v.amount, currency: v.currency, transactionId: v.transactionId, source: "reconcile" });
       if (settled.status === "error") return jsonResponse({ error: settled.error }, { status: 400 });
       if (settled.test) return jsonResponse({ status: "test_payment", orderReference, message: "TEST payment: recorded, nothing delivered." });
       const { data: fresh } = await supabase.from("orders").select("status, supplier_status, supplier_order_reference").eq("id", order.id).maybeSingle();

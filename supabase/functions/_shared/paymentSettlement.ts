@@ -7,6 +7,7 @@
    written, and no wallet is credited, no plan activated, no order paid or sent to a supplier. */
 import { fulfillOrderWithDataMartGH } from "./fulfillment.ts";
 import { sendOrderConfirmation } from "./email.ts";
+import { matchesPayment } from "./paymentVerification.ts";
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -18,17 +19,20 @@ export interface SettleInput {
   providerReference: string;
   /** Amount the gateway says was actually paid, in major units (GHS). */
   paidAmount: number;
+  currency: string | null;
   /** Gateway-side transaction id, kept for refunds. */
   transactionId?: string | null;
   source: "webhook" | "reconcile";
 }
 
 export async function settlePaymentIntent(supabase: Db, input: SettleInput): Promise<{ status: string; purpose?: string; test?: boolean; error?: string }> {
-  const { data: intent, error } = await supabase.from("payment_intents").select("id, amount, purpose, status, order_id, user_id, metadata").eq("provider", input.provider).eq("provider_reference", input.providerReference).maybeSingle();
+  const { data: intent, error } = await supabase.from("payment_intents").select("id, amount, currency, purpose, status, order_id, user_id, metadata").eq("provider", input.provider).eq("provider_reference", input.providerReference).maybeSingle();
   if (error) return { status: "error", error: error.message };
   if (!intent) return { status: "no_intent" };
   if (intent.status === "succeeded") return { status: "already_settled", purpose: intent.purpose };
-  if (input.paidAmount < Number(intent.amount)) return { status: "error", purpose: intent.purpose, error: "Verified amount is less than payment intent amount" };
+  if (!matchesPayment({ amount: input.paidAmount, currency: input.currency }, intent)) return { status: "error", purpose: intent.purpose, error: "Verified payment does not match the expected amount and currency" };
+  if (["cancelled", "failed", "refunded"].includes(intent.status)) return { status: "error", error: "Closed payment needs manual reconciliation" };
+  if (input.provider === "kora" && /^sk_test_/.test(Deno.env.get("KORA_SECRET_KEY") ?? "") && intent.metadata?.test !== true) return { status: "error", error: "Test charge cannot settle a real payment intent" };
 
   const now = new Date().toISOString();
   const test = intent.metadata?.test === true;
@@ -57,9 +61,9 @@ export async function settlePaymentIntent(supabase: Db, input: SettleInput): Pro
   }
 
   if (intent.purpose === "guest_data_purchase" && intent.order_id) {
-    await supabase.from("payment_intents").update({ status: "succeeded", verified_at: now, metadata: meta }).eq("id", intent.id);
     const { data: order, error: orderError } = await supabase.from("orders").select("id, status, payment_status, supplier_order_reference").eq("id", intent.order_id).maybeSingle();
     if (orderError) return { status: "error", purpose: intent.purpose, error: orderError.message };
+    if (!order || ["cancelled", "refunded"].includes(order.status) || order.payment_status === "refunded") return { status: "error", error: "Closed order needs manual reconciliation" };
     if (order && order.payment_status !== "succeeded") {
       await supabase.from("orders").update({ payment_status: "succeeded", status: order.status === "awaiting_payment" ? "paid" : order.status, paid_by_user_id: intent.user_id ?? null, paid_at: now, updated_at: now, payment_provider: input.provider }).eq("id", order.id);
       await supabase.from("order_events").insert({ order_id: order.id, event_type: "payment.succeeded", from_status: order.status, to_status: "paid", message: `${LABEL[input.provider]} confirmed data purchase payment${input.source === "reconcile" ? " (reconciled)" : ""}`, metadata: { provider: input.provider, reference: input.providerReference, amount: input.paidAmount, paidByUserId: intent.user_id ?? null } });
@@ -72,6 +76,8 @@ export async function settlePaymentIntent(supabase: Db, input: SettleInput): Pro
       }
     }
     if (order) { try { await sendOrderConfirmation(supabase, order.id); } catch { /* email is best-effort */ } }
+    const { error: settledError } = await supabase.from("payment_intents").update({ status: "succeeded", verified_at: now, metadata: meta }).eq("id", intent.id);
+    if (settledError) return { status: "error", error: settledError.message };
     return { status: "settled", purpose: intent.purpose };
   }
 

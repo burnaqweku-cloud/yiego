@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { verifyWithGateway } from "../_shared/gateway.ts";
+import { matchesPayment } from "../_shared/paymentVerification.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +18,7 @@ Deno.serve(async (req) => {
     const url = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const paystackKey = Deno.env.get("PAYSTACK_SECRET_KEY");
-    if (!url || !serviceKey || !paystackKey) return json({ error: "Payment verification is not configured" }, 503);
+    if (!url || !serviceKey) return json({ error: "Payment verification is not configured" }, 503);
 
     const supabase = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false }, db: { schema: "phase1" } });
     const { data: authData, error: authError } = await supabase.auth.getUser(token);
@@ -34,7 +35,8 @@ Deno.serve(async (req) => {
     if (intent.provider === "flutterwave" || intent.provider === "kora") {
       const fw = await verifyWithGateway(intent.provider as "flutterwave" | "kora", reference);
       if (!fw.ok) return json({ status: fw.status === "failed" ? "failed" : "pending", message: "Payment confirmation is still pending" }, 202);
-      if (String(fw.currency ?? "").toUpperCase() !== String(intent.currency).toUpperCase() || fw.amount < Number(intent.amount)) return json({ error: "Verified payment details do not match the deposit request" }, 409);
+      if (!matchesPayment(fw, intent)) return json({ error: "Verified payment details do not match the deposit request" }, 409);
+      if (intent.provider === "kora" && /^sk_test_/.test(Deno.env.get("KORA_SECRET_KEY") ?? "") && intent.metadata?.test !== true) return json({ error: "Test charge cannot credit a real wallet" }, 409);
       if (intent.metadata?.test === true) {
         // TEST-key payment (admins only): record it, credit nothing.
         await supabase.from("payment_intents").update({ status: "succeeded", verified_at: new Date().toISOString(), metadata: { ...(intent.metadata ?? {}), transactionId: fw.transactionId, testSettledAt: new Date().toISOString() } }).eq("id", intent.id);
@@ -47,6 +49,7 @@ Deno.serve(async (req) => {
       return json({ status: "success", balance: Number(fwWallet.balance), currency: fwWallet.currency, amount: Number(intent.amount), reference });
     }
 
+    if (!paystackKey) return json({ error: "Paystack verification is not configured" }, 503);
     const verification = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, { headers: { Authorization: `Bearer ${paystackKey}` } });
     const payload = await verification.json().catch(() => null);
     if (!verification.ok) return json({ error: "Paystack could not verify this payment yet", status: "pending" }, 202);

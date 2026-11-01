@@ -4,6 +4,7 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { configuredGateway, gatewayConfigured, gatewayIsTestKey, type Gateway } from "../_shared/gateway.ts";
+import { koraLiveReady } from "../_shared/kora.ts";
 
 Deno.serve(async (req) => {
   const options = handleOptions(req);
@@ -23,8 +24,9 @@ Deno.serve(async (req) => {
     const describe = (g: Gateway) => {
       const configured = gatewayConfigured(g); const test = configured && gatewayIsTestKey(g);
       // Who is actually being charged through this gateway right now, given the guards in gateway.ts.
-      const effective = provider === g && configured ? (test ? "admins_only_test" : "everyone") : "nobody";
-      return { configured, test_key: test, effective, webhook_url: g === "paystack" ? null : `${base}/functions/v1/${g}-webhook` };
+      const liveReady = g !== "kora" || koraLiveReady();
+      const effective = provider === g && configured && (test || liveReady) ? (test ? "admins_only_test" : "everyone") : "nobody";
+      return { configured, test_key: test, effective, live_ready: liveReady, webhook_url: g === "paystack" ? null : `${base}/functions/v1/${g}-webhook` };
     };
     return jsonResponse({
       status: "success",
