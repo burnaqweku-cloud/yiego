@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Global maintenance
+- [ ] Add automatic on/off announcements, editable return message, store-specific maintenance branding and existing-Resend broadcast support; do not send a broadcast during development.
 - [x] Add editable master-admin notice and root full-page arrival/reload notice on main/store routes; verified admins bypass and customers dismiss for read-only browsing.
 - [x] Verify browser notice, dismissal, reload, direct prices arrival, tracking and blocked purchases on desktop/phone; simulate master save/preview while preserving plan fields. Fifteen targeted tests pass; preview build OK. Active database maintenance is absent/off; no live settings changed.
 - [ ] Deploy purchase guards and complete direct-RPC server enforcement — blocked by external deployment access; browser safeguards alone are not bypass-proof. Source guards prepared for five purchase/payment functions; deployment checklist in docs/maintenance-readiness.md.
