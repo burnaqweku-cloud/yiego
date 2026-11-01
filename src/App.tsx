@@ -146,7 +146,7 @@ const AGENT_ROUTES = <><Route index element={<AgentHome />} /><Route path="buy" 
 
 /* A connected custom domain or slug.datayego.com: that store lives at the root. */
 const StoreHostApp = ({ slug }: { slug: string }) => (
-  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><MaintenanceGate><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
+  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><MaintenanceGate hostSlug={slug}><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
     <Route path="/" element={<StoreShell hostSlug={slug} />}>{STORE_ROUTES}</Route>
     <Route path="/s/:slug" element={<StoreShell />}>{STORE_ROUTES}</Route>
     <Route path="/agent" element={<AgentShell />}>{AGENT_ROUTES}</Route>

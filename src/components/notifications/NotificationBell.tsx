@@ -10,7 +10,7 @@ export default function NotificationBell({ className = "" }: { className?: strin
   const [selected, setSelected] = useState<Announcement | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const load = () => void loadAnnouncements().then(setItems);
-  useEffect(() => { load(); return visibleInterval(load, 5 * 60 * 1000); }, []);
+  useEffect(() => { load(); const cleanup = visibleInterval(load, 30 * 1000); window.addEventListener("yego:announcements-refresh", load); return () => { cleanup(); window.removeEventListener("yego:announcements-refresh", load); }; }, []);
   useEffect(() => { if (!open) { setSelected(null); return; } const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }; document.addEventListener("mousedown", onDoc); return () => document.removeEventListener("mousedown", onDoc); }, [open]);
   // Keep the panel fully on screen: it hangs from the bell's right edge, but on
   // phones the bell sits left of the menu button, so shift it to fit 12px margins.

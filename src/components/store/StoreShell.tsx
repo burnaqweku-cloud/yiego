@@ -9,6 +9,8 @@ import StoreSupport from "@/components/store/StoreSupport";
 import StorePopup from "@/components/store/StorePopup";
 import { supabase } from "@/integrations/supabase/client";
 import "./templates.css";
+import { loadMaintenanceAnnouncements } from "@/lib/maintenance";
+import { visibleInterval } from "@/lib/requestCache";
 
 /* Agent accent (#rrggbb) -> HSL parts for the template CSS variables. */
 function accentVars(hex: string | null): Record<string, string> {
@@ -50,8 +52,17 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
   useEffect(() => {
     if (!slug) return;
     const p1 = (supabase as unknown as { schema: (s: string) => { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown }> } }).schema("phase1");
-    void p1.rpc("store_announcements_for", { p_slug: slug }).then((r) => setAnns((r.data as typeof anns) ?? []));
+    let live = true;
+    const load = async () => {
+      const [r, maintenance] = await Promise.all([p1.rpc("store_announcements_for", { p_slug: slug }), loadMaintenanceAnnouncements().catch(() => [])]);
+      if (live) setAnns([...maintenance.map((a) => ({ ...a, created_at: a.starts_at })), ...((r.data as typeof anns) ?? [])]);
+    };
+    void load();
+    const stop = visibleInterval(() => void load(), 30000);
+    const refresh = () => void load();
+    window.addEventListener("yego:announcements-refresh", refresh);
     void p1.rpc("store_visit", { p_slug: slug });
+    return () => { live = false; stop(); window.removeEventListener("yego:announcements-refresh", refresh); };
   }, [slug]);
   const markSeen = () => { localStorage.setItem(seenKey, anns.map((a) => a.id).join(",")); setAnnOpen(true); };
   const [store, setStore] = useState<StoreData | null | undefined>(undefined);
