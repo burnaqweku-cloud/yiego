@@ -36,3 +36,15 @@ export async function loadMaintenanceAnnouncements(): Promise<MaintenanceAnnounc
     return typeof a.id === "string" && a.id.startsWith("maintenance:") && typeof a.title === "string" && typeof a.body === "string" && typeof a.starts_at === "string" && (a.kind === "warning" || a.kind === "notice") ? [a as unknown as MaintenanceAnnouncement] : [];
   });
 }
+export interface MaintenanceEmailProgress { announcementId: string; total: number; sent: number; pending: number; sending: number; failed: number; rateLimited?: boolean }
+
+/** Sends one batch of the newest maintenance email; call repeatedly until nothing is pending. */
+export async function sendMaintenanceEmailBatch(announcementId: string): Promise<MaintenanceEmailProgress> {
+  const { data, error } = await supabase.functions.invoke("maintenance-email", { body: { announcementId } });
+  if (error) {
+    let message = "Could not send maintenance emails.";
+    try { const ctx = (error as { context?: Response }).context; const j = ctx ? await ctx.json() : null; if (j?.error) message = j.error; } catch { /* keep default */ }
+    throw new Error(message);
+  }
+  return data as MaintenanceEmailProgress;
+}
