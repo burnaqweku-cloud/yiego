@@ -1,5 +1,10 @@
 # Roadmap
 
+## Global maintenance
+- [ ] Add editable admin notice and full-page arrival/reload notice on every site/store route, with admin exemption and dismissal for read-only browsing.
+- [ ] Block non-admin purchases and write actions while preserving sign-in, account viewing and order tracking; verify rules and live protections.
+- [ ] Verify notice, dismissal, reload and admin controls; keep maintenance off until owner activates it.
+
 ## Paystack Telecel payout routing
 - [ ] Create and verify the requested Telecel Cash subaccount with zero main-account share — blocked: Paystack returned 401 on the authenticated subaccount lookup; no creation was attempted.
 - [ ] Activate routing for all future Paystack checkouts on the active external service and verify it — blocked by Paystack authorization and missing external deployment access; existing collected funds are not rerouted by a subaccount change.
