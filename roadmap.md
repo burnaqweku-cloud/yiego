@@ -1,5 +1,9 @@
 # Roadmap
 
+## Paystack Telecel payout routing
+- [ ] Create and verify the requested Telecel Cash subaccount with zero main-account share.
+- [ ] Activate routing for all future Paystack checkouts on the active external service and verify it; existing collected funds are not rerouted by a subaccount change.
+
 ## Kora readiness (Paystack remains active)
 - [x] Audit checkout, verification, refunds, wallet/agent payments and Finance against official Kora documentation; remaining refund/settlement/ledger parity is explicitly blocked before live activation (docs/kora-readiness.md).
 - [x] Prepare isolated Kora API helpers, safe payment checks, read-only balance reporting and regression tests without changing the current provider or profit calculation. Source preparation only; no real provider checkout verified.
