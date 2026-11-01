@@ -9,16 +9,17 @@ import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { Button } from "@/components/ui/button";
 import { loadMaintenance } from "@/lib/maintenance";
 import { DEFAULT_MAINTENANCE, maintenanceApplies, maintenanceBlocksRequest, type MaintenanceSettings } from "@/lib/maintenancePolicy";
+import { isStoreHost } from "@/lib/storeHost";
 
 const MaintenanceContext = createContext({ blocked: false, message: DEFAULT_MAINTENANCE.blocked_message });
 export const useMaintenance = () => useContext(MaintenanceContext);
 
-export function MaintenanceNotice({ settings, onClose, preview = false }: { settings: MaintenanceSettings; onClose: () => void; preview?: boolean }) {
+export function MaintenanceNotice({ settings, onClose, preview = false, brand = "DataYego" }: { settings: MaintenanceSettings; onClose: () => void; preview?: boolean; brand?: string }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => { closeRef.current?.focus(); }, []);
   return <section role="dialog" aria-modal="true" aria-labelledby="maintenance-title" aria-describedby="maintenance-reason" className={`${preview ? "min-h-[520px] rounded-lg border border-border" : "fixed inset-0 z-[250] min-h-dvh"} overflow-y-auto bg-background text-foreground`} onKeyDown={(e) => { if (e.key === "Escape") onClose(); if (e.key === "Tab") { e.preventDefault(); closeRef.current?.focus(); } }}>
     <div className="mx-auto flex min-h-full max-w-3xl flex-col px-6 py-8 sm:px-10 sm:py-12">
-      <div className="flex items-center justify-between gap-4"><span className="font-display text-xl font-semibold">DataYego<span className="text-amber">.</span></span><Button ref={closeRef} variant="quiet" size="icon" aria-label="Close maintenance notice and browse" onClick={onClose}><X /></Button></div>
+      <div className="flex items-center justify-between gap-4"><span className="min-w-0 break-words font-display text-xl font-semibold">{brand}</span><Button ref={closeRef} variant="quiet" size="icon" aria-label="Close maintenance notice and browse" onClick={onClose}><X /></Button></div>
       <div className="my-auto py-14 sm:py-20">
         <Wrench size={48} strokeWidth={1.3} className="mb-8 text-amber" />
         <p className="mb-4 flex items-center gap-2 text-sm font-semibold text-amber"><span className="h-2 w-2 rounded-full bg-amber" />Maintenance in progress</p>
@@ -33,10 +34,22 @@ export function MaintenanceNotice({ settings, onClose, preview = false }: { sett
   </section>;
 }
 
-export default function MaintenanceGate({ children }: { children: ReactNode }) {
+export default function MaintenanceGate({ children, hostSlug }: { children: ReactNode; hostSlug?: string }) {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, needsMfa, loading: adminLoading } = useAdminAccess();
   const location = useLocation();
+  const storeSlug = location.pathname.match(/^\/s\/([^/]+)/)?.[1] ?? hostSlug;
+  const storefront = Boolean(storeSlug) || isStoreHost();
+  const [brand, setBrand] = useState<{ slug?: string; name: string }>({ name: "" });
+  useEffect(() => {
+    if (!storeSlug) return;
+    let live = true;
+    // Public store lookup covers both parent and sub-agent stores, before the notice paints.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("agent_store", { p_slug: storeSlug, p_preview: true }).then(({ data }: { data: { store_name?: string } | null }) => { if (live) setBrand({ slug: storeSlug, name: data?.store_name ?? "Your store" }); }, () => { if (live) setBrand({ slug: storeSlug, name: "Your store" }); });
+    return () => { live = false; };
+  }, [storeSlug]);
+  const noticeBrand = storefront ? brand.slug === storeSlug ? brand.name || "Your store" : "Your store" : "DataYego";
   const [settings, setSettings] = useState(DEFAULT_MAINTENANCE);
   const [ready, setReady] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -111,6 +124,6 @@ export default function MaintenanceGate({ children }: { children: ReactNode }) {
       {blocked && ready && <div className="relative z-[90] flex flex-wrap items-center justify-center gap-2 border-b border-amber/30 bg-amber-soft px-4 py-2 text-center text-xs text-foreground" role="status"><Wrench size={14} className="text-amber" /><span>{error ? "Service availability could not be checked. Purchases are paused." : "Maintenance in progress · Browsing and order tracking only"}</span><Button variant="quiet" size="sm" onClick={() => error ? void refresh() : setDismissed(null)}>{error ? <RefreshCw /> : <Eye />}{error ? "Check again" : "View notice"}</Button></div>}
       <div ref={contentRef} onClickCapture={capture}>{children}</div>
     </>}
-    {show && createPortal(<MaintenanceNotice settings={settings} onClose={() => setDismissed(settings.revision)} />, document.body)}
+    {show && createPortal(<MaintenanceNotice settings={settings} brand={noticeBrand} onClose={() => setDismissed(settings.revision)} />, document.body)}
   </MaintenanceContext.Provider>;
 }

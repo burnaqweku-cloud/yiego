@@ -5,6 +5,8 @@ export interface MaintenanceSettings {
   eta: string;
   blocked_message: string;
   revision: string;
+  restored_title: string;
+  restored_message: string;
 }
 
 export const DEFAULT_MAINTENANCE: MaintenanceSettings = {
@@ -14,12 +16,19 @@ export const DEFAULT_MAINTENANCE: MaintenanceSettings = {
   eta: "",
   blocked_message: "Maintenance is in progress. This service is temporarily unavailable. Please try again later.",
   revision: "",
+  restored_title: "We’re back",
+  restored_message: "Maintenance is complete. You can buy your data again. Thank you for your patience.",
 };
 
 export function parseMaintenance(value: unknown): MaintenanceSettings {
   const v = value && typeof value === "object" ? value as Record<string, unknown> : {};
   const text = (key: keyof MaintenanceSettings, max: number) => typeof v[key] === "string" ? String(v[key]).trim().slice(0, max) : String(DEFAULT_MAINTENANCE[key]);
-  return { enabled: v.enabled === true, title: text("title", 120) || DEFAULT_MAINTENANCE.title, reason: text("reason", 2000) || DEFAULT_MAINTENANCE.reason, eta: text("eta", 200), blocked_message: text("blocked_message", 300) || DEFAULT_MAINTENANCE.blocked_message, revision: text("revision", 80) };
+  return { enabled: v.enabled === true, title: text("title", 120) || DEFAULT_MAINTENANCE.title, reason: text("reason", 2000) || DEFAULT_MAINTENANCE.reason, eta: text("eta", 200), blocked_message: text("blocked_message", 300) || DEFAULT_MAINTENANCE.blocked_message, revision: text("revision", 80), restored_title: text("restored_title", 120) || DEFAULT_MAINTENANCE.restored_title, restored_message: text("restored_message", 2000) || DEFAULT_MAINTENANCE.restored_message };
+}
+
+export function maintenanceTransition(before: MaintenanceSettings, after: MaintenanceSettings) {
+  if (before.enabled === after.enabled) return null;
+  return { id: `maintenance:${after.revision}`, title: after.enabled ? after.title : after.restored_title, body: after.enabled ? [after.reason, after.eta].filter(Boolean).join("\n\n") : after.restored_message, kind: after.enabled ? "warning" as const : "notice" as const };
 }
 
 const READ_FUNCTIONS = new Set(["track-order", "reconcile-guest-order", "verify-wallet-deposit", "supplier-delivery-status"]);
