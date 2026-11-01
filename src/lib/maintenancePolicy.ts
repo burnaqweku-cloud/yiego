@@ -29,7 +29,8 @@ const READ_RPCS = new Set(["admin_gate", "is_active_admin", "public_bootstrap", 
 export function maintenanceBlocksRequest(url: string, method: string, body?: unknown): boolean {
   const path = new URL(url, "https://local.invalid").pathname;
   const verb = method.toUpperCase();
-  if (["GET", "HEAD", "OPTIONS"].includes(verb) || path.startsWith("/auth/")) return false;
+  if (["GET", "HEAD", "OPTIONS"].includes(verb)) return false;
+  if (path.startsWith("/auth/")) return path.endsWith("/user") && ["PUT", "PATCH", "DELETE"].includes(verb);
   const fn = path.match(/\/functions\/v1\/([^/]+)/)?.[1];
   if (fn) {
     if (READ_FUNCTIONS.has(fn)) return false;

@@ -26,6 +26,7 @@ describe("maintenance rules", () => {
   it("blocks withdrawals and account/business modifications", () => {
     for (const rpc of ["agent_request_payout", "agent_update_store", "agent_set_price", "order_fix_recipient"]) expect(maintenanceBlocksRequest(`/rest/v1/rpc/${rpc}`, "POST")).toBe(true);
     expect(maintenanceBlocksRequest("/rest/v1/profiles", "PATCH")).toBe(true);
+    expect(maintenanceBlocksRequest("/auth/v1/user", "PUT")).toBe(true);
     expect(maintenanceBlocksRequest("/storage/v1/object/logos", "POST")).toBe(true);
   });
   it("does not trust string enabled flags and normalizes editable content", () => {

@@ -39,6 +39,7 @@ export default function MaintenanceGate({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [settings, setSettings] = useState(DEFAULT_MAINTENANCE);
   const [ready, setReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [error, setError] = useState(false);
   const [dismissed, setDismissed] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -51,6 +52,7 @@ export default function MaintenanceGate({ children }: { children: ReactNode }) {
     finally { busy.current = false; }
   }, []);
   useEffect(() => {
+    setMounted(true);
     void refresh();
     const timer = window.setInterval(() => void refresh(), 10000);
     const focus = () => { if (document.visibilityState === "visible") void refresh(); };
@@ -73,7 +75,7 @@ export default function MaintenanceGate({ children }: { children: ReactNode }) {
       const url = input instanceof Request ? input.url : String(input);
       let body: unknown = init?.body;
       if (input instanceof Request && body == null && !["GET", "HEAD"].includes(input.method)) { try { body = await input.clone().text(); } catch { /* unreadable write stays blocked */ } }
-      const isOwnService = url.startsWith(import.meta.env.VITE_SUPABASE_URL);
+      const isOwnService = new URL(url, window.location.origin).origin === new URL(import.meta.env.VITE_SUPABASE_URL).origin;
       if (isOwnService && maintenanceBlocksRequest(url, init?.method ?? (input instanceof Request ? input.method : "GET"), body)) {
         notify();
         return new Response(JSON.stringify({ error: message, code: "maintenance_active" }), { status: 503, headers: { "Content-Type": "application/json", "Retry-After": "60" } });
@@ -103,7 +105,7 @@ export default function MaintenanceGate({ children }: { children: ReactNode }) {
     if (destructive) { e.preventDefault(); e.stopPropagation(); notify(); }
   };
 
-  const initialCheck = !ready && !location.pathname.startsWith("/admin") && !/^\/auth|\/sign-in$/.test(location.pathname);
+  const initialCheck = mounted && !ready && !location.pathname.startsWith("/admin") && !/^\/auth|\/sign-in$/.test(location.pathname);
   return <MaintenanceContext.Provider value={{ blocked, message }}>
     {initialCheck ? <div className="grid min-h-dvh place-items-center bg-background"><Loader2 size={24} className="animate-spin text-amber" aria-label="Checking service availability" /></div> : <>
       {blocked && ready && <div className="relative z-[90] flex flex-wrap items-center justify-center gap-2 border-b border-amber/30 bg-amber-soft px-4 py-2 text-center text-xs text-foreground" role="status"><Wrench size={14} className="text-amber" /><span>{error ? "Service availability could not be checked. Purchases are paused." : "Maintenance in progress · Browsing and order tracking only"}</span><Button variant="quiet" size="sm" onClick={() => error ? void refresh() : setDismissed(null)}>{error ? <RefreshCw /> : <Eye />}{error ? "Check again" : "View notice"}</Button></div>}
