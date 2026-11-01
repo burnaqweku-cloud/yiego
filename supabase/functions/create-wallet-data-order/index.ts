@@ -2,6 +2,7 @@ import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
 import { fulfillOrderWithDataMartGH } from "../_shared/fulfillment.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { maintenanceError } from "../_shared/maintenance.ts";
 
 function normalizePhone(value: string) {
   return value.replace(/\D/g, "").slice(0, 10);
@@ -31,6 +32,8 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
+    const unavailable = await maintenanceError(supabase, authData.user.id, token);
+    if (unavailable) return jsonResponse({ error: unavailable, code: "maintenance_active" }, { status: 503 });
     const productId = String(body.productId ?? "");
     const recipientPhone = normalizePhone(String(body.recipientPhone ?? ""));
 

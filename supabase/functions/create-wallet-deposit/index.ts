@@ -3,6 +3,7 @@ import { makePaystackReference } from "../_shared/paystack.ts";
 import { startCheckout } from "../_shared/gateway.ts";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { maintenanceError } from "../_shared/maintenance.ts";
 
 Deno.serve(async (req) => {
   const options = handleOptions(req);
@@ -28,6 +29,8 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
+    const unavailable = await maintenanceError(supabase, authData.user.id, token);
+    if (unavailable) return jsonResponse({ error: unavailable, code: "maintenance_active" }, { status: 503 });
     const amount = Number(body.amount);
 
     if (!Number.isFinite(amount) || amount < 1) {

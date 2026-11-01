@@ -6,6 +6,7 @@ import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
 import { canManageUnpaidOrder } from "../_shared/unpaidOrder.ts";
 import { recordPrefixConfirmation } from "../_shared/numberPrefix.ts";
+import { maintenanceError } from "../_shared/maintenance.ts";
 
 function makeOrderReference(prefix = "YG") {
   return `${prefix}-${crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`;
@@ -45,6 +46,8 @@ Deno.serve(async (req) => {
       ? await supabase.auth.getUser(token)
       : { data: { user: null } };
     const authenticatedUser = authData.user ?? null;
+    const unavailable = await maintenanceError(supabase, authenticatedUser?.id, token);
+    if (unavailable) return jsonResponse({ error: unavailable, code: "maintenance_active" }, { status: 503 });
     if (guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
       return jsonResponse({ error: "That email address doesn't look right" }, { status: 400 });
     }

@@ -3,6 +3,7 @@ import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { makePaystackReference } from "../_shared/paystack.ts";
 import { startCheckout } from "../_shared/gateway.ts";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
+import { maintenanceError } from "../_shared/maintenance.ts";
 
 /* Agent pays for 1, 3 or 12 months through Paystack. The webhook activates the
    month once Paystack confirms. */
@@ -16,6 +17,8 @@ Deno.serve(async (req) => {
     const supabase = createSupabaseAdmin();
     const { data: auth } = await supabase.auth.getUser(token);
     if (!auth?.user?.email) return jsonResponse({ error: "Invalid session" }, { status: 401 });
+    const unavailable = await maintenanceError(supabase, auth.user.id, token);
+    if (unavailable) return jsonResponse({ error: unavailable, code: "maintenance_active" }, { status: 503 });
     const { data: agent } = await supabase.from("agents").select("id, slug, status, paid_until").eq("user_id", auth.user.id).maybeSingle();
     if (!agent) return jsonResponse({ error: "You're not an approved agent yet." }, { status: 403 });
     if (agent.status === "suspended") return jsonResponse({ error: "This agent account is suspended." }, { status: 403 });
