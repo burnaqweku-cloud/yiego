@@ -1,4 +1,5 @@
 # Architecture rules
+- Global maintenance uses the publicly readable agent_plan.maintenance settings namespace and the existing master/AAL2 settings RPC; the root gate covers main and store trees, preserves reads/auth/paid reconciliation, and blocks new browser mutations. Server guards must be deployed externally before claiming bypass-proof enforcement.
 - Kora remains isolated preparation: live routing requires explicit readiness approval; report available/pending balances separately and never apply Paystack refund or settlement semantics to Kora funds.
 - Public catalogue loading merges network pauses into product availability and fails closed when network availability is unknown, so all catalogue consumers block purchases consistently without changing server purchase rules.
 - Delivery-ahead profit is display-only: simulate healthy supplier-accepted queued delivery by releasing delivery and pending-fee liabilities, creating agent/parent margin debts, and deducting supplier costs only for ledger-fallback assets; never alter main profit or money records.

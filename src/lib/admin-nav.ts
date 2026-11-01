@@ -27,6 +27,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "reviews", label: "Review queue", to: "/admin/reviews", icon: ShieldCheck, keywords: ["needs review", "failed", "stuck"] },
     { id: "disputes", label: "Disputes", to: "/admin/disputes", icon: MessageSquareWarning, keywords: ["complaint", "chargeback"] },
     { id: "status", label: "Status", to: "/admin/status", icon: Activity, keywords: ["delay", "slow", "apology", "processing", "outage"] },
+    { id: "maintenance", label: "Maintenance", to: "/admin/maintenance", icon: Settings2, keywords: ["maintenance", "pause", "site", "read only", "notice"] },
   ] },
   { id: "money", label: "Money", icon: Landmark, pages: [
     { id: "finance", label: "Finance", to: "/admin/finance", icon: TrendingUp, keywords: ["money put in", "top-ups", "funding", "revenue", "profit", "margin", "sales", "reconciliation"] },
