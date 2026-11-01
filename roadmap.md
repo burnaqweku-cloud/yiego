@@ -1,5 +1,11 @@
 # Roadmap
 
+## Global maintenance
+- [x] Add editable master-admin notice and root full-page arrival/reload notice on main/store routes; verified admins bypass and customers dismiss for read-only browsing.
+- [x] Verify browser notice, dismissal, reload, direct prices arrival, tracking and blocked purchases on desktop/phone; simulate master save/preview while preserving plan fields. Fifteen targeted tests pass; preview build OK. Active database maintenance is absent/off; no live settings changed.
+- [ ] Deploy purchase guards and complete direct-RPC server enforcement — blocked by external deployment access; browser safeguards alone are not bypass-proof. Source guards prepared for five purchase/payment functions; deployment checklist in docs/maintenance-readiness.md.
+- [ ] Verify real authenticated master saving/admin exemption and deployed end-to-end purchase protection — blocked by unavailable external authenticated browser/deployment access. Frontend not published; keep maintenance off until owner activates it.
+
 ## Paystack Telecel payout routing
 - [ ] Create and verify the requested Telecel Cash subaccount with zero main-account share — blocked: Paystack returned 401 on the authenticated subaccount lookup; no creation was attempted.
 - [ ] Activate routing for all future Paystack checkouts on the active external service and verify it — blocked by Paystack authorization and missing external deployment access; existing collected funds are not rerouted by a subaccount change.

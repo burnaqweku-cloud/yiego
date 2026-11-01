@@ -5,6 +5,7 @@ import { sendOrderConfirmation } from "../_shared/email.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
 import { fulfillOrder } from "../_shared/fulfillment.ts";
 import { recordPrefixConfirmation } from "../_shared/numberPrefix.ts";
+import { maintenanceError } from "../_shared/maintenance.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
@@ -21,9 +22,13 @@ Deno.serve(async (req) => {
     const supabase = admin();
     const { data: auth, error: authError } = await supabase.auth.getUser(token);
     if (authError || !auth.user) return json({ error: "Invalid session" }, 401);
-    await supabase.rpc("close_expired_unpaid_orders");
     const body = await req.json();
     const action = String(body.action ?? "");
+    if (!["lookup", "list_pending"].includes(action)) {
+      const unavailable = await maintenanceError(supabase, auth.user.id, token);
+      if (unavailable) return json({ error: unavailable, code: "maintenance_active" }, 503);
+      await supabase.rpc("close_expired_unpaid_orders");
+    }
 
     if (action === "prepare") {
       const supplierRaw = typeof body?.supplierId === "string" ? body.supplierId.trim() : "";

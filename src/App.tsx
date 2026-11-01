@@ -11,6 +11,7 @@ import { WalletProvider } from "@/store/wallet";
 import { ProfileProvider } from "@/store/profile";
 import { FlowsProvider } from "@/store/flows";
 import AppPage from "@/components/layout/AppPage";
+import MaintenanceGate from "@/components/layout/MaintenanceGate";
 import PublicShell from "@/components/layout/PublicShell";
 import StoreMissing from "@/components/store/StoreMissing";
 import Home from "./pages/Home";
@@ -71,6 +72,7 @@ const Giveaway = lazy(() => import("./pages/Giveaway"));
 const AgentCheckMtn = lazy(() => import("./pages/agent/AgentCheckMtn"));
 const AdminSubmittedNumbers = lazy(() => import("./pages/AdminSubmittedNumbers"));
 const AdminStatus = lazy(() => import("./pages/AdminStatus"));
+const AdminMaintenance = lazy(() => import("./pages/AdminMaintenance"));
 const AdminSms = lazy(() => import("./pages/AdminSms"));
 const AdminMtnVerification = lazy(() => import("./pages/AdminMtnVerification"));
 const AdminMtnVerificationSent = lazy(() => import("./pages/AdminMtnVerificationSent"));
@@ -144,12 +146,12 @@ const AGENT_ROUTES = <><Route index element={<AgentHome />} /><Route path="buy" 
 
 /* A connected custom domain or slug.datayego.com: that store lives at the root. */
 const StoreHostApp = ({ slug }: { slug: string }) => (
-  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
+  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><MaintenanceGate><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
     <Route path="/" element={<StoreShell hostSlug={slug} />}>{STORE_ROUTES}</Route>
     <Route path="/s/:slug" element={<StoreShell />}>{STORE_ROUTES}</Route>
     <Route path="/agent" element={<AgentShell />}>{AGENT_ROUTES}</Route>
     <Route path="*" element={<Navigate to="/" replace />} />
-  </Routes></Suspense></FlowsProvider></ProfileProvider></WalletProvider></AuthProvider></ThemeProvider></BrowserRouter>
+  </Routes></Suspense></FlowsProvider></MaintenanceGate></ProfileProvider></WalletProvider></AuthProvider></ThemeProvider></BrowserRouter>
 );
 const StoreHostGate = () => {
   // undefined: looking up; null: no store at this address; "error": the lookup itself failed (network, outage).
@@ -173,7 +175,8 @@ const StoreHostGate = () => {
 /* The main site's whole tree, without a router: BrowserRouter on the client, StaticRouter when the public pages are
    pre-rendered at build time (src/entry-server.tsx). Keep the two in step by only ever editing this. */
 export const MainSite = () => (
-  <><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
+  <><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><MaintenanceGate><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
+    <Route path="/admin/maintenance" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<AdminMaintenance />} /></Route>
     {/* Focused, chrome-free task pages. */}
     <Route path="/admin/new-finance" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<AdminNewFinance />} /></Route>
     <Route path="/admin/finance-v2" element={<RequireAdmin><AdminShell /></RequireAdmin>}><Route index element={<AdminFinanceV2 />} /><Route path="paystack" element={<AdminPaystackHeld />} /></Route>
@@ -222,7 +225,7 @@ export const MainSite = () => (
       {/* A real 404 (noindexed) instead of a soft-404 redirect home. */}
       <Route path="*" element={<NotFound />} />
     </Route>
-  </Routes></Suspense></FlowsProvider></ProfileProvider></WalletProvider></AuthProvider></ThemeProvider></>
+  </Routes></Suspense></FlowsProvider></MaintenanceGate></ProfileProvider></WalletProvider></AuthProvider></ThemeProvider></>
 );
 
 /* v7_startTransition: while the next page's code downloads, keep showing the current page instead of swapping to a

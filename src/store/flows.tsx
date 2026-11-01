@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import BuyDataFlow, { type BuyPreselect } from "@/components/flows/BuyDataFlow";
 import AddMoneyFlow from "@/components/flows/AddMoneyFlow";
 import { useAuth } from "@/store/auth-context";
+import { useMaintenance } from "@/components/layout/MaintenanceGate";
+import { toast } from "sonner";
 
 /**
  * App-wide flow launcher. openService(id) routes ANY catalog service to its
@@ -24,17 +26,20 @@ const FlowsContext = createContext<FlowsValue | null>(null);
 export function FlowsProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { blocked, message } = useMaintenance();
   const [buyOpen, setBuyOpen] = useState(false);
   const [buyPreselect, setBuyPreselect] = useState<BuyPreselect | null>(null);
   const [addOpen, setAddOpen] = useState(false);
 
   const toAddMoney = () => {
+    if (blocked) { toast.error(message); return; }
     setBuyOpen(false);
     if (isAuthenticated) setAddOpen(true);
     else navigate("/auth?next=%2Fwallet");
   };
 
   const openAddMoney = () => {
+    if (blocked) { toast.error(message); return; }
     if (!isAuthenticated) {
       navigate("/auth?next=%2Fwallet");
       return;
@@ -46,6 +51,7 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
     <FlowsContext.Provider
       value={{
         openBuyData: (preselect) => {
+          if (blocked) { toast.error(message); return; }
           // Guard the shape: an accidental `onClick={openBuyData}` would hand
           // the flow a MouseEvent, and a bad preselect must never block a sale.
           const valid =
@@ -62,12 +68,12 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
     >
       {children}
       <BuyDataFlow
-        open={buyOpen}
+        open={buyOpen && !blocked}
         preselect={buyPreselect}
         onClose={() => setBuyOpen(false)}
         onAddMoney={toAddMoney}
       />
-      <AddMoneyFlow open={addOpen && isAuthenticated} onClose={() => setAddOpen(false)} />
+      <AddMoneyFlow open={addOpen && isAuthenticated && !blocked} onClose={() => setAddOpen(false)} />
     </FlowsContext.Provider>
   );
 }
