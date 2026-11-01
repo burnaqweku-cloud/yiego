@@ -1,12 +1,13 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { webcrypto } from "node:crypto";
 import { matchesPayment, isTestPayment } from "../../supabase/functions/_shared/paymentVerification";
 import { parseKoraBalances, koraRefundState } from "../../supabase/functions/_shared/koraReporting";
-import { initializeKoraCharge, verifyKoraCharge, verifyKoraWebhook, koraLiveReady, initiateKoraRefund } from "../../supabase/functions/_shared/kora";
+import { initializeKoraCharge, verifyKoraCharge, verifyKoraWebhookSignature, koraLiveReady, initiateKoraRefund } from "../../supabase/functions/_shared/kora";
 
 const env = new Map<string, string>([["KORA_SECRET_KEY", "sk_test_fixture_not_a_credential"]]);
 vi.stubGlobal("Deno", { env: { get: (key: string) => env.get(key) } });
 vi.stubGlobal("crypto", webcrypto);
+beforeEach(() => { vi.stubGlobal("AbortSignal", { timeout: () => new AbortController().signal }); });
 afterEach(() => { vi.unstubAllGlobals(); env.delete("KORA_LIVE_ENABLED"); env.delete("KORA_GHS_REFUNDS_VERIFIED"); env.set("KORA_SECRET_KEY", "sk_test_fixture_not_a_credential"); vi.stubGlobal("Deno", { env: { get: (key: string) => env.get(key) } }); vi.stubGlobal("crypto", webcrypto); });
 
 describe("Kora rollout and financial safety", () => {
@@ -73,8 +74,8 @@ describe("Kora rollout and financial safety", () => {
     const key = await crypto.subtle.importKey("raw", encoder.encode("sk_test_fixture_not_a_credential"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
     const bytes = new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(JSON.stringify(data))));
     const signature = Array.from(bytes, (x) => x.toString(16).padStart(2, "0")).join("");
-    expect(await verifyKoraWebhook(JSON.stringify({ event: "charge.success", data }), signature)).toBe(true);
-    expect(await verifyKoraWebhook(JSON.stringify({ data: { ...data, amount: 100 } }), signature)).toBe(false);
-    expect(await verifyKoraWebhook(JSON.stringify({ data }), "forged")).toBe(false);
+    expect(await verifyKoraWebhookSignature(data, signature)).toBe(true);
+    expect(await verifyKoraWebhookSignature({ ...data, amount: 100 }, signature)).toBe(false);
+    expect(await verifyKoraWebhookSignature(data, "forged")).toBe(false);
   });
 });

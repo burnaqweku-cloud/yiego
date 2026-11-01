@@ -1,8 +1,8 @@
 # Roadmap
 
 ## Kora readiness (Paystack remains active)
-- [ ] Audit checkout, verification, refunds, wallet/agent payments and Finance against official Kora documentation.
-- [ ] Prepare isolated Kora API helpers, safe payment checks, read-only balance reporting and regression tests without changing the current provider or profit calculation.
+- [x] Audit checkout, verification, refunds, wallet/agent payments and Finance against official Kora documentation; remaining refund/settlement/ledger parity is explicitly blocked before live activation (docs/kora-readiness.md).
+- [x] Prepare isolated Kora API helpers, safe payment checks, read-only balance reporting and regression tests without changing the current provider or profit calculation. Source preparation only; no real provider checkout verified.
 - [ ] Deploy and configure rotated credentials on the active external service — blocked by missing external function deployment access.
 - [ ] Validate test checkout/webhook, refunds and complete settlement reconciliation before owner-approved live activation — blocked by deployment/access and KYC approval.
 
