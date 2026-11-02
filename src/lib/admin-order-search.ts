@@ -8,13 +8,13 @@ export function exactOrderReference(value: string): string | null {
   return /^(?:YG|AG|DS-ADM)-[A-Z0-9]+$/.test(reference) ? reference : null;
 }
 
-interface SearchQuery extends PromiseLike<{ data: AdminOrderRow[] | null; error: { message: string } | null }> {
-  select(columns: string): SearchQuery;
-  or(filters: string): SearchQuery;
-  order(column: string, options: { ascending: boolean }): SearchQuery;
-  limit(count: number): SearchQuery;
+interface SearchQuery<T> extends PromiseLike<{ data: T | null; error: { message: string } | null }> {
+  select(columns: string): SearchQuery<T>;
+  or(filters: string): SearchQuery<T>;
+  order(column: string, options: { ascending: boolean }): SearchQuery<T>;
+  limit(count: number): SearchQuery<T>;
 }
-export interface OrderSearchDatabase { from<T>(table: string): SearchQuery }
+export interface OrderSearchDatabase { from<T>(table: string): SearchQuery<T[]> }
 
 /** Targeted protected lookup; never depend on the recent browsing cache. */
 export async function findAdminOrder(database: OrderSearchDatabase, input: string): Promise<AdminOrderRow | null> {
