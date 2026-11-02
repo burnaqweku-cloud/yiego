@@ -1,5 +1,9 @@
 # Roadmap
 
+## Admin historical order lookup
+- [ ] Search order references against the full protected order history, not the loaded recent list; cover the main lookup and both order-list searches without changing order records.
+- [ ] Run regression tests and verify the historical reference lookup; authenticated external browser verification may be unavailable.
+
 ## Orders list refund button
 - [x] Add Refund beside Retry in Orders received; full refunds only with Process refund confirmation and existing server protections. Isolated desktop/phone sample check verified correct quote and cancellation; refund tests/build pass. No real refund sent; live signed-in check unavailable on the external backend. Awaiting publish.
 
