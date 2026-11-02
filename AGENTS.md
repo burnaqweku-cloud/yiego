@@ -1,4 +1,5 @@
 # Architecture rules
+- Admin reference searches use the protected targeted order-search helper independently of recent/date-filtered browsing caches, so historical orders remain findable without loading the whole table or weakening access controls.
 - Global maintenance uses agent_plan.maintenance and atomically stored transition announcements via the master/AAL2 settings RPC; main/store bells merge those notices and storefront gates resolve their own identity. Browser safeguards do not replace external server enforcement; maintenance emails go through the maintenance-email outbox (unique per notice+address, Resend idempotency keys), so retries never duplicate.
 - Kora remains isolated preparation: live routing requires explicit readiness approval; report available/pending balances separately and never apply Paystack refund or settlement semantics to Kora funds.
 - Public catalogue loading merges network pauses into product availability and fails closed when network availability is unknown, so all catalogue consumers block purchases consistently without changing server purchase rules.
