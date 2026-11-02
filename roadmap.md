@@ -1,5 +1,10 @@
 # Roadmap
 
+## Admin historical order lookup
+- [x] Search order references against the full protected order history in the main lookup and both order-list searches; exact reference matches ignore browsing filters, while counts remain unchanged. No order records changed.
+- [x] Five regression tests pass; build OK; new helper reads actual historical YG-302433AD1F through a read-only SQL adapter. Signed-out browser stays on sign-in with no page errors.
+- [ ] Verify signed-in historical search through the live Data API — blocked by unavailable authenticated external-browser session; not published yet.
+
 ## Orders list refund button
 - [x] Add Refund beside Retry in Orders received; full refunds only with Process refund confirmation and existing server protections. Isolated desktop/phone sample check verified correct quote and cancellation; refund tests/build pass. No real refund sent; live signed-in check unavailable on the external backend. Awaiting publish.
 
