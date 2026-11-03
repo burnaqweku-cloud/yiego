@@ -76,7 +76,7 @@ const SECTIONS: Section[] = [
 const FAQ = [
   {
     q: "Do I need a deposit to become an agent?",
-    a: "No. Your customers pay first, with Mobile Money or card on your store. Your profit on each sale is saved for you and you withdraw it to Mobile Money from GH₵20 (1% payout fee, minimum GH₵1). If a bundle fails, the customer is refunded and nothing comes out of your pocket.",
+    a: "No. Your customers pay first, with Mobile Money or card on your store. Your profit on each sale is saved for you and you withdraw it to Mobile Money from GH₵20, with no withdrawal fee. If a bundle fails, the customer is refunded and nothing comes out of your pocket.",
   },
   {
     q: "How much does an agent earn per bundle?",
