@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Clock3, Copy, CreditCard, ListChecks, Share2, WalletCards, Wifi, Zap } from "lucide-react";
 import { toast } from "sonner";
 import UnpaidOrderActions from "@/components/shop/UnpaidOrderActions";
-import { saveOrderToken, savedOrderToken, savedUnpaidReference } from "@/lib/unpaidOrders";
+import { forgetUnpaidReference, latestUnpaidReference, saveOrderToken, savedOrderToken, savedUnpaidReference } from "@/lib/unpaidOrders";
+import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 import { FlowFooter, FlowHeader, ProcessingView, SelectRow, SuccessView } from "./flow-parts";
 import { NETWORKS, type Bundle, type Network, type NetworkId } from "@/data/bundles";
@@ -32,7 +33,7 @@ import {
   type PreparedOrderSummary,
 } from "@/lib/phase1-api";
 
-type Step = "network" | "bundle" | "phone" | "review" | "pending" | "payOrder" | "shared" | "processing" | "success";
+type Step = "network" | "bundle" | "phone" | "review" | "recovery" | "pending" | "payOrder" | "shared" | "processing" | "success";
 type PaymentMethod = "wallet" | "paystack" | "shared";
 
 /** Where the flow should open when the shop already knows what the shopper
@@ -144,7 +145,9 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     setStep("network"); setNetwork(null); setBundle(null); setPhone(profile.phone);
     setGuestEmail(user?.email ?? profile.email); setPaymentMethod("wallet");
     setGuestPromoToken(null); setPromoDeclined(new Set());
-    setUnpaidReference(null); setActiveOrder(null); setHighlightOrder(null); setLookupReference(""); setReceiptRef(null);
+    const saved = open && !isAuthenticated ? latestUnpaidReference() : "";
+    setUnpaidReference(saved || null); if (saved) setStep("recovery");
+    setActiveOrder(null); setHighlightOrder(null); setLookupReference(""); setReceiptRef(null);
     if (open && auth.isAuthenticated && !agent) { void friendPriceEligible().then(setFriendPrice); void recordDevice(); } else setFriendPrice(false);
   }, [open, profile.email, profile.phone, user?.email, auth.isAuthenticated, agent]);
 
@@ -159,6 +162,10 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       setProductsLoading(false);
     });
     if (isAuthenticated) void refreshPending();
+    else {
+      const saved = latestUnpaidReference();
+      if (saved) { setUnpaidReference(saved); setStep("recovery"); }
+    }
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isAuthenticated]);
@@ -178,11 +185,12 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     const chosenNetwork = NETWORKS.find((n) => n.id === preselect.networkId);
     const chosenBundle = bundlesFor(preselect.networkId).find((b) => b.id === preselect.productCode);
     if (!chosenNetwork || !chosenBundle) return;
-    if (chosenBundle.unavailable) { setStep("network"); setNetwork(null); setBundle(null); return; }
+    if (chosenBundle.unavailable) { if (!unpaidReference && !latestUnpaidReference()) setStep("network"); setNetwork(null); setBundle(null); return; }
     setNetwork(chosenNetwork);
     setBundle(chosenBundle);
     if (preselect.campaign) setPhone(preselect.campaign.phone);
-    setStep("phone");
+    const saved = unpaidReference || (!isAuthenticated ? latestUnpaidReference() : "");
+    if (saved) { setUnpaidReference(saved); setStep("recovery"); } else setStep("phone");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, preselect, products]);
 
@@ -257,11 +265,17 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   async function refreshPending() {
     if (!isAuthenticated) return;
     const result = await listPendingOrders();
-    if (!result.error && result.data?.data) setPendingOrders(result.data.data);
+    if (!result.error && result.data?.data) {
+      setPendingOrders(result.data.data);
+      const unpaid = result.data.data.find((order) => order.status === "awaiting_payment" && ["pending", "created"].includes(order.payment_status));
+      if (unpaid && !activeOrder) { setUnpaidReference(unpaid.order_reference); setStep("recovery"); }
+    }
   }
 
   async function continueFromPhone() {
     if (!network || !bundle || !phoneValid || (prefixMismatch && !prefixOk)) return;
+    const saved = savedUnpaidReference(digits);
+    if (saved) { setUnpaidReference(saved); setStep("recovery"); return; }
     if (promotion) {
       if (!isAuthenticated) { toast.error("Sign in to purchase this offer."); return; }
       setStep("processing");
@@ -311,8 +325,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     }
     const prepared = result.data.data;
     if (prepared.existing) {
-      await refreshPending(); setHighlightOrder(prepared.orderReference); setStep("pending");
-      toast.info("An active order already exists for this recipient."); return;
+      await refreshPending(); setHighlightOrder(prepared.orderReference); setUnpaidReference(prepared.orderReference); setStep("recovery"); return;
     }
     setActiveOrder({ orderReference: prepared.orderReference, recipientPhone: digits, amount: Number(prepared.amount ?? bundle.price), networkName: network.name, bundleName: bundle.size, expiresAt: prepared.expiresAt ?? null, paymentArrangement: "unselected", paymentStatus: "pending", status: "awaiting_payment" });
     setStep("review");
@@ -330,7 +343,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       window.location.assign(result.data.data.authorizationUrl); return;
     }
     if (action === "share") { setStep("shared"); await refreshPending(); return; }
-    if (action === "cancel") { await refreshPending(); setStep("pending"); toast.success("Order cancelled."); return; }
+    if (action === "cancel") { forgetUnpaidReference(order.orderReference); setActiveOrder(null); setUnpaidReference(null); setBundle(null); await refreshPending(); setStep(network ? "bundle" : "network"); toast.success("Order cancelled. Choose another bundle."); return; }
     if (action === "pay_wallet") void refreshWallet();
     setReceiptRef(order.orderReference); setStep("success");
   }
@@ -350,10 +363,16 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     if (!bundle || !emailValid) { toast.error("That email doesn't look right. Fix it, or leave it empty."); return; }
     setStep("processing");
     const result = await createGuestDataPayment({ productId: bundle.id, recipientPhone: digits, guestEmail: guestEmail.trim(), guestPhone: digits, campaignToken: campaign?.token ?? guestPromoToken ?? undefined, agentSlug: agent?.slug, agentSelf: agent?.self ? true : undefined, prefixMismatchConfirmed: prefixConfirmed || undefined, managementToken: savedOrderToken(savedUnpaidReference(digits)) || undefined });
-    if (result.pendingOrderReference) { setUnpaidReference(result.pendingOrderReference); setStep("review"); return; }
-    if (result.error || !result.data?.data?.authorizationUrl) { toast.error("Could not start payment. If this number has an unpaid order, open Track order or ask support to cancel it."); setStep("review"); return; }
+    if (result.pendingOrderReference) { setUnpaidReference(result.pendingOrderReference); setStep("recovery"); return; }
+    if (result.error || !result.data?.data?.authorizationUrl) { toast.error(result.error ?? "Could not start payment. Please try again."); setStep("review"); return; }
     if (result.data.data.orderReference && result.data.data.managementToken) saveOrderToken(result.data.data.orderReference, result.data.data.managementToken, digits);
     window.location.assign(result.data.data.authorizationUrl);
+  }
+
+  function chooseAfterCancellation() {
+    setUnpaidReference(null); setActiveOrder(null); setBundle(null);
+    void refreshPending(); setStep(network ? "bundle" : "network");
+    toast.success("Unpaid order cancelled. Choose your bundle.");
   }
 
   const reviewRows = useMemo(() => {
@@ -371,7 +390,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   }, [activeOrder, bundle, digits, guestEmail, isAuthenticated, network]);
 
   // A preselected bundle (store card, giveaway) lands straight on its own step; never flash the menu while it settles.
-  const settling = open && preselect?.kind === "bundle" && (step === "network" || step === "bundle");
+  const settling = open && preselect?.kind === "bundle" && step === "network" && !network && !unpaidReference;
   return <Modal open={open} onClose={onClose} label="Buy data">
     {settling && <div className="flex min-h-[220px] items-center justify-center px-5 py-10"><div className="h-7 w-7 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Loading" /></div>}
     {!settling && step === "network" && <><FlowHeader title="Buy data" subtitle="Choose what you want to do" onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">
@@ -386,8 +405,10 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
 
     {step === "phone" && network && bundle && <><FlowHeader title={campaign ? "Giveaway" : "Who gets the data?"} subtitle={`${network.name} ${bundle.size} · ${formatGHS(campaign ? campaign.price : bundle.price)}`} onBack={campaign ? onClose : () => setStep("bundle")} onClose={onClose} /><div className="space-y-4 px-5 pb-2 pt-5"><div><label htmlFor="buydata-phone" className="text-[13px] font-semibold text-foreground">Phone number receiving the data</label><input id="buydata-phone" className="onyx-field mt-2 text-[16px] tracking-wide" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="024 000 0000" readOnly={Boolean(campaign)} />{campaign && <p className="mt-1.5 text-[12px] text-primary-glow">Giveaway price {formatGHS(campaign.price)} for this number. The number was fixed when you claimed.</p>}{phone.length > 0 && !phoneValid && <p className="mt-1.5 text-[12px] text-danger">Enter a valid 10-digit Ghana number.</p>}<p className="mt-2 text-[12px] leading-5 text-muted-foreground">Check this number carefully. It must be on {network.name}. A bundle sent to the wrong number can't be reversed or refunded.</p>{prefixMismatch && network && detectedNetwork && <div className="mt-3 rounded-xl border border-amber/30 bg-amber/[0.07] p-3.5"><p className="text-[13px] font-semibold leading-5 text-amber">This number looks like {NUMBER_NETWORK_LABEL[detectedNetwork]}. Is it on {network.name} (ported)?</p><p className="mt-1 text-[12px] leading-5 text-muted-foreground">Some numbers moved to another network and kept their old prefix. If this one is really on {network.name}, tick the box below. If you're not sure, change the number or pick {NUMBER_NETWORK_LABEL[detectedNetwork]} instead, because a bundle sent to the wrong network can't be reversed.</p><label className="mt-2.5 flex cursor-pointer items-start gap-2.5 text-[13px] leading-5 text-foreground"><input type="checkbox" checked={prefixOk} onChange={(e) => setPrefixOk(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#3cf0aa]" /><span>Yes, this number is on {network.name}</span></label><button type="button" className="mt-2 text-[12px] font-semibold text-primary-glow underline" onClick={() => { setBundle(null); setStep("network"); }}>Choose a different network</button></div>}{mtnCheck && (STATUS_COPY[mtnCheck.status].tone === "ok" || STATUS_COPY[mtnCheck.status].tone === "wait") && <p className={`mt-2 flex items-start gap-1.5 text-[12px] leading-5 ${STATUS_COPY[mtnCheck.status].tone === "ok" ? "text-primary-glow" : "text-amber"}`}>{STATUS_COPY[mtnCheck.status].tone === "ok" ? <Check size={14} className="mt-0.5 shrink-0" /> : <Clock size={14} className="mt-0.5 shrink-0" />}<span><b>{STATUS_COPY[mtnCheck.status].title}.</b> {STATUS_COPY[mtnCheck.status].text}</span></p>}</div>{!isAuthenticated && <div><label htmlFor="buydata-email" className="text-[13px] font-semibold text-foreground">Your email <span className="font-normal text-faint-foreground">(optional, for a receipt)</span></label><input id="buydata-email" className="onyx-field mt-2" inputMode="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} /></div>}<div className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5"><div><p className="text-[13.5px] font-semibold">{network.name} · {bundle.size}</p><p className="text-[12px] text-faint-foreground">{validityLabel(bundle.validity)}</p></div><span className="font-display text-[16px] font-semibold">{formatGHS(bundle.price)}</span></div><ImportantNotice compact network={network.id} /></div><FlowFooter><button type="button" className="onyx-btn-primary w-full disabled:opacity-40" disabled={!phoneValid || (prefixMismatch && !prefixOk) || (!isAuthenticated && !emailValid)} onClick={() => void continueFromPhone()}>Continue</button></FlowFooter></>}
 
+    {step === "recovery" && unpaidReference && <><FlowHeader title="Your unpaid order" onClose={onClose} /><div className="px-5 pb-6"><UnpaidOrderActions key={unpaidReference} reference={unpaidReference} initialEmail={guestEmail} changeBundle onCancelled={chooseAfterCancellation} onUnavailable={() => { setUnpaidReference(null); setActiveOrder(null); setStep(network && bundle ? "phone" : "network"); }} onContinue={isAuthenticated ? () => { setLookupReference(unpaidReference); void orderPaymentAction<PreparedOrderSummary>("lookup", unpaidReference).then((result) => { if (result.data?.data) { setActiveOrder(pendingToActive(result.data.data)); setUnpaidReference(null); setPaymentMethod("paystack"); setStep("review"); } else toast.error(result.error ?? "Could not load this order. Please try again."); }); } : undefined} /></div></>}
+
     {step === "review" && (activeOrder || (network && bundle)) && <><FlowHeader title="Review & pay" onBack={() => setStep(activeOrder ? "pending" : "phone")} onClose={onClose} /><div className="space-y-4 px-5 pb-2 pt-5"><div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-1.5">{reviewRows.map((r, i) => <div key={r.label} className={`flex items-center justify-between gap-4 px-3.5 py-3 ${i ? "border-t border-white/[0.05]" : ""}`}><span className="text-[12.5px] text-faint-foreground">{r.label}</span><span className="text-right text-[13.5px] font-semibold">{r.value}</span></div>)}{activeOrder && <div className="flex items-center justify-between gap-4 border-t border-white/[0.05] px-3.5 py-3"><span className="text-[12.5px] text-faint-foreground">Order ID</span><button type="button" onClick={() => { void navigator.clipboard.writeText(activeOrder.orderReference); toast.success("Order ID copied"); }} className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-primary-glow">{activeOrder.orderReference}<Copy size={14} /></button></div>}{fee > 0 && <div className="flex items-center justify-between gap-4 border-t border-white/[0.05] px-3.5 py-2.5"><span className="text-[12.5px] text-faint-foreground">Data</span><span className="text-[13.5px] font-semibold">{formatGHS(price)}</span></div>}{fee > 0 && <div className="flex items-center justify-between gap-4 px-3.5 py-2.5"><span className="text-[12.5px] text-faint-foreground">Fee</span><span className="text-[13.5px] font-semibold">{formatGHS(fee)}</span></div>}<div className="flex items-center justify-between border-t border-white/[0.08] px-3.5 py-3.5"><span className="text-[13px] font-semibold">{fee > 0 ? "Total" : "Amount"}</span><span className="font-display text-[18px] font-semibold">{formatGHS(payTotal)}</span></div></div>
-      {unpaidReference && <UnpaidOrderActions reference={unpaidReference} onCancelled={() => { try { localStorage.removeItem(`yiego_unpaid_phone_${digits}`); } catch { /* optional */ } setUnpaidReference(null); setActiveOrder(null); setStep("phone"); toast.success("Order cancelled. You can place a new order now."); }} />}
+      {activeOrder?.status === "awaiting_payment" && <Button variant="soft" className="w-full" onClick={() => { setUnpaidReference(activeOrder.orderReference); setStep("recovery"); }}><ListChecks />Cancel & change bundle</Button>}
       <DeliveryProgress compact />
       {activeOrder && <div className="flex items-center gap-2 rounded-xl border border-primary-glow/15 bg-primary/[0.06] px-3 py-2.5 text-xs text-muted-foreground"><Clock3 size={15} className="text-primary-glow" />{expiryLabel(activeOrder.expiresAt)}</div>}
       {isAuthenticated ? <div className="grid gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-1.5"><button type="button" onClick={() => setPaymentMethod("wallet")} className={`rounded-xl p-3 text-left ${paymentMethod === "wallet" ? "border border-primary-glow/25 bg-primary/[0.12]" : ""}`}><span className="flex items-center gap-2 font-semibold"><WalletCards size={17} />DataYego Wallet</span><span className="mt-1 block text-xs text-faint-foreground">{formatGHS(balance)} available</span></button><button type="button" onClick={() => setPaymentMethod("paystack")} className={`rounded-xl p-3 text-left ${paymentMethod === "paystack" ? "border border-primary-glow/25 bg-primary/[0.12]" : ""}`}><span className="flex items-center gap-2 font-semibold"><CreditCard size={17} />Mobile Money or card</span><span className="mt-1 block text-xs text-faint-foreground">Mobile Money or card</span></button>{activeOrder && activeOrder.paymentArrangement !== "shared" && <button type="button" onClick={() => setPaymentMethod("shared")} className={`rounded-xl p-3 text-left ${paymentMethod === "shared" ? "border border-primary-glow/25 bg-primary/[0.12]" : ""}`}><span className="flex items-center gap-2 font-semibold"><Share2 size={17} />Ask another DataYego user to pay</span><span className="mt-1 block text-xs text-faint-foreground">Share this Order ID. The recipient and bundle cannot be changed.</span></button>}</div> : null}

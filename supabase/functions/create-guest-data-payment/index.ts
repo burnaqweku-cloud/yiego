@@ -6,7 +6,6 @@ import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
 import { canManageUnpaidOrder } from "../_shared/unpaidOrder.ts";
 import { recordPrefixConfirmation } from "../_shared/numberPrefix.ts";
-import { maintenanceError } from "../_shared/maintenance.ts";
 
 function makeOrderReference(prefix = "YG") {
   return `${prefix}-${crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`;
@@ -46,8 +45,6 @@ Deno.serve(async (req) => {
       ? await supabase.auth.getUser(token)
       : { data: { user: null } };
     const authenticatedUser = authData.user ?? null;
-    const unavailable = await maintenanceError(supabase, authenticatedUser?.id, token);
-    if (unavailable) return jsonResponse({ error: unavailable, code: "maintenance_active" }, { status: 503 });
     if (guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
       return jsonResponse({ error: "That email address doesn't look right" }, { status: 400 });
     }
@@ -153,7 +150,7 @@ Deno.serve(async (req) => {
     // matching open order rather than surfacing the index as a raw 500.
     const { data: existingOpen } = await supabase
       .from("orders")
-      .select("id, order_reference, product_id, payment_status, user_id, guest_email, management_token, agent_id")
+      .select("id, order_reference, product_id, payment_status, user_id, guest_email, management_token")
       .eq("recipient_phone_normalized", recipientPhone)
       .eq("is_open", true)
       .order("created_at", { ascending: false })
@@ -174,21 +171,28 @@ Deno.serve(async (req) => {
 
     if (existingOpen) {
       const allowed = canManageUnpaidOrder(existingOpen, authenticatedUser?.id ?? null, String(body.managementToken ?? ""), guestEmail);
-      return jsonResponse({
-        error: allowed ? "You have an order awaiting payment. Continue payment or cancel it before placing another order." : "This number has an order awaiting payment. Open it using the Order ID saved at checkout, or ask support to cancel it.",
-        code: "phone_has_open_order",
-        ...(allowed ? { pendingOrderReference: existingOpen.order_reference } : {}),
-      }, { status: 409 });
+      return jsonResponse({ error: allowed ? "You have an unpaid order. Continue payment or cancel it and choose another bundle." : "This number has an unpaid order. Open it with your order reference and checkout email.", code: "phone_has_open_order", ...(allowed ? { pendingOrderReference: existingOpen.order_reference } : {}) }, { status: 409 });
     }
-
-    // Ported number: the customer ticked the confirmation. Saved only when the prefix really points elsewhere.
     const prefixConfirmed = body?.prefixMismatchConfirmed === true;
     const orderReference = makeOrderReference(agent ? "AG" : "YG");
-    const paystackReference = makePaystackReference("YGDATA");
     const managementToken = crypto.randomUUID() + crypto.randomUUID();
+    const paystackReference = makePaystackReference("YGDATA");
     let order: { id: string; order_reference: string };
 
-    {
+    if (existingOpen) {
+      // Open order without a live payment link (e.g. a prepared order that never
+      // reached Paystack): point it at a fresh transaction instead of inserting.
+      const { error: reuseError } = await supabase
+        .from("orders")
+        .update({ paystack_reference: paystackReference, updated_at: new Date().toISOString() })
+        .eq("id", existingOpen.id);
+
+      if (reuseError) {
+        return jsonResponse({ error: friendlyError(reuseError.message, "We couldn't reuse your earlier order. Please try again.") }, { status: 500 });
+      }
+
+      order = { id: existingOpen.id, order_reference: existingOpen.order_reference };
+    } else {
       const { data: inserted, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -339,11 +343,11 @@ Deno.serve(async (req) => {
       data: {
         orderId: order.id,
         orderReference,
+        managementToken,
         authorizationUrl: paystack.authorizationUrl,
         accessCode: paystack.accessCode,
         gateway: paystack.gateway,
         paymentReference: paystackReference,
-        managementToken,
       },
     });
   } catch (error) {

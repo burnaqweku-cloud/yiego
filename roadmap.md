@@ -1,5 +1,10 @@
 # Roadmap
 
+## Returning shopper unpaid-order recovery
+- [x] Surface saved unpaid orders before another checkout, automatically show verified details, and offer continue payment or confirmed cancel/change bundle through the shared main/store checkout. Deploy missing unpaid-order-action and narrowly update the recovered live guest checkout to return protected recovery references and device capabilities.
+- [x] Six tests pass, preview build OK; desktop/360px browser reads a temporary unpaid order from the live service, Keep order leaves it unchanged, confirmed cancellation reads back cancelled/abandoned/closed and returns to bundle selection. Only the temporary test record was removed; no customer order, charge or supplier request changed.
+- [ ] Verify a real signed-in account and resumed Paystack payment end to end — requires the owner's external-account session and an actual payment; guest cancel/change is verified. Publish the updated customer screens.
+
 ## Admin historical order lookup
 - [x] Search order references against the full protected order history in the main lookup and both order-list searches; exact reference matches ignore browsing filters, while counts remain unchanged. No order records changed.
 - [x] Five regression tests pass; build OK; new helper reads actual historical YG-302433AD1F through a read-only SQL adapter. Signed-out browser stays on sign-in with no page errors.
