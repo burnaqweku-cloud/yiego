@@ -390,7 +390,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   }, [activeOrder, bundle, digits, guestEmail, isAuthenticated, network]);
 
   // A preselected bundle (store card, giveaway) lands straight on its own step; never flash the menu while it settles.
-  const settling = open && preselect?.kind === "bundle" && (step === "network" || step === "bundle");
+  const settling = open && preselect?.kind === "bundle" && step === "network" && !network && !unpaidReference;
   return <Modal open={open} onClose={onClose} label="Buy data">
     {settling && <div className="flex min-h-[220px] items-center justify-center px-5 py-10"><div className="h-7 w-7 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Loading" /></div>}
     {!settling && step === "network" && <><FlowHeader title="Buy data" subtitle="Choose what you want to do" onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">
