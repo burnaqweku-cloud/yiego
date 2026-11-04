@@ -145,7 +145,9 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     setStep("network"); setNetwork(null); setBundle(null); setPhone(profile.phone);
     setGuestEmail(user?.email ?? profile.email); setPaymentMethod("wallet");
     setGuestPromoToken(null); setPromoDeclined(new Set());
-    setUnpaidReference(null); setActiveOrder(null); setHighlightOrder(null); setLookupReference(""); setReceiptRef(null);
+    const saved = open && !isAuthenticated ? latestUnpaidReference() : "";
+    setUnpaidReference(saved || null); if (saved) setStep("recovery");
+    setActiveOrder(null); setHighlightOrder(null); setLookupReference(""); setReceiptRef(null);
     if (open && auth.isAuthenticated && !agent) { void friendPriceEligible().then(setFriendPrice); void recordDevice(); } else setFriendPrice(false);
   }, [open, profile.email, profile.phone, user?.email, auth.isAuthenticated, agent]);
 
