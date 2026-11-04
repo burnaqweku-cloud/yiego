@@ -185,11 +185,12 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     const chosenNetwork = NETWORKS.find((n) => n.id === preselect.networkId);
     const chosenBundle = bundlesFor(preselect.networkId).find((b) => b.id === preselect.productCode);
     if (!chosenNetwork || !chosenBundle) return;
-    if (chosenBundle.unavailable) { setStep("network"); setNetwork(null); setBundle(null); return; }
+    if (chosenBundle.unavailable) { if (!unpaidReference && !latestUnpaidReference()) setStep("network"); setNetwork(null); setBundle(null); return; }
     setNetwork(chosenNetwork);
     setBundle(chosenBundle);
     if (preselect.campaign) setPhone(preselect.campaign.phone);
-    if (!unpaidReference && !latestUnpaidReference()) setStep("phone");
+    const saved = unpaidReference || (!isAuthenticated ? latestUnpaidReference() : "");
+    if (saved) { setUnpaidReference(saved); setStep("recovery"); } else setStep("phone");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, preselect, products]);
 
