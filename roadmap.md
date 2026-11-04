@@ -1,5 +1,9 @@
 # Roadmap
 
+## Returning shopper unpaid-order recovery
+- [ ] Surface saved unpaid orders before another checkout, automatically show verified details, and offer continue payment or confirmed cancel/change bundle on main and storefront purchases.
+- [ ] Test recovery, expired/closed records and paid-order protection; verify the available live service without creating or cancelling customer orders.
+
 ## Admin historical order lookup
 - [x] Search order references against the full protected order history in the main lookup and both order-list searches; exact reference matches ignore browsing filters, while counts remain unchanged. No order records changed.
 - [x] Five regression tests pass; build OK; new helper reads actual historical YG-302433AD1F through a read-only SQL adapter. Signed-out browser stays on sign-in with no page errors.
