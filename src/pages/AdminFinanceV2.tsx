@@ -106,6 +106,9 @@ export default function AdminFinanceV2() {
             {all.counted > 0
               ? <span className="mt-1 block break-words">If all {all.counted} in-progress order{all.counted === 1 ? "" : "s"} deliver: <span className="font-medium tabular-nums text-foreground">{formatGHS(all.profit)}</span></span>
               : <span className="mt-1 block break-words">No healthy queued orders counted: <span className="font-medium tabular-nums text-foreground">{formatGHS(all.profit)}</span></span>}
+            {/* Same pending Paystack fees as the main estimate: in-progress orders are already paid, so their money is
+                already inside not-yet-scheduled, and delivering them adds no new Paystack fee. */}
+            <span className="block break-words">Estimated after pending fees: <span className="font-medium tabular-nums text-foreground">{formatGHS(estimateProfitAfterPendingFees(all.profit, ps.held.notYetScheduled).profit)}</span></span>
             {all.missingCost > 0 && <span className="block text-faint-foreground">{all.missingCost} without recorded cost not counted</span>}
             {notCounted.length > 0 && <span className="block text-faint-foreground">{notCounted.join(" · ")} not counted</span>}
             </>}
