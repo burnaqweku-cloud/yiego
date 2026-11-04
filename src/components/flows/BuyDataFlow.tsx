@@ -187,7 +187,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     setNetwork(chosenNetwork);
     setBundle(chosenBundle);
     if (preselect.campaign) setPhone(preselect.campaign.phone);
-    if (!unpaidReference) setStep("phone");
+    if (!unpaidReference && !latestUnpaidReference()) setStep("phone");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, preselect, products]);
 
@@ -262,7 +262,11 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   async function refreshPending() {
     if (!isAuthenticated) return;
     const result = await listPendingOrders();
-    if (!result.error && result.data?.data) setPendingOrders(result.data.data);
+    if (!result.error && result.data?.data) {
+      setPendingOrders(result.data.data);
+      const unpaid = result.data.data.find((order) => order.status === "awaiting_payment" && ["pending", "created"].includes(order.payment_status));
+      if (unpaid && !activeOrder) { setUnpaidReference(unpaid.order_reference); setStep("recovery"); }
+    }
   }
 
   async function continueFromPhone() {

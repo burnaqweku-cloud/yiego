@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     const { data: auth } = token ? await db.auth.getUser(token) : { data: { user: null } };
     const { data: order, error } = await db.from("orders").select("id,order_reference,user_id,guest_email,management_token,status,payment_status,is_open,paid_at,supplier_purchase_id,supplier_order_reference,recipient_phone,amount,created_at,payment_expires_at,data_products(name),networks(name)").eq("order_reference", reference).maybeSingle();
     if (error || !order || !canManageUnpaidOrder(order, auth.user?.id ?? null, String(body.managementToken ?? ""), String(body.email ?? ""))) return jsonResponse({ error: "Use the account or email used at checkout, or contact support." }, { status: 403 });
-    if (!isCancellableUnpaid(order) || !order.is_open) return jsonResponse({ error: "This order is paid or closed. Refresh its status." }, { status: 409 });
+    if (!isCancellableUnpaid(order) || !order.is_open) return jsonResponse({ error: "This order is no longer awaiting payment. You can choose another bundle; any paid order remains available in tracking." }, { status: 410 });
     if (action === "cancel") {
       const { error: cancelError } = await db.rpc("cancel_unpaid_order", { p_reference: reference, p_actor: auth.user?.id ?? null, p_token: body.managementToken ?? null, p_email: body.email ?? null, p_admin: false });
       return cancelError ? jsonResponse({ error: "This order can no longer be cancelled. Refresh its status." }, { status: 409 }) : jsonResponse({ status: "success" });
