@@ -28,12 +28,12 @@ export function forgetUnpaidReference(reference: string) {
 export class UnpaidOrderError extends Error {
   constructor(message: string, public readonly status?: number) { super(message); }
 }
-export interface UnpaidDetails { reference: string; recipient: string; network: string; product: string; amount: number; createdAt: string; expiresAt: string | null; paymentUrl: string | null }
+export interface UnpaidDetails { reference: string; mine?: boolean; recipient: string; network: string; product: string; amount: number; createdAt: string; expiresAt: string | null; paymentUrl: string | null }
 export async function unpaidOrderAction(action: "lookup" | "continue" | "cancel", reference: string, email = "") {
   const { data, error } = await supabase.functions.invoke<{ data?: UnpaidDetails; error?: string }>("unpaid-order-action", { body: { action, reference, email, managementToken: savedOrderToken(reference) } });
   if (error || data?.error) {
     const response = (error as { context?: Response } | null)?.context;
-    let message = data?.error ?? "Unable to confirm this order. Try again or use your checkout email.";
+    let message = data?.error ?? "Unable to load this order. Please try again.";
     if (response) { try { const body = await response.clone().json(); message = body.error ?? message; } catch { /* no response body */ } }
     throw new UnpaidOrderError(message, response?.status);
   }

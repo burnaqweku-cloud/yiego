@@ -1,0 +1,3 @@
+-- 5 Nov 2026: an UNPAID order holds no money, so whoever is buying for that number may clear it.
+-- cancel_unpaid_order gains p_anyone (service role only); the event message says when it wasn't the owner.
+-- Applied live on 5 Nov 2026. Body identical to the live function.

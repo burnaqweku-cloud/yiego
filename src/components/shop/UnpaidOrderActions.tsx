@@ -13,7 +13,10 @@ export default function UnpaidOrderActions({ reference, onCancelled, onUnavailab
   const [error, setError] = useState("");
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [closed, setClosed] = useState(false);
-  const needsEmail = !isAuthenticated && !savedOrderToken(reference);
+  // 5 Nov 2026: no email wall. Anyone buying for this number may see and clear the unpaid order (it holds no money);
+  // only the person who placed it can continue its payment, which the server decides (details.mine).
+  const needsEmail = false;
+  void isAuthenticated; void savedOrderToken;
   async function run(action: "lookup" | "continue" | "cancel") {
     setBusy(true); setError("");
     try {
@@ -36,12 +39,12 @@ export default function UnpaidOrderActions({ reference, onCancelled, onUnavailab
   }, [reference, needsEmail]);
   return <section className="mt-4 border-t border-border pt-4 text-left">
     <h3 className="text-sm font-semibold text-foreground">Order awaiting payment</h3>
-    <p className="mt-1 text-sm text-muted-foreground">Continue payment, or cancel this order before placing a new one for this number.</p>
+    <p className="mt-1 text-sm text-muted-foreground">{details && details.mine === false ? "This number already has an unpaid order placed from another account or device. Cancel it to order again. Nothing was paid on it." : "Continue payment, or cancel this order before placing a new one for this number."}</p>
     {needsEmail && <label className="mt-3 block text-sm text-foreground">Email used at checkout<input className="onyx-field mt-1 w-full" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Your checkout email" /></label>}
     {details && <dl className="mt-3 divide-y divide-border text-sm">{[["Order ID", details.reference], ["Bundle", `${details.network} · ${details.product}`], ["Recipient", details.recipient], ["Amount", formatGHS(Number(details.amount))], ["Placed", new Date(details.createdAt).toLocaleString("en-GB", { timeZone: "Africa/Accra" })]].map(([label, value]) => <div key={label} className="flex justify-between gap-4 py-2"><dt className="text-muted-foreground">{label}</dt><dd className="break-words text-right font-medium text-foreground">{value}</dd></div>)}</dl>}
     {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
     <div className="mt-3 flex flex-wrap gap-2">
-      {!closed && (!details ? <Button disabled={busy || (needsEmail && !email.trim())} onClick={() => void run("lookup")}>{busy ? <Loader2 className="animate-spin" /> : <CreditCard />}{busy ? "Loading order…" : "Show unpaid order"}</Button> : <><Button className="w-full" disabled={busy || confirmCancel} onClick={() => onContinue ? onContinue() : void run("continue")}><CreditCard />Continue payment</Button><Button className="w-full" variant="soft" disabled={busy} onClick={() => setConfirmCancel(true)}><X />{changeBundle ? "Cancel & change bundle" : "Cancel order"}</Button></>)}
+      {!closed && (!details ? <Button disabled={busy || (needsEmail && !email.trim())} onClick={() => void run("lookup")}>{busy ? <Loader2 className="animate-spin" /> : <CreditCard />}{busy ? "Loading order…" : "Try again"}</Button> : <>{details.mine !== false && <Button className="w-full" disabled={busy || confirmCancel} onClick={() => onContinue ? onContinue() : void run("continue")}><CreditCard />Continue payment</Button>}<Button className="w-full" variant={details.mine === false ? "primary" : "soft"} disabled={busy} onClick={() => setConfirmCancel(true)}><X />{details.mine === false ? "Cancel it and order again" : changeBundle ? "Cancel & change bundle" : "Cancel order"}</Button></>)}
     </div>
     {confirmCancel && <div role="alertdialog" aria-label="Cancel unpaid order" className="mt-4 border-t border-border pt-4"><p className="text-sm text-foreground">Cancel {reference}? Only this unpaid order will be cancelled. No payment or refund is made.</p><div className="mt-3 grid gap-2"><Button disabled={busy} onClick={() => void run("cancel")}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{changeBundle ? "Cancel & choose bundle" : "Confirm cancellation"}</Button><Button variant="quiet" disabled={busy} onClick={() => setConfirmCancel(false)}>Keep order</Button></div></div>}
   </section>;
