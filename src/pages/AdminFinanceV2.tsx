@@ -72,8 +72,8 @@ export default function AdminFinanceV2() {
       code: s.code, name: s.name, amount: s.confirmed_balance != null ? Number(s.confirmed_balance) : num(`float_${s.code}`), reportedAt: s.confirmed_at, reported: s.confirmed_balance != null,
     }));
     const owed: Line[] = balances.filter((x) => x.kind === "liability").map((x) => ({ code: x.code, name: x.name, amount: Number(x.balance) }));
-    const bank = num("bank"), capital = num("outside_funding");
-    return { bank, capital, supplierLines, owed, ...financeProfit({ bank, paystack: ps.held.total, suppliers: supplierLines, owed, capital }) };
+    const bank = num("bank"), capital = num("outside_funding"), kora = num("kora_held");
+    return { bank, capital, kora, supplierLines, owed, ...financeProfit({ bank, paystack: ps.held.total, kora, suppliers: supplierLines, owed, capital }) };
   }, [balances, suppliers, ps.held]);
 
   return <div className="space-y-6">
@@ -95,6 +95,7 @@ export default function AdminFinanceV2() {
       <StatGrid cols={3}>
         <Stat label="Money at bank" value={<Money value={view.bank} />} icon={Banknote} tone="good" note="Master balance" to="/admin/finance/master" />
         <Stat label="Money at Paystack" value={<Money value={ps.held.total} />} icon={PiggyBank} note="From Paystack · tap for details" to="/admin/finance-v2/paystack" />
+        {view.kora !== 0 && <Stat label="Money at Kora" value={<Money value={view.kora} />} icon={PiggyBank} note="GHS balance at Kora, after Kora's fees" />}
         <Stat label="At suppliers" value={<Money value={view.supplierTotal} />} icon={Store} tone="warn" note={`${view.supplierLines.length} suppliers`} />
         <Stat label="Money we owe" value={<Money value={view.owedTotal} />} icon={Wallet} tone="bad" />
         <Stat label="Profit" value={<Money value={view.profit} />} icon={TrendingUp} tone={view.profit >= 0 ? "good" : "bad"} note={(() => {
@@ -118,7 +119,7 @@ export default function AdminFinanceV2() {
         })()} />
       </StatGrid>
       <p className="break-words text-xs leading-5 tabular-nums text-muted-foreground">
-        Bank {formatGHS(view.bank)} + Paystack {formatGHS(ps.held.total)} + suppliers {formatGHS(view.supplierTotal)} − owed {formatGHS(view.owedTotal)} − capital {formatGHS(view.capital)} = <span className="font-semibold text-foreground">{formatGHS(view.profit)}</span>
+        Bank {formatGHS(view.bank)} + Paystack {formatGHS(ps.held.total)}{view.kora !== 0 ? <> + Kora {formatGHS(view.kora)}</> : null} + suppliers {formatGHS(view.supplierTotal)} − owed {formatGHS(view.owedTotal)} − capital {formatGHS(view.capital)} = <span className="font-semibold text-foreground">{formatGHS(view.profit)}</span>
       </p>
 
       <Panel title="At suppliers" icon={Store} note={`total ${formatGHS(view.supplierTotal)}`}>

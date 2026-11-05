@@ -40,10 +40,11 @@ export function paystackHeld(reading: PaystackHoldings & { refunds_not_fully_ded
   return { scheduledGross, scheduledFees: r2(scheduledGross - scheduledNet), scheduledNet, notYetScheduled: r2(pending), refundsNotTakenBack, total: r2(scheduledNet + pending - refundsNotTakenBack) };
 }
 
-export function financeProfit(input: { bank: number; paystack: number; suppliers: Line[]; owed: Line[]; capital: number }) {
+export function financeProfit(input: { bank: number; paystack: number; kora?: number; suppliers: Line[]; owed: Line[]; capital: number }) {
   const supplierTotal = sum(input.suppliers.map((s) => s.amount));
   const owedTotal = sum(input.owed.map((s) => s.amount));
-  const have = sum([input.bank, input.paystack, supplierTotal]);
+  // Kora: GHS held in the Kora balance (ledger account kora_held: payments in, Kora's fee, payouts and withdrawals out).
+  const have = sum([input.bank, input.paystack, input.kora ?? 0, supplierTotal]);
   return { supplierTotal, owedTotal, have, profit: r2(have - owedTotal - input.capital) };
 }
 
