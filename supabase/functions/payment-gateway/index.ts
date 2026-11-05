@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       const configured = gatewayConfigured(g); const test = configured && gatewayIsTestKey(g);
       // Who is actually being charged through this gateway right now, given the guards in gateway.ts.
       const liveReady = g !== "kora" || koraLiveReady();
-      const effective = provider === g && configured && (test || liveReady) ? (test ? "admins_only_test" : "everyone") : "nobody";
+      const effective = provider === g && configured ? (test ? "admins_only_test" : liveReady ? "everyone" : g === "kora" ? "admins_only_live" : "everyone") : "nobody";
       return { configured, test_key: test, effective, live_ready: liveReady, webhook_url: g === "paystack" ? null : `${base}/functions/v1/${g}-webhook` };
     };
     return jsonResponse({

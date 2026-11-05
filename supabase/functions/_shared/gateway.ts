@@ -10,6 +10,7 @@
    3. Switch says X but X's key is a TEST key             -> X ONLY for admin accounts
       (admin_role(uid) is set); guests and customers     -> paystack
    4. Switch says X with a live key                       -> X for everyone
+      (Kora: only once KORA_LIVE_ENABLED=true; before that a live Kora key is admins only, real money)
    So customers can never be shown a test-mode checkout. */
 import { initializePaystackTransaction } from "./paystack.ts";
 import { flutterwaveConfigured, flutterwaveIsTestKey, initializeFlutterwavePayment, verifyFlutterwaveByReference } from "./flutterwave.ts";
@@ -43,7 +44,9 @@ export async function isAdminUser(supabase: Db, userId: string | null | undefine
 export async function resolveGateway(supabase: Db, payerUserId: string | null | undefined): Promise<{ gateway: Gateway; test: boolean }> {
   const wanted = await configuredGateway(supabase);
   if (wanted === "paystack" || !gatewayConfigured(wanted)) return { gateway: "paystack", test: false };
-  if (wanted === "kora" && !gatewayIsTestKey(wanted) && !koraLiveReady()) return { gateway: "paystack", test: false };
+  // Kora with a LIVE key but not yet marked ready (KORA_LIVE_ENABLED): real payments, admin accounts only, so the
+  // owner can test the real loop (5 Nov 2026). Customers stay on Paystack until it is marked ready.
+  if (wanted === "kora" && !gatewayIsTestKey(wanted) && !koraLiveReady()) return (await isAdminUser(supabase, payerUserId)) ? { gateway: "kora", test: false } : { gateway: "paystack", test: false };
   if (!gatewayIsTestKey(wanted)) return { gateway: wanted, test: false };
   return (await isAdminUser(supabase, payerUserId)) ? { gateway: wanted, test: true } : { gateway: "paystack", test: false };
 }
