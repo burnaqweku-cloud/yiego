@@ -41,9 +41,15 @@ export async function isAdminUser(supabase: Db, userId: string | null | undefine
 }
 
 /** The gateway this payer gets right now (see the rules above). */
-export async function resolveGateway(supabase: Db, payerUserId: string | null | undefined): Promise<{ gateway: Gateway; test: boolean }> {
+/** Kora refuses GHS mobile-money payments under GH₵10 (their rule), so anything smaller always goes to Paystack. */
+export const KORA_MIN_AMOUNT_GHS = 10;
+
+export async function resolveGateway(supabase: Db, payerUserId: string | null | undefined, amount?: number): Promise<{ gateway: Gateway; test: boolean }> {
   const wanted = await configuredGateway(supabase);
   if (wanted === "paystack" || !gatewayConfigured(wanted)) return { gateway: "paystack", test: false };
+  // Amount rule (6 Nov 2026): with the switch on Kora, only payments of GH₵10 and above go to Kora; smaller ones
+  // (1GB, 2GB, small top-ups) stay on Paystack. The amount here is the final figure the customer pays, fee included.
+  if (wanted === "kora" && typeof amount === "number" && amount < KORA_MIN_AMOUNT_GHS) return { gateway: "paystack", test: false };
   // Kora with a LIVE key but not yet marked ready (KORA_LIVE_ENABLED): real payments, admin accounts only, so the
   // owner can test the real loop (5 Nov 2026). Customers stay on Paystack until it is marked ready.
   if (wanted === "kora" && !gatewayIsTestKey(wanted) && !koraLiveReady()) return (await isAdminUser(supabase, payerUserId)) ? { gateway: "kora", test: false } : { gateway: "paystack", test: false };
@@ -78,7 +84,7 @@ export async function startCheckout(supabase: Db, input: {
   customerPhone?: string | null;
   metadata?: Record<string, unknown>;
 }): Promise<CheckoutStart> {
-  const { gateway, test } = await resolveGateway(supabase, input.payerUserId);
+  const { gateway, test } = await resolveGateway(supabase, input.payerUserId, input.amount);
   if (gateway === "flutterwave") {
     const r = await initializeFlutterwavePayment({ ...input, metadata: { ...(input.metadata ?? {}), gateway, test } });
     return { ok: r.ok && Boolean(r.link), status: r.status, gateway, test, authorizationUrl: r.link, accessCode: null, message: r.ok ? null : (r.payload?.message ?? "Could not start Flutterwave payment"), payload: r.payload };

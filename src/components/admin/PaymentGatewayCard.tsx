@@ -10,7 +10,7 @@ import { adminDatabase } from "@/lib/admin-data";
    can be switched on by the master admin; while that gateway's key is a TEST key only admin
    accounts are shown it (customers stay on Paystack) and test payments deliver nothing. */
 type Gateway = "paystack" | "flutterwave" | "kora";
-interface GatewayStatus { configured: boolean; test_key: boolean; effective: "nobody" | "admins_only_test" | "everyone"; webhook_url: string | null; webhook_hash_set?: boolean }
+interface GatewayStatus { configured: boolean; test_key: boolean; effective: "nobody" | "admins_only_test" | "admins_only_live" | "everyone"; webhook_url: string | null; webhook_hash_set?: boolean }
 interface Status { provider: Gateway; is_master: boolean; paystack: GatewayStatus; flutterwave: GatewayStatus; kora: GatewayStatus }
 const LABEL: Record<Gateway, string> = { paystack: "Paystack", flutterwave: "Flutterwave", kora: "Kora" };
 const SETTLES: Record<Gateway, string> = { paystack: "Settles to the Ghana account.", flutterwave: "Settles to the Nigeria account.", kora: "Settles to the Nigeria account; you convert GHS to NGN in the Kora dashboard." };
@@ -39,7 +39,7 @@ export default function PaymentGatewayCard() {
   };
 
   const active = st ? st[st.provider] : null;
-  const effectiveLine = !st || !active ? "" : st.provider === "paystack" ? "Every payment goes through Paystack." : active.effective === "everyone" ? `Every payment goes through ${LABEL[st.provider]} (live key).` : active.effective === "admins_only_test" ? `${LABEL[st.provider]} TEST key: only admin accounts see ${LABEL[st.provider]}, customers stay on Paystack, and test payments deliver nothing.` : `${LABEL[st.provider]} is selected but not configured, so Paystack is taking payments.`;
+  const effectiveLine = !st || !active ? "" : st.provider === "paystack" ? "Every payment goes through Paystack." : active.effective === "everyone" ? (st.provider === "kora" ? "Payments of GH₵10 and above go through Kora (live key); anything smaller stays on Paystack." : `Every payment goes through ${LABEL[st.provider]} (live key).`) : active.effective === "admins_only_live" ? "Kora live key, admin accounts only: admins paying GH₵10 or more go through Kora (real money); customers stay on Paystack until Kora is marked ready." : active.effective === "admins_only_test" ? `${LABEL[st.provider]} TEST key: only admin accounts see ${LABEL[st.provider]}, customers stay on Paystack, and test payments deliver nothing.` : `${LABEL[st.provider]} is selected but not configured, so Paystack is taking payments.`;
   const testMode = active?.effective === "admins_only_test";
 
   return (
