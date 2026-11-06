@@ -43,7 +43,7 @@ export function paystackHeld(reading: PaystackHoldings & { refunds_not_fully_ded
 export function financeProfit(input: { bank: number; paystack: number; kora?: number; suppliers: Line[]; owed: Line[]; capital: number }) {
   const supplierTotal = sum(input.suppliers.map((s) => s.amount));
   const owedTotal = sum(input.owed.map((s) => s.amount));
-  // Kora: GHS held in the Kora balance (ledger account kora_held: payments in, Kora's fee, payouts and withdrawals out).
+  // Kora: provider-reported available + pending GHS, replacing (not adding to) kora_held.
   const have = sum([input.bank, input.paystack, input.kora ?? 0, supplierTotal]);
   return { supplierTotal, owedTotal, have, profit: r2(have - owedTotal - input.capital) };
 }

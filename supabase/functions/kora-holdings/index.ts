@@ -4,7 +4,7 @@ import { koraConfigured, koraIsTestKey, readKoraBalances } from "../_shared/kora
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-/** Read-only balance comparison. No ledger posting or profit input. */
+/** Read-only provider cash. No ledger posting, payouts or additional deductions. */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -18,7 +18,10 @@ Deno.serve(async (req) => {
     if (roleError || !["master", "admin", "staff"].includes(String(role))) return json({ error: "Admin access required" }, 403);
     if (!koraConfigured()) return json({ configured: false, items: null, included_in_profit: false });
     const result = await readKoraBalances();
+    const ghs = result.items?.find((item) => item.currency === "GHS");
+    const complete = result.ok && !!ghs && !koraIsTestKey();
     return json({ configured: true, test: koraIsTestKey(), read_at: new Date().toISOString(), ...result,
-      included_in_profit: false, total_held: null, settlement_reconciled: false }, result.ok ? 200 : 502);
+      ok: complete, included_in_profit: complete,
+      total_held: complete && ghs ? Math.round((ghs.available + ghs.pending) * 100) / 100 : null }, complete ? 200 : 502);
   } catch { return json({ error: "Kora balances could not be confirmed" }, 502); }
 });
