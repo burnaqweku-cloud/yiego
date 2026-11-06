@@ -175,9 +175,9 @@ function TakeOutModal({ open, onClose, onDone, profit }: { open: boolean; onClos
   return <Modal open={open} onClose={() => { if (!busy) onClose(); }} label="Take money out">
     <div className="w-[min(92vw,420px)] space-y-4 p-5"><h2 className="text-lg font-semibold">Take money out</h2>
       <div className="flex gap-2">{([["bank", "From the bank"], ["kora_held", "From Kora balance"]] as const).map(([k, label]) =>
-        <Button key={k} type="button" variant={from === k ? "soft" : "outline"} onClick={() => setFrom(k)} className="h-auto flex-1 whitespace-normal text-[13px]">{label}</Button>)}</div>
+        <Button key={k} type="button" variant={from === k ? "soft" : "quiet"} onClick={() => setFrom(k)} className="h-auto flex-1 whitespace-normal text-[13px]">{label}</Button>)}</div>
       <div className="flex gap-2">{([["spend", "Business cost"], ["withdraw", "Return capital"]] as const).map(([k, label]) =>
-        <Button key={k} type="button" variant={kind === k ? "soft" : "outline"} onClick={() => setKind(k)} className="h-auto flex-1 whitespace-normal text-[13px]">{label}</Button>)}</div>
+        <Button key={k} type="button" variant={kind === k ? "soft" : "quiet"} onClick={() => setKind(k)} className="h-auto flex-1 whitespace-normal text-[13px]">{label}</Button>)}</div>
       <p className="text-xs leading-5 text-muted-foreground">{kind === "spend" ? `Subscriptions, SMS, tools and other costs. ${from === "kora_held" ? "Kora balance" : "Bank"} and profit both go down.` : `Money given back to partners. ${from === "kora_held" ? "Kora balance" : "Bank"} and capital both go down, so profit stays the same.`}</p>
       <Field label="Amount (GH₵)"><input className={inputCls} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
       <Field label={kind === "spend" ? "What was it for?" : "Who received it?"}><input className={inputCls} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
