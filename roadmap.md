@@ -1,5 +1,10 @@
 # Roadmap
 
+## Kora Finance cash balances
+- [ ] Read pending and available GHS balances from Kora and include both in Finance, without double-deducting provider fees or recorded cash movements.
+- [ ] Verify supplier funding, expense and owner withdrawal records support Kora as the source; repair the paid-order classification race safely.
+- [ ] Run focused accounting tests and verify what can be checked live; report any external access blocker explicitly.
+
 ## Returning shopper unpaid-order recovery
 - [x] Surface saved unpaid orders before another checkout, automatically show verified details, and offer continue payment or confirmed cancel/change bundle through the shared main/store checkout. Deploy missing unpaid-order-action and narrowly update the recovered live guest checkout to return protected recovery references and device capabilities.
 - [x] Six tests pass, preview build OK; desktop/360px browser reads a temporary unpaid order from the live service, Keep order leaves it unchanged, confirmed cancellation reads back cancelled/abandoned/closed and returns to bundle selection. Only the temporary test record was removed; no customer order, charge or supplier request changed.
