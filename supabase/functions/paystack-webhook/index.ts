@@ -1,4 +1,5 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
+import { reopenCancelledUnpaidOrder } from "../_shared/paymentSettlement.ts";
 import { amountFromSubunit, verifyPaystackTransaction, verifyPaystackWebhookSignature } from "../_shared/paystack.ts";
 import { fulfillOrderWithDataMartGH } from "../_shared/fulfillment.ts";
 import { sendOrderConfirmation } from "../_shared/email.ts";
@@ -107,12 +108,19 @@ Deno.serve(async (req) => {
 
         const { data: order, error: orderError } = await supabase
           .from("orders")
-          .select("id, status, payment_status, supplier_order_reference")
+          .select("id, status, payment_status, supplier_order_reference, supplier_purchase_id, paid_at, wallet_ledger_entry_id, closed_reason")
           .eq("id", paymentIntent.order_id)
           .maybeSingle();
 
         if (orderError) {
           return jsonResponse({ error: orderError.message }, { status: 500 });
+        }
+        // 6 Nov 2026: an UNPAID order the customer cancelled while Paystack was still confirming is reopened, not left
+        // as "money arrived, order cancelled" (see reopenCancelledUnpaidOrder).
+        if (order) {
+          const reopened = await reopenCancelledUnpaidOrder(supabase, order, "paystack", String(providerReference ?? ""));
+          if (!reopened.ok) return jsonResponse({ error: reopened.error }, { status: 409 });
+          order.status = reopened.status;
         }
 
         if (order && order.payment_status !== "succeeded") {
