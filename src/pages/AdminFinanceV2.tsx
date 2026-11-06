@@ -153,12 +153,13 @@ export default function AdminFinanceV2() {
 
 function TakeOutModal({ open, onClose, onDone, profit }: { open: boolean; onClose: () => void; onDone: () => void; profit: number | null }) {
   const [kind, setKind] = useState<"spend" | "withdraw">("spend");
+  const [from, setFrom] = useState<"bank" | "kora_held">("bank");
   const [amount, setAmount] = useState(""); const [reason, setReason] = useState(""); const [busy, setBusy] = useState(false);
   const submit = async () => {
     const v = Number(amount);
     if (!(v > 0) || reason.trim().length < 3) return toast.error("Enter the amount and what it was for.");
     setBusy(true);
-    const { error } = await db().rpc("finance_master_adjust", { p_kind: kind, p_amount: v, p_reason: reason.trim() });
+    const { error } = await db().rpc("finance_master_adjust", { p_kind: kind, p_amount: v, p_reason: reason.trim(), p_from: from });
     setBusy(false);
     if (error) return toast.error("Not recorded. Refresh and check before trying again.");
     toast.success(kind === "spend" ? "Business cost recorded." : "Capital returned recorded.");
@@ -166,10 +167,12 @@ function TakeOutModal({ open, onClose, onDone, profit }: { open: boolean; onClos
   };
   const v = Number(amount) || 0;
   return <Modal open={open} onClose={() => { if (!busy) onClose(); }} label="Take money out">
-    <div className="w-[min(92vw,420px)] space-y-4 p-5"><h2 className="text-lg font-semibold">Take money out of the bank</h2>
+    <div className="w-[min(92vw,420px)] space-y-4 p-5"><h2 className="text-lg font-semibold">Take money out</h2>
+      <div className="flex gap-2">{([["bank", "From the bank"], ["kora_held", "From Kora balance"]] as const).map(([k, label]) =>
+        <button key={k} type="button" onClick={() => setFrom(k)} className={`flex-1 rounded-xl border px-3 py-2 text-[13px] ${from === k ? "border-primary/40 bg-primary/10 text-foreground" : "border-border text-muted-foreground"}`}>{label}</button>)}</div>
       <div className="flex gap-2">{([["spend", "Business cost"], ["withdraw", "Return capital"]] as const).map(([k, label]) =>
         <button key={k} type="button" onClick={() => setKind(k)} className={`flex-1 rounded-xl border px-3 py-2 text-[13px] ${kind === k ? "border-primary/40 bg-primary/10 text-foreground" : "border-border text-muted-foreground"}`}>{label}</button>)}</div>
-      <p className="text-xs leading-5 text-muted-foreground">{kind === "spend" ? "Subscriptions, SMS, tools and other costs. Bank and profit both go down." : "Money given back to partners. Bank and capital both go down, so profit stays the same."}</p>
+      <p className="text-xs leading-5 text-muted-foreground">{kind === "spend" ? `Subscriptions, SMS, tools and other costs. ${from === "kora_held" ? "Kora balance" : "Bank"} and profit both go down.` : `Money given back to partners. ${from === "kora_held" ? "Kora balance" : "Bank"} and capital both go down, so profit stays the same.`}</p>
       <Field label="Amount (GH₵)"><input className={inputCls} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
       <Field label={kind === "spend" ? "What was it for?" : "Who received it?"}><input className={inputCls} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
       {profit !== null && v > 0 && <p className="text-sm">Profit after this: <Money value={kind === "spend" ? profit - v : profit} /></p>}

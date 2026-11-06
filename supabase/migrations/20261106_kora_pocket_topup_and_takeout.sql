@@ -1,0 +1,3 @@
+-- 6 Nov 2026 (applied live): the Kora GHS balance is a second pocket beside the bank.
+-- finance_record_topup accepts p_paid_from = 'kora_held' (a MoMo payout from Kora to the supplier).
+-- finance_master_adjust gains p_from ('bank' | 'kora_held'); the old 4-argument overload was dropped.

@@ -39,7 +39,9 @@ export function RecordTopupModal({ open, onClose, actorId, suppliers, onDone }: 
   const [supplier, setSupplier] = useState(suppliers[0]?.code ?? "");
   // Suppliers arrive after the modal mounts; the dropdown shows the first one, so the state must match it.
   useEffect(() => { if (!supplier && suppliers[0]) setSupplier(suppliers[0].code); }, [suppliers, supplier]);
-  const [amount, setAmount] = useState(""); const [when, setWhen] = useState(nowLocal()); const paidFrom = "bank"; const [note, setNote] = useState(""); const [busy, setBusy] = useState(false);
+  const [amount, setAmount] = useState(""); const [when, setWhen] = useState(nowLocal()); const [note, setNote] = useState(""); const [busy, setBusy] = useState(false);
+  // Which pocket the money left: the bank, or the Kora GHS balance (a MoMo payout from Kora to the supplier).
+  const [paidFrom, setPaidFrom] = useState<"bank" | "kora_held">("bank");
   // How the money reached the supplier. Paystack (their checkout) adds the supplier's % charge; MoMo (sent by hand)
   // has no charge unless you type one.
   const [via, setVia] = useState<"paystack" | "momo">("paystack"); const [momoFee, setMomoFee] = useState("");
@@ -52,11 +54,12 @@ export function RecordTopupModal({ open, onClose, actorId, suppliers, onDone }: 
     const { error } = await rpc("finance_record_topup", { p_actor: actorId, p_supplier_code: supplier, p_amount: Number(amount), p_occurred_at: toIso(when), p_paid_from: paidFrom, p_fee: via === "paystack" ? null : fee, p_note: `${via === "momo" ? "via MoMo" : "via Paystack"}${note ? ` · ${note}` : ""}`, p_reference: null });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success(`Top-up recorded: ${formatGHS(Number(amount))} to ${supplier} via ${via === "momo" ? "MoMo" : "Paystack"}`); onDone(); onClose();
+    toast.success(`Top-up recorded: ${formatGHS(Number(amount))} to ${supplier} from ${paidFrom === "kora_held" ? "Kora" : "the bank"}`); onDone(); onClose();
   };
   return (
     <Shell open={open} onClose={onClose} title="Record supplier top-up" onSubmit={submit} busy={busy} submitLabel="Record top-up">
       <Field label="Supplier"><select value={supplier} onChange={(e) => setSupplier(e.target.value)} className={inputCls}>{suppliers.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}</select></Field>
+      <Field label="Money came from"><div className="flex gap-2">{([["bank", "Bank"], ["kora_held", "Kora balance"]] as const).map(([k, label]) => <button key={k} type="button" onClick={() => { setPaidFrom(k); if (k === "kora_held") setVia("momo"); }} className={`flex-1 rounded-xl border px-3 py-2 text-[13px] ${paidFrom === k ? "border-primary/40 bg-primary/[0.1] text-foreground" : "border-white/10 text-muted-foreground"}`}>{label}</button>)}</div></Field>
       <Field label="Paid via"><div className="flex gap-2">{(["paystack", "momo"] as const).map((v) => <button key={v} type="button" onClick={() => setVia(v)} className={`flex-1 rounded-xl border px-3 py-2 text-[13px] ${via === v ? "border-primary/40 bg-primary/[0.1] text-foreground" : "border-white/[0.1] text-muted-foreground"}`}>{v === "paystack" ? `Paystack · ${Math.round(rate * 100)}% charge` : "MoMo · charge as shown on the transfer"}</button>)}</div></Field>
       <Field label="Float credited (GH₵)" hint={via === "paystack" ? (amount ? `Charge ${Math.round(rate * 100)}% = ${formatGHS(fee)} · you paid ${formatGHS(Number(amount) + fee)}` : `The supplier's charge (${Math.round(rate * 100)}%) is added on top`) : (fee ? `MoMo charge ${formatGHS(fee)} · you paid ${formatGHS(Number(amount) + fee)}` : "Type the MoMo charge below")}><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="500" className={inputCls} /></Field>
       {via === "momo" && <Field label="MoMo charge (GH₵)" hint="The transfer fee MoMo took, e.g. 1.50"><input inputMode="decimal" value={momoFee} onChange={(e) => setMomoFee(e.target.value)} placeholder="1.50" className={inputCls} /></Field>}
