@@ -12,6 +12,7 @@ import { estimateProfitAfterPendingFees, financeProfit, isHealthyInFlight, profi
 import { usePaystackHeld } from "@/lib/usePaystackHeld";
 import { useAuth } from "@/store/auth-context";
 import KoraReadiness from "@/components/admin/KoraReadiness";
+import PaymentGatewayCard from "@/components/admin/PaymentGatewayCard";
 
 interface Balance { code: string; name: string; kind: string; balance: number | string }
 interface Supplier { id: string; code: string; name: string; confirmed_balance: number | null; confirmed_at: string | null; metadata?: { topup_fee_rate?: number } | null }
@@ -144,6 +145,7 @@ export default function AdminFinanceV2() {
       </StatGrid>
     </section>
 
+    <PaymentGatewayCard />
     <KoraReadiness />
     <RecordTopupModal open={topup} onClose={() => setTopup(false)} actorId={actor} suppliers={suppliers.map((s) => ({ code: s.code, name: s.name, fee_rate: Number(s.metadata?.topup_fee_rate ?? 0) }))} onDone={() => void load()} />
     <RecordPartnerCapitalModal open={putIn} onClose={() => setPutIn(false)} actorId={actor} onDone={() => void load()} />
