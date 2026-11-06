@@ -11,7 +11,7 @@ import { formatGHS } from "@/lib/format";
 import { estimateProfitAfterPendingFees, financeProfit, isHealthyInFlight, profitIfAllDeliver, type InFlightOrder, type Line } from "@/lib/financeV2";
 import { usePaystackHeld } from "@/lib/usePaystackHeld";
 import { useAuth } from "@/store/auth-context";
-import KoraReadiness from "@/components/admin/KoraReadiness";
+import { useKoraHeld } from "@/lib/useKoraHeld";
 import PaymentGatewayCard from "@/components/admin/PaymentGatewayCard";
 
 interface Balance { code: string; name: string; kind: string; balance: number | string }
@@ -32,6 +32,7 @@ export default function AdminFinanceV2() {
   const [inFlight, setInFlight] = useState<InFlightOrder[]>([]);
   const [inFlightReady, setInFlightReady] = useState(false);
   const ps = usePaystackHeld(!!user);
+  const kor = useKoraHeld(!!user);
 
   const load = useCallback(async () => {
     setLoading(true); setFailed(false); setInFlightReady(false);
@@ -64,23 +65,23 @@ export default function AdminFinanceV2() {
     setIsMaster(role.data === "master"); setLoading(false);
   }, [actor]);
   useEffect(() => { void load(); }, [load]);
-  const refresh = () => { void load(); void ps.load(); };
+  const refresh = () => { void load(); void ps.load(); void kor.load(); };
 
   const view = useMemo(() => {
-    if (!balances || !ps.held) return null;
+    if (!balances || !ps.held || !kor.held) return null;
     const num = (code: string) => Number(balances.find((x) => x.code === code)?.balance ?? 0);
     const supplierLines: (Line & { reportedAt: string | null; reported: boolean })[] = suppliers.map((s) => ({
       code: s.code, name: s.name, amount: s.confirmed_balance != null ? Number(s.confirmed_balance) : num(`float_${s.code}`), reportedAt: s.confirmed_at, reported: s.confirmed_balance != null,
     }));
     const owed: Line[] = balances.filter((x) => x.kind === "liability").map((x) => ({ code: x.code, name: x.name, amount: Number(x.balance) }));
-    const bank = num("bank"), capital = num("outside_funding"), kora = num("kora_held");
+    const bank = num("bank"), capital = num("outside_funding"), kora = kor.held.total;
     return { bank, capital, kora, supplierLines, owed, ...financeProfit({ bank, paystack: ps.held.total, kora, suppliers: supplierLines, owed, capital }) };
-  }, [balances, suppliers, ps.held]);
+  }, [balances, suppliers, ps.held, kor.held]);
 
   return <div className="space-y-6">
     <AdminPageHeader title="Finance" description={ps.reading ? `Paystack read ${when(ps.reading.read_at)}` : "Bank, Paystack, suppliers, debts and profit."}
       action={<div className="flex flex-wrap gap-2">
-        <Button variant="ghost" size="sm" onClick={refresh} aria-label="Refresh"><RefreshCw size={14} className={loading || ps.loading ? "animate-spin" : ""} /></Button>
+        <Button variant="ghost" size="sm" onClick={refresh} aria-label="Refresh"><RefreshCw size={14} className={loading || ps.loading || kor.loading ? "animate-spin" : ""} /></Button>
         {isMaster && <Button size="sm" onClick={() => setTopup(true)}>Record top-up</Button>}
         {isMaster && <Button variant="soft" size="sm" onClick={() => setOut(true)}><Minus size={14} />Take money out</Button>}
         {isMaster && <Button variant="soft" size="sm" onClick={() => setPutIn(true)}><Plus size={14} />Partner put in</Button>}
@@ -88,15 +89,19 @@ export default function AdminFinanceV2() {
 
     {failed && <div role="alert" className="border-l-2 border-danger bg-danger/10 p-4 text-sm text-danger">Our records could not be loaded, so no totals are shown.</div>}
     {!failed && !view && <div role="status" className="flex flex-wrap items-center gap-3 text-sm">
-      {loading || ps.loading ? <span className="text-muted-foreground">Loading balances and asking Paystack…</span>
-        : <><span className="text-danger">Paystack's figure could not be fully read, so no totals are shown.</span><Button variant="ghost" size="sm" onClick={() => void ps.load()}><RefreshCw size={14} />Try again</Button></>}
+      {loading || ps.loading || kor.loading ? <span className="text-muted-foreground">Loading bank, supplier, Paystack and Kora balances…</span>
+        : <><span className="text-danger">{!kor.held ? "Kora" : "Paystack"}'s figure could not be fully read, so no totals are shown.</span><Button variant="ghost" size="sm" onClick={refresh}><RefreshCw size={14} />Try again</Button></>}
     </div>}
 
     {view && ps.held && <>
       <StatGrid cols={3}>
         <Stat label="Money at bank" value={<Money value={view.bank} />} icon={Banknote} tone="good" note="Master balance" to="/admin/finance/master" />
         <Stat label="Money at Paystack" value={<Money value={ps.held.total} />} icon={PiggyBank} note="From Paystack · tap for details" to="/admin/finance-v2/paystack" />
-        {view.kora !== 0 && <Stat label="Money at Kora" value={<Money value={view.kora} />} icon={PiggyBank} note="GHS balance at Kora, after Kora's fees" />}
+        <Stat label="Money at Kora" value={<Money value={view.kora} />} icon={PiggyBank} note={<>
+          <span className="block">Available: {formatGHS(kor.held?.available ?? 0)}</span>
+          <span className="block">Pending: {formatGHS(kor.held?.pending ?? 0)}</span>
+          {kor.reading?.read_at && <span className="block">Kora read {when(kor.reading.read_at)}</span>}
+        </>} />
         <Stat label="At suppliers" value={<Money value={view.supplierTotal} />} icon={Store} tone="warn" note={`${view.supplierLines.length} suppliers`} />
         <Stat label="Money we owe" value={<Money value={view.owedTotal} />} icon={Wallet} tone="bad" />
         <Stat label="Profit" value={<Money value={view.profit} />} icon={TrendingUp} tone={view.profit >= 0 ? "good" : "bad"} note={(() => {
@@ -146,10 +151,9 @@ export default function AdminFinanceV2() {
     </section>
 
     <PaymentGatewayCard />
-    <KoraReadiness />
-    <RecordTopupModal open={topup} onClose={() => setTopup(false)} actorId={actor} suppliers={suppliers.map((s) => ({ code: s.code, name: s.name, fee_rate: Number(s.metadata?.topup_fee_rate ?? 0) }))} onDone={() => void load()} />
+    <RecordTopupModal open={topup} onClose={() => setTopup(false)} actorId={actor} suppliers={suppliers.map((s) => ({ code: s.code, name: s.name, fee_rate: Number(s.metadata?.topup_fee_rate ?? 0) }))} onDone={refresh} />
     <RecordPartnerCapitalModal open={putIn} onClose={() => setPutIn(false)} actorId={actor} onDone={() => void load()} />
-    <TakeOutModal open={out} onClose={() => setOut(false)} onDone={() => void load()} profit={view?.profit ?? null} />
+    <TakeOutModal open={out} onClose={() => setOut(false)} onDone={refresh} profit={view?.profit ?? null} />
   </div>;
 }
 
@@ -171,9 +175,9 @@ function TakeOutModal({ open, onClose, onDone, profit }: { open: boolean; onClos
   return <Modal open={open} onClose={() => { if (!busy) onClose(); }} label="Take money out">
     <div className="w-[min(92vw,420px)] space-y-4 p-5"><h2 className="text-lg font-semibold">Take money out</h2>
       <div className="flex gap-2">{([["bank", "From the bank"], ["kora_held", "From Kora balance"]] as const).map(([k, label]) =>
-        <button key={k} type="button" onClick={() => setFrom(k)} className={`flex-1 rounded-xl border px-3 py-2 text-[13px] ${from === k ? "border-primary/40 bg-primary/10 text-foreground" : "border-border text-muted-foreground"}`}>{label}</button>)}</div>
+        <Button key={k} type="button" variant={from === k ? "soft" : "quiet"} onClick={() => setFrom(k)} className="h-auto flex-1 whitespace-normal text-[13px]">{label}</Button>)}</div>
       <div className="flex gap-2">{([["spend", "Business cost"], ["withdraw", "Return capital"]] as const).map(([k, label]) =>
-        <button key={k} type="button" onClick={() => setKind(k)} className={`flex-1 rounded-xl border px-3 py-2 text-[13px] ${kind === k ? "border-primary/40 bg-primary/10 text-foreground" : "border-border text-muted-foreground"}`}>{label}</button>)}</div>
+        <Button key={k} type="button" variant={kind === k ? "soft" : "quiet"} onClick={() => setKind(k)} className="h-auto flex-1 whitespace-normal text-[13px]">{label}</Button>)}</div>
       <p className="text-xs leading-5 text-muted-foreground">{kind === "spend" ? `Subscriptions, SMS, tools and other costs. ${from === "kora_held" ? "Kora balance" : "Bank"} and profit both go down.` : `Money given back to partners. ${from === "kora_held" ? "Kora balance" : "Bank"} and capital both go down, so profit stays the same.`}</p>
       <Field label="Amount (GH₵)"><input className={inputCls} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
       <Field label={kind === "spend" ? "What was it for?" : "Who received it?"}><input className={inputCls} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>

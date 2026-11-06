@@ -1,5 +1,11 @@
 # Roadmap
 
+## Kora Finance cash balances
+- [x] Read live pending and available GHS from Kora and use their total instead of the book Kora figure; private reader deployed and tested.
+- [x] Confirmed Kora supplier funding, costs and withdrawals record from Kora; corrected today's two payments once (book Kora now matches 74.79).
+- [ ] Fix the underlying confirmation timing so future Kora payments are not booked as wallet first - needs a careful payment-confirmation change.
+- [x] 48 focused tests pass; signed-out access is blocked. Signed-in Finance page not browser-checked (no session for the live database).
+
 ## Returning shopper unpaid-order recovery
 - [x] Surface saved unpaid orders before another checkout, automatically show verified details, and offer continue payment or confirmed cancel/change bundle through the shared main/store checkout. Deploy missing unpaid-order-action and narrowly update the recovered live guest checkout to return protected recovery references and device capabilities.
 - [x] Six tests pass, preview build OK; desktop/360px browser reads a temporary unpaid order from the live service, Keep order leaves it unchanged, confirmed cancellation reads back cancelled/abandoned/closed and returns to bundle selection. Only the temporary test record was removed; no customer order, charge or supplier request changed.
