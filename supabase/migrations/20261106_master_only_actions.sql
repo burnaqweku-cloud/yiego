@@ -1,0 +1,10 @@
+-- 6 Nov 2026 (applied live): only the master admin may act; other admins are view-only.
+-- * finance_assert_admin now requires role='master'.
+-- * Action RPCs that used caller_is_admin() now use caller_is_admin(null, true); inline admin_users checks in
+--   admin_open_dispute, admin_update_dispute, admin_set_order_display_status, admin_set_product_price,
+--   admin_set_supplier_credit_confirmation and cancel_unpaid_order (p_admin) require role='master'.
+-- * RLS: the "admin can do anything" policies on suppliers, supplier_product_mappings, admin_notes, site_notices,
+--   help_articles, campaigns, public_contact_settings, legal_documents, domain_orders, dispute_cases and
+--   dispute_events are split: any admin reads, only the master (private.is_phase1_master()) writes.
+-- * admin_gate() also returns role and can_act.
+-- Read RPCs are unchanged, so view-only admins still see orders, finance and reports.

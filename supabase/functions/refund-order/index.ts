@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     if (token) {
       const { data: authData } = await supabase.auth.getUser(token);
       if (authData?.user) {
-        const { data: admin } = await supabase.from("admin_users").select("user_id").eq("user_id", authData.user.id).eq("is_active", true).maybeSingle();
+        const { data: admin } = await supabase.from("admin_users").select("user_id").eq("user_id", authData.user.id).eq("is_active", true).eq("role", "master").maybeSingle();
         if (admin) {
           if (!sessionHasMfa(token)) return jsonResponse({ error: "Two-factor verification required. Sign in to the admin panel again." }, { status: 403 });
           adminId = authData.user.id;

@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
       .select("user_id")
       .eq("user_id", authData.user.id)
       .eq("is_active", true)
+      .eq("role", "master") // 6 Nov 2026: only the master admin may act; other admins are view-only
       .maybeSingle();
 
     if (!admin) {

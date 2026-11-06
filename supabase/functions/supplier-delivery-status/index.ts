@@ -278,7 +278,7 @@ async function adminState(req: Request) {
   const { data: auth } = await supabase.auth.getUser(token);
   if (!auth?.user) return json({ error: "Invalid session" }, { status: 401 });
   const { data: isAdmin } = await supabase
-    .from("admin_users").select("user_id").eq("user_id", auth.user.id).eq("is_active", true).maybeSingle();
+    .from("admin_users").select("user_id").eq("user_id", auth.user.id).eq("is_active", true).eq("role", "master").maybeSingle();
   if (!isAdmin) return json({ error: "Admin access required" }, { status: 403 });
   return { supabase, userId: auth.user.id };
 }

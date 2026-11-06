@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     const supabase = createSupabaseAdmin();
     const { data: authData, error: authError } = await supabase.auth.getUser(token);
     if (authError || !authData.user) return jsonResponse({ error: "Invalid session" }, { status: 401 });
-    const { data: admin } = await supabase.from("admin_users").select("user_id").eq("user_id", authData.user.id).eq("is_active", true).maybeSingle();
+    const { data: admin } = await supabase.from("admin_users").select("user_id").eq("user_id", authData.user.id).eq("is_active", true).eq("role", "master").maybeSingle();
     if (!admin) return jsonResponse({ error: "Admin access required" }, { status: 403 });
     if (!sessionHasMfa(token)) return jsonResponse({ error: "Two-factor verification required. Sign in to the admin panel again." }, { status: 403 });
 

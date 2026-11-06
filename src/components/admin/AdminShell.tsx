@@ -1,3 +1,4 @@
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useEffect, useRef, useState } from "react";
 import { useEffect as useAlertsEffect } from "react";
 import { startSupportAlerts, stopSupportAlerts } from "@/lib/supportAlerts";
@@ -13,6 +14,7 @@ import { groupForPath, pageForPath } from "@/lib/admin-nav";
    mobile, and a compact 56px top bar that names the page. All navigation
    lives in AdminSidebar; all page data lives in the routed page. */
 export default function AdminShell() {
+  const { canAct } = useAdminAccess();
   useAlertsEffect(() => { startSupportAlerts(); return () => stopSupportAlerts(); }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
@@ -50,7 +52,10 @@ export default function AdminShell() {
             </div>
             <button type="button" onClick={() => setMode(resolved === "light" ? "dark" : "light")} className="onyx-iconbtn ml-auto" aria-label={resolved === "light" ? "Switch to dark mode" : "Switch to light mode"}>{resolved === "light" ? <Moon size={18} /> : <Sun size={18} />}</button>
           </header>
-          <main className="px-3.5 pb-14 pt-4 sm:px-5 lg:px-6 lg:pt-5"><Outlet /></main>
+          <main className="px-3.5 pb-14 pt-4 sm:px-5 lg:px-6 lg:pt-5">
+            {!canAct && <p className="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2.5 text-[13px] text-amber-700 dark:text-amber-200">View only: this account can look at everything but can't make changes. Refunds, retries, pauses, messages and finance records need the master admin.</p>}
+            <Outlet />
+          </main>
         </div>
       </div>
 

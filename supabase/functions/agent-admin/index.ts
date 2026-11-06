@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     if (!auth?.user) return jsonResponse({ error: "Invalid session" }, { status: 401 });
     if (!sessionHasMfa(token)) return jsonResponse({ error: "Two-factor verification required. Sign in to the admin panel again." }, { status: 403 });
     // Every action here is admin-only: 2FA alone is not enough, any user can switch that on.
-    const { data: isAdmin } = await supabase.from("admin_users").select("user_id").eq("user_id", auth.user.id).eq("is_active", true).maybeSingle();
+    const { data: isAdmin } = await supabase.from("admin_users").select("user_id").eq("user_id", auth.user.id).eq("is_active", true).eq("role", "master").maybeSingle();
     if (!isAdmin) return jsonResponse({ error: "Admin only" }, { status: 403 });
     const body = await req.json();
     if (body.action === "review_application") {
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ status: "success", email: emailResult });
     }
     if (body.action === "test_email") {
-      const { data: adm } = await supabase.from("admin_users").select("user_id").eq("user_id", auth.user.id).eq("is_active", true).maybeSingle();
+      const { data: adm } = await supabase.from("admin_users").select("user_id").eq("user_id", auth.user.id).eq("is_active", true).eq("role", "master").maybeSingle();
       if (!adm) return jsonResponse({ error: "Admin only" }, { status: 403 });
       const r = await sendEmail({ to: auth.user.email ?? "", subject: "DataYego email test", html: wrap("Email works", "<p>If you're reading this, sending is fine.</p>") });
       return jsonResponse({ status: "success", resend: r, hasKey: Boolean(Deno.env.get("RESEND_API_KEY")), from: Deno.env.get("EMAIL_FROM") ?? "DataYego <noreply@yiego.shop>" });
