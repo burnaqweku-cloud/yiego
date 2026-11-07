@@ -8,6 +8,7 @@ import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import "@fontsource/ibm-plex-mono/600.css";
 import "./index.css";
+import { capturePartnerCode } from "@/lib/partners";
 import "./styles/site.css"; // after index.css: the public-site rules must win ties with the app rules
 
 // A page left open across a publish asks for code files that no longer exist,
@@ -48,6 +49,7 @@ void (async () => {
 // Public pages arrive pre-rendered (see vite.config.ts → prerenderRoutes): hydrate that markup instead of replacing
 // it, so the first paint is instant and crawlers and humans see the same page. Anything else starts from the empty div.
 const rootEl = document.getElementById("root")!;
+capturePartnerCode();
 const tree = <AppErrorBoundary><App /></AppErrorBoundary>;
 // The host serves index.html (the pre-rendered home page) for any address it has no file for. Only reuse markup that
 // was rendered for this exact address; otherwise drop it so the home page never flashes before /admin, /wallet, etc.
