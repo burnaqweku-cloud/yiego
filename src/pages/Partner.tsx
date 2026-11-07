@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { formatGHS } from "@/lib/format";
 import { loadPartnerDashboard, PARTNER_PACKAGES, partnerLink, projectEarnings, type PartnerDashboard } from "@/lib/partners";
 
-const WHATSAPP = "https://wa.me/233508786777";
+const SUPPORT = "/support";
 
 export default function Partner() {
   const [d, setD] = useState<PartnerDashboard | null>(null);
@@ -20,7 +20,7 @@ export default function Partner() {
       <Seo title="Partners — DataYego" description="DataYego partner programme." path="/partner" noindex />
       <PageHeader eyebrow="Partners" title="Partner dashboard" subtitle="This account isn't a DataYego partner yet." />
       <section className="onyx-panel rounded-[24px] p-6 text-sm text-muted-foreground">Run a channel or community in Ghana? Message our team to join and earn on every bundle your audience buys.
-        <div className="mt-4"><Button asChild><a href={WHATSAPP} target="_blank" rel="noreferrer">Contact the team</a></Button></div></section>
+        <div className="mt-4"><Button asChild><a href={SUPPORT}>Contact the team</a></Button></div></section>
     </div>
   );
 
@@ -61,7 +61,7 @@ export default function Partner() {
             <li key={k} className={`rounded-xl border p-3 ${d.package === k ? "border-primary/40 bg-primary/10" : "border-border"}`}><b>{PARTNER_PACKAGES[k].name}</b>{d.package === k && " · your package"}<p className="text-xs text-muted-foreground">{PARTNER_PACKAGES[k].blurb}</p></li>
           ))}
         </ul>
-        {d.package !== "premier" && <Button asChild variant="soft" className="mt-3"><a href={WHATSAPP} target="_blank" rel="noreferrer">Apply for an upgrade</a></Button>}
+        {d.package !== "premier" && <Button asChild variant="soft" className="mt-3"><a href={SUPPORT}>Apply for an upgrade</a></Button>}
       </section>
 
       <section className="onyx-panel rounded-[24px] p-5 text-sm">
