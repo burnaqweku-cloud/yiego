@@ -38,7 +38,7 @@ export default function AdminPartners() {
 
   return (
     <div className="space-y-5">
-      <AdminPageHeader title="Partners" subtitle="Influencers earn a fixed amount on every delivered order from their link." action={<Button variant="quiet" size="sm" onClick={() => void load()}><RefreshCw />Refresh</Button>} />
+      <AdminPageHeader title="Partners" description="Influencers earn a fixed amount on every delivered order from their link." action={<Button variant="quiet" size="sm" onClick={() => void load()}><RefreshCw />Refresh</Button>} />
       <StatGrid cols={3}>
         <Stat label="Owed to partners" value={<Money value={owed} />} note="Shown in Finance under Money we owe" loading={loading} />
         <Stat label="Partners" value={partners.length} loading={loading} />
