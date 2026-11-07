@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText, Send, History } from "lucide-react";
+import { Handshake, BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText, Send, History } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
 export interface AdminPage {
@@ -32,6 +32,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
   { id: "money", label: "Money", icon: Landmark, pages: [
     { id: "finance", label: "Finance", to: "/admin/finance", icon: TrendingUp, keywords: ["money put in", "top-ups", "funding", "revenue", "profit", "margin", "sales", "reconciliation"] },
     { id: "wallet", label: "Wallet activity", to: "/admin/wallet", icon: WalletCards, keywords: ["deposit", "top up", "balance"] },
+    { id: "partners", label: "Partners", to: "/admin/partners", icon: Handshake, keywords: ["partner", "influencer", "affiliate", "commission", "earnings"] },
     { id: "referrals", label: "Referrals", to: "/admin/referrals", icon: Gift, keywords: ["referral", "invite", "reward", "friend", "flagged"] },
     { id: "suppliers", label: "Suppliers", to: "/admin/suppliers", icon: Store, keywords: ["datamart", "databundleshub", "dbh", "float", "supplier balance"] },
     { id: "domains", label: "Domains", to: "/admin/domains", icon: Globe, keywords: ["domain", "register", "cname", "agent domain", ".com", ".shop"] },

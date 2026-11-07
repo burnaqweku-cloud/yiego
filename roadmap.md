@@ -1,5 +1,10 @@
 # Roadmap
 
+## Partner programme
+- [x] Live tables, rates (Starter 40%, Pro 60%, Premier contact team), delivery-only earnings, refund void, Finance "Partner earnings owed"; rolled-back live test passes.
+- [x] Partner links, partner dashboard, admin Partners page, account shortcut.
+- [ ] Signed-in browser check of partner/admin pages and a real payout - needs owner session.
+
 ## Kora Finance cash balances
 - [x] Read live pending and available GHS from Kora and use their total instead of the book Kora figure; private reader deployed and tested.
 - [x] Confirmed Kora supplier funding, costs and withdrawals record from Kora; corrected today's two payments once (book Kora now matches 74.79).
