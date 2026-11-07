@@ -1,10 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
-/* Partner links: datayego.com/?p=CODE. The code is remembered on this device for 30 days and attached to the
- * shopper's next main-shop order. The server decides everything (owner check, once per order, never the partner's
+/* Partner links: datayego.com/?p=CODE. The code is remembered on this device with no expiry and attached to every
+ * main-shop order from that device (a newer ?p= link replaces it). The server decides everything (owner check, once per order, never the partner's
  * own orders); earnings are only credited when the order is delivered. */
 const KEY = "dy_partner_ref";
-const TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export const PARTNER_PACKAGES = {
   starter: { name: "Starter", blurb: "Every partner starts here." },
@@ -28,7 +27,8 @@ export function capturePartnerCode(search = typeof window !== "undefined" ? wind
 export function savedPartnerCode(now = Date.now()): string | null {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) ?? "null") as { code?: string; at?: number } | null;
-    if (!v?.code || !v.at || now - v.at > TTL_MS) return null;
+    void now;
+    if (!v?.code) return null;
     return normalizePartnerCode(v.code);
   } catch { return null; }
 }
