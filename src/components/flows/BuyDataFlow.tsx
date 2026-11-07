@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Clock3, Copy, CreditCard, ListChecks, Share2, WalletCards, Wifi, Zap } from "lucide-react";
 import { toast } from "sonner";
 import UnpaidOrderActions from "@/components/shop/UnpaidOrderActions";
+import { attachPartnerToOrder } from "@/lib/partners";
 import { forgetUnpaidReference, latestUnpaidReference, saveOrderToken, savedOrderToken, savedUnpaidReference } from "@/lib/unpaidOrders";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
@@ -334,6 +335,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   async function runOrderAction(action: string, order = activeOrder) {
     if (!order) return;
     setStep("processing");
+    if (!agent && action.startsWith("pay_")) await attachPartnerToOrder(order.orderReference, savedOrderToken(order.orderReference) || null);
     const result = await orderPaymentAction<{ authorizationUrl?: string; orderReference?: string }>(action, order.orderReference);
     if (result.error || result.data?.error) {
       toast.error(result.data?.error ?? result.error ?? "The order action failed");
@@ -366,6 +368,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     if (result.pendingOrderReference) { setUnpaidReference(result.pendingOrderReference); setStep("recovery"); return; }
     if (result.error || !result.data?.data?.authorizationUrl) { toast.error(result.error ?? "Could not start payment. Please try again."); setStep("review"); return; }
     if (result.data.data.orderReference && result.data.data.managementToken) saveOrderToken(result.data.data.orderReference, result.data.data.managementToken, digits);
+    if (!agent && result.data.data.orderReference) await attachPartnerToOrder(result.data.data.orderReference, result.data.data.managementToken ?? null);
     window.location.assign(result.data.data.authorizationUrl);
   }
 
