@@ -95,7 +95,7 @@ export default function AdminPartners() {
         </div>
       </Panel>
 
-      <Modal open={adding} onClose={() => setAdding(false)} title="Add partner">
+      <Modal open={adding} onClose={() => setAdding(false)} label="Add partner">
         <div className="space-y-3">
           <Field label="Their DataYego account email" hint="They must have signed up already."><input className={inputCls} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
           <Field label="Name or channel"><input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
@@ -104,7 +104,7 @@ export default function AdminPartners() {
         </div>
       </Modal>
 
-      <Modal open={!!paying} onClose={() => setPaying(null)} title="Mark partner paid">
+      <Modal open={!!paying} onClose={() => setPaying(null)} label="Mark partner paid">
         {paying && <div className="space-y-3">
           <p className="text-sm">Pay <b>{paying.name}</b> <b>{formatGHS(Number(paying.owed))}</b>{paying.momo_number ? ` on ${paying.momo_number}` : ""}. Send the money first, then confirm here. This takes it out of Money at bank and clears what we owe them.</p>
           <Field label="Payment reference (optional)"><input className={inputCls} value={payRef} onChange={(e) => setPayRef(e.target.value)} /></Field>
