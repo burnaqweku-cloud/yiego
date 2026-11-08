@@ -1,5 +1,10 @@
 # Roadmap
 
+## Paid-only order creation
+- [x] Inspect live phase1 order/intent schema and lifecycle/Finance/promotion triggers read-only; document the approved design and safety checks in docs/paid-only-orders-readiness.md. No live records or payment paths changed.
+- [ ] Separate new unpaid checkout intents from orders and preserve wallet/legacy, promotion, partner and storefront flows — blocked by external function deployment access and inability to compare deployed payment entrypoints safely; do not activate a partial change.
+- [ ] Run atomic settlement/concurrency tests, deploy all payment and callback paths together, and verify a successful real payment through the customer screen — requires external deployment access and a real payment. This change is not live.
+
 ## Returning to admin
 - [x] Prevent identical resumed sessions from restarting the admin gate; recheck changed tokens without unmounting the page and with actions disabled, reject stale account responses and fail closed on errors.
 - [x] Five regression tests reproduced failures before the fix and pass after it; preview build OK. Public browser tab return keeps the document, signed-out admin redirects to /auth, no page errors.
