@@ -3,7 +3,7 @@ import { ChevronRight, Clock3, Copy, CreditCard, ListChecks, Share2, WalletCards
 import { toast } from "sonner";
 import UnpaidOrderActions from "@/components/shop/UnpaidOrderActions";
 import { attachPartnerToOrder } from "@/lib/partners";
-import { forgetUnpaidReference, latestUnpaidReference, saveOrderToken, savedOrderToken, savedUnpaidReference } from "@/lib/unpaidOrders";
+import { forgetUnpaidReference, saveOrderToken, savedOrderToken, savedUnpaidReference, unpaidReferenceForCheckout } from "@/lib/unpaidOrders";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 import { FlowFooter, FlowHeader, ProcessingView, SelectRow, SuccessView } from "./flow-parts";

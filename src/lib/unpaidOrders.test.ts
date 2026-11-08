@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canManageUnpaidOrder, isCancellableUnpaid } from "../../supabase/functions/_shared/unpaidOrder";
-import { forgetUnpaidReference, latestUnpaidReference, saveOrderToken, savedOrderToken, savedUnpaidReference } from "./unpaidOrders";
+import { forgetUnpaidReference, latestUnpaidReference, saveOrderToken, savedOrderToken, savedUnpaidReference, unpaidReferenceForCheckout } from "./unpaidOrders";
 describe("unpaid order cancellation", () => {
   it("allows awaiting-payment orders only", () => {
     expect(isCancellableUnpaid({ status: "awaiting_payment", payment_status: "pending" })).toBe(true);
