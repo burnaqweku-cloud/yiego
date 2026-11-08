@@ -1,5 +1,10 @@
 # Roadmap
 
+## Paid-only order creation
+- [ ] Separate new unpaid checkout intents from orders; create exactly one order after verified successful Paystack/Kora payment, preserve wallet debit-first purchases and legacy recovery.
+- [ ] Preserve server pricing, promotions, partner attribution, storefront margins and duplicate-payment/dispatch protection; test failed, abandoned, repeated and concurrent confirmations.
+- [ ] Deploy to the active external service and verify successful payment through the customer screen — external deployment access must be established first.
+
 ## Returning to admin
 - [x] Prevent identical resumed sessions from restarting the admin gate; recheck changed tokens without unmounting the page and with actions disabled, reject stale account responses and fail closed on errors.
 - [x] Five regression tests reproduced failures before the fix and pass after it; preview build OK. Public browser tab return keeps the document, signed-out admin redirects to /auth, no page errors.
