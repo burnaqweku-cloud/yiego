@@ -146,8 +146,9 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     setStep("network"); setNetwork(null); setBundle(null); setPhone(profile.phone);
     setGuestEmail(user?.email ?? profile.email); setPaymentMethod("wallet");
     setGuestPromoToken(null); setPromoDeclined(new Set());
-    const saved = open && !isAuthenticated ? latestUnpaidReference() : "";
-    setUnpaidReference(saved || null); if (saved) setStep("recovery");
+    // Opening the shop is a new-checkout choice. Recover an unpaid order only
+    // after its own recipient is entered; never let another number block it.
+    setUnpaidReference(null);
     setActiveOrder(null); setHighlightOrder(null); setLookupReference(""); setReceiptRef(null);
     if (open && auth.isAuthenticated && !agent) { void friendPriceEligible().then(setFriendPrice); void recordDevice(); } else setFriendPrice(false);
   }, [open, profile.email, profile.phone, user?.email, auth.isAuthenticated, agent]);
@@ -163,10 +164,6 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       setProductsLoading(false);
     });
     if (isAuthenticated) void refreshPending();
-    else {
-      const saved = latestUnpaidReference();
-      if (saved) { setUnpaidReference(saved); setStep("recovery"); }
-    }
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isAuthenticated]);
@@ -186,12 +183,11 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     const chosenNetwork = NETWORKS.find((n) => n.id === preselect.networkId);
     const chosenBundle = bundlesFor(preselect.networkId).find((b) => b.id === preselect.productCode);
     if (!chosenNetwork || !chosenBundle) return;
-    if (chosenBundle.unavailable) { if (!unpaidReference && !latestUnpaidReference()) setStep("network"); setNetwork(null); setBundle(null); return; }
+    if (chosenBundle.unavailable) { setStep("network"); setNetwork(null); setBundle(null); return; }
     setNetwork(chosenNetwork);
     setBundle(chosenBundle);
     if (preselect.campaign) setPhone(preselect.campaign.phone);
-    const saved = unpaidReference || (!isAuthenticated ? latestUnpaidReference() : "");
-    if (saved) { setUnpaidReference(saved); setStep("recovery"); } else setStep("phone");
+    setStep("phone");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, preselect, products]);
 
@@ -267,15 +263,15 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     if (!isAuthenticated) return;
     const result = await listPendingOrders();
     if (!result.error && result.data?.data) {
+      // Keep account orders available under Pending orders without hijacking a
+      // new checkout for a different recipient.
       setPendingOrders(result.data.data);
-      const unpaid = result.data.data.find((order) => order.status === "awaiting_payment" && ["pending", "created"].includes(order.payment_status));
-      if (unpaid && !activeOrder) { setUnpaidReference(unpaid.order_reference); setStep("recovery"); }
     }
   }
 
   async function continueFromPhone() {
     if (!network || !bundle || !phoneValid || (prefixMismatch && !prefixOk)) return;
-    const saved = savedUnpaidReference(digits);
+    const saved = unpaidReferenceForCheckout(digits);
     if (saved) { setUnpaidReference(saved); setStep("recovery"); return; }
     if (promotion) {
       if (!isAuthenticated) { toast.error("Sign in to purchase this offer."); return; }

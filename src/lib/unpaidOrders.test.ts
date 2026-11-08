@@ -36,4 +36,17 @@ describe("unpaid order cancellation", () => {
     expect(savedUnpaidReference("0541234567")).toBe("AG-9876543210");
     expect(latestUnpaidReference()).toBe("AG-9876543210");
   });
+  it("lets a different recipient start a new order without cancelling the old unpaid order", () => {
+    localStorage.clear();
+    saveOrderToken("YG-0123456789", "private-test-token", "0551234567");
+    expect(unpaidReferenceForCheckout()).toBe("");
+    expect(unpaidReferenceForCheckout("0541234567")).toBe("");
+    expect(latestUnpaidReference()).toBe("YG-0123456789");
+    expect(savedOrderToken("YG-0123456789")).toBe("private-test-token");
+  });
+  it("still recovers the unpaid order when its own recipient is entered", () => {
+    localStorage.clear();
+    saveOrderToken("YG-0123456789", "private-test-token", "0551234567");
+    expect(unpaidReferenceForCheckout("+233551234567")).toBe("YG-0123456789");
+  });
 });
