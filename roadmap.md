@@ -1,5 +1,9 @@
 # Roadmap
 
+## Returning to admin
+- [ ] Prevent identical resumed sessions from restarting the admin gate; recheck changed tokens without unmounting the page, reject stale account responses and fail closed on errors.
+- [ ] Run return/session-change regression tests and check available browser behaviour; real external-admin session may be unavailable.
+
 ## Partner programme
 - [x] Live tables, rates (Starter 40%, Pro 60%, Premier contact team), delivery-only earnings, refund void, Finance "Partner earnings owed"; rolled-back live test passes.
 - [x] Partner links, partner dashboard, admin Partners page, account shortcut.
