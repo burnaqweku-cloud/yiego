@@ -408,7 +408,7 @@ export default function AdminOrders() {
         {isCancellableUnpaid(s) && <ActionCard title="Cancel unpaid order" note="No payment has been made. Cancelling closes this order so the customer can place a new order for this number. No money is moved and no data is sent."><Button variant="ghost" disabled={busy} onClick={async () => {
           if (!window.confirm(`Cancel unpaid order ${s.order_reference} for ${s.recipient_phone}? No money will be moved.`)) return;
           setRunningAction("cancel_unpaid");
-          const { error } = await (supabase as unknown as { schema: (s: string) => { rpc: (f: string, a: Record<string, unknown>) => Promise<{ error: { message: string } | null }> } }).schema("phase1").rpc("cancel_unpaid_order", { p_reference: s.order_reference, p_actor: null, p_token: null, p_email: null, p_admin: true });
+          const { error } = await (supabase as unknown as { schema: (s: string) => { rpc: (f: string, a: Record<string, unknown>) => Promise<{ error: { message: string } | null }> } }).schema("phase1").rpc("cancel_unpaid_order", { p_reference: s.order_reference, p_actor: null, p_token: null, p_email: null, p_admin: true, p_anyone: false });
           setRunningAction(null);
           if (error) return toast.error("Could not cancel. Refresh the order: it may have been paid or already closed.");
           toast.success("Unpaid order cancelled. The customer can order again."); await loadOrders(); await loadEvents(s.id);
