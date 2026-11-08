@@ -1,9 +1,9 @@
 # Roadmap
 
 ## Paid-only order creation
-- [ ] Separate new unpaid checkout intents from orders; create exactly one order after verified successful Paystack/Kora payment, preserve wallet debit-first purchases and legacy recovery.
-- [ ] Preserve server pricing, promotions, partner attribution, storefront margins and duplicate-payment/dispatch protection; test failed, abandoned, repeated and concurrent confirmations.
-- [ ] Deploy to the active external service and verify successful payment through the customer screen — external deployment access must be established first.
+- [x] Inspect live phase1 order/intent schema and lifecycle/Finance/promotion triggers read-only; document the approved design and safety checks in docs/paid-only-orders-readiness.md. No live records or payment paths changed.
+- [ ] Separate new unpaid checkout intents from orders and preserve wallet/legacy, promotion, partner and storefront flows — blocked by external function deployment access and inability to compare deployed payment entrypoints safely; do not activate a partial change.
+- [ ] Run atomic settlement/concurrency tests, deploy all payment and callback paths together, and verify a successful real payment through the customer screen — requires external deployment access and a real payment. This change is not live.
 
 ## Returning to admin
 - [x] Prevent identical resumed sessions from restarting the admin gate; recheck changed tokens without unmounting the page and with actions disabled, reject stale account responses and fail closed on errors.
