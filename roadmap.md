@@ -1,5 +1,10 @@
 # Roadmap
 
+## Returning to admin
+- [x] Prevent identical resumed sessions from restarting the admin gate; recheck changed tokens without unmounting the page and with actions disabled, reject stale account responses and fail closed on errors.
+- [x] Five regression tests reproduced failures before the fix and pass after it; preview build OK. Public browser tab return keeps the document, signed-out admin redirects to /auth, no page errors.
+- [ ] Verify returning in the owner's real signed-in admin session — external authenticated browser session unavailable; publishing and owner device check remain needed.
+
 ## Partner programme
 - [x] Live tables, rates (Starter 40%, Pro 60%, Premier contact team), delivery-only earnings, refund void, Finance "Partner earnings owed"; rolled-back live test passes.
 - [x] Partner links, partner dashboard, admin Partners page, account shortcut.
