@@ -1,4 +1,5 @@
 # Architecture rules
+- Supplier-detail top-up windows load the full protected supplier list with configured fees, placing the current supplier first so records can target any supplier without changing accounting RPCs.
 - Admin reference searches use the protected targeted order-search helper independently of recent/date-filtered browsing caches, so historical orders remain findable without loading the whole table or weakening access controls.
 - Global maintenance uses agent_plan.maintenance and atomically stored transition announcements via the master/AAL2 settings RPC; main/store bells merge those notices and storefront gates resolve their own identity. Browser safeguards do not replace external server enforcement; maintenance emails go through the maintenance-email outbox (unique per notice+address, Resend idempotency keys), so retries never duplicate.
 - Kora Finance uses its complete live available plus pending GHS balance instead of book kora_held, never both; external cash records preserve history but are not re-deducted from provider balances. Kora-specific refund semantics remain separate from Paystack.
