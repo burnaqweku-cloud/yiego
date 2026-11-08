@@ -14,6 +14,12 @@ export function savedUnpaidReference(phone: string): string {
   const local = digits.startsWith("233") && digits.length === 12 ? `0${digits.slice(3)}` : digits;
   try { return localStorage.getItem(`yiego_unpaid_phone_${local}`) ?? ""; } catch { return ""; }
 }
+/** A previous unpaid order may interrupt checkout only for its own recipient.
+ * Starting the shop, or buying for another number, must remain unobstructed. */
+export function unpaidReferenceForCheckout(phone?: string): string {
+  const digits = phone?.replace(/\D/g, "") ?? "";
+  return digits ? savedUnpaidReference(digits) : "";
+}
 export function latestUnpaidReference(): string {
   try { return localStorage.getItem("yiego_latest_unpaid") ?? ""; } catch { return ""; }
 }
