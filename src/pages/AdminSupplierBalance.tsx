@@ -12,7 +12,7 @@ import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
 
 /* One supplier's money: what they report, what our books say, where it went. */
-interface Supplier { id: string; code: string; name: string; status: string; confirmed_balance: number | null; confirmed_at: string | null }
+interface Supplier { id: string; code: string; name: string; status: string; confirmed_balance: number | null; confirmed_at: string | null; metadata?: { topup_fee_rate?: number } | null }
 interface Reading { balance: number; observed_at: string; source: string }
 interface Topup { id: string; created_by: string | null; amount: number; occurred_at: string; note: string | null; metadata: { fee?: number } | null }
 interface Ord { order_reference: string; recipient_phone: string; cost_amount: number | null; amount: number; status: string; supplier_status: string | null; paid_at: string; data_products: { capacity_gb: number } | null; networks: { name: string } | null }
@@ -23,11 +23,16 @@ const since = (r: Range) => r === "all" ? "2026-09-12" : new Date(Date.now() - (
 
 export default function AdminSupplierBalance() {
   const { code = "" } = useParams(); const { user } = useAuth();
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [s, setS] = useState<Supplier | null>(null); const [readings, setReadings] = useState<Reading[]>([]); const [topups, setTopups] = useState<Topup[]>([]); const [admins, setAdmins] = useState<Record<string, string>>({}); const [orders, setOrders] = useState<Ord[]>([]);
   const [float, setFloat] = useState(0); const [range, setRange] = useState<Range>("7d"); const [loading, setLoading] = useState(true); const [topping, setTopping] = useState(false);
   const load = useCallback(async () => {
     setLoading(true);
-    const { data: sup } = await db().from("suppliers").select("id, code, name, status, confirmed_balance, confirmed_at").eq("code", code).maybeSingle();
+    const { data: supplierRows, error } = await db().from("suppliers").select("id, code, name, status, confirmed_balance, confirmed_at, metadata").order("display_order");
+    if (error) { setSuppliers([]); setLoading(false); toast.error("Supplier choices could not be loaded. Refresh and try again."); return; }
+    const available = (supplierRows ?? []) as Supplier[];
+    setSuppliers(available);
+    const sup = available.find((supplier) => supplier.code === code);
     if (!sup) { setS(null); setLoading(false); return; }
     setS(sup);
     const [r, t, o, f, who] = await Promise.all([
@@ -93,7 +98,7 @@ export default function AdminSupplierBalance() {
         </ul>
       </Panel>
 
-      {s && <RecordTopupModal open={topping} onClose={() => setTopping(false)} actorId={user?.id ?? ""} suppliers={[{ code: s.code, name: s.name, fee_rate: 0 }]} onDone={() => { toast.success("Top-up recorded."); void load(); }} />}
+      {s && <RecordTopupModal open={topping} onClose={() => setTopping(false)} actorId={user?.id ?? ""} suppliers={[s, ...suppliers.filter((supplier) => supplier.code !== s.code)].map((supplier) => ({ code: supplier.code, name: supplier.name, fee_rate: Number(supplier.metadata?.topup_fee_rate ?? 0) }))} onDone={() => { void load(); }} />}
     </div>
   );
 }
