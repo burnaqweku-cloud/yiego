@@ -21,7 +21,9 @@ interface FlowsValue {
   flowOpen: boolean;
 }
 
-const FlowsContext = createContext<FlowsValue | null>(null);
+// Keep one context across hot reloads so a re-evaluated module never orphans consumers.
+const globalFlows = globalThis as typeof globalThis & { __datayegoFlowsContext?: React.Context<FlowsValue | null> };
+const FlowsContext = globalFlows.__datayegoFlowsContext ??= createContext<FlowsValue | null>(null);
 
 export function FlowsProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
