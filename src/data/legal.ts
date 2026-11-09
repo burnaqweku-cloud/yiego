@@ -26,6 +26,7 @@ export interface LegalFallback {
 }
 
 const EFFECTIVE = "2026-08-05";
+const PRIVACY_EFFECTIVE = "2026-11-09";
 
 /* The renderer turns plain text into prose: `##` is a heading, `-` is a
    bullet, `**bold**` works, and each line is its own block — so a paragraph
