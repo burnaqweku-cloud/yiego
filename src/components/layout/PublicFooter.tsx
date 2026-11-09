@@ -100,7 +100,11 @@ export default function PublicFooter() {
                 <ul className="mt-3.5 flex flex-col">
                   {col.links.map((l, i) => (
                     <li key={`${l.label}-${i}`}>
-                      {l.to ? (
+                      {l.settings ? (
+                        <button type="button" onClick={openCookieSettings} className="mk-footlink text-left">
+                          {l.label}
+                        </button>
+                      ) : l.to ? (
                         <Link to={l.to} className="mk-footlink">
                           {l.label}
                         </Link>

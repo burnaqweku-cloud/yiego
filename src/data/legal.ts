@@ -159,7 +159,16 @@ We share only what is necessary with:
 - **The mobile network and the delivery partner that fulfils your order**, which necessarily includes the recipient phone number, network and bundle
 - **Our hosting, database and email providers**, which store and transmit the data on our behalf
 - **The provider that powers our AI support assistant**, which receives the questions you send it
+- **TikTok**, which receives the advertising-measurement information described above when permitted, to measure visits and successful payments and support DataYego's ad reporting
 - **Authorities, regulators or advisers**, where we are legally required to disclose, or where it is necessary to establish or defend a legal claim
+
+## Advertising measurement and your choices
+
+In the European Economic Area, United Kingdom and Switzerland, and where your region cannot be verified, TikTok tracking stays off unless you accept it in the consent banner. Elsewhere it may operate without a banner, while saved refusals and applicable opt-outs still apply. Rejecting is as easy as accepting, and essential ordering, payment and security features work either way.
+
+Open **Cookie settings** in the footer to change your choice. Withdrawal stops new TikTok reporting immediately, including in other open tabs, but does not undo information already shared lawfully. A browser Global Privacy Control signal overrides saved acceptance. We keep a device-local record of the notice version, choices, regions and decision times so your preference and its history can be applied; each permitted purchase event keeps a reference to that choice. We never replay a purchase that was blocked when payment was confirmed.
+
+TikTok also processes information under its own [privacy policy](https://www.tiktok.com/legal/page/row/privacy-policy/en).
 
 ## Buying for other people
 
