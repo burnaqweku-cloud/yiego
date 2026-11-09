@@ -67,7 +67,7 @@ export default function MaintenanceGate({ children, hostSlug }: { children: Reac
       // A phone waking up often drops the first request. Keep the last confirmed state and
       // retry quietly; only show the paused banner after repeated failures or with no prior reading.
       failures.current += 1;
-      if (!loadedOnce.current || failures.current >= 3) { setError(true); setReady(true); }
+      if (failures.current >= (loadedOnce.current ? 3 : 2)) { setError(true); setReady(true); }
       else window.setTimeout(() => void refresh(), 2000 * failures.current);
     }
     finally { busy.current = false; }
