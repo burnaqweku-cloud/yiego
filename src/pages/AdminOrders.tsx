@@ -300,9 +300,10 @@ export default function AdminOrders() {
   const [retryingRef, setRetryingRef] = useState<string | null>(null);
   const retryOrder = async (order: AdminOrderRow) => {
     setRetryingRef(order.order_reference);
-    const { data, error } = await supabase.functions.invoke<{ status?: string; error?: string }>("admin-order-action", { body: { action: "retry", orderReference: order.order_reference } });
+    const { data, error } = await supabase.functions.invoke<{ status?: string; error?: string; result?: { status?: string } }>("admin-order-action", { body: { action: "retry", orderReference: order.order_reference } });
     setRetryingRef(null);
     if (error || data?.error) return toast.error(data?.error ?? error?.message ?? "Retry failed.");
+    if (order.status !== "delivered" && data?.result?.status === "delivered") window.__lovableEvents?.track?.("project.data_bundle_delivered", { network: order.networks?.name ?? "Unknown", source: "supplier_fulfillment" });
     toast.success(`${order.order_reference} sent to the supplier.`);
     await loadOrders(); if (selected?.id === order.id) await loadEvents(order.id);
   };
