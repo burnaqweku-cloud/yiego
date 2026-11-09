@@ -3,6 +3,7 @@ import { Link2, ShieldCheck, X } from "lucide-react";
 import {
   applyTikTokConsent,
 } from "@/lib/tiktokPixel";
+import { applyMetaConsent, META_MIN_NOTICE_VERSION, trackMetaPageView } from "@/lib/metaPixel";
 import {
   globalPrivacyControlEnabled,
   readAdvertisingConsent,
@@ -31,6 +32,7 @@ export default function TikTokConsent() {
     let currentRegion = "XX";
     const apply = () => {
       const allowed = applyTikTokConsent(currentRegion);
+      applyMetaConsent(currentRegion);
       if (active) setGpc(globalPrivacyControlEnabled());
       return allowed;
     };
@@ -41,17 +43,19 @@ export default function TikTokConsent() {
       setRegion(resolved);
       apply();
       const record = readAdvertisingConsent();
-      if (requiresAdvertisingConsent(resolved) && !record && !globalPrivacyControlEnabled()) setOpen(true);
+      if (requiresAdvertisingConsent(resolved) && (!record || (record.choice === "granted" && record.noticeVersion < META_MIN_NOTICE_VERSION)) && !globalPrivacyControlEnabled()) setOpen(true);
     });
 
     const openSettings = () => setOpen(true);
     const storage = (event: StorageEvent) => {
       if (event.key === TIKTOK_CONSENT_STORAGE_KEY) apply();
     };
+    const pageTimer = window.setInterval(() => trackMetaPageView(currentRegion), 1000);
     window.addEventListener(SETTINGS_EVENT, openSettings);
     window.addEventListener("storage", storage);
     return () => {
       active = false;
+      window.clearInterval(pageTimer);
       window.removeEventListener(SETTINGS_EVENT, openSettings);
       window.removeEventListener("storage", storage);
     };
@@ -60,6 +64,7 @@ export default function TikTokConsent() {
   const choose = (choice: AdvertisingChoice) => {
     saveAdvertisingConsent(choice, region);
     applyTikTokConsent(region);
+    applyMetaConsent(region);
     setOpen(false);
   };
 
@@ -77,7 +82,7 @@ export default function TikTokConsent() {
           </div>
           <button type="button" onClick={() => setOpen(false)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-muted-foreground" aria-label="Close cookie settings"><X size={17} /></button>
         </div>
-        {gpc && <p className="mt-4 rounded-2xl bg-muted p-3 text-[13px] leading-5 text-foreground">Your browser's Global Privacy Control signal is on, so TikTok tracking stays off even if you previously accepted.</p>}
+        {gpc && <p className="mt-4 rounded-2xl bg-muted p-3 text-[13px] leading-5 text-foreground">Your browser's Global Privacy Control signal is on, so TikTok and Facebook tracking stay off even if you previously accepted.</p>}
         <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <a href="https://datayego.com/legal/privacy" target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-[13px] font-semibold text-primary-glow underline underline-offset-4"><Link2 size={14} />Privacy policy</a>
           <div className="grid grid-cols-2 gap-2 sm:min-w-[300px]">

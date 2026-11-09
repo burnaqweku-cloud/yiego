@@ -23,6 +23,7 @@ import { paystackFee } from "@/lib/fees";
 import { claimGuestPromotion, preparePromotionOrder, usePromoPrices } from "@/lib/promotions";
 import { trackPromotion } from "@/lib/promotionAnalytics";
 import { trackTikTokPayment } from "@/lib/tiktokPixel";
+import { trackMetaPayment } from "@/lib/metaPixel";
 import {
   createGuestDataPayment,
   listPendingOrders,
@@ -346,6 +347,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     if (action === "pay_wallet") {
       void refreshWallet();
       void trackTikTokPayment({ reference: order.orderReference, network: order.networkName, product: order.bundleName });
+      void trackMetaPayment({ reference: order.orderReference, network: order.networkName, product: order.bundleName, value: order.amount });
     }
     setReceiptRef(order.orderReference); setStep("success");
   }

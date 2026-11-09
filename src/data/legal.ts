@@ -139,7 +139,7 @@ This policy explains what personal information DataYego collects when you buy da
 
 **Automatically.** Basic technical information such as your device and browser type, IP address, and the pages you use, which we need to keep the service running and to detect abuse. Your browser also stores your sign-in session, your light or dark theme preference, and your advertising-consent choices on your own device.
 
-**Advertising measurement.** Where permitted, the TikTok Pixel receives your IP address, device and browser information, cookie or ad-click identifiers, pages visited, and confirmed data-order events with a unique order event ID and bundle description. We do not send TikTok your email, phone number, Mobile Money PIN, card details, or advanced-matching identifiers.
+**Advertising measurement.** Where permitted, the TikTok Pixel and the Facebook (Meta) Pixel receive your IP address, device and browser information, cookie or ad-click identifiers, pages visited, and confirmed data-order events with a unique order event ID, bundle description and (for Facebook) the order value in GHS. We do not send them your email, phone number, Mobile Money PIN, card details, or advanced-matching identifiers.
 
 ## Why we hold it
 
@@ -161,15 +161,16 @@ We share only what is necessary with:
 - **Our hosting, database and email providers**, which store and transmit the data on our behalf
 - **The provider that powers our AI support assistant**, which receives the questions you send it
 - **TikTok**, which receives the advertising-measurement information described above when permitted, to measure visits and successful payments and support DataYego's ad reporting
+- **Meta (Facebook and Instagram)**, which receives the same advertising-measurement information plus order value when permitted, to measure visits and successful payments and support DataYego's ad reporting
 - **Authorities, regulators or advisers**, where we are legally required to disclose, or where it is necessary to establish or defend a legal claim
 
 ## Advertising measurement and your choices
 
 In the European Economic Area, United Kingdom and Switzerland, and where your region cannot be verified, TikTok tracking stays off unless you accept it in the consent banner. Elsewhere it may operate without a banner, while saved refusals and applicable opt-outs still apply. Rejecting is as easy as accepting, and essential ordering, payment and security features work either way.
 
-Open **Cookie settings** in the footer to change your choice. Withdrawal stops new TikTok reporting immediately, including in other open tabs, but does not undo information already shared lawfully. A browser Global Privacy Control signal overrides saved acceptance. We keep a device-local record of the notice version, choices, regions and decision times so your preference and its history can be applied; each permitted purchase event keeps a reference to that choice. We never replay a purchase that was blocked when payment was confirmed.
+Open **Cookie settings** in the footer to change your choice. Withdrawal stops new TikTok and Facebook reporting immediately, including in other open tabs, but does not undo information already shared lawfully. A browser Global Privacy Control signal overrides saved acceptance. We keep a device-local record of the notice version, choices, regions and decision times so your preference and its history can be applied; each permitted purchase event keeps a reference to that choice. We never replay a purchase that was blocked when payment was confirmed.
 
-TikTok also processes information under its own [privacy policy](https://www.tiktok.com/legal/page/row/privacy-policy/en).
+TikTok and Meta also process information under their own privacy policies: [TikTok](https://www.tiktok.com/legal/page/row/privacy-policy/en) and [Meta](https://www.facebook.com/privacy/policy/).
 
 ## Buying for other people
 
