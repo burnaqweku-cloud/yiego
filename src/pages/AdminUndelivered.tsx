@@ -60,6 +60,7 @@ export default function AdminUndelivered() {
     for (const o of targets) {
       const r = await supabase.functions.invoke<{ error?: string; result?: { status?: string } }>("admin-order-action", { body: { action: "retry", orderReference: o.order_reference } });
       if (!r.error && !r.data?.error && r.data?.result?.status !== "failed_needs_review") ok += 1;
+      if (!r.error && !r.data?.error && r.data?.result?.status === "delivered") window.__lovableEvents?.track?.("project.data_bundle_delivered", { network: o.networks?.name ?? "Unknown", source: "supplier_fulfillment" });
       setBulk((b) => (b ? { ...b, done: b.done + 1 } : b));
     }
     setBulk(null); toast.success(`${ok} of ${targets.length} accepted by the supplier.`); void load();
@@ -99,11 +100,17 @@ export default function AdminUndelivered() {
     if (action === "retry") {
       const r = await supabase.functions.invoke<{ error?: string; result?: { status?: string; skipped?: boolean } }>("admin-order-action", { body: { action: "retry", orderReference: order.order_reference } });
       error = r.data?.error ?? r.error?.message ?? null;
-      if (!error) toast.success(r.data?.result?.status === "failed_needs_review" ? "Sent, but the supplier refused it — see the reason on the row." : "Sent to the supplier again.");
+      if (!error) {
+        if (r.data?.result?.status === "delivered") window.__lovableEvents?.track?.("project.data_bundle_delivered", { network: order.networks?.name ?? "Unknown", source: "supplier_fulfillment" });
+        toast.success(r.data?.result?.status === "failed_needs_review" ? "Sent, but the supplier refused it — see the reason on the row." : "Sent to the supplier again.");
+      }
     } else {
       const r = await supabase.functions.invoke<{ error?: string }>("admin-order-action", { body: { action: "set_display_status", displayStatus: "delivered", orderReference: order.order_reference, reason: reason.trim() } });
       error = r.data?.error ?? r.error?.message ?? null;
-      if (!error) toast.success("Marked delivered.");
+      if (!error) {
+        window.__lovableEvents?.track?.("project.data_bundle_delivered", { network: order.networks?.name ?? "Unknown", source: "manual" });
+        toast.success("Marked delivered.");
+      }
     }
     setBusy(false);
     if (error) return toast.error(error);

@@ -1,5 +1,10 @@
 # Roadmap
 
+## North-star delivery measurement
+- [x] Count a data bundle only when an existing admin completion action confirms delivery or a supplier action newly returns delivered; never count tracking-page views, pending orders or repeated terminal-status checks.
+- [x] Register project.data_bundle_delivered with only network and completion source, validate its schema and test success/failure behavior. Four delivery tests and eleven consent regressions pass; schema and collector validation pass.
+- [ ] Include automatic supplier cron completions — blocked because they run without a browser and the available product-event mechanism only accepts the injected browser global; these deliveries remain outside this browser-event count.
+
 ## TikTok Pixel measurement
 - [ ] Install one consent-aware TikTok Pixel (DBOPTQJC77U4J2JR53N0), with a regional advertising-consent banner, persistent choices, Global Privacy Control handling and Cookie settings on main/store pages.
 - [ ] Report one CompletePayment event for confirmed main-site, storefront and wallet-funded data orders; never count wallet top-ups, pending payments or events blocked before consent. Leave value unset where the exact paid total is unavailable.

@@ -300,9 +300,10 @@ export default function AdminOrders() {
   const [retryingRef, setRetryingRef] = useState<string | null>(null);
   const retryOrder = async (order: AdminOrderRow) => {
     setRetryingRef(order.order_reference);
-    const { data, error } = await supabase.functions.invoke<{ status?: string; error?: string }>("admin-order-action", { body: { action: "retry", orderReference: order.order_reference } });
+    const { data, error } = await supabase.functions.invoke<{ status?: string; error?: string; result?: { status?: string } }>("admin-order-action", { body: { action: "retry", orderReference: order.order_reference } });
     setRetryingRef(null);
     if (error || data?.error) return toast.error(data?.error ?? error?.message ?? "Retry failed.");
+    if (order.status !== "delivered" && data?.result?.status === "delivered") window.__lovableEvents?.track?.("project.data_bundle_delivered", { network: order.networks?.name ?? "Unknown", source: "supplier_fulfillment" });
     toast.success(`${order.order_reference} sent to the supplier.`);
     await loadOrders(); if (selected?.id === order.id) await loadEvents(order.id);
   };
@@ -310,9 +311,15 @@ export default function AdminOrders() {
   const runAction = async (action: string, body: Record<string, unknown> = {}) => {
     if (!selected) return;
     setRunningAction(action);
-    const { data, error } = await supabase.functions.invoke<{ status?: string; error?: string }>("admin-order-action", { body: { action, orderReference: selected.order_reference, ...body } });
+    const { data, error } = await supabase.functions.invoke<{ status?: string; error?: string; applied?: { changed?: boolean; mapped?: string }; result?: { status?: string } }>("admin-order-action", { body: { action, orderReference: selected.order_reference, ...body } });
     setRunningAction(null);
     if (error || data?.error) return toast.error(data?.error ?? error?.message ?? "The order action failed.");
+    const delivered = selected.status !== "delivered" && (
+      (action === "set_display_status" && body.displayStatus === "delivered")
+      || (action === "recheck" && data?.applied?.changed === true && data.applied.mapped === "delivered")
+      || (["retry", "release_ported", "try_supplier"].includes(action) && data?.result?.status === "delivered")
+    );
+    if (delivered) window.__lovableEvents?.track?.("project.data_bundle_delivered", { network: selected.networks?.name ?? "Unknown", source: action === "set_display_status" ? "manual" : action === "recheck" ? "supplier_recheck" : "supplier_fulfillment" });
     toast.success(action === "clear_display_status" ? "Automatic status restored." : action === "release_ported" ? "Released and sent to the supplier." : action === "try_supplier" ? `Sent to ${String(body.supplierName ?? "the supplier")}.` : "Order updated.");
     await loadOrders();
     await loadEvents(selected.id);
