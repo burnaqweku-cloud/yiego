@@ -57,11 +57,19 @@ export default function MaintenanceGate({ children, hostSlug }: { children: Reac
   const [dismissed, setDismissed] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const busy = useRef(false);
+  const failures = useRef(0);
+  const loadedOnce = useRef(false);
   const refresh = useCallback(async () => {
     if (busy.current) return;
     busy.current = true;
-    try { const next = await loadMaintenance(); setSettings(next); setError(false); setReady(true); if (!next.enabled) setDismissed(null); }
-    catch { setError(true); setReady(true); }
+    try { const next = await loadMaintenance(); failures.current = 0; loadedOnce.current = true; setSettings(next); setError(false); setReady(true); if (!next.enabled) setDismissed(null); }
+    catch {
+      // A phone waking up often drops the first request. Keep the last confirmed state and
+      // retry quietly; only show the paused banner after repeated failures or with no prior reading.
+      failures.current += 1;
+      if (!loadedOnce.current || failures.current >= 3) { setError(true); setReady(true); }
+      else window.setTimeout(() => void refresh(), 2000 * failures.current);
+    }
     finally { busy.current = false; }
   }, []);
   useEffect(() => {
