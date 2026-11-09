@@ -76,6 +76,7 @@ export default function AdminOrdersReceived() {
     setRetrying(null);
     if (r.error || r.data?.error) return toast.error(r.data?.error ?? r.error?.message ?? "Could not send.");
     if (r.data?.result?.status === "failed_needs_review") return toast.error(`Not sent: ${(r.data.result.reason ?? "supplier refused").replace(/_/g, " ")}`);
+    if (r.data?.result?.status === "delivered") window.__lovableEvents?.track?.("project.data_bundle_delivered", { network: o.networks?.name ?? "Unknown", source: "supplier_fulfillment" });
     toast.success(`${o.order_reference} sent to ${name}.`); setTick((t) => t + 1);
   };
   // Same retry as the order page: re-sends a failed paid order to the supplier.

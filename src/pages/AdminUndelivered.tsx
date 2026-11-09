@@ -60,6 +60,7 @@ export default function AdminUndelivered() {
     for (const o of targets) {
       const r = await supabase.functions.invoke<{ error?: string; result?: { status?: string } }>("admin-order-action", { body: { action: "retry", orderReference: o.order_reference } });
       if (!r.error && !r.data?.error && r.data?.result?.status !== "failed_needs_review") ok += 1;
+      if (!r.error && !r.data?.error && r.data?.result?.status === "delivered") window.__lovableEvents?.track?.("project.data_bundle_delivered", { network: o.networks?.name ?? "Unknown", source: "supplier_fulfillment" });
       setBulk((b) => (b ? { ...b, done: b.done + 1 } : b));
     }
     setBulk(null); toast.success(`${ok} of ${targets.length} accepted by the supplier.`); void load();
