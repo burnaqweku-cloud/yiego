@@ -14,6 +14,7 @@ import AppPage from "@/components/layout/AppPage";
 import MaintenanceGate from "@/components/layout/MaintenanceGate";
 import PublicShell from "@/components/layout/PublicShell";
 import StoreMissing from "@/components/store/StoreMissing";
+import TikTokConsent from "@/components/tracking/TikTokConsent";
 import Home from "./pages/Home";
 // Tiny route guards — kept eager so gated pages don't wait on an extra chunk.
 import RequireAdmin from "@/components/auth/RequireAdmin";
@@ -234,5 +235,5 @@ export const MainSite = () => (
 /* v7_startTransition: while the next page's code downloads, keep showing the current page instead of swapping to a
    full-screen loader and back — that swap is the "wrong screen for a split second" flash. */
 const ROUTER_FUTURE = { v7_startTransition: true, v7_relativeSplatPath: true } as const;
-const App = () => isStoreHost() ? <StoreHostGate /> : <BrowserRouter future={ROUTER_FUTURE}><MainSite /></BrowserRouter>;
+const App = () => <><TikTokConsent />{isStoreHost() ? <StoreHostGate /> : <BrowserRouter future={ROUTER_FUTURE}><MainSite /></BrowserRouter>}</>;
 export default App;

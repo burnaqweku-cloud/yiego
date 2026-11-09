@@ -22,6 +22,7 @@ import { formatGHS } from "@/lib/format";
 import { paystackFee } from "@/lib/fees";
 import { claimGuestPromotion, preparePromotionOrder, usePromoPrices } from "@/lib/promotions";
 import { trackPromotion } from "@/lib/promotionAnalytics";
+import { trackTikTokPayment } from "@/lib/tiktokPixel";
 import {
   createGuestDataPayment,
   listPendingOrders,
@@ -342,7 +343,10 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     }
     if (action === "share") { setStep("shared"); await refreshPending(); return; }
     if (action === "cancel") { forgetUnpaidReference(order.orderReference); setActiveOrder(null); setUnpaidReference(null); setBundle(null); await refreshPending(); setStep(network ? "bundle" : "network"); toast.success("Order cancelled. Choose another bundle."); return; }
-    if (action === "pay_wallet") void refreshWallet();
+    if (action === "pay_wallet") {
+      void refreshWallet();
+      void trackTikTokPayment({ reference: order.orderReference, network: order.networkName, product: order.bundleName });
+    }
     setReceiptRef(order.orderReference); setStep("success");
   }
 

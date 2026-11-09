@@ -1,5 +1,11 @@
 # Roadmap
 
+## TikTok Pixel measurement
+- [ ] Install one consent-aware TikTok Pixel (DBOPTQJC77U4J2JR53N0), with a regional advertising-consent banner, persistent choices, Global Privacy Control handling and Cookie settings on main/store pages.
+- [ ] Report one CompletePayment event for confirmed main-site, storefront and wallet-funded data orders; never count wallet top-ups, pending payments or events blocked before consent. Leave value unset where the exact paid total is unavailable.
+- [ ] Update the published privacy policy and bundled fallback with TikTok data, purposes, consent and withdrawal details.
+- [ ] Run focused consent/deduplication tests and browser checks for regional blocking, acceptance, withdrawal and confirmed-payment behavior; real TikTok receipt still requires TikTok Events Manager.
+
 ## Paid-only order creation
 - [x] Inspect live phase1 order/intent schema and lifecycle/Finance/promotion triggers read-only; document the approved design and safety checks in docs/paid-only-orders-readiness.md. No live records or payment paths changed.
 - [ ] Separate new unpaid checkout intents from orders and preserve wallet/legacy, promotion, partner and storefront flows — blocked by external function deployment access and inability to compare deployed payment entrypoints safely; do not activate a partial change.

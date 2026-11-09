@@ -7,6 +7,7 @@ import { useAuth } from "@/store/auth-context";
 import StoreMissing from "@/components/store/StoreMissing";
 import StoreSupport from "@/components/store/StoreSupport";
 import StorePopup from "@/components/store/StorePopup";
+import { openCookieSettings } from "@/components/tracking/TikTokConsent";
 import { supabase } from "@/integrations/supabase/client";
 import "./templates.css";
 import { loadMaintenanceAnnouncements } from "@/lib/maintenance";
@@ -213,7 +214,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
               {store.hours_text && <p className="mt-3 inline-flex items-center gap-1.5 text-[13px]"><Clock size={13} />{store.hours_text}</p>}
             </div>
             <div><h4>Shop</h4><ul className="space-y-2 text-[14px]"><li><Link to={`${storeBase(store.slug)}/bundles`}>All bundles</Link></li><li><Link to={`${storeBase(store.slug)}/bundles?network=mtn`}>MTN</Link></li><li><Link to={`${storeBase(store.slug)}/bundles?network=telecel`}>Telecel</Link></li><li><Link to={`${storeBase(store.slug)}/bundles?network=at`}>AirtelTigo</Link></li></ul></div>
-            <div><h4>Help</h4><ul className="space-y-2 text-[14px]"><li><Link to={`${storeBase(store.slug)}/track`}>Track an order</Link></li><li><Link to={`${storeBase(store.slug)}/check-mtn`}>Check an MTN number</Link></li><li><Link to={`${storeBase(store.slug)}/faq`}>FAQ</Link></li><li><Link to={`${storeBase(store.slug)}/${isAuthenticated ? "account" : "sign-in"}`}>{isAuthenticated ? "Your account" : "Sign in"}</Link></li></ul></div>
+            <div><h4>Help</h4><ul className="space-y-2 text-[14px]"><li><Link to={`${storeBase(store.slug)}/track`}>Track an order</Link></li><li><Link to={`${storeBase(store.slug)}/check-mtn`}>Check an MTN number</Link></li><li><Link to={`${storeBase(store.slug)}/faq`}>FAQ</Link></li><li><Link to={`${storeBase(store.slug)}/${isAuthenticated ? "account" : "sign-in"}`}>{isAuthenticated ? "Your account" : "Sign in"}</Link></li><li><button type="button" onClick={openCookieSettings}>Cookie settings</button></li></ul></div>
             <div><h4>Contact</h4><ul className="space-y-2 text-[14px]">{wa && <li><a href={wa} target="_blank" rel="noreferrer">WhatsApp</a></li>}{store.contact_phone && <li><a href={`tel:${store.contact_phone}`}>{store.contact_phone}</a></li>}<li><Link to={`${storeBase(store.slug)}/about`}>About us</Link></li>{store.network && <li><Link to={`${storeBase(store.slug)}/join`}>Become an agent</Link></li>}</ul>
               <div className="mt-4 flex items-center gap-3">{store.socials?.facebook && <a href={store.socials.facebook} target="_blank" rel="noreferrer" aria-label="Facebook"><Facebook size={17} /></a>}{store.socials?.instagram && <a href={store.socials.instagram} target="_blank" rel="noreferrer" aria-label="Instagram"><Instagram size={17} /></a>}{store.socials?.tiktok && <a href={store.socials.tiktok} target="_blank" rel="noreferrer" className="text-[12px] font-semibold">TikTok</a>}{store.socials?.telegram && <a href={store.socials.telegram} target="_blank" rel="noreferrer" aria-label="Telegram"><Send size={17} /></a>}</div>
             </div>
@@ -232,6 +233,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
               {store.socials?.tiktok && <a href={store.socials.tiktok} target="_blank" rel="noreferrer" aria-label="TikTok" className="text-[11px] font-semibold text-faint-foreground hover:text-foreground">TikTok</a>}
               {store.socials?.telegram && <a href={store.socials.telegram} target="_blank" rel="noreferrer" aria-label="Telegram" className="text-faint-foreground hover:text-foreground"><Send size={16} /></a>}
             </div>
+            <button type="button" onClick={openCookieSettings} className="min-h-8 text-faint-foreground underline underline-offset-4">Cookie settings</button>
             <p>© {new Date().getFullYear()} {store.store_name}</p>
           </div>
         </footer>

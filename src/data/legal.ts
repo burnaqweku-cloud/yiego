@@ -26,6 +26,7 @@ export interface LegalFallback {
 }
 
 const EFFECTIVE = "2026-08-05";
+const PRIVACY_EFFECTIVE = "2026-11-09";
 
 /* The renderer turns plain text into prose: `##` is a heading, `-` is a
    bullet, `**bold**` works, and each line is its own block — so a paragraph
@@ -136,7 +137,9 @@ This policy explains what personal information DataYego collects when you buy da
 
 **When you contact us.** The messages you send to support or to our AI assistant, and anything you attach to a dispute.
 
-**Automatically.** Basic technical information such as your device and browser type, IP address, and the pages you use, which we need to keep the service running and to detect abuse. Your browser also stores your sign-in session and your light or dark theme preference on your own device.
+**Automatically.** Basic technical information such as your device and browser type, IP address, and the pages you use, which we need to keep the service running and to detect abuse. Your browser also stores your sign-in session, your light or dark theme preference, and your advertising-consent choices on your own device.
+
+**Advertising measurement.** Where permitted, the TikTok Pixel receives your IP address, device and browser information, cookie or ad-click identifiers, pages visited, and confirmed data-order events with a unique order event ID and bundle description. We do not send TikTok your email, phone number, Mobile Money PIN, card details, or advanced-matching identifiers.
 
 ## Why we hold it
 
@@ -145,10 +148,11 @@ This policy explains what personal information DataYego collects when you buy da
 - To answer support questions and resolve disputes and refunds
 - To detect and prevent fraud, abuse and unauthorised access to accounts
 - To keep the financial and transaction records the law requires us to keep
+- To measure DataYego advertising and successful payments, with advertising consent where the law requires it
 
 ## Who we share it with
 
-We do not sell your personal information, and we do not share it for advertising.
+We do not sell your personal information.
 
 We share only what is necessary with:
 
@@ -156,7 +160,16 @@ We share only what is necessary with:
 - **The mobile network and the delivery partner that fulfils your order**, which necessarily includes the recipient phone number, network and bundle
 - **Our hosting, database and email providers**, which store and transmit the data on our behalf
 - **The provider that powers our AI support assistant**, which receives the questions you send it
+- **TikTok**, which receives the advertising-measurement information described above when permitted, to measure visits and successful payments and support DataYego's ad reporting
 - **Authorities, regulators or advisers**, where we are legally required to disclose, or where it is necessary to establish or defend a legal claim
+
+## Advertising measurement and your choices
+
+In the European Economic Area, United Kingdom and Switzerland, and where your region cannot be verified, TikTok tracking stays off unless you accept it in the consent banner. Elsewhere it may operate without a banner, while saved refusals and applicable opt-outs still apply. Rejecting is as easy as accepting, and essential ordering, payment and security features work either way.
+
+Open **Cookie settings** in the footer to change your choice. Withdrawal stops new TikTok reporting immediately, including in other open tabs, but does not undo information already shared lawfully. A browser Global Privacy Control signal overrides saved acceptance. We keep a device-local record of the notice version, choices, regions and decision times so your preference and its history can be applied; each permitted purchase event keeps a reference to that choice. We never replay a purchase that was blocked when payment was confirmed.
+
+TikTok also processes information under its own [privacy policy](https://www.tiktok.com/legal/page/row/privacy-policy/en).
 
 ## Buying for other people
 
@@ -274,8 +287,8 @@ export const LEGAL_FALLBACKS: Record<string, LegalFallback> = {
     summary:
       "What we collect when you buy data, why we hold it, who we share it with, and the rights you have under Act 843.",
     content: PRIVACY,
-    version: 1,
-    published_at: EFFECTIVE,
+    version: 2,
+    published_at: PRIVACY_EFFECTIVE,
   },
   refunds: {
     title: "Refund policy",

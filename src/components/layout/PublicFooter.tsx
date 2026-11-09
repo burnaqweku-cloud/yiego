@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Mail, MessageCircle, Megaphone } from "lucide-react";
 import Wordmark from "@/components/brand/Wordmark";
 import { useContactSettings } from "@/hooks/useContactSettings";
+import { openCookieSettings } from "@/components/tracking/TikTokConsent";
 
 /** Public footer — the site map, kept scannable. */
 
@@ -10,6 +11,7 @@ interface FooterLink {
   label: string;
   to?: string;
   href?: string;
+  settings?: boolean;
 }
 
 const COLUMNS: { title: string; links: FooterLink[] }[] = [
@@ -51,6 +53,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: "Terms of service", to: "/legal/terms" },
       { label: "Privacy policy", to: "/legal/privacy" },
+      { label: "Cookie settings", settings: true },
       { label: "Refund policy", to: "/legal/refunds" },
     ],
   },
@@ -97,7 +100,11 @@ export default function PublicFooter() {
                 <ul className="mt-3.5 flex flex-col">
                   {col.links.map((l, i) => (
                     <li key={`${l.label}-${i}`}>
-                      {l.to ? (
+                      {l.settings ? (
+                        <button type="button" onClick={openCookieSettings} className="mk-footlink text-left">
+                          {l.label}
+                        </button>
+                      ) : l.to ? (
                         <Link to={l.to} className="mk-footlink">
                           {l.label}
                         </Link>

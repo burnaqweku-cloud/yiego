@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
+import { trackTikTokPayment } from "@/lib/tiktokPixel";
 import { toast } from "sonner";
 
 // Shared with TrackOrder so a paid order is remembered on this device.
@@ -74,6 +75,7 @@ export default function PaymentSuccess() {
           setOrder({ reference: d.reference, recipient: d.recipient, product: d.product, network: d.network, amount: Number(d.amount), store: d.store ?? null });
           rememberRecent(reference);
           if (d.paymentStatus === "succeeded") {
+            void trackTikTokPayment({ reference: d.reference, network: d.network, product: d.product });
             setPhase("success");
           } else {
             setPhase("pending");

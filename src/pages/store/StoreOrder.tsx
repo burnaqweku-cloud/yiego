@@ -8,6 +8,7 @@ import StorePage from "@/components/store/StorePage";
 import { useStore, waLink } from "@/components/store/StoreShell";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
+import { trackTikTokPayment } from "@/lib/tiktokPixel";
 
 /* Phone-number lookup (status only; the buyer's checkout email unlocks the reference). */
 interface PhoneResult { found: boolean; status?: string; network?: string; product?: string; store?: string | null; owner?: boolean; reference?: string | null; identity?: "account" | "email"; email_hint?: string | null }
@@ -16,7 +17,7 @@ const phoneStatus = (st?: string) => st === "completed" ? "Delivered" : st === "
 
 /* Payment result and order tracking, inside the agent's store.
    /s/:slug/success?reference=AG-…  (after Paystack)   /s/:slug/track?reference=AG-… */
-interface Tracked { reference: string; recipient?: string; product?: string; network?: string; amount?: number; deliveryStatus?: string; statusMessage?: string }
+interface Tracked { reference: string; recipient?: string; product?: string; network?: string; amount?: number; paymentStatus?: string; deliveryStatus?: string; statusMessage?: string }
 
 export default function StoreOrder() {
   const store = useStore(); const { pathname } = useLocation(); const [params] = useSearchParams();
@@ -48,6 +49,11 @@ export default function StoreOrder() {
     })();
     return () => { cancelled = true; };
   }, [reference, isSuccess]);
+
+  useEffect(() => {
+    if (!isSuccess || phase !== "ok" || order?.paymentStatus !== "succeeded") return;
+    void trackTikTokPayment({ reference: order.reference, network: order.network, product: order.product });
+  }, [isSuccess, phase, order]);
 
   const st = order?.deliveryStatus ?? "";
   const tone = st === "completed" ? "good" : st === "refunded" || st === "cancelled" || st === "needs_support" || st === "wrong_network" ? "bad" : "wait";
