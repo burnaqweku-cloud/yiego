@@ -16,6 +16,7 @@ describe("TikTok confirmed-payment reporting", () => {
     vi.unstubAllGlobals();
     document.head.querySelectorAll("#datayego-tiktok-pixel").forEach((node) => node.remove());
     delete window.ttq;
+    delete (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl;
   });
 
   it("sends one CompletePayment with a stable event ID and no guessed monetary value", async () => {

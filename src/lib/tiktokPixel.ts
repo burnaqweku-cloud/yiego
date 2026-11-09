@@ -10,12 +10,19 @@ const PIXEL_SCRIPT_ID = "datayego-tiktok-pixel";
 const PAYMENTS_KEY = "yiego_tiktok_payment_events_v1";
 
 interface TikTokQueue extends Array<unknown> {
+  methods?: string[];
+  setAndDefer?: (target: Record<string, unknown>, method: string) => void;
+  instance?: (pixelId: string) => TikTokQueue;
+  load?: (pixelId: string, configuration?: Record<string, unknown>) => void;
   page?: () => void;
   track?: (event: string, parameters?: Record<string, unknown>, options?: { event_id: string }) => void;
   grantConsent?: () => void;
   revokeConsent?: () => void;
   enableCookie?: () => void;
   disableCookie?: () => void;
+  _i?: Record<string, TikTokQueue>;
+  _t?: Record<string, number>;
+  _o?: Record<string, Record<string, unknown>>;
 }
 
 declare global {

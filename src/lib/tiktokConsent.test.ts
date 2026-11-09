@@ -45,7 +45,7 @@ describe("TikTok regional advertising consent", () => {
   it("rejects a trace rewritten by a different host", () => {
     expect(parseCloudflareTrace("h=example.com\nloc=GH", "datayego.com")).toBe("XX");
     expect(parseCloudflareTrace("h=datayego.com\nloc=GH", "datayego.com")).toBe("GH");
-    expect(parseCloudflareTrace("h=datayego.com\nloc=T1", "datayego.com")).toBe("T1");
+    expect(parseCloudflareTrace("h=datayego.com\nloc=T1", "datayego.com")).toBe("XX");
   });
 
   it("preserves acceptance evidence when consent is later withdrawn", () => {

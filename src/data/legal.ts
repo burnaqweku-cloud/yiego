@@ -287,8 +287,8 @@ export const LEGAL_FALLBACKS: Record<string, LegalFallback> = {
     summary:
       "What we collect when you buy data, why we hold it, who we share it with, and the rights you have under Act 843.",
     content: PRIVACY,
-    version: 1,
-    published_at: EFFECTIVE,
+    version: 2,
+    published_at: PRIVACY_EFFECTIVE,
   },
   refunds: {
     title: "Refund policy",
