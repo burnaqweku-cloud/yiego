@@ -53,7 +53,8 @@ export function readAdvertisingConsent(): AdvertisingConsentRecord | null {
   try {
     const parsed = JSON.parse(localStorage.getItem(TIKTOK_CONSENT_STORAGE_KEY) ?? "null") as Partial<AdvertisingConsentRecord> | null;
     if (!parsed || parsed.version !== 1 || typeof parsed.visitorId !== "string" || !validDecision(parsed)) return null;
-    const decisions = Array.isArray(parsed.decisions) ? parsed.decisions.filter(validDecision).slice(-20) : [];
+    const history = (parsed as Partial<AdvertisingConsentRecord>).decisions;
+    const decisions = Array.isArray(history) ? history.filter(validDecision).slice(-20) : [];
     return {
       ...parsed,
       choice: parsed.choice as AdvertisingChoice,
