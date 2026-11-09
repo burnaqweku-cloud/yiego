@@ -9,6 +9,7 @@ import { useStore, waLink } from "@/components/store/StoreShell";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
 import { trackTikTokPayment } from "@/lib/tiktokPixel";
+import { trackMetaPayment } from "@/lib/metaPixel";
 
 /* Phone-number lookup (status only; the buyer's checkout email unlocks the reference). */
 interface PhoneResult { found: boolean; status?: string; network?: string; product?: string; store?: string | null; owner?: boolean; reference?: string | null; identity?: "account" | "email"; email_hint?: string | null }
@@ -53,6 +54,7 @@ export default function StoreOrder() {
   useEffect(() => {
     if (!isSuccess || phase !== "ok" || order?.paymentStatus !== "succeeded") return;
     void trackTikTokPayment({ reference: order.reference, network: order.network, product: order.product });
+    void trackMetaPayment({ reference: order.reference, network: order.network, product: order.product, value: order.amount != null ? Number(order.amount) : undefined });
   }, [isSuccess, phase, order]);
 
   const st = order?.deliveryStatus ?? "";
