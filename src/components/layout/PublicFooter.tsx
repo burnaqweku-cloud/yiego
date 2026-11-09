@@ -11,6 +11,7 @@ interface FooterLink {
   label: string;
   to?: string;
   href?: string;
+  settings?: boolean;
 }
 
 const COLUMNS: { title: string; links: FooterLink[] }[] = [

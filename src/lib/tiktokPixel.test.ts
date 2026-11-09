@@ -37,7 +37,7 @@ describe("TikTok confirmed-payment reporting", () => {
     expect(window.ttq?.track).toBeUndefined();
     consent.saveAdvertisingConsent("granted", "GB");
     expect(await pixel.trackTikTokPayment({ reference: "YG-BLOCKED1" })).toBe(false);
-    expect(window.ttq?.track?.mock.calls ?? []).toHaveLength(0);
+    expect((window.ttq ?? []).filter((entry) => Array.isArray(entry) && entry[0] === "track")).toHaveLength(0);
   });
 
   it("does not send when Global Privacy Control overrides acceptance", async () => {
@@ -45,7 +45,7 @@ describe("TikTok confirmed-payment reporting", () => {
     consent.saveAdvertisingConsent("granted", "GH");
     Object.defineProperty(navigator, "globalPrivacyControl", { configurable: true, value: true });
     expect(await pixel.trackTikTokPayment({ reference: "YG-GPC1" })).toBe(false);
-    expect(window.ttq?.track?.mock.calls ?? []).toHaveLength(0);
+    expect((window.ttq ?? []).filter((entry) => Array.isArray(entry) && entry[0] === "track")).toHaveLength(0);
   });
 
   it("stores the region and consent reference with a permitted conversion", async () => {

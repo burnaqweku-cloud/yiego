@@ -235,5 +235,5 @@ export const MainSite = () => (
 /* v7_startTransition: while the next page's code downloads, keep showing the current page instead of swapping to a
    full-screen loader and back — that swap is the "wrong screen for a split second" flash. */
 const ROUTER_FUTURE = { v7_startTransition: true, v7_relativeSplatPath: true } as const;
-const App = () => isStoreHost() ? <StoreHostGate /> : <BrowserRouter future={ROUTER_FUTURE}><MainSite /></BrowserRouter>;
+const App = () => <><TikTokConsent />{isStoreHost() ? <StoreHostGate /> : <BrowserRouter future={ROUTER_FUTURE}><MainSite /></BrowserRouter>}</>;
 export default App;

@@ -75,6 +75,7 @@ export default function PaymentSuccess() {
           setOrder({ reference: d.reference, recipient: d.recipient, product: d.product, network: d.network, amount: Number(d.amount), store: d.store ?? null });
           rememberRecent(reference);
           if (d.paymentStatus === "succeeded") {
+            void trackTikTokPayment({ reference: d.reference, network: d.network, product: d.product });
             setPhase("success");
           } else {
             setPhase("pending");

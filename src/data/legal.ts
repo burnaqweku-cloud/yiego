@@ -136,7 +136,9 @@ This policy explains what personal information DataYego collects when you buy da
 
 **When you contact us.** The messages you send to support or to our AI assistant, and anything you attach to a dispute.
 
-**Automatically.** Basic technical information such as your device and browser type, IP address, and the pages you use, which we need to keep the service running and to detect abuse. Your browser also stores your sign-in session and your light or dark theme preference on your own device.
+**Automatically.** Basic technical information such as your device and browser type, IP address, and the pages you use, which we need to keep the service running and to detect abuse. Your browser also stores your sign-in session, your light or dark theme preference, and your advertising-consent choices on your own device.
+
+**Advertising measurement.** Where permitted, the TikTok Pixel receives your IP address, device and browser information, cookie or ad-click identifiers, pages visited, and confirmed data-order events with a unique order event ID and bundle description. We do not send TikTok your email, phone number, Mobile Money PIN, card details, or advanced-matching identifiers.
 
 ## Why we hold it
 

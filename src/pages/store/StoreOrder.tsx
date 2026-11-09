@@ -17,7 +17,7 @@ const phoneStatus = (st?: string) => st === "completed" ? "Delivered" : st === "
 
 /* Payment result and order tracking, inside the agent's store.
    /s/:slug/success?reference=AG-…  (after Paystack)   /s/:slug/track?reference=AG-… */
-interface Tracked { reference: string; recipient?: string; product?: string; network?: string; amount?: number; deliveryStatus?: string; statusMessage?: string }
+interface Tracked { reference: string; recipient?: string; product?: string; network?: string; amount?: number; paymentStatus?: string; deliveryStatus?: string; statusMessage?: string }
 
 export default function StoreOrder() {
   const store = useStore(); const { pathname } = useLocation(); const [params] = useSearchParams();
