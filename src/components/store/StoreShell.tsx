@@ -233,6 +233,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
               {store.socials?.tiktok && <a href={store.socials.tiktok} target="_blank" rel="noreferrer" aria-label="TikTok" className="text-[11px] font-semibold text-faint-foreground hover:text-foreground">TikTok</a>}
               {store.socials?.telegram && <a href={store.socials.telegram} target="_blank" rel="noreferrer" aria-label="Telegram" className="text-faint-foreground hover:text-foreground"><Send size={16} /></a>}
             </div>
+            <button type="button" onClick={openCookieSettings} className="min-h-8 text-faint-foreground underline underline-offset-4">Cookie settings</button>
             <p>© {new Date().getFullYear()} {store.store_name}</p>
           </div>
         </footer>

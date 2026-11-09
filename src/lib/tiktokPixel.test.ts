@@ -24,11 +24,12 @@ describe("TikTok confirmed-payment reporting", () => {
     expect(await pixel.trackTikTokPayment({ reference: "YG-ABC123", network: "MTN", product: "2GB" })).toBe(false);
     const calls = (window.ttq ?? []).filter((entry): entry is [string, Record<string, unknown>, { event_id: string }] => Array.isArray(entry) && entry[0] === "track");
     expect(calls).toHaveLength(1);
-    expect(calls[0][0]).toBe("CompletePayment");
-    expect(calls[0][1]).toEqual({ content_type: "product", quantity: 1, description: "MTN · 2GB" });
-    expect(calls[0][1]).not.toHaveProperty("value");
-    expect(calls[0][1]).not.toHaveProperty("currency");
-    expect(calls[0][2]).toEqual({ event_id: "YG-ABC123" });
+    expect(calls[0][0]).toBe("track");
+    expect(calls[0][1]).toBe("CompletePayment");
+    expect(calls[0][2]).toEqual({ content_type: "product", quantity: 1, description: "MTN · 2GB" });
+    expect(calls[0][2]).not.toHaveProperty("value");
+    expect(calls[0][2]).not.toHaveProperty("currency");
+    expect(calls[0][3]).toEqual({ event_id: "YG-ABC123" });
   });
 
   it("never replays a payment that was blocked when it was confirmed", async () => {

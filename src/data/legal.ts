@@ -147,10 +147,11 @@ This policy explains what personal information DataYego collects when you buy da
 - To answer support questions and resolve disputes and refunds
 - To detect and prevent fraud, abuse and unauthorised access to accounts
 - To keep the financial and transaction records the law requires us to keep
+- To measure DataYego advertising and successful payments, with advertising consent where the law requires it
 
 ## Who we share it with
 
-We do not sell your personal information, and we do not share it for advertising.
+We do not sell your personal information.
 
 We share only what is necessary with:
 

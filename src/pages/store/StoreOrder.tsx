@@ -50,6 +50,11 @@ export default function StoreOrder() {
     return () => { cancelled = true; };
   }, [reference, isSuccess]);
 
+  useEffect(() => {
+    if (!isSuccess || phase !== "ok" || order?.paymentStatus !== "succeeded") return;
+    void trackTikTokPayment({ reference: order.reference, network: order.network, product: order.product });
+  }, [isSuccess, phase, order]);
+
   const st = order?.deliveryStatus ?? "";
   const tone = st === "completed" ? "good" : st === "refunded" || st === "cancelled" || st === "needs_support" || st === "wrong_network" ? "bad" : "wait";
   const Icon = tone === "good" ? CheckCircle2 : tone === "bad" ? XCircle : Clock;

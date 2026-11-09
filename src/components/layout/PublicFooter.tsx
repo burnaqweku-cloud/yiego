@@ -53,6 +53,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: "Terms of service", to: "/legal/terms" },
       { label: "Privacy policy", to: "/legal/privacy" },
+      { label: "Cookie settings", settings: true },
       { label: "Refund policy", to: "/legal/refunds" },
     ],
   },
