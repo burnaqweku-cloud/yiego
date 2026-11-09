@@ -14,6 +14,7 @@ import AppPage from "@/components/layout/AppPage";
 import MaintenanceGate from "@/components/layout/MaintenanceGate";
 import PublicShell from "@/components/layout/PublicShell";
 import StoreMissing from "@/components/store/StoreMissing";
+import TikTokConsent from "@/components/tracking/TikTokConsent";
 import Home from "./pages/Home";
 // Tiny route guards — kept eager so gated pages don't wait on an extra chunk.
 import RequireAdmin from "@/components/auth/RequireAdmin";

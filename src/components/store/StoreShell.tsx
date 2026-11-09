@@ -7,6 +7,7 @@ import { useAuth } from "@/store/auth-context";
 import StoreMissing from "@/components/store/StoreMissing";
 import StoreSupport from "@/components/store/StoreSupport";
 import StorePopup from "@/components/store/StorePopup";
+import { openCookieSettings } from "@/components/tracking/TikTokConsent";
 import { supabase } from "@/integrations/supabase/client";
 import "./templates.css";
 import { loadMaintenanceAnnouncements } from "@/lib/maintenance";

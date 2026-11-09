@@ -22,7 +22,7 @@ describe("TikTok confirmed-payment reporting", () => {
     const { pixel } = await setup("GH");
     expect(await pixel.trackTikTokPayment({ reference: "yg-abc123", network: "MTN", product: "2GB" })).toBe(true);
     expect(await pixel.trackTikTokPayment({ reference: "YG-ABC123", network: "MTN", product: "2GB" })).toBe(false);
-    const calls = window.ttq?.track?.mock.calls ?? [];
+    const calls = (window.ttq ?? []).filter((entry): entry is [string, Record<string, unknown>, { event_id: string }] => Array.isArray(entry) && entry[0] === "track");
     expect(calls).toHaveLength(1);
     expect(calls[0][0]).toBe("CompletePayment");
     expect(calls[0][1]).toEqual({ content_type: "product", quantity: 1, description: "MTN · 2GB" });

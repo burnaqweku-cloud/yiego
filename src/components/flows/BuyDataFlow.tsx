@@ -22,6 +22,7 @@ import { formatGHS } from "@/lib/format";
 import { paystackFee } from "@/lib/fees";
 import { claimGuestPromotion, preparePromotionOrder, usePromoPrices } from "@/lib/promotions";
 import { trackPromotion } from "@/lib/promotionAnalytics";
+import { trackTikTokPayment } from "@/lib/tiktokPixel";
 import {
   createGuestDataPayment,
   listPendingOrders,

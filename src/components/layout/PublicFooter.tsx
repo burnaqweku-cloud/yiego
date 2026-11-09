@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Mail, MessageCircle, Megaphone } from "lucide-react";
 import Wordmark from "@/components/brand/Wordmark";
 import { useContactSettings } from "@/hooks/useContactSettings";
+import { openCookieSettings } from "@/components/tracking/TikTokConsent";
 
 /** Public footer — the site map, kept scannable. */
 

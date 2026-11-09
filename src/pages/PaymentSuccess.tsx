@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
+import { trackTikTokPayment } from "@/lib/tiktokPixel";
 import { toast } from "sonner";
 
 // Shared with TrackOrder so a paid order is remembered on this device.
