@@ -86,6 +86,7 @@ export default function AdminOrdersReceived() {
     setRetrying(null);
     if (r.error || r.data?.error) return toast.error(r.data?.error ?? r.error?.message ?? "Retry failed.");
     if (r.data?.result?.status === "failed_needs_review") return toast.error(`Not sent: ${(r.data.result.reason ?? "supplier refused").replace(/_/g, " ")}`);
+    if (r.data?.result?.status === "delivered") window.__lovableEvents?.track?.("project.data_bundle_delivered", { network: o.networks?.name ?? "Unknown", source: "supplier_fulfillment" });
     toast.success(`${o.order_reference} sent to the supplier.`); setTick((t) => t + 1);
   };
   useEffect(() => {
