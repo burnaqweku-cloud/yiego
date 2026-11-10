@@ -221,10 +221,10 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     promoStep.current = key;
     if (step === "network") void trackPromoEvent("flow_opened");
     else if (step === "bundle" && network) void trackPromoEvent("network_selected", { network: network.name });
-    else if (step === "phone" && network && bundle) void trackPromoEvent("bundle_selected", { network: network.name, bundle: `${network.name} ${bundle.size}`, price: bundle.price });
+    else if (step === "phone" && network && bundle) void trackPromoEvent("bundle_selected", { network: network.name, bundle: products.find((p) => (p.app_product_code ?? p.id) === bundle.id)?.name ?? `${network.name} ${bundle.size}`, price: bundle.price });
     else if (step === "review") void trackPromoEvent("review_shown", { bundle: network && bundle ? `${network.name} ${bundle.size}` : activeOrder?.bundleName, amount: activeOrder?.amount ?? bundle?.price, order_reference: activeOrder?.orderReference });
     else if (step === "recovery" && unpaidReference) void trackPromoEvent("unpaid_order_shown", { order_reference: unpaidReference });
-  }, [open, agent, step, network, bundle, activeOrder, unpaidReference]);
+  }, [open, agent, step, network, bundle, activeOrder, unpaidReference, products]);
   const promoMtn = useRef("");
   useEffect(() => {
     if (!open || agent || step !== "phone" || !mtnCheck) return;

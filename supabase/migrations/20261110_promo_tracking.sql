@@ -213,10 +213,10 @@ begin
       count(*) filter (where orders_paid > 0 and existing_customer) as existing_buyers
     from act
   ), dims as (
-    select 'platform' as dim, platform as label, a.* from act a union all
-    select 'campaign', campaign, a.* from act a union all
-    select 'country', country, a.* from act a union all
-    select 'device', device, a.* from act a
+    select 'platform' as dim, a.platform as label, a.landed, a.entered_number, a.started_payment, a.orders_paid, a.sales, a.profit, a.topup_amount from act a union all
+    select 'campaign', a.campaign, a.landed, a.entered_number, a.started_payment, a.orders_paid, a.sales, a.profit, a.topup_amount from act a union all
+    select 'country', a.country, a.landed, a.entered_number, a.started_payment, a.orders_paid, a.sales, a.profit, a.topup_amount from act a union all
+    select 'device', a.device, a.landed, a.entered_number, a.started_payment, a.orders_paid, a.sales, a.profit, a.topup_amount from act a
   ), grouped as (
     select dim, label, count(*) filter (where landed) as visitors, count(*) filter (where entered_number) as entered_number,
       count(*) filter (where started_payment) as started_payment, count(*) filter (where orders_paid > 0) as buyers,
@@ -226,7 +226,7 @@ begin
     select day, sum(visitors) as visitors, sum(entered_number) as entered_number, sum(started_payment) as started_payment, sum(buyers) as buyers,
       sum(orders_paid) as orders_paid, sum(sales) as sales, sum(profit) as profit, sum(topup_amount) as topup_amount
     from (
-      select (v.created_at at time zone 'Africa/Accra')::date as day, count(*) as visitors, 0 as entered_number, 0 as started_payment, 0 as buyers, 0 as orders_paid, 0::numeric as sales, 0::numeric as profit, 0::numeric as topup_amount
+      select (v.created_at at time zone 'Africa/Accra')::date as day, count(*)::bigint as visitors, 0::bigint as entered_number, 0::bigint as started_payment, 0::bigint as buyers, 0::bigint as orders_paid, 0::numeric as sales, 0::numeric as profit, 0::numeric as topup_amount
         from phase1.promotion_visits v where v.created_at >= starts and v.created_at < ends group by 1
       union all
       select (e.at at time zone 'Africa/Accra')::date, 0, count(distinct e.visit_id) filter (where e.kind = 'checkout_clicked'), count(distinct e.visit_id) filter (where e.kind in ('pay_tapped', 'payment_started')), 0, 0, 0, 0, 0
@@ -240,7 +240,7 @@ begin
     ) x group by day
   ), bundles as (
     select label, sum(picked) as picked, sum(paid_orders) as paid_orders, sum(sales) as sales from (
-      select coalesce(nullif(e.data->>'bundle', ''), 'Unknown') as label, count(distinct e.visit_id) as picked, 0 as paid_orders, 0::numeric as sales from ev e where e.kind = 'bundle_selected' group by 1
+      select coalesce(nullif(e.data->>'bundle', ''), 'Unknown') as label, count(distinct e.visit_id)::bigint as picked, 0::bigint as paid_orders, 0::numeric as sales from ev e where e.kind = 'bundle_selected' group by 1
       union all
       select coalesce(p.bundle, 'Unknown'), 0, count(*), coalesce(sum(p.amount) filter (where p.pay = 'succeeded'), 0) from paid p group by 1
     ) b group by label
