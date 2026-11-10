@@ -6,6 +6,7 @@ import { TOPUP_AMOUNTS } from "@/data/bundles";
 import { formatGHS } from "@/lib/format";
 import { paystackFee } from "@/lib/fees";
 import { createWalletDeposit } from "@/lib/phase1-api";
+import { trackPromoEvent } from "@/lib/promotionAnalytics";
 import { useAuth } from "@/store/auth-context";
 import { useWallet } from "@/store/wallet";
 
@@ -20,6 +21,7 @@ export default function AddMoneyFlow({ open, onClose }: { open: boolean; onClose
   useEffect(() => {
     setStep("amount");
     setAmount("");
+    if (open) void trackPromoEvent("topup_opened");
   }, [open]);
 
   const value = Math.round((parseFloat(amount) || 0) * 100) / 100;
@@ -41,6 +43,7 @@ export default function AddMoneyFlow({ open, onClose }: { open: boolean; onClose
     }
     if (!valid) return;
     setStep("processing");
+    void trackPromoEvent("topup_started", { amount: value });
     const result = await createWalletDeposit({ amount: value });
 
     if (result.error || !result.data?.data?.authorizationUrl) {
@@ -49,6 +52,7 @@ export default function AddMoneyFlow({ open, onClose }: { open: boolean; onClose
       return;
     }
 
+    await trackPromoEvent("topup_payment_started", { amount: value, deposit_reference: result.data.data.reference ?? result.data.data.paymentReference });
     window.location.assign(result.data.data.authorizationUrl);
   };
 

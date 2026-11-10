@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { promoTouch, trackPromotion } from "@/lib/promotionAnalytics";
+import { promoTouch, trackPromoEvent, trackPromoLanding, trackPromotion } from "@/lib/promotionAnalytics";
+import { visitorRegion } from "@/lib/tiktokConsent";
 
 export interface PromotionOffer {
   product_id: string;
@@ -62,7 +63,15 @@ let landingTracked = false;
 export function refreshPromoPrices(userKey: string | null = promoKey) {
   promoKey = userKey;
   promoLoading = (async () => {
-    if (!landingTracked && isPromoLanding()) { landingTracked = true; await trackPromotion("visit"); }
+    if (!landingTracked && isPromoLanding()) {
+      landingTracked = true; await trackPromotion("visit");
+      // Arrival details go out on their own so prices never wait for them.
+      void visitorRegion().catch(() => "XX").then((country) => trackPromoLanding(country));
+    }
+    if (userKey && userKey !== "guest" && promoTouch()) {
+      // Ties the visit to the account once per browser session; later orders and top-ups follow from the account.
+      try { const k = `yg-promo-signed-in:${userKey}`; if (!sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); void trackPromoEvent("signed_in"); } } catch { /* storage unavailable */ }
+    }
     const touch = promoTouch();
     let next: Record<string, number> = {};
     if (touch) {

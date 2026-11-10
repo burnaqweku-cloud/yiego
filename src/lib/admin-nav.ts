@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Handshake, BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText, Send, History } from "lucide-react";
+import { Handshake, Route, BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText, Send, History } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
 export interface AdminPage {
@@ -61,6 +61,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
   ] },
   { id: "promotions", label: "Promotions", icon: BadgePercent, pages: [
     { id: "promotions", label: "Overview & conversions", to: "/admin/promotions", icon: TrendingUp, keywords: ["promotions", "tiktok", "first purchase", "conversion", "buyers", "signups"] },
+    { id: "promotion-tracking", label: "Full tracking", to: "/admin/promotions/tracking", icon: Route, keywords: ["promotion", "tracking", "ads", "meta", "facebook", "tiktok", "visitors", "funnel", "promo link", "analytics"] },
     { id: "promotion-pricing", label: "Bundle prices", to: "/admin/promotions/pricing", icon: Tags, keywords: ["promotion", "offers", "discount", "bundle", "price"] },
     { id: "promotion-settings", label: "Settings", to: "/admin/promotions/settings", icon: Settings2, keywords: ["promotion", "active", "title", "message"] },
     { id: "promotion-sources", label: "Sources & campaigns", to: "/admin/promotions/sources", icon: Globe, keywords: ["promotion", "traffic", "tiktok", "facebook", "campaign"] },

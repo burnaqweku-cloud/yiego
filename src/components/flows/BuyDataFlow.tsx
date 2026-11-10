@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, Clock3, Copy, CreditCard, ListChecks, Share2, WalletCards, Wifi, Zap } from "lucide-react";
 import { toast } from "sonner";
 import UnpaidOrderActions from "@/components/shop/UnpaidOrderActions";
@@ -21,7 +21,7 @@ import { Check, Clock } from "lucide-react";
 import { formatGHS } from "@/lib/format";
 import { paystackFee } from "@/lib/fees";
 import { claimGuestPromotion, preparePromotionOrder, usePromoPrices } from "@/lib/promotions";
-import { trackPromotion } from "@/lib/promotionAnalytics";
+import { trackPromoEvent, trackPromotion } from "@/lib/promotionAnalytics";
 import { trackTikTokPayment } from "@/lib/tiktokPixel";
 import { trackMetaPayment } from "@/lib/metaPixel";
 import {
@@ -212,6 +212,27 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   useEffect(() => { setPrefixOk(false); }, [digits, network?.id]);
   useEffect(() => { setGuestPromoToken(null); }, [digits, bundle?.id]);
   const prefixConfirmed = prefixMismatch && prefixOk;
+  // Promo-link tracking: each step is reported once as it is reached. A no-op for anyone who did not arrive through the link.
+  const promoStep = useRef("");
+  useEffect(() => {
+    if (!open || agent) { promoStep.current = ""; return; }
+    const key = `${step}:${network?.id ?? ""}:${bundle?.id ?? ""}:${activeOrder?.orderReference ?? ""}:${unpaidReference ?? ""}`;
+    if (promoStep.current === key) return;
+    promoStep.current = key;
+    if (step === "network") void trackPromoEvent("flow_opened");
+    else if (step === "bundle" && network) void trackPromoEvent("network_selected", { network: network.name });
+    else if (step === "phone" && network && bundle) void trackPromoEvent("bundle_selected", { network: network.name, bundle: `${network.name} ${bundle.size}`, price: bundle.price });
+    else if (step === "review") void trackPromoEvent("review_shown", { bundle: network && bundle ? `${network.name} ${bundle.size}` : activeOrder?.bundleName, amount: activeOrder?.amount ?? bundle?.price, order_reference: activeOrder?.orderReference });
+    else if (step === "recovery" && unpaidReference) void trackPromoEvent("unpaid_order_shown", { order_reference: unpaidReference });
+  }, [open, agent, step, network, bundle, activeOrder, unpaidReference]);
+  const promoMtn = useRef("");
+  useEffect(() => {
+    if (!open || agent || step !== "phone" || !mtnCheck) return;
+    const key = `${mtnCheck.msisdn}:${mtnCheck.status}`;
+    if (promoMtn.current === key) return;
+    promoMtn.current = key;
+    void trackPromoEvent("mtn_check", { status: mtnCheck.status });
+  }, [open, agent, step, mtnCheck]);
   // Guests may leave the email empty: the order reference is shown on screen and the order can be tracked by phone.
   const emailValid = guestEmail.trim() === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim());
   const campaign = preselect?.kind === "bundle" ? preselect.campaign : undefined;
@@ -256,6 +277,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   function declinePromo(productId: string) {
     setGuestPromoToken(null);
     setPromoDeclined((have) => new Set(have).add(productId));
+    void trackPromoEvent("promo_declined");
     const product = products.find((p) => p.id === productId);
     if (bundle && product) setBundle({ ...bundle, price: basePrice(product) });
     toast.info("The special price has already been used on this phone, number or account, so the normal price applies.");
@@ -275,6 +297,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     if (!network || !bundle || !phoneValid || (prefixMismatch && !prefixOk)) return;
     const saved = unpaidReferenceForCheckout(digits);
     if (saved) { setUnpaidReference(saved); setStep("recovery"); return; }
+    if (!agent) void trackPromoEvent("checkout_clicked", { phone: digits, network: network.name, bundle: `${network.name} ${bundle.size}`, price: bundle.price, different_network_prefix: prefixMismatch || undefined, signed_in: isAuthenticated });
     if (promotion) {
       if (!isAuthenticated) { toast.error("Sign in to purchase this offer."); return; }
       setStep("processing");
@@ -294,7 +317,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       setStep("processing");
       void trackPromotion("checkout_clicked");
       const claim = await claimGuestPromotion(promoProduct.id, digits);
-      if (claim.data?.eligible && claim.data.token) setGuestPromoToken(claim.data.token);
+      if (claim.data?.eligible && claim.data.token) { setGuestPromoToken(claim.data.token); void trackPromoEvent("promo_applied", { price: claim.data.price }); }
       else declinePromo(promoProduct.id);
       setStep("review"); return;
     }
@@ -304,6 +327,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       const result = await preparePromotionOrder(promoProduct.id, digits, prefixConfirmed);
       if (!result.error && result.data) {
         const prepared = result.data;
+        void trackPromoEvent("promo_applied", { price: Number(prepared.amount), order_reference: prepared.orderReference });
         setActiveOrder({ id: prepared.orderId, orderReference: prepared.orderReference, recipientPhone: prepared.recipientPhone, amount: Number(prepared.amount), networkName: network.name, bundleName: bundle.size, expiresAt: prepared.expiresAt, paymentArrangement: "self", paymentStatus: "pending", status: "awaiting_payment" });
         setPaymentMethod("paystack"); setStep("review"); return;
       }
@@ -323,6 +347,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       toast.error(result.error ?? result.data?.error ?? "Could not create the order"); setStep("phone"); return;
     }
     const prepared = result.data.data;
+    if (!agent && !prepared.existing) void trackPromoEvent("order_created", { order_reference: prepared.orderReference, amount: Number(prepared.amount ?? bundle.price) });
     if (prepared.existing) {
       await refreshPending(); setHighlightOrder(prepared.orderReference); setUnpaidReference(prepared.orderReference); setStep("recovery"); return;
     }
@@ -333,7 +358,12 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   async function runOrderAction(action: string, order = activeOrder) {
     if (!order) return;
     setStep("processing");
-    if (!agent && action.startsWith("pay_")) await attachPartnerToOrder(order.orderReference, savedOrderToken(order.orderReference) || null);
+    // Both links are tied to the order before the browser leaves for the payment page; each gives up after 2.5 s.
+    if (!agent && action.startsWith("pay_")) await Promise.all([
+      attachPartnerToOrder(order.orderReference, savedOrderToken(order.orderReference) || null),
+      trackPromoEvent("payment_started", { order_reference: order.orderReference, method: action === "pay_wallet" ? "wallet" : "online", amount: order.amount }),
+    ]);
+    if (!agent && action === "cancel") void trackPromoEvent("order_cancelled", { order_reference: order.orderReference });
     const result = await orderPaymentAction<{ authorizationUrl?: string; orderReference?: string }>(action, order.orderReference);
     if (result.error || result.data?.error) {
       toast.error(result.data?.error ?? result.error ?? "The order action failed");
@@ -366,11 +396,15 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   async function startGuestPaystack() {
     if (!bundle || !emailValid) { toast.error("That email doesn't look right. Fix it, or leave it empty."); return; }
     setStep("processing");
+    if (!agent) void trackPromoEvent("pay_tapped", { method: "online", guest: true, email_given: guestEmail.trim() !== "" });
     const result = await createGuestDataPayment({ productId: bundle.id, recipientPhone: digits, guestEmail: guestEmail.trim(), guestPhone: digits, campaignToken: campaign?.token ?? guestPromoToken ?? undefined, agentSlug: agent?.slug, agentSelf: agent?.self ? true : undefined, prefixMismatchConfirmed: prefixConfirmed || undefined, managementToken: savedOrderToken(savedUnpaidReference(digits)) || undefined });
     if (result.pendingOrderReference) { setUnpaidReference(result.pendingOrderReference); setStep("recovery"); return; }
     if (result.error || !result.data?.data?.authorizationUrl) { toast.error(result.error ?? "Could not start payment. Please try again."); setStep("review"); return; }
     if (result.data.data.orderReference && result.data.data.managementToken) saveOrderToken(result.data.data.orderReference, result.data.data.managementToken, digits);
-    if (!agent && result.data.data.orderReference) await attachPartnerToOrder(result.data.data.orderReference, result.data.data.managementToken ?? null);
+    if (!agent && result.data.data.orderReference) await Promise.all([
+      attachPartnerToOrder(result.data.data.orderReference, result.data.data.managementToken ?? null),
+      trackPromoEvent("payment_started", { order_reference: result.data.data.orderReference, method: "online", guest: true }),
+    ]);
     window.location.assign(result.data.data.authorizationUrl);
   }
 

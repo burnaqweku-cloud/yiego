@@ -5,12 +5,15 @@ import { Outlet, useLocation } from "react-router-dom";
 import PublicNav from "@/components/layout/PublicNav";
 import PublicFooter from "@/components/layout/PublicFooter";
 import FloatingSupport from "@/components/layout/FloatingSupport";
+import { trackPromoEvent } from "@/lib/promotionAnalytics";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, [pathname]);
+  // Promo-link visitors only (a no-op for everyone else): which pages they open.
+  useEffect(() => { void trackPromoEvent("page_view", { path: pathname }); }, [pathname]);
   return null;
 }
 

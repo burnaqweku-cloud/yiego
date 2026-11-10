@@ -10,8 +10,9 @@ import { formatGHS } from "@/lib/format";
 import { useLocation } from "react-router-dom";
 import PromotionAdLinks from "@/components/admin/PromotionAdLinks";
 import PromotionPerformance from "@/components/admin/PromotionPerformance";
+import PromoTracking from "@/components/admin/PromoTracking";
 
-const titles: Record<string, string> = { overview: "Overview & conversions", pricing: "Bundle prices", settings: "Settings", sources: "Sources & campaigns", daily: "Daily results", bundles: "Bundle results", links: "Ad links" };
+const titles: Record<string, string> = { overview: "Overview & conversions", pricing: "Bundle prices", settings: "Settings", sources: "Sources & campaigns", daily: "Daily results", bundles: "Bundle results", links: "Ad links", tracking: "Full tracking" };
 export default function AdminPromotions() {
   const section = useLocation().pathname.split("/")[3] ?? "overview";
   const editing = section === "pricing" || section === "settings";
@@ -46,8 +47,8 @@ export default function AdminPromotions() {
     toast.success("Promotion saved."); void load();
   };
   if (!editing) return <div className="space-y-6">
-    <AdminPageHeader title={`Promotions · ${titles[section] ?? titles.overview}`} description="First-purchase promotions" />
-    {section === "links" ? <PromotionAdLinks /> : <PromotionPerformance view={section === "sources" || section === "daily" || section === "bundles" ? section : "overview"} />}
+    <AdminPageHeader title={`Promotions · ${titles[section] ?? titles.overview}`} description={section === "tracking" ? "Everyone who came through the promo link, and what they did" : "First-purchase promotions"} />
+    {section === "links" ? <PromotionAdLinks /> : section === "tracking" ? <PromoTracking /> : <PromotionPerformance view={section === "sources" || section === "daily" || section === "bundles" ? section : "overview"} />}
   </div>;
   return <div className="space-y-6">
     <AdminPageHeader title={`Promotions · ${titles[section]}`} description="First-purchase offers" action={<Button size="sm" disabled={!data || busy} onClick={() => void save()}><Save size={14} />{busy ? "Saving…" : "Save changes"}</Button>} />

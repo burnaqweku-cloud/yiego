@@ -10,7 +10,7 @@ import { deviceHash } from "@/lib/device";
 import { clearInvite, pendingInvite, recordDevice } from "@/lib/referrals";
 import { toast } from "sonner";
 import { isStoreHost } from "@/lib/storeHost";
-import { promoSignupMetadata, trackPromotion } from "@/lib/promotionAnalytics";
+import { promoSignupMetadata, trackPromoEvent, trackPromotion } from "@/lib/promotionAnalytics";
 
 /* Store-owned accounts: created on an agent's store, they live there. On the main site
    that login is refused and the person is sent to their store. */
@@ -80,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signUp(input) {
         void trackPromotion("signup_started");
+        void trackPromoEvent("signup_started");
         const { data, error } = await supabase.auth.signUp({
           email: input.email,
           password: input.password,
