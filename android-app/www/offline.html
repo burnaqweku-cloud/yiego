@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>DataYego · No connection</title>
+<style>
+  :root { --bg: #080b0a; --ink: #f1f6f3; --soft: #9aa8a1; --line: rgba(255,255,255,.1); --brand: #22c387; --on-brand: #04120c; }
+  @media (prefers-color-scheme: light) { :root { --bg: #f2f7f4; --ink: #101e1c; --soft: #52605b; --line: rgba(8,26,18,.12); --brand: #0e8a5a; --on-brand: #ffffff; } }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { display: grid; place-items: center; padding: 24px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); background: var(--bg); color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+  main { width: 100%; max-width: 340px; text-align: center; }
+  svg { display: block; margin: 0 auto 20px; color: var(--soft); }
+  h1 { margin: 0 0 8px; font-size: 22px; line-height: 1.25; letter-spacing: -0.01em; }
+  p { margin: 0; color: var(--soft); font-size: 15px; }
+  button { margin-top: 24px; width: 100%; min-height: 50px; border: 0; border-radius: 14px; background: var(--brand); color: var(--on-brand); font: inherit; font-weight: 600; }
+  button:active { transform: scale(.98); }
+  button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  button[disabled] { opacity: .65; }
+  small { display: block; margin-top: 14px; color: var(--soft); font-size: 13px; min-height: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 20h.01"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.7"/><path d="M19 12.9a10 10 0 0 0-2-1.5"/><path d="M2 8.8a15 15 0 0 1 4.2-2.6"/><path d="M22 8.8a15 15 0 0 0-11.3-3.9"/><path d="m2 2 20 20"/>
+  </svg>
+  <h1>You're offline</h1>
+  <p>DataYego needs an internet connection. Check your data or Wi-Fi, then try again.</p>
+  <button id="retry" type="button">Try again</button>
+  <small id="note" role="status"></small>
+</main>
+<script>
+  var button = document.getElementById("retry"), note = document.getElementById("note");
+  function open() { location.replace("https://datayego.com/"); }
+  button.addEventListener("click", function () {
+    if (navigator.onLine === false) { note.textContent = "Still no connection."; return; }
+    button.disabled = true; note.textContent = "Opening DataYego…"; open();
+  });
+  // Reopen by itself the moment the phone is back online.
+  window.addEventListener("online", function () { note.textContent = "Back online. Opening DataYego…"; open(); });
+</script>
+</body>
+</html>

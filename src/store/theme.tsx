@@ -58,6 +58,16 @@ function apply(resolved: Resolved) {
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute("content", THEME_COLOR[resolved]);
+  syncAppSystemBars(resolved);
+}
+
+/** Inside the Android app: keep the status-bar icons readable on the chosen theme (dark icons on light, light on dark).
+ *  The app's native bridge is only present there; in a browser this does nothing. */
+function syncAppSystemBars(resolved: Resolved) {
+  try {
+    const cap = (window as unknown as { Capacitor?: { nativePromise?: (plugin: string, method: string, options: unknown) => Promise<unknown> } }).Capacitor;
+    void cap?.nativePromise?.("SystemBars", "setStyle", { style: resolved === "light" ? "LIGHT" : "DARK" })?.catch(() => undefined);
+  } catch { /* not in the app */ }
 }
 
 interface ThemeValue {

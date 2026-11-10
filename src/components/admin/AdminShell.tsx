@@ -62,7 +62,7 @@ export default function AdminShell() {
       {menuOpen && (
         <div className="fixed inset-0 z-[90] lg:hidden">
           <button className="absolute inset-0 bg-black/60" onClick={() => setMenuOpen(false)} aria-label="Close menu" />
-          <aside ref={panelRef} tabIndex={-1} className="onyx-panel absolute inset-y-0 left-0 w-[min(78vw,280px)] rounded-none p-0">
+          <aside ref={panelRef} tabIndex={-1} className="onyx-panel app-safe-top absolute inset-y-0 left-0 w-[min(78vw,280px)] rounded-none p-0">
             <AdminSidebar onNavigate={() => setMenuOpen(false)} onClose={() => setMenuOpen(false)} />
           </aside>
         </div>

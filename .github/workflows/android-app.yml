@@ -1,0 +1,60 @@
+name: Android app
+
+# Builds the DataYego Android app (android-app/). The app only opens the live site, so it needs
+# rebuilding when the shell itself changes, not when the site changes.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "android-app/**"
+      - ".github/workflows/android-app.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-app
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: android-app
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      VERSION_NAME: 1.0.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: android-app/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - run: npx cap sync android
+      - name: Build test APK
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - name: Name the APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/DataYego-test-${VERSION_NAME}.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DataYego-test-apk
+          path: ${{ runner.temp }}/DataYego-test-*.apk
+      - name: Publish to the android-latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-latest --yes --cleanup-tag || true
+          gh release create android-latest "$RUNNER_TEMP/DataYego-test-${VERSION_NAME}.apk" \
+            --title "DataYego Android app (test build ${VERSION_NAME})" \
+            --notes "Test build for installing straight onto a phone. Not the Play Store build." \
+            --prerelease --target "$GITHUB_SHA"

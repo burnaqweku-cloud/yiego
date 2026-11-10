@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The dark tile colour of the DataYego icon: icon background, splash screen and the window behind the site. -->
+    <color name="brand_dark">#0B0F16</color>
+    <color name="colorPrimary">#22C387</color>
+    <color name="colorPrimaryDark">#0B0F16</color>
+    <color name="colorAccent">#22C387</color>
+</resources>

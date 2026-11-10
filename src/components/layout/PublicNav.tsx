@@ -300,7 +300,7 @@ export default function PublicNav() {
           role="dialog"
           aria-modal="true"
           aria-label="Menu"
-          className={cn("mk-menu lg:hidden", closing && "is-closing")}
+          className={cn("mk-menu app-safe-top lg:hidden", closing && "is-closing")}
         >
           <div className="mk-wrap flex h-[68px] shrink-0 items-center">
             <Link to="/" onClick={close} className="flex items-center" aria-label="DataYego — home">

@@ -1,0 +1,23 @@
+{
+  "appId": "com.datayego.app",
+  "appName": "DataYego",
+  "webDir": "www",
+  "backgroundColor": "#0B0F16",
+  "appendUserAgent": "DataYegoApp/1",
+  "server": {
+    "url": "https://datayego.com",
+    "androidScheme": "https",
+    "errorPath": "offline.html",
+    "allowNavigation": [
+      "datayego.com",
+      "*.datayego.com",
+      "*.paystack.com",
+      "*.paystack.co",
+      "*.korapay.com"
+    ]
+  },
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  }
+}

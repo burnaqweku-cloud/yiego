@@ -2574,3 +2574,26 @@
   .onyx-modal-backdrop { background: rgba(4, 8, 6, 0.76); }
   .light .onyx-modal-backdrop { background: rgba(10, 25, 18, 0.5); }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Inside the Android app the page runs edge to edge, so it also sits under the phone's status bar
+   (clock, battery). The inset below is that bar's height. In a normal browser it is 0 and every
+   rule here does nothing.
+   ───────────────────────────────────────────────────────────── */
+:root { --sat: env(safe-area-inset-top, 0px); }
+body { padding-top: var(--sat); }
+/* A strip in the page colour behind the status bar, so scrolled content never shows through it. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 95;
+  height: var(--sat);
+  background: hsl(var(--background));
+  pointer-events: none;
+}
+/* Sticky top bars stop below the status bar instead of under it. */
+.mk-nav, .touch-solid { top: var(--sat); }
+/* Full-screen menus and drawers start below it too (a transparent border adds to whatever padding they have). */
+.app-safe-top { border-top: var(--sat) solid transparent; }
+[data-sonner-toaster] { margin-top: var(--sat); }

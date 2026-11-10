@@ -1,0 +1,16 @@
+{
+  "name": "datayego-android",
+  "private": true,
+  "version": "1.0.0",
+  "description": "The DataYego Android app: a native shell that opens the live site, so every site publish reaches the app at once.",
+  "scripts": {
+    "sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/core": "8.6.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.0"
+  }
+}
