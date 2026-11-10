@@ -339,7 +339,7 @@ export default function AdminOrders() {
 
   return <div className="space-y-7">
     <AdminPageHeader eyebrow="Operations" title="Order management" description="Search, filter and manage every stage of payment, fulfilment, delivery and customer communication." />
-    <OrdersPulse />
+    <OrdersPulse onRefresh={() => void loadOrders()} />
     <AdminStatStrip loading={loading} items={[
       { label: "All", value: totalAll, active: lifecycleFilter === "all", onClick: () => { setLifecycleFilter("all"); setCustomerFilter("all"); } },
       { label: "In progress", value: pending, active: lifecycleFilter === "in_progress", onClick: () => { setLifecycleFilter("in_progress"); setCustomerFilter("all"); } },

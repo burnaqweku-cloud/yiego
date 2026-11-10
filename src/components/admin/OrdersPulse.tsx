@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Download } from "lucide-react";
+import { CalendarDays, Download, RefreshCw } from "lucide-react";
 import { Money, Panel, Row, Rows, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { adminDatabase } from "@/lib/admin-data";
@@ -30,7 +30,10 @@ function rangeFor(p: Preset, from: string, to: string): [Date, Date] {
   return [startOfDay(f), endOfDay(t)];
 }
 
-export default function OrdersPulse() {
+/** `onRefresh` lets the page reload whatever else it shows (the order list) from the same button. */
+export default function OrdersPulse({ onRefresh }: { onRefresh?: () => void } = {}) {
+  // Bumped by the refresh button: re-reads the orders and the profit, and moves "today" on if the day has changed.
+  const [tick, setTick] = useState(0);
   const [preset, setPreset] = useState<Preset>("today");
   const [from, setFrom] = useState(ymd(new Date()));
   const [to, setTo] = useState(ymd(new Date()));
@@ -39,7 +42,8 @@ export default function OrdersPulse() {
   const rows = useMemo(() => allRows.filter((r) => source === "all" || (source === "agents" ? r.agent_id != null : r.agent_id == null)), [allRows, source]);
   const agentOrders = allRows.filter((r) => r.agent_id != null).length;
   const [loading, setLoading] = useState(true);
-  const [start, end] = useMemo(() => rangeFor(preset, from, to), [preset, from, to]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- tick is the refresh signal
+  const [start, end] = useMemo(() => rangeFor(preset, from, to), [preset, from, to, tick]);
   // Profit on the range's delivered orders only (bundle margin after agents' share + the checkout fees on
   // those orders), dated by purchase day. Only entries tied to an order count — supplier wallet corrections,
   // top-up fees, subscriptions and other spending live on Finance and never move this number.
@@ -79,7 +83,9 @@ export default function OrdersPulse() {
   };
 
   return (
-    <Panel title="Orders received" icon={CalendarDays} note={days === 1 ? ymd(start) : `${ymd(start)} → ${ymd(end)} · ${days} days`}>
+    <Panel title="Orders received" icon={CalendarDays}
+      action={<Button variant="ghost" size="sm" onClick={() => { setTick((t) => t + 1); onRefresh?.(); }} disabled={loading} aria-label="Refresh orders" title="Refresh"><RefreshCw size={14} className={loading ? "animate-spin" : ""} /></Button>}
+      note={days === 1 ? ymd(start) : `${ymd(start)} → ${ymd(end)} · ${days} days`}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <Segmented<Preset> value={preset} onChange={setPreset} options={[{ value: "today", label: "Today" }, { value: "yesterday", label: "Yesterday" }, { value: "7d", label: "7 days" }, { value: "30d", label: "30 days" }, { value: "custom", label: "Pick dates" }]} />
         <Segmented<Source> value={source} onChange={setSource} options={[{ value: "all", label: "All" }, { value: "platform", label: "YG" }, { value: "agents", label: `Agents${agentOrders ? ` (${agentOrders})` : ""}` }]} />
