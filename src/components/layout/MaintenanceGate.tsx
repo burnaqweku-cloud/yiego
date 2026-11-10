@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { ArrowRight, Clock3, Eye, Loader2, RefreshCw, ShieldCheck, Wrench, X } from "lucide-react";
@@ -62,7 +62,7 @@ export default function MaintenanceGate({ children, hostSlug }: { children: Reac
   const refresh = useCallback(async () => {
     if (busy.current) return;
     busy.current = true;
-    try { const next = await loadMaintenance(); failures.current = 0; loadedOnce.current = true; setSettings(next); setError(false); setReady(true); if (!next.enabled) setDismissed(null); }
+    try { const next = await loadMaintenance(); failures.current = 0; loadedOnce.current = true; setSettings((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next)); setError(false); setReady(true); if (!next.enabled) setDismissed(null); }
     catch {
       // A phone waking up often drops the first request. Keep the last confirmed state and
       // retry quietly; only show the paused banner after repeated failures or with no prior reading.
@@ -127,7 +127,9 @@ export default function MaintenanceGate({ children, hostSlug }: { children: Reac
   };
 
   const initialCheck = mounted && !ready && !location.pathname.startsWith("/admin") && !/^\/auth|\/sign-in$/.test(location.pathname);
-  return <MaintenanceContext.Provider value={{ blocked, message }}>
+  // Stable value: the 10-second availability check must not re-render every screen that reads it.
+  const gate = useMemo(() => ({ blocked, message }), [blocked, message]);
+  return <MaintenanceContext.Provider value={gate}>
     {initialCheck ? <div className="grid min-h-dvh place-items-center bg-background"><Loader2 size={24} className="animate-spin text-amber" aria-label="Checking service availability" /></div> : <>
       {blocked && ready && <div className="relative z-[90] flex flex-wrap items-center justify-center gap-2 border-b border-amber/30 bg-amber-soft px-4 py-2 text-center text-xs text-foreground" role="status"><Wrench size={14} className="text-amber" /><span>{error ? "Service availability could not be checked. Purchases are paused." : "Maintenance in progress · Browsing and order tracking only"}</span><Button variant="quiet" size="sm" onClick={() => error ? void refresh() : setDismissed(null)}>{error ? <RefreshCw /> : <Eye />}{error ? "Check again" : "View notice"}</Button></div>}
       <div ref={contentRef} onClickCapture={capture}>{children}</div>

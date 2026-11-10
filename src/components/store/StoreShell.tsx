@@ -142,7 +142,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
     <StoreContext.Provider value={store}>
       <div className={`tpl-${template} ${store.accent_color ? "has-accent" : ""}`} style={accentVars(store.accent_color) as React.CSSProperties}>
       <div className="onyx-canvas flex min-h-dvh flex-col">
-        <header className="st-head sticky top-0 z-30 border-b border-white/[0.06] bg-background/85 backdrop-blur">
+        <header className="st-head sticky top-0 z-30 border-b border-white/[0.06] touch-solid bg-background/85 backdrop-blur">
           {studio ? (
             <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 py-3 sm:px-8">
               <Link to={`${storeBase(store.slug)}` || "/"} className="flex min-w-0 items-center gap-2.5">

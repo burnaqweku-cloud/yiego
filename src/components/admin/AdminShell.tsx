@@ -43,7 +43,7 @@ export default function AdminShell() {
         </aside>
 
         <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 flex h-11 items-center gap-2.5 border-b border-white/[0.06] bg-background/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+          <header className="sticky top-0 z-30 flex h-11 items-center gap-2.5 border-b border-white/[0.06] touch-solid bg-background/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
             <button type="button" onClick={() => setMenuOpen(true)} className="onyx-iconbtn -ml-1 lg:hidden" aria-label="Open menu"><Menu size={20} /></button>
             <Wordmark className="h-[18px] lg:hidden" />
             <div className="min-w-0 flex items-baseline gap-2 text-[13px]">

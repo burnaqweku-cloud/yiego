@@ -851,8 +851,8 @@
   to { transform: scaleY(1); opacity: 1; }
 }
 @keyframes onyxRise {
-  from { opacity: 0; transform: translateY(16px) scale(0.99); filter: blur(7px); }
-  to { opacity: 1; transform: none; filter: blur(0); }
+  from { opacity: 0; transform: translateY(16px) scale(0.99); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes onyxSheen {
   0% { left: -60%; }
@@ -2475,3 +2475,28 @@
 }
 @keyframes yg-pop-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes yg-pop-settle { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: none; } }
+
+/* ─────────────────────────────────────────────────────────────
+   Phones and tablets: keep scrolling smooth.
+   Live blur is the most expensive thing a phone can be asked to draw: a blurred bar over moving
+   content is redrawn on every scrolled frame, and big blurred shapes that drift never stop costing.
+   Touch devices get the same look from plain gradients and near-solid bars. Desktop is untouched.
+   ───────────────────────────────────────────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  *, *::before, *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  /* The aurora is already a soft radial fade; it does not need blurring or drifting. */
+  .onyx-aurora span { filter: none; animation: none; }
+  .onyx-aurora .onyx-grain { display: none; }
+  .onyx-wallet-sheen { animation: none; display: none; }
+  .onyx-dev-glow, .mk-cta-glow { filter: none; }
+  /* Bars and scrims that leaned on blur to stay readable become near-solid instead. */
+  .mk-nav[data-stuck="true"] { background: hsl(var(--background) / 0.97); }
+  .touch-solid { background-color: hsl(var(--background) / 0.97) !important; }
+  .onyx-flowhead { background: rgb(16, 28, 22); }
+  .light .onyx-flowhead { background: rgb(255, 255, 255); }
+  .onyx-modal-backdrop { background: rgba(4, 8, 6, 0.76); }
+  .light .onyx-modal-backdrop { background: rgba(10, 25, 18, 0.5); }
+}

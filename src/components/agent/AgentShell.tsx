@@ -142,7 +142,7 @@ export default function AgentShell() {
           </aside>
           <div className="min-w-0 flex-1">
             {/* Mobile header */}
-            <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[0.06] bg-background/85 px-4 py-3 backdrop-blur sm:hidden">
+            <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[0.06] touch-solid bg-background/85 px-4 py-3 backdrop-blur sm:hidden">
               <div className="flex min-w-0 items-center gap-3"><button type="button" onClick={() => setDrawer(true)} aria-label="Menu" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Menu size={18} /></button><div className="min-w-0"><p className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{eyebrow}</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div></div>
               <div className="flex items-center gap-2"><span className="rounded-full bg-primary/12 px-2.5 py-1 text-[12px] font-semibold text-primary-glow">{formatGHS(Number(agent.earnings_balance))}</span><NotificationBell /><a href={storeUrl} target="_blank" rel="noreferrer" aria-label="View store" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><ExternalLink size={14} /></a></div>
             </header>
