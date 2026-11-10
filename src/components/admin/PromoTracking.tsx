@@ -150,7 +150,7 @@ export default function PromoTracking() {
 
       <div className="space-y-1.5 text-[11.5px] leading-5 text-muted-foreground">
         <p>Only people who arrived on a link containing <span className="text-foreground">promo=1</span> are counted. Figures show what happened inside the chosen day(s), Ghana time.</p>
-        <p>Orders, payments, deliveries and top-ups come from the real records, including guest orders and any later orders by the same account or number for 30 days. Steps before payment are reported by the visitor’s browser.</p>
+        <p>Orders, payments, deliveries and top-ups come from the real records, including guest orders and every later order by the same account or number, with no time limit. Steps before payment are reported by the visitor’s browser.</p>
         <p>Meta and TikTok are recognised from the tag they add to clicks and from their in-app browsers. A person who clicks on one phone and buys on another cannot be joined up.</p>
         <p>{report.detail_since ? `Step-by-step detail began ${when(report.detail_since)}. Visitors before that show only that they landed.` : "Step-by-step detail starts with the next visitor. Earlier visitors show only that they landed."}</p>
       </div>

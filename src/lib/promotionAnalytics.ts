@@ -25,7 +25,9 @@ export function promotionAdLink(source: string, campaign: string) {
 export function promoTouch() {
   try {
     const parsed = JSON.parse(localStorage.getItem(key) || "null");
-    if (parsed && typeof parsed.id === "string" && typeof parsed.token === "string" && Date.now() - parsed.at < 30 * 86400000) return parsed as { id: string; token: string; at: number };
+    // Kept for as long as the browser keeps it, so later visits and purchases stay with the same visitor.
+    // The promotion price has its own 30-day limit, checked by the server.
+    if (parsed && typeof parsed.id === "string" && typeof parsed.token === "string") return parsed as { id: string; token: string; at: number };
   } catch { /* storage unavailable */ }
   return null;
 }

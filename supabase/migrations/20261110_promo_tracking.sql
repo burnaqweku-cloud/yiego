@@ -7,6 +7,9 @@
 --     records and tied to a visit by promotion_order_links() / promotion_deposit_links().
 --   * admin_promo_tracking(from, to) and admin_promo_visitor(visit) feed the admin page. Dates are Ghana days;
 --     both null means all time. Figures count what happened inside the chosen days.
+--   * Tracking has no time limit (owner's decision, 10 Nov): a visitor stays a promo visitor for good, and
+--     promotion_track no longer stops counting after 30 days. The promotion PRICE keeps its own 30-day limit
+--     (promotion_visit_ok), which is unchanged.
 
 alter table phase1.promotion_visits
   add column if not exists platform text,
@@ -51,7 +54,7 @@ begin
     'order_created','review_shown','pay_tapped','payment_started','unpaid_order_shown','order_cancelled','signup_started','signed_in',
     'topup_opened','topup_started','topup_payment_started') then return false; end if;
   if jsonb_typeof(d) <> 'object' or length(d::text) > 1500 then d := '{}'::jsonb; end if;
-  select * into v from phase1.promotion_visits where id = p_visit and token_hash = md5(p_token::text) and created_at >= now() - interval '30 days' for update;
+  select * into v from phase1.promotion_visits where id = p_visit and token_hash = md5(p_token::text) for update;
   if not found then return false; end if;
   select count(*) into n from phase1.promotion_events where visit_id = v.id;
   if n >= 600 then return false; end if;
@@ -109,12 +112,12 @@ returns table(order_id uuid, visit_id uuid, via text) language sql stable securi
     union all
     select o.id, v.id, 3, v.created_at from phase1.promotion_visits v
       join phase1.orders o on (o.user_id = v.user_id or o.user_id = v.new_account_id) and o.agent_id is null
-        and o.created_at >= v.created_at and o.created_at < v.created_at + interval '30 days'
+        and o.created_at >= v.created_at
     union all
     select o.id, e.visit_id, 4, e.at from phase1.promotion_events e
       join phase1.promotion_visits v on v.id = e.visit_id
       join phase1.orders o on o.user_id is null and o.agent_id is null and o.recipient_phone_normalized = e.phone
-        and o.created_at >= e.at - interval '2 minutes' and o.created_at < v.created_at + interval '30 days'
+        and o.created_at >= e.at - interval '2 minutes'
       where e.phone is not null and e.kind = 'checkout_clicked'
   )
   select distinct on (c.order_id) c.order_id, c.visit_id,
@@ -130,7 +133,7 @@ returns table(intent_id uuid, visit_id uuid) language sql stable security define
     union all
     select pi.id, v.id, 2, v.created_at from phase1.promotion_visits v
       join phase1.payment_intents pi on pi.purpose::text = 'wallet_deposit' and (pi.user_id = v.user_id or pi.user_id = v.new_account_id)
-        and pi.created_at >= v.created_at and pi.created_at < v.created_at + interval '30 days'
+        and pi.created_at >= v.created_at
   )
   select distinct on (c.intent_id) c.intent_id, c.visit_id from c order by c.intent_id, c.pr, c.t desc
 $fn$;
