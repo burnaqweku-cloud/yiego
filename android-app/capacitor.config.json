@@ -2,7 +2,7 @@
   "appId": "com.datayego.app",
   "appName": "DataYego",
   "webDir": "www",
-  "backgroundColor": "#0B0F16",
+  "backgroundColor": "#F2F7F4",
   "appendUserAgent": "DataYegoApp/1",
   "server": {
     "url": "https://datayego.com",

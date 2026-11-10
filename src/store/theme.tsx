@@ -2,14 +2,13 @@ import {
   createContext,
   useContext,
   useEffect,
-  useState,
+  useMemo,
   type ReactNode,
 } from "react";
 import { isStoreHost } from "@/lib/storeHost";
 
-/** Theme — Onyx Dark (signature), Daylight, or follow the device.
- *  The resolved theme toggles `light` on <html>; a pre-paint script in
- *  index.html applies the same logic before React loads (no flash). */
+/** Theme: Daylight (light) only. `light` is set on <html>; a pre-paint script in
+ *  index.html does the same before React loads (no flash). */
 
 export type ThemeMode = "dark" | "light" | "system";
 type Resolved = "dark" | "light";
@@ -27,31 +26,11 @@ export function isPublicSitePath(pathname: string): boolean {
   return !isStoreHost() && !/^\/(agent|admin)(\/|$)/.test(pathname);
 }
 
-/** Daylight everywhere until the visitor chooses. index.html's pre-paint script mirrors this. */
-function defaultMode(): ThemeMode {
-  return "light";
-}
-
-function loadMode(): ThemeMode {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === "light" || raw === "dark" || raw === "system") return raw;
-  } catch {
-    /* default */
-  }
-  return defaultMode();
-}
-
-function systemPrefersLight(): boolean {
-  return typeof window !== "undefined" && typeof window.matchMedia === "function"
-    ? window.matchMedia("(prefers-color-scheme: light)").matches
-    : false;
-}
-
-function resolve(mode: ThemeMode): Resolved {
-  if (mode === "system") return systemPrefersLight() ? "light" : "dark";
-  return mode;
-}
+/* 10 Nov 2026: the site is light only. Dark mode was removed at the owner's request, so nothing is read from
+   the device or from a saved choice any more, and there is no switch. The types and the hook stay so the
+   pieces that ask for the theme (toasts, the Android status bar) keep working. */
+const loadMode = (): ThemeMode => "light";
+const resolve = (_mode: ThemeMode): Resolved => "light";
 
 function apply(resolved: Resolved) {
   document.documentElement.classList.toggle("light", resolved === "light");
@@ -79,36 +58,14 @@ interface ThemeValue {
 const ThemeContext = createContext<ThemeValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>(loadMode);
-  const [resolved, setResolved] = useState<Resolved>(() => resolve(loadMode()));
+  const mode = loadMode();
+  const resolved = resolve(mode);
   useEffect(() => {
     apply(resolved);
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* non-fatal */ }
   }, [resolved]);
-
-  // Follow the OS while in system mode.
-  useEffect(() => {
-    if (mode !== "system" || typeof window.matchMedia !== "function") return;
-    const mq = window.matchMedia("(prefers-color-scheme: light)");
-    const onChange = () => setResolved(resolve("system"));
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, [mode]);
-
-  const setMode = (next: ThemeMode) => {
-    setModeState(next);
-    setResolved(resolve(next));
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      /* non-fatal */
-    }
-  };
-
-  return (
-    <ThemeContext.Provider value={{ mode, resolved, setMode }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  const value = useMemo<ThemeValue>(() => ({ mode, resolved, setMode: () => undefined }), [mode, resolved]);
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme(): ThemeValue {

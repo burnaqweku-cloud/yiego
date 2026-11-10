@@ -8,7 +8,6 @@ import { useAuth } from "@/store/auth-context";
 import { useProfile } from "@/store/profile";
 import { agentsStatus, myAgentStatus, previewRequested } from "@/lib/agents";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import ThemeToggle from "@/components/layout/ThemeToggle";
 import MobileTabBar, { type TabItem } from "@/components/layout/MobileTabBar";
 import { cn } from "@/lib/utils";
 
@@ -220,7 +219,6 @@ export default function PublicNav() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2.5">
-            <ThemeToggle />
             <NotificationBell />
             {isAuthenticated ? (
               <div className="relative" ref={menuRef}>

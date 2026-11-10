@@ -21,26 +21,8 @@
     <meta name="twitter:image" content="https://datayego.com/brand/yiego-og-1200x630.png" />
     <meta name="theme-color" content="#f2f7f4" />
     <script>
-      // Apply the saved theme before first paint (no flash of wrong theme).
-      // Daylight is the default; Onyx Dark when chosen (or via device setting).
-      (function () {
-        try {
-          // Daylight is the default for everyone (key v2, src/store/theme.tsx); Onyx Dark only when chosen.
-          var t = localStorage.getItem("yiego_theme_v2");
-          var dark =
-            t === "dark" ||
-            (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-          if (!dark) {
-            document.documentElement.classList.add("light");
-          } else {
-            var m = document.querySelector('meta[name="theme-color"]');
-            if (m) m.setAttribute("content", "#080b0a");
-          }
-        } catch (e) {
-          /* storage blocked: Daylight */
-          document.documentElement.classList.add("light");
-        }
-      })();
+      // The site is light only (dark mode was removed 10 Nov 2026). Set before first paint so nothing flashes.
+      document.documentElement.classList.add("light");
     </script>
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

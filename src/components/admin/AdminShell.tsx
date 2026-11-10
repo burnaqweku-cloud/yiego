@@ -3,8 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useEffect as useAlertsEffect } from "react";
 import { startSupportAlerts, stopSupportAlerts } from "@/lib/supportAlerts";
 import { Outlet, useLocation } from "react-router-dom";
-import { Menu, Moon, Sun } from "lucide-react";
-import { useTheme } from "@/store/theme";
+import { Menu } from "lucide-react";
 import AuroraBackground from "@/components/fx/AuroraBackground";
 import Wordmark from "@/components/brand/Wordmark";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -21,7 +20,6 @@ export default function AdminShell() {
   const location = useLocation();
   const page = pageForPath(location.pathname);
   const group = groupForPath(location.pathname);
-  const { resolved, setMode } = useTheme();
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }); setMenuOpen(false); }, [location.pathname]);
   useEffect(() => {
@@ -50,7 +48,6 @@ export default function AdminShell() {
               {group && group.pages.length > 1 && <span className="hidden text-faint-foreground sm:inline">{group.label} /</span>}
               <span className="truncate font-semibold text-foreground">{page?.label ?? "Admin"}</span>
             </div>
-            <button type="button" onClick={() => setMode(resolved === "light" ? "dark" : "light")} className="onyx-iconbtn ml-auto" aria-label={resolved === "light" ? "Switch to dark mode" : "Switch to light mode"}>{resolved === "light" ? <Moon size={18} /> : <Sun size={18} />}</button>
           </header>
           <main className="px-3.5 pb-14 pt-4 sm:px-5 lg:px-6 lg:pt-5">
             {!canAct && <p className="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2.5 text-[13px] text-amber-700 dark:text-amber-200">View only: this account can look at everything but can't make changes. Refunds, retries, pauses, messages and finance records need the master admin.</p>}

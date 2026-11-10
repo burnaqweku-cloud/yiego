@@ -1,23 +1,20 @@
 import { useState } from "react";
 import Seo from "@/components/seo/Seo";
-import { LogOut, Moon, Pencil, User } from "lucide-react";
+import { LogOut, Pencil, User } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/store/auth-context";
 import { useProfile, maskedPhone } from "@/store/profile";
-import { useTheme } from "@/store/theme";
 import ProfileSheet from "@/components/sheets/ProfileSheet";
-import AppearanceSheet from "@/components/sheets/AppearanceSheet";
 import SignOutSheet from "@/components/sheets/SignOutSheet";
 import InviteCard from "@/components/account/InviteCard";
 import PartnerEntry from "@/components/account/PartnerEntry";
 
-type Sheet = "profile" | "appearance" | "signout" | null;
+type Sheet = "profile" | "signout" | null;
 
 export default function Account() {
   const { user } = useAuth();
   const { profile, initials } = useProfile();
-  const { mode } = useTheme();
   const [sheet, setSheet] = useState<Sheet>(null);
 
   return (
@@ -46,11 +43,6 @@ export default function Account() {
           <span className="flex-1 text-sm font-semibold text-foreground">Personal details</span>
           <span className="text-xs text-faint-foreground">Name and phone</span>
         </button>
-        <button type="button" onClick={() => setSheet("appearance")} className="flex w-full items-center gap-3 py-4 text-left">
-          <Moon size={18} className="text-primary-glow" />
-          <span className="flex-1 text-sm font-semibold text-foreground">Appearance</span>
-          <span className="text-xs capitalize text-faint-foreground">{mode}</span>
-        </button>
         <button type="button" onClick={() => setSheet("signout")} className="flex w-full items-center gap-3 py-4 text-left text-danger">
           <LogOut size={18} />
           <span className="flex-1 text-sm font-semibold">Sign out</span>
@@ -59,7 +51,6 @@ export default function Account() {
       </div>
 
       <ProfileSheet open={sheet === "profile"} onClose={() => setSheet(null)} />
-      <AppearanceSheet open={sheet === "appearance"} onClose={() => setSheet(null)} />
       <SignOutSheet open={sheet === "signout"} onClose={() => setSheet(null)} />
     </div>
   );
