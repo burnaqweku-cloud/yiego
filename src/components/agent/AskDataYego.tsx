@@ -115,7 +115,7 @@ export default function AskDataYegoLauncher() {
   if (pathname.startsWith("/agent/ask")) return null; // the full page is open
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-label="Store assistant" className="fixed bottom-5 right-5 z-40 flex h-12 items-center gap-2 rounded-full bg-primary pl-3.5 pr-4 text-[13.5px] font-semibold text-primary-foreground shadow-[0_8px_30px_rgba(60,240,170,0.35)] sm:bottom-6 sm:right-6"><MessageCircleQuestion size={18} />Assistant</button>
+      <button type="button" onClick={() => setOpen(true)} aria-label="Store assistant" className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] right-4 z-40 flex h-12 sm:bottom-5 sm:right-5 items-center gap-2 rounded-full bg-primary pl-3.5 pr-4 text-[13.5px] font-semibold text-primary-foreground shadow-[0_8px_30px_rgba(60,240,170,0.35)] sm:bottom-6 sm:right-6"><MessageCircleQuestion size={18} />Assistant</button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4" onClick={() => setOpen(false)}>
           <div role="dialog" aria-label="Store assistant" onClick={(e) => e.stopPropagation()} className="onyx-panel flex h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl sm:h-[640px] sm:max-w-[480px] sm:rounded-3xl">

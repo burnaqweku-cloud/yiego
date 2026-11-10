@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronDown, LogOut, Menu, PhoneForwarded, Search, ShieldCheck, Store, UserRound, X } from "lucide-react";
+import { ArrowRight, ChevronDown, CircleHelp, Home, LifeBuoy, ListOrdered, LogOut, Menu, PhoneForwarded, Search, ShieldCheck, Store, UserRound, Wallet, Wifi, X } from "lucide-react";
 import { toast } from "sonner";
 import Wordmark from "@/components/brand/Wordmark";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -9,6 +9,7 @@ import { useProfile } from "@/store/profile";
 import { agentsStatus, myAgentStatus, previewRequested } from "@/lib/agents";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import ThemeToggle from "@/components/layout/ThemeToggle";
+import MobileTabBar, { type TabItem } from "@/components/layout/MobileTabBar";
 import { cn } from "@/lib/utils";
 
 /**
@@ -175,8 +176,27 @@ export default function PublicNav() {
       <MenuItem to="/check-mtn" icon={PhoneForwarded} label="Check MTN number" />
       {agentLink && <MenuItem to={agentLink.to} icon={Store} label={agentLink.label === "My store" ? "Agent dashboard" : agentLink.label} />}
       {isAdmin && <MenuItem to="/admin" icon={ShieldCheck} label="Admin panel" />}
+      <MenuItem to="/faq" icon={CircleHelp} label="Help & FAQ" />
     </>
   );
+
+  // Phones and tablets: an app-style bar along the bottom replaces the three-line menu.
+  // Signed in, everything else lives under the profile circle; guests get the rest under "More".
+  const tabs: TabItem[] = isAuthenticated
+    ? [
+        { label: "Home", to: "/", end: true, icon: Home },
+        { label: "Buy data", to: "/shop", icon: Wifi },
+        { label: "Orders", to: "/orders", icon: ListOrdered },
+        { label: "Wallet", to: "/wallet", icon: Wallet },
+        { label: "Support", to: "/support", icon: LifeBuoy },
+      ]
+    : [
+        { label: "Home", to: "/", end: true, icon: Home },
+        { label: "Buy data", to: "/shop", icon: Wifi },
+        { label: "Track", to: "/track-order", icon: Search },
+        { label: "Support", to: "/support", icon: LifeBuoy },
+        { label: "More", icon: Menu, onClick: () => setOpen(true), active: open },
+      ];
 
   return (
     <>
@@ -203,7 +223,7 @@ export default function PublicNav() {
             <ThemeToggle />
             <NotificationBell />
             {isAuthenticated ? (
-              <div className="relative hidden sm:block" ref={menuRef}>
+              <div className="relative" ref={menuRef}>
                 <button
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
@@ -254,7 +274,7 @@ export default function PublicNav() {
               <>
                 <Link
                   to="/auth"
-                  className="hidden text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground sm:block"
+                  className="text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Sign in
                 </Link>
@@ -267,18 +287,11 @@ export default function PublicNav() {
               </>
             )}
 
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              aria-label="Open menu"
-              aria-expanded={open}
-              className="onyx-iconbtn lg:hidden"
-            >
-              <Menu size={20} />
-            </button>
           </div>
         </div>
       </header>
+
+      <MobileTabBar items={tabs} className="lg:hidden" />
 
       {open && (
         <div

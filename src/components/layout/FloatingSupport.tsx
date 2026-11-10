@@ -37,7 +37,7 @@ export default function FloatingSupport() {
   return (
     <>
       {whatsappUrl && (
-        <div className={`fixed bottom-4 left-4 z-40 transition-all duration-300 sm:bottom-5 sm:left-5 ${shift}`} style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
+        <div className={`fixed bottom-[74px] left-4 z-40 transition-all duration-300 lg:bottom-5 lg:left-5 ${shift}`} style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
           <WhatsAppFab href={WHATSAPP_CHANNEL_URL} label="DataYego on WhatsApp" />
         </div>
       )}
@@ -45,7 +45,7 @@ export default function FloatingSupport() {
       <Link
         to="/support"
         aria-label="Get help"
-        className={`fixed bottom-4 right-4 z-40 inline-flex h-11 items-center gap-2 rounded-full bg-primary pl-3.5 pr-4 text-[13.5px] font-semibold text-[#04120c] shadow-[0_8px_24px_rgba(34,195,135,0.35)] transition-all duration-300 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-glow sm:bottom-5 sm:right-5 ${shift}`}
+        className={`fixed bottom-4 right-4 z-40 hidden h-11 lg:inline-flex items-center gap-2 rounded-full bg-primary pl-3.5 pr-4 text-[13.5px] font-semibold text-[#04120c] shadow-[0_8px_24px_rgba(34,195,135,0.35)] transition-all duration-300 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-glow sm:bottom-5 sm:right-5 ${shift}`}
         style={{ marginBottom: "env(safe-area-inset-bottom)" }}
       >
         <MessageCircle size={18} />

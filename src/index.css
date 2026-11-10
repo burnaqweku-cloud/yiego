@@ -2477,6 +2477,80 @@
 @keyframes yg-pop-settle { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: none; } }
 
 /* ─────────────────────────────────────────────────────────────
+   App-style bottom tab bar (phones): solid, no blur, sits above the home-gesture area.
+   In the components layer so a breakpoint utility (lg:hidden, sm:hidden) can switch it off.
+   ───────────────────────────────────────────────────────────── */
+@layer components {
+  .yg-tabbar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 40;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    background: hsl(var(--background));
+    border-top: 1px solid rgb(var(--w) / 0.09);
+    box-shadow: 0 -8px 24px -18px rgb(0 0 0 / 0.5);
+  }
+  .yg-tab {
+    display: flex;
+    min-width: 0;
+    min-height: 50px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 14px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.1;
+    color: hsl(var(--muted-foreground));
+    -webkit-tap-highlight-color: transparent;
+  }
+  .yg-tab:focus-visible {
+    outline: 2px solid hsl(var(--primary-glow));
+    outline-offset: -2px;
+  }
+  .yg-tab-ico {
+    position: relative;
+    display: grid;
+    width: 48px;
+    height: 28px;
+    place-items: center;
+    border-radius: 999px;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .yg-tab.is-active {
+    font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+  .yg-tab.is-active .yg-tab-ico {
+    background: hsl(var(--primary) / 0.16);
+    color: hsl(var(--primary-glow));
+  }
+  .yg-tab-badge {
+    position: absolute;
+    right: 4px;
+    top: -3px;
+    display: grid;
+    min-width: 16px;
+    height: 16px;
+    place-items: center;
+    border-radius: 999px;
+    padding: 0 4px;
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #fff;
+    background: hsl(var(--danger, 0 72% 51%));
+  }
+  .yg-tabbar-space {
+    height: calc(62px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
    Phones and tablets: keep scrolling smooth.
    Live blur is the most expensive thing a phone can be asked to draw: a blurred bar over moving
    content is redrawn on every scrolled frame, and big blurred shapes that drift never stop costing.

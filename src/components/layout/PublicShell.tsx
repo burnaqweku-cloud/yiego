@@ -5,6 +5,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import PublicNav from "@/components/layout/PublicNav";
 import PublicFooter from "@/components/layout/PublicFooter";
 import FloatingSupport from "@/components/layout/FloatingSupport";
+import { TabBarSpace } from "@/components/layout/MobileTabBar";
 import { trackPromoEvent } from "@/lib/promotionAnalytics";
 
 function ScrollToTop() {
@@ -30,6 +31,7 @@ export default function PublicShell() {
           <AgentPopup />
         </main>
         <PublicFooter />
+        <TabBarSpace className="lg:hidden" />
       </div>
       <FloatingSupport />
     </div>

@@ -16,6 +16,7 @@ import PlanPicker from "@/components/agent/PlanPicker";
 import { longDate, subscriptionOf, type SubInfo } from "@/components/agent/subscription";
 import { X } from "lucide-react";
 import { visibleInterval } from "@/lib/requestCache";
+import MobileTabBar, { type TabItem } from "@/components/layout/MobileTabBar";
 
 /* The agent app. Its own header, its own navigation (bottom bar on phones,
    sidebar on desktop), no public site chrome. Pages read shared data from
@@ -126,6 +127,11 @@ export default function AgentShell() {
   const leave = () => void signOut().then(() => { if (isSub) window.location.assign(isStoreHost() ? "/" : parentUrl); else navigate("/"); }).catch(() => toast.error("Couldn't sign out."));
   if (role === "owner" && (sub.state === "unpaid" || sub.state === "suspended")) return isSub ? <SubClosedScreen agent={agent} /> : <PayScreen agent={agent} quote={quote} onPaid={() => void reload()} />;
 
+  const more: TabItem = { label: "More", icon: Menu, onClick: () => setDrawer(true), active: drawer, badge: role === "staff" ? 0 : unread + pendingApps };
+  const tabs: TabItem[] = role === "staff"
+    ? [{ label: "Inbox", to: "/agent/support", icon: MessagesSquare, badge: unread }, { label: "Orders", to: "/agent/orders", icon: Package }, { label: "Customers", to: "/agent/customers", icon: Users }, { label: "Check MTN", to: "/agent/check-mtn", icon: PhoneForwarded }, more]
+    : [{ label: "Home", to: "/agent", end: true, icon: Home }, { label: "Sell", to: "/agent/buy", icon: ShoppingBag }, { label: "Orders", to: "/agent/orders", icon: Package }, { label: "Earnings", to: "/agent/earnings", icon: Wallet }, more];
+
   return (
     <AgentContext.Provider value={{ role, networkOpen, unread, floors, isSub, agent, orders, payouts, products, prices, setPrices, plan, quote, storeUrl, reload, sub, openRenew: () => setRenew(true) }}>
       <div className="onyx-canvas min-h-dvh">
@@ -143,10 +149,10 @@ export default function AgentShell() {
           <div className="min-w-0 flex-1">
             {/* Mobile header */}
             <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[0.06] touch-solid bg-background/85 px-4 py-3 backdrop-blur sm:hidden">
-              <div className="flex min-w-0 items-center gap-3"><button type="button" onClick={() => setDrawer(true)} aria-label="Menu" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Menu size={18} /></button><div className="min-w-0"><p className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{eyebrow}</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div></div>
+              <div className="flex min-w-0 items-center gap-3"><div className="min-w-0"><p className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{eyebrow}</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div></div>
               <div className="flex items-center gap-2"><span className="rounded-full bg-primary/12 px-2.5 py-1 text-[12px] font-semibold text-primary-glow">{formatGHS(Number(agent.earnings_balance))}</span><NotificationBell /><a href={storeUrl} target="_blank" rel="noreferrer" aria-label="View store" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] text-muted-foreground"><ExternalLink size={14} /></a></div>
             </header>
-            <main className="px-4 pb-10 pt-4 sm:px-8 sm:pb-10 sm:pt-8">
+            <main className="px-4 pb-[calc(86px+env(safe-area-inset-bottom))] pt-4 sm:px-8 sm:pb-10 sm:pt-8">
               {!isSub && sub.state === "grace" && <div className="mb-4 rounded-2xl border border-amber/40 bg-amber/10 p-3.5 text-[12.5px] text-foreground"><p className="font-semibold">Your plan ended on {longDate(sub.paidUntil)}.</p><p className="mt-0.5 text-muted-foreground">Renew by tonight ({longDate(sub.closesOn)}) to keep your store open. Nothing changes until then.</p><button type="button" onClick={() => setRenew(true)} className="onyx-btn-primary mt-2.5 px-4 py-2 text-[12.5px]">Renew now</button></div>}
               {!isSub && sub.state === "lapsed" && <div className="mb-4 rounded-2xl border border-danger/40 bg-danger/10 p-3.5 text-[12.5px] text-foreground"><p className="font-semibold">Your store is closed.</p><p className="mt-0.5 text-muted-foreground">Customers can't order and agent prices are locked. Your balance and orders are safe — you can still withdraw. Renew to reopen instantly.</p><button type="button" onClick={() => setRenew(true)} className="onyx-btn-primary mt-2.5 px-4 py-2 text-[12.5px]">Renew now</button></div>}
               <Outlet />
@@ -162,7 +168,8 @@ export default function AgentShell() {
             </div>
           </div>
         )}
-        {/* Mobile bottom nav */}
+        {/* Phones: app-style bar for the everyday pages; "More" opens the full menu. */}
+        <MobileTabBar className="sm:hidden" label="Agent" items={tabs} />
         {/* Mobile drawer: same grouped navigation as the desktop sidebar */}
         {drawer && (
           <div className="fixed inset-0 z-50 sm:hidden" onClick={() => setDrawer(false)}>
