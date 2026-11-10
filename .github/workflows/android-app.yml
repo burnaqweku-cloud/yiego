@@ -2,6 +2,10 @@ name: Android app
 
 # Builds the DataYego Android app (android-app/). The app only opens the live site, so it needs
 # rebuilding when the shell itself changes, not when the site changes.
+#
+# With the ANDROID_SIGNING secret in place it builds the real, signed app and puts it on the site
+# (public/app/DataYego.apk + version.json) for the "Get the app" page; the next site publish makes it live.
+# Without the secret it only builds a test APK, which is never put on the site.
 on:
   workflow_dispatch:
   push:
@@ -15,18 +19,16 @@ permissions:
 
 concurrency:
   group: android-app
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: android-app
     env:
       VERSION_CODE: ${{ github.run_number }}
       VERSION_NAME: 1.0.${{ github.run_number }}
+      ANDROID_SIGNING: ${{ secrets.ANDROID_SIGNING }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,22 +41,74 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
-      - run: npm ci
-      - run: npx cap sync android
-      - name: Build test APK
-        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
-      - name: Name the APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/DataYego-test-${VERSION_NAME}.apk"
+      - name: Install and sync
+        working-directory: android-app
+        run: npm ci && npx cap sync android
+
+      # ANDROID_SIGNING is one line: <password>:<base64 of the PKCS12 keystore>. The key's alias is "datayego".
+      - name: Load the signing key
+        id: key
+        run: |
+          if [ -n "$ANDROID_SIGNING" ]; then
+            printf '%s' "${ANDROID_SIGNING#*:}" | base64 -d > "$RUNNER_TEMP/release.p12"
+            echo "::add-mask::${ANDROID_SIGNING%%:*}"
+            {
+              echo "KEYSTORE_FILE=$RUNNER_TEMP/release.p12"
+              echo "KEYSTORE_PASSWORD=${ANDROID_SIGNING%%:*}"
+              echo "KEY_ALIAS=datayego"
+              echo "KEY_PASSWORD=${ANDROID_SIGNING%%:*}"
+            } >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ANDROID_SIGNING is not set: building a test APK only. It is not put on the site."
+          fi
+
+      - name: Build the signed app
+        if: steps.key.outputs.signed == 'true'
+        working-directory: android-app/android
+        run: |
+          chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/DataYego.apk"
+          rm -f "$RUNNER_TEMP/release.p12"
+
+      - name: Build a test APK
+        if: steps.key.outputs.signed != 'true'
+        working-directory: android-app/android
+        run: |
+          chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/DataYego-test.apk"
+
       - uses: actions/upload-artifact@v4
         with:
-          name: DataYego-test-apk
-          path: ${{ runner.temp }}/DataYego-test-*.apk
+          name: DataYego-apk
+          path: ${{ runner.temp }}/DataYego*.apk
+
       - name: Publish to the android-latest release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete android-latest --yes --cleanup-tag || true
-          gh release create android-latest "$RUNNER_TEMP/DataYego-test-${VERSION_NAME}.apk" \
-            --title "DataYego Android app (test build ${VERSION_NAME})" \
-            --notes "Test build for installing straight onto a phone. Not the Play Store build." \
+          gh release create android-latest "$RUNNER_TEMP"/DataYego*.apk \
+            --title "DataYego Android app ${VERSION_NAME}" \
+            --notes "Built from ${GITHUB_SHA}. The signed DataYego.apk is the one offered on datayego.com/app." \
             --prerelease --target "$GITHUB_SHA"
+
+      - name: Put the signed app on the site
+        if: steps.key.outputs.signed == 'true'
+        run: |
+          mkdir -p public/app
+          cp "$RUNNER_TEMP/DataYego.apk" public/app/DataYego.apk
+          SIZE=$(stat -c %s public/app/DataYego.apk)
+          SHA=$(sha256sum public/app/DataYego.apk | cut -d' ' -f1)
+          printf '{\n  "version": "%s",\n  "code": %s,\n  "size": %s,\n  "sha256": "%s",\n  "built_at": "%s",\n  "file": "/app/DataYego.apk"\n}\n' \
+            "$VERSION_NAME" "$VERSION_CODE" "$SIZE" "$SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > public/app/version.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/app/DataYego.apk public/app/version.json
+          git commit -m "Android app ${VERSION_NAME}: signed APK for the Get the app page"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1

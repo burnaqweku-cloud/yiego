@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls", "delegate_permission/common.get_login_creds"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.datayego.app",
+      "sha256_cert_fingerprints": ["79:19:BA:2E:32:27:9C:1D:36:EC:AE:93:4C:D2:E3:E2:EA:67:95:90:56:3B:52:1C:95:4D:B0:E6:C0:0B:EF:9D"]
+    }
+  }
+]

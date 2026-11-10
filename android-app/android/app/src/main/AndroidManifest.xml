@@ -24,6 +24,9 @@
 
         </activity>
 
+        <!-- Tells Chrome this app belongs to datayego.com, so the site can see it is installed and stop offering the download. -->
+        <meta-data android:name="asset_statements" android:resource="@string/asset_statements" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

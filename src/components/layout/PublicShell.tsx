@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import PublicNav from "@/components/layout/PublicNav";
 import PublicFooter from "@/components/layout/PublicFooter";
+import AppBanner from "@/components/layout/AppBanner";
 import FloatingSupport from "@/components/layout/FloatingSupport";
 import { TabBarSpace } from "@/components/layout/MobileTabBar";
 import { trackPromoEvent } from "@/lib/promotionAnalytics";
@@ -24,6 +25,7 @@ export default function PublicShell() {
     <div className="site onyx-canvas flex min-h-dvh flex-col">
       <ScrollToTop />
       <div className="relative z-10 flex min-h-dvh flex-col">
+        <AppBanner />
         <PublicNav />
         <AnnouncementStrip />
         <main className="flex-1">

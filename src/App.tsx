@@ -44,6 +44,7 @@ const AISupport = lazy(() => import("./pages/AISupport"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const TrackOrder = lazy(() => import("./pages/TrackOrder"));
+const GetApp = lazy(() => import("./pages/GetApp"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const AdminShell = lazy(() => import("@/components/admin/AdminShell"));
 const Admin = lazy(() => import("./pages/Admin"));
@@ -220,7 +221,7 @@ export const MainSite = () => (
       <Route element={<AppPage />}>
         <Route path="/shop" element={<Shop />} />
         <Route path="/promo" element={<Promotion />} />
-        <Route path="/track-order" element={<TrackOrder />} /><Route path="/r/:code" element={<Invite />} /><Route path="/g/:slug" element={<Giveaway />} /><Route path="/giveaway" element={<Giveaway />} /><Route path="/check-mtn" element={<CheckMtn />} /><Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/track-order" element={<TrackOrder />} /><Route path="/app" element={<GetApp />} /><Route path="/r/:code" element={<Invite />} /><Route path="/g/:slug" element={<Giveaway />} /><Route path="/giveaway" element={<Giveaway />} /><Route path="/check-mtn" element={<CheckMtn />} /><Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/support/ai" element={<AISupport />} />
         <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
         <Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />

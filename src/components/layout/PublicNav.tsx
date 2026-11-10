@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronDown, CircleHelp, Home, LifeBuoy, ListOrdered, LogOut, Menu, PhoneForwarded, Search, ShieldCheck, Store, UserRound, Wallet, Wifi, X } from "lucide-react";
+import { ArrowRight, ChevronDown, CircleHelp, Download, Home, LifeBuoy, ListOrdered, LogOut, Menu, PhoneForwarded, Search, ShieldCheck, Store, UserRound, Wallet, Wifi, X } from "lucide-react";
 import { toast } from "sonner";
 import Wordmark from "@/components/brand/Wordmark";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -9,6 +9,7 @@ import { useProfile } from "@/store/profile";
 import { agentsStatus, myAgentStatus, previewRequested } from "@/lib/agents";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import MobileTabBar, { type TabItem } from "@/components/layout/MobileTabBar";
+import { runningAsApp } from "@/lib/appInstall";
 import { cn } from "@/lib/utils";
 
 /**
@@ -35,6 +36,7 @@ const GUEST_LINKS: NavLinkItem[] = [
   { label: "Prices", to: "/prices" },
   { label: "Guides", to: "/blog" },
   { label: "FAQ", to: "/faq" },
+  { label: "Get the app", to: "/app" },
   { label: "Support", to: "/support" },
 ];
 
@@ -175,6 +177,7 @@ export default function PublicNav() {
       <MenuItem to="/check-mtn" icon={PhoneForwarded} label="Check MTN number" />
       {agentLink && <MenuItem to={agentLink.to} icon={Store} label={agentLink.label === "My store" ? "Agent dashboard" : agentLink.label} />}
       {isAdmin && <MenuItem to="/admin" icon={ShieldCheck} label="Admin panel" />}
+      {!runningAsApp() && <MenuItem to="/app" icon={Download} label="Get the app" />}
       <MenuItem to="/faq" icon={CircleHelp} label="Help & FAQ" />
     </>
   );

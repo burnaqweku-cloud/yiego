@@ -100,6 +100,13 @@ const STATIC_ROUTES: PublicRoute[] = [
     description: "How buying data on DataYego works: payments, delivery times, refunds, wallet and order tracking — answered simply.",
   },
   {
+    path: "/app",
+    priority: 0.7,
+    changefreq: "monthly",
+    title: "Get the DataYego App — Android & iPhone",
+    description: "Install the DataYego app on Android, or add it to your iPhone home screen. Buy MTN, Telecel and AirtelTigo data in one tap, with the same account and wallet.",
+  },
+  {
     path: "/track-order",
     priority: 0.6,
     changefreq: "monthly",
