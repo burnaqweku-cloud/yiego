@@ -45,6 +45,8 @@ export default function AdminAgents() {
   const [promos, setPromos] = useState<Promo[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [paying, setPaying] = useState<Payout | null>(null); const [payRef, setPayRef] = useState("");
+  // Where a payout was sent from: the bank, or a MoMo payout out of the Kora balance (Kora takes its own charge).
+  const [payFrom, setPayFrom] = useState<"bank" | "kora">("bank"); const [payCharge, setPayCharge] = useState("");
   const [plan, setPlan] = useState<Plan | null>(null);
   const [launched, setLaunched] = useState(false);
   const [isMaster, setIsMaster] = useState(false);
@@ -122,9 +124,16 @@ export default function AdminAgents() {
   const [payFilter, setPayFilter] = useState<"waiting" | "paid" | "rejected" | "all">("waiting");
   const [rejecting, setRejecting] = useState<Payout | null>(null); const [rejectNote, setRejectNote] = useState("");
   const settle = async (p: Payout, action: "approve" | "reject" | "paid", reference?: string, note?: string) => {
+    if (action === "paid") {
+      const charge = payFrom === "kora" ? Number(payCharge || 0) : 0;
+      if (!Number.isFinite(charge) || charge < 0) return toast.error("Enter the Kora charge as a number, or leave it empty.");
+      // Saved on the payout first, so the books take it from the right pocket when it is marked paid.
+      const src = await db().rpc("admin_set_agent_payout_source", { p_payout_id: p.id, p_from: payFrom, p_charge: charge });
+      if (src.error) return toast.error(src.error.message.replace(/_/g, " "));
+    }
     const { data, error } = await supabase.functions.invoke<{ error?: string }>("agent-admin", { body: { action: "settle_payout", payoutId: p.id, settle: action, reference: reference ?? null, note: note ?? null } });
     const err = data?.error ?? error?.message; if (err) return toast.error(err.replace(/_/g, " "));
-    toast.success(action === "paid" ? "Marked paid, booked, and the agent has been emailed." : action === "reject" ? "Rejected; earnings returned and the agent emailed." : "Approved."); setPaying(null); setPayRef(""); setRejecting(null); setRejectNote(""); void load();
+    toast.success(action === "paid" ? "Marked paid, booked, and the agent has been emailed." : action === "reject" ? "Rejected; earnings returned and the agent emailed." : "Approved."); setPaying(null); setPayRef(""); setPayFrom("bank"); setPayCharge(""); setRejecting(null); setRejectNote(""); void load();
   };
   const agentOf = (id: string) => agents.find((g) => g.id === id);
   const visiblePayouts = payouts.filter((p) => payFilter === "all" || (payFilter === "waiting" ? p.status === "requested" || p.status === "approved" : p.status === payFilter));
@@ -363,6 +372,8 @@ export default function AdminAgents() {
         <div className="w-[min(92vw,400px)] p-5">
           <h2 className="text-[16px] font-semibold text-foreground">Mark paid · {paying ? formatGHS(Number(paying.net)) : ""}</h2>
           <p className="mt-1 text-[12.5px] text-muted-foreground">Only after you've actually sent <b className="text-foreground">{paying ? formatGHS(Number(paying.net)) : ""}</b> to <b className="text-foreground">{paying?.momo_number}</b>{paying?.momo_name ? ` (${paying.momo_name})` : ""}. This books it, takes it out of the pot, and emails the agent a receipt.</p>
+          <div className="mt-3"><Field label="Paid from"><div className="flex gap-2">{([["bank", "Bank"], ["kora", "Kora balance"]] as const).map(([k, label]) => <button key={k} type="button" onClick={() => setPayFrom(k)} className={`flex-1 rounded-xl border px-3 py-2 text-[13px] ${payFrom === k ? "border-primary/40 bg-primary/[0.1] text-foreground" : "border-white/10 text-muted-foreground"}`}>{label}</button>)}</div></Field></div>
+          {payFrom === "kora" && <div className="mt-3"><Field label="Kora charge (optional)"><input value={payCharge} onChange={(e) => setPayCharge(e.target.value)} inputMode="decimal" placeholder="0.11" className={inputCls} /></Field><p className="mt-1 text-[12px] text-muted-foreground">Kora already took the payout and its charge off Money at Kora. This only clears what we owe the agent and keeps the charge in the history. The bank is not touched.</p></div>}
           <div className="mt-3"><Field label="MoMo transaction reference (optional)"><input value={payRef} onChange={(e) => setPayRef(e.target.value)} className={inputCls} /></Field></div>
           <div className="mt-4 flex justify-end gap-2"><Button variant="quiet" onClick={() => setPaying(null)}>Cancel</Button><Button onClick={() => paying && void settle(paying, "paid", payRef.trim() || undefined)}>Mark paid</Button></div>
         </div>

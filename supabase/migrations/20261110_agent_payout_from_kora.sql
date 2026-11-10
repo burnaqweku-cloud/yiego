@@ -1,0 +1,9 @@
+-- Applied live on 10 Nov 2026 (note only).
+-- Agent payouts can be marked paid from the bank or from the Kora balance.
+--  * agent_payouts.paid_from ('bank' | 'kora', default 'bank') and paid_charge (Kora's own payout charge).
+--  * admin_set_agent_payout_source(p_payout_id, p_from, p_charge): master only, open payouts only.
+--  * admin_settle_agent_payout 'paid': from Kora it posts owed_to_agents +amount, kora_held -(net + charge),
+--    kora_fees +charge and never touches the bank. Money at Kora on the Finance page is Kora's live balance,
+--    so nothing is deducted twice.
+-- Also: finance_post_order books an order as Kora when it was a Kora checkout with no wallet debit, even if the
+-- payment intent is not marked succeeded yet (it is saved a moment after the order is marked paid).
