@@ -25,6 +25,7 @@ import { trackPromoEvent, trackPromotion } from "@/lib/promotionAnalytics";
 import { watchOrderForPush } from "@/lib/push";
 import { trackTikTokPayment } from "@/lib/tiktokPixel";
 import { trackMetaPayment } from "@/lib/metaPixel";
+import { trackGooglePurchase } from "@/lib/googleTag";
 import {
   createGuestDataPayment,
   listPendingOrders,
@@ -380,6 +381,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       void refreshWallet();
       void trackTikTokPayment({ reference: order.orderReference, network: order.networkName, product: order.bundleName });
       void trackMetaPayment({ reference: order.orderReference, network: order.networkName, product: order.bundleName, value: order.amount });
+      void trackGooglePurchase({ reference: order.orderReference, network: order.networkName, product: order.bundleName, value: order.amount });
     }
     setReceiptRef(order.orderReference); setStep("success");
   }

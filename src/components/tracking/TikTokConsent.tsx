@@ -4,6 +4,7 @@ import {
   applyTikTokConsent,
 } from "@/lib/tiktokPixel";
 import { applyMetaConsent, META_MIN_NOTICE_VERSION, trackMetaPageView } from "@/lib/metaPixel";
+import { applyGoogleTag } from "@/lib/googleTag";
 import {
   globalPrivacyControlEnabled,
   readAdvertisingConsent,
@@ -33,6 +34,7 @@ export default function TikTokConsent() {
     const apply = () => {
       const allowed = applyTikTokConsent(currentRegion);
       applyMetaConsent(currentRegion);
+      applyGoogleTag(currentRegion);
       if (active) setGpc(globalPrivacyControlEnabled());
       return allowed;
     };

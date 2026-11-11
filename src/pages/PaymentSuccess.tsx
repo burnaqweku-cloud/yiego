@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
 import { trackTikTokPayment } from "@/lib/tiktokPixel";
 import { trackMetaPayment } from "@/lib/metaPixel";
+import { trackGooglePurchase } from "@/lib/googleTag";
 import { toast } from "sonner";
 
 // Shared with TrackOrder so a paid order is remembered on this device.
@@ -78,6 +79,7 @@ export default function PaymentSuccess() {
           if (d.paymentStatus === "succeeded") {
             void trackTikTokPayment({ reference: d.reference, network: d.network, product: d.product });
             void trackMetaPayment({ reference: d.reference, network: d.network, product: d.product, value: Number(d.amount) });
+            void trackGooglePurchase({ reference: d.reference, network: d.network, product: d.product, value: Number(d.amount) });
             setPhase("success");
           } else {
             setPhase("pending");

@@ -139,7 +139,7 @@ This policy explains what personal information DataYego collects when you buy da
 
 **Automatically.** Basic technical information such as your device and browser type, IP address, and the pages you use, which we need to keep the service running and to detect abuse. Your browser also stores your sign-in session, your light or dark theme preference, and your advertising-consent choices on your own device.
 
-**Advertising measurement.** Where permitted, the TikTok Pixel and the Facebook (Meta) Pixel receive your IP address, device and browser information, cookie or ad-click identifiers, pages visited, and confirmed data-order events with a unique order event ID, bundle description and (for Facebook) the order value in GHS. We do not send them your email, phone number, Mobile Money PIN, card details, or advanced-matching identifiers.
+**Advertising measurement.** Where permitted, the TikTok Pixel and the Facebook (Meta) Pixel receive your IP address, device and browser information, cookie or ad-click identifiers, pages visited, and confirmed data-order events with a unique order event ID, bundle description and (for Facebook) the order value in GHS. We do not send them your email, phone number, Mobile Money PIN, card details, or advanced-matching identifiers. Outside the EEA, UK and Switzerland, the Google tag (Google Tag Manager) also receives pages visited and confirmed data-order events with the order ID, bundle description and order value in GHS, under the same limits; visitors in the EEA, UK and Switzerland never load it.
 
 ## Why we hold it
 
