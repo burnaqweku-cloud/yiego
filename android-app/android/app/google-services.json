@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "970581616094",
+    "project_id": "datayego",
+    "storage_bucket": "datayego.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:970581616094:android:712df40c0174c3a9c7294f",
+        "android_client_info": {
+          "package_name": "com.datayego.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYzXp8nGYTwAZBy9vsF16EHxa6tIUht5s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

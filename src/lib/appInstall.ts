@@ -81,6 +81,7 @@ type AppEvent = "download_tap" | "ios_guide_view" | "app_open";
 interface AppRpc { rpc<T>(name: string, args?: Record<string, unknown>): PromiseLike<{ data: T | null; error: { message?: string } | null }> }
 const phase1 = () => (supabase as unknown as { schema(name: string): AppRpc }).schema("phase1");
 
+export function appDeviceId(): string | null { return deviceId(); }
 function deviceId(): string | null {
   try {
     let id = localStorage.getItem("yg-device");

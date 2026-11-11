@@ -5,6 +5,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import PublicNav from "@/components/layout/PublicNav";
 import PublicFooter from "@/components/layout/PublicFooter";
 import AppBanner from "@/components/layout/AppBanner";
+import PushPrompt from "@/components/layout/PushPrompt";
 import FloatingSupport from "@/components/layout/FloatingSupport";
 import { TabBarSpace } from "@/components/layout/MobileTabBar";
 import { trackPromoEvent } from "@/lib/promotionAnalytics";
@@ -26,6 +27,7 @@ export default function PublicShell() {
       <ScrollToTop />
       <div className="relative z-10 flex min-h-dvh flex-col">
         <AppBanner />
+        <PushPrompt />
         <PublicNav />
         <AnnouncementStrip />
         <main className="flex-1">

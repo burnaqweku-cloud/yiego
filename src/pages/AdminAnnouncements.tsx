@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Megaphone, Send } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
+import PushCard from "@/components/admin/PushCard";
 import { Field, Panel, Pill, Row, Rows, Segmented, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
@@ -54,6 +55,8 @@ export default function AdminAnnouncements() {
           {shown.map((a) => <Row key={a.id} onClick={() => setEdit({ ...a })} primary={<>{a.title} <Pill tone={a.kind === "warning" ? "bad" : a.kind === "price" ? "warn" : "good"}>{KIND[a.kind]}</Pill>{a.is_pinned && <Pill tone="muted">pinned</Pill>}{!live(a) && <Pill tone="muted">{a.is_active ? "scheduled / ended" : "off"}</Pill>}</>} secondary={`${AUD[a.audience]} · from ${formatAdminDate(a.starts_at)}${a.ends_at ? ` to ${formatAdminDate(a.ends_at)}` : ""}${a.emailed_at ? ` · emailed ${formatAdminDate(a.emailed_at)}` : ""}`} right={`${stats[a.id]?.reads ?? 0}`} rightNote="read" />)}
         </Rows>
       </Panel>
+
+      <PushCard />
 
       <Modal open={edit !== null} onClose={() => setEdit(null)} label="Announcement">
         <div className="w-[min(94vw,520px)] space-y-2.5 p-5">

@@ -22,6 +22,7 @@ import { formatGHS } from "@/lib/format";
 import { paystackFee } from "@/lib/fees";
 import { claimGuestPromotion, preparePromotionOrder, usePromoPrices } from "@/lib/promotions";
 import { trackPromoEvent, trackPromotion } from "@/lib/promotionAnalytics";
+import { watchOrderForPush } from "@/lib/push";
 import { trackTikTokPayment } from "@/lib/tiktokPixel";
 import { trackMetaPayment } from "@/lib/metaPixel";
 import {
@@ -362,6 +363,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     if (!agent && action.startsWith("pay_")) await Promise.all([
       attachPartnerToOrder(order.orderReference, savedOrderToken(order.orderReference) || null),
       trackPromoEvent("payment_started", { order_reference: order.orderReference, method: action === "pay_wallet" ? "wallet" : "online", amount: order.amount }),
+      watchOrderForPush(order.orderReference),
     ]);
     if (!agent && action === "cancel") void trackPromoEvent("order_cancelled", { order_reference: order.orderReference });
     const result = await orderPaymentAction<{ authorizationUrl?: string; orderReference?: string }>(action, order.orderReference);
@@ -404,6 +406,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     if (!agent && result.data.data.orderReference) await Promise.all([
       attachPartnerToOrder(result.data.data.orderReference, result.data.data.managementToken ?? null),
       trackPromoEvent("payment_started", { order_reference: result.data.data.orderReference, method: "online", guest: true }),
+      watchOrderForPush(result.data.data.orderReference),
     ]);
     window.location.assign(result.data.data.authorizationUrl);
   }

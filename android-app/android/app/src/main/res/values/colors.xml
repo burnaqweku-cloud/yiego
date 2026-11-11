@@ -4,6 +4,7 @@
     <color name="brand_dark">#0B0F16</color>
     <!-- The site's page colour (the site is light only), shown behind it while it loads. -->
     <color name="page_light">#F2F7F4</color>
+    <color name="notification_accent">#0E8A5A</color>
     <color name="colorPrimary">#22C387</color>
     <color name="colorPrimaryDark">#0B0F16</color>
     <color name="colorAccent">#22C387</color>

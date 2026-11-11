@@ -24,6 +24,11 @@
 
         </activity>
 
+        <!-- How DataYego's notifications look, and the channel they are filed under. -->
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_notify" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/notification_accent" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="orders" />
+
         <!-- Tells Chrome this app belongs to datayego.com, so the site can see it is installed and stop offering the download. -->
         <meta-data android:name="asset_statements" android:resource="@string/asset_statements" />
 

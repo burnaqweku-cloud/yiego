@@ -54,6 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (nextSession && (_event === "SIGNED_IN" || _event === "INITIAL_SESSION")) { void recordDevice(); void enforceHomeStore(nextSession); }
+      // Inside the Android app: tie this phone's notification address to the account (deferred, never inside the auth callback).
+      if (nextSession && _event === "SIGNED_IN") setTimeout(() => { void import("@/lib/push").then((m) => m.syncPushUser()).catch(() => undefined); }, 0);
       setSession(nextSession);
       setLoading(false);
     });

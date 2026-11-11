@@ -62,3 +62,5 @@ else createRoot(rootEl).render(tree);
 
 // Counts today's use when the site is running as the app (Android app or iPhone home screen). A no-op in a browser.
 void import("@/lib/appInstall").then((m) => m.trackAppOpen()).catch(() => undefined);
+// Inside the Android app: a phone that already allows notifications refreshes its address with us.
+void import("@/lib/push").then((m) => m.initPush()).catch(() => undefined);
