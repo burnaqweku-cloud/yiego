@@ -77,7 +77,7 @@ create or replace function phase1.campaign_current() returns jsonb language sql 
   where c.is_active and not c.invite_only and c.starts_at <= now() and (c.ends_at is null or c.ends_at > now()) and phase1.campaign_used(c.id) < c.max_redemptions and not p.is_paused and not n.is_paused
   order by c.created_at desc limit 1 $$;
 
-create or replace function phase1.campaign_claim(p_slug text, p_phone text, p_device text) returns jsonb language plpgsql security definer set search_path = phase1, public as $$
+create or replace function phase1.campaign_claim(p_slug text, p_phone text, p_device text default null) returns jsonb language plpgsql security definer set search_path = phase1, public as $$
 declare c phase1.campaigns%rowtype; v_phone text; v_net text; v_pfx_net text; v_tok text; v_existing phase1.campaign_redemptions%rowtype;
 begin
   select * into c from phase1.campaigns where slug = lower(p_slug);
