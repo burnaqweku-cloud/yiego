@@ -1,0 +1,3 @@
+-- Wallet top-ups paid through Kora were booked to paystack_transit. finance_post_deposit now books them to
+-- kora_held (by payment_intents.provider). The 6 existing ones (GHS 109.80) were moved with
+-- 'wallet_deposit_correction' entries (kora_held +, paystack_transit -). Applied live on 11 Nov 2026.
