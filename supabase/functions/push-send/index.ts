@@ -2,6 +2,7 @@ import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { requireCronSecret } from "../_shared/internal.ts";
 import { fcmAccess, fcmConfigured, fcmSend } from "../_shared/fcm.ts";
+import { createVapidKeys, webPushSend, type VapidKeys } from "../_shared/webpush.ts";
 
 /* Sends the phone notifications waiting in phase1.push_outbox (payment received, data delivered,
    refunds, announcements, tests). Run by the database the moment one is queued and by a one-minute
@@ -12,6 +13,24 @@ import { fcmAccess, fcmConfigured, fcmSend } from "../_shared/fcm.ts";
 interface Job { id: number; kind: string; title: string; body: string; url: string }
 interface Recipient { device: string; channel: string; token: string }
 
+/** Our Web Push (iPhone) key pair. Made here the first time, kept in internal_secrets; the public half
+    is published in site_settings for phones to subscribe with. */
+// deno-lint-ignore no-explicit-any
+async function vapidKeys(db: any): Promise<VapidKeys | null> {
+  try {
+    let { data } = await db.from("internal_secrets").select("value").eq("key", "vapid").maybeSingle();
+    if (!data?.value) {
+      await db.from("internal_secrets").upsert({ key: "vapid", value: JSON.stringify(await createVapidKeys()) }, { onConflict: "key", ignoreDuplicates: true });
+      ({ data } = await db.from("internal_secrets").select("value").eq("key", "vapid").maybeSingle());
+      if (!data?.value) return null;
+    }
+    const keys = JSON.parse(data.value) as VapidKeys;
+    const published = await db.from("site_settings").select("value").eq("key", "push_webpush").maybeSingle();
+    if (published.data?.value?.public_key !== keys.publicKey) await db.from("site_settings").upsert({ key: "push_webpush", value: { public_key: keys.publicKey } }, { onConflict: "key" });
+    return keys;
+  } catch { return null; }
+}
+
 Deno.serve(async (req) => {
   const options = handleOptions(req); if (options) return options;
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, { status: 405 });
@@ -19,6 +38,8 @@ Deno.serve(async (req) => {
     const db = createSupabaseAdmin();
     const denied = await requireCronSecret(req, db); if (denied) return denied;
     if (!fcmConfigured()) return jsonResponse({ error: "FIREBASE_SERVICE_ACCOUNT is not set" }, { status: 503 });
+
+    const vapid = await vapidKeys(db);
 
     const claimed = await db.rpc("push_claim", { p_limit: 25 });
     if (claimed.error) return jsonResponse({ error: claimed.error.message }, { status: 500 });
@@ -37,11 +58,14 @@ Deno.serve(async (req) => {
     const summary: { id: number; kind: string; recipients: number; delivered: number }[] = [];
     for (const job of jobs) {
       const found = await db.rpc("push_recipients", { p_id: job.id });
-      const recipients = ((found.data ?? []) as Recipient[]).filter((r) => r.channel === "fcm");
+      const recipients = ((found.data ?? []) as Recipient[]).filter((r) => r.channel === "fcm" || (r.channel === "webpush" && vapid));
       let delivered = 0; const dead: string[] = []; let lastError: string | null = found.error?.message ?? null;
       // Twenty at a time keeps a large announcement quick without flooding Google.
       for (let i = 0; i < recipients.length; i += 20) {
-        const results = await Promise.all(recipients.slice(i, i + 20).map((r) => fcmSend(access, r.token, { title: job.title, body: job.body, url: job.url, tag: `${job.kind}:${job.id}` }).then((result) => ({ r, result }))));
+        const results = await Promise.all(recipients.slice(i, i + 20).map((r) => {
+          const message = { title: job.title, body: job.body, url: job.url, tag: `${job.kind}:${job.id}` };
+          return (r.channel === "webpush" ? webPushSend(vapid!, r.token, message) : fcmSend(access, r.token, message)).then((result) => ({ r, result }));
+        }));
         for (const { r, result } of results) {
           if (result.ok) delivered += 1;
           else { lastError = result.error; if (result.dead) dead.push(r.device); }

@@ -23,7 +23,7 @@ window.addEventListener("vite:preloadError", (event) => {
 });
 
 // Stale copies. Some phones (Chrome especially) still run a service worker from an early build,
-// which can serve an old app that never reaches the server. On every start: remove any service
+// which can serve an old app that never reaches the server. On every start: remove any such service
 // worker and its caches, then compare our build with the live version.json; if the live site is
 // newer, reload once so the phone is on the current build.
 void (async () => {
@@ -31,7 +31,11 @@ void (async () => {
     if ("serviceWorker" in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
       let removed = false;
-      for (const r of regs) { removed = (await r.unregister()) || removed; }
+      for (const r of regs) {
+        // The notifications helper stays: it caches nothing, and removing it would switch notifications off.
+        if ((r.active ?? r.waiting ?? r.installing)?.scriptURL.endsWith("/push-sw.js")) continue;
+        removed = (await r.unregister()) || removed;
+      }
       if (removed && "caches" in window) { for (const k of await caches.keys()) await caches.delete(k); }
     }
     const key = "yg-version-reload";

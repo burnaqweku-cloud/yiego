@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Ban, CheckCircle2, Download, type LucideIcon, PlusSquare, RefreshCw, Settings2, Share, ShieldCheck, Smartphone, Wallet, Zap } from "lucide-react";
+import { Ban, Bell, CheckCircle2, Download, type LucideIcon, PlusSquare, RefreshCw, Settings2, Share, ShieldCheck, Smartphone, Wallet, Zap } from "lucide-react";
 import Seo from "@/components/seo/Seo";
 import { Card } from "@/components/ui/card";
 import { metaFor } from "@/lib/site";
@@ -111,6 +111,7 @@ export default function GetApp() {
             <Step n={2} icon={Share} title="Tap the Share button">It is the square with an arrow pointing up, at the bottom of the screen.</Step>
             <Step n={3} icon={PlusSquare} title="Choose “Add to Home Screen”">Scroll down the list a little if you do not see it straight away.</Step>
             <Step n={4} icon={CheckCircle2} title="Tap Add">DataYego now sits on your home screen. Open it from there next time.</Step>
+            <Step n={5} icon={Bell} title="Turn on notifications">Open DataYego from your home screen and tap <b className="font-semibold text-foreground">Turn on</b> when it offers notifications, so you know the moment your data arrives.</Step>
           </ol>
         )}
       </Card>

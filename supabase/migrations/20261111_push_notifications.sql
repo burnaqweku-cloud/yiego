@@ -229,3 +229,8 @@ grant execute on function phase1.admin_push_overview(), phase1.admin_push_save(j
 -- Safety net: every minute, wake the sender if something is waiting.
 select cron.unschedule(jobid) from cron.job where jobname = 'push-send';
 select cron.schedule('push-send', '* * * * *', $job$select net.http_post(url:='https://nhxgebulvqhtiiotetoo.supabase.co/functions/v1/push-send',body:='{}'::jsonb,headers:=jsonb_build_object('Content-Type','application/json','x-yiego-internal-secret',(select value from phase1.internal_secrets where key='cron')),timeout_milliseconds:=30000) where exists (select 1 from phase1.push_outbox where status = 'pending' and send_after <= now())$job$);
+
+-- iPhone (Web Push): the public key phones subscribe with. The sender creates the key pair and publishes this half.
+create or replace function phase1.push_public_key() returns text language sql stable security definer set search_path = phase1, public as $$
+  select value->>'public_key' from phase1.site_settings where key = 'push_webpush' $$;
+grant execute on function phase1.push_public_key() to anon, authenticated;

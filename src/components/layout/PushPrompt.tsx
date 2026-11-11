@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { enablePush, pushState } from "@/lib/push";
 
-/* Inside the Android app only: one strip offering to switch notifications on.
+/* Inside the Android app, and on an iPhone that has DataYego on its home screen: one strip offering to switch notifications on.
    Shown while the phone has not been asked yet; gone once allowed, refused, or put off for a week. */
 const LATER_KEY = "yg-push-later";
 const LATER_MS = 7 * 86400000;
