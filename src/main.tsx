@@ -59,3 +59,6 @@ const markupFits = prerenderedFor !== undefined && trimSlash(prerenderedFor) ===
 if (rootEl.hasChildNodes() && !markupFits) { rootEl.replaceChildren(); }
 if (rootEl.hasChildNodes()) hydrateRoot(rootEl, tree, { onRecoverableError(err) { document.documentElement.dataset.hydration = "recovered"; document.documentElement.dataset.hydrationNote = String((err as Error)?.message ?? err).slice(0, 200); if (import.meta.env.DEV) console.warn(err); } });
 else createRoot(rootEl).render(tree);
+
+// Counts today's use when the site is running as the app (Android app or iPhone home screen). A no-op in a browser.
+void import("@/lib/appInstall").then((m) => m.trackAppOpen()).catch(() => undefined);

@@ -4,7 +4,7 @@ import { Ban, CheckCircle2, Download, type LucideIcon, PlusSquare, RefreshCw, Se
 import Seo from "@/components/seo/Seo";
 import { Card } from "@/components/ui/card";
 import { metaFor } from "@/lib/site";
-import { deviceKind, formatAppSize, loadAppVersion, markAppDownloaded, runningAsApp, type AppVersion } from "@/lib/appInstall";
+import { deviceKind, formatAppSize, loadAppVersion, markAppDownloaded, runningAsApp, trackApp, type AppVersion } from "@/lib/appInstall";
 import { cn } from "@/lib/utils";
 
 /* "Get the app": laid out like a store listing so installing feels familiar.
@@ -35,7 +35,8 @@ export default function GetApp() {
   const [inApp, setInApp] = useState(false);
   const [started, setStarted] = useState(false);
   useEffect(() => {
-    if (deviceKind() === "iphone") setPhone("iphone");
+    // An iPhone visitor reading the home-screen steps is the iPhone version of a download.
+    if (deviceKind() === "iphone") { setPhone("iphone"); if (!runningAsApp()) trackApp("ios_guide_view", "iphone"); }
     setInApp(runningAsApp());
     void loadAppVersion().then(setVersion);
   }, []);
@@ -74,7 +75,7 @@ export default function GetApp() {
             {inApp ? (
               <p className="mt-5 flex items-center justify-center gap-2 rounded-2xl bg-primary/[0.1] px-4 py-3.5 text-[14px] font-semibold text-primary-glow"><CheckCircle2 size={18} aria-hidden="true" />You're using the app</p>
             ) : version ? (
-              <a href={version.file} download="DataYego.apk" onClick={() => { markAppDownloaded(); setStarted(true); }}
+              <a href={version.file} download="DataYego.apk" onClick={() => { markAppDownloaded(); trackApp("download_tap", deviceKind()); setStarted(true); }}
                 className="mk-btn mk-btn-primary mt-5 flex h-[54px] w-full items-center justify-center gap-2.5 rounded-2xl text-[16px] font-semibold">
                 <Download size={19} aria-hidden="true" />Download APK
               </a>

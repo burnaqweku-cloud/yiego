@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, ClipboardList, Clock3, Receipt, ShieldCheck, Store, TrendingUp, Users, Wallet } from "lucide-react";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
+import AppStatsCard from "@/components/admin/AppStatsCard";
 import { InlineAction, Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid } from "@/components/admin/ui";
 import SupplierBadge, { useFallbackOrigins } from "@/components/admin/SupplierBadge";
 import { adminDatabase, formatAdminDate, readableStatus } from "@/lib/admin-data";
@@ -89,6 +90,7 @@ export default function Admin() {
           </Panel>
         </div>
       </div>
+      <AppStatsCard />
     </div>
   );
 }

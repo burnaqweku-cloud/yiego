@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 /* The DataYego Android app and the "Get the app" offer.
    The app is a shell around this site, so the same code runs inside it; everything here answers
@@ -72,3 +73,46 @@ export function useAppOffer(): { show: boolean; device: Device; version: AppVers
   }, []);
   return state;
 }
+
+/* ── Counting, with no personal details ───────────────────────────────
+   A random ID kept on the device lets us count each phone once a day: who tapped Download,
+   who looked at the iPhone steps, and who opened DataYego as an app. */
+type AppEvent = "download_tap" | "ios_guide_view" | "app_open";
+interface AppRpc { rpc<T>(name: string, args?: Record<string, unknown>): PromiseLike<{ data: T | null; error: { message?: string } | null }> }
+const phase1 = () => (supabase as unknown as { schema(name: string): AppRpc }).schema("phase1");
+
+function deviceId(): string | null {
+  try {
+    let id = localStorage.getItem("yg-device");
+    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) { id = crypto.randomUUID(); localStorage.setItem("yg-device", id); }
+    return id;
+  } catch { return null; }
+}
+
+/** Counted at most once a day per phone and kind. Never throws and never holds anything up. */
+export function trackApp(kind: AppEvent, platform: string) {
+  try {
+    const id = deviceId();
+    if (!id) return;
+    const key = `yg-app-${kind}`; const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(key) === today) return;
+    localStorage.setItem(key, today);
+    void Promise.resolve(phase1().rpc<boolean>("app_track", { p_kind: kind, p_device: id, p_platform: platform })).then(undefined, () => undefined);
+  } catch { /* counting is never worth an error */ }
+}
+
+/** Called once when the site starts: counts today's use if it is running as the app. */
+export function trackAppOpen() {
+  if (typeof window === "undefined" || !runningAsApp()) return;
+  const inShell = /DataYegoApp\//.test(navigator.userAgent) || "Capacitor" in window;
+  trackApp("app_open", inShell ? "android_app" : deviceKind() === "iphone" ? "iphone_home_screen" : "android_home_screen");
+}
+
+export interface AppStats {
+  since: string | null;
+  downloads: { today: number; week: number; all: number };
+  iphone: { today: number; week: number; all: number };
+  users: { today: number; week: number; month: number; all: number; android: number; iphone: number; signed_in: number };
+  days: { day: string; downloads: number; users: number }[];
+}
+export const loadAppStats = () => phase1().rpc<AppStats>("admin_app_stats");

@@ -1,0 +1,6 @@
+-- Applied live on 11 Nov 2026 (note only).
+-- Anonymous counters for the DataYego app.
+--   * phase1.app_events: one row per device, kind and Ghana day (download_tap, ios_guide_view, app_open).
+--     device_id is a random ID kept on the phone; no personal details. Admin read only.
+--   * phase1.app_track(kind, device, platform): anon-callable, never raises.
+--   * phase1.admin_app_stats(): totals and the last 14 days for the admin Overview card.
