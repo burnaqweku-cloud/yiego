@@ -1,7 +1,6 @@
 import { handleOptions, jsonResponse, corsHeaders } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { requireCronSecret } from "../_shared/internal.ts";
-import { frame, sendEmail } from "../_shared/email.ts";
 
 /* Follow-ups: the emails of the follow-up sequence (signed up but never bought, has the app but never
    bought, bought before and went quiet). The database picks who is due and writes the app notification
@@ -16,6 +15,25 @@ const SITE = "https://datayego.com";
 const SELF = `${Deno.env.get("SUPABASE_URL")}/functions/v1/follow-up-run`;
 const PIXEL = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), (c) => c.charCodeAt(0));
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/* Kept in this file (not shared) so this sender can be changed without touching order emails. */
+async function sendEmail(input: { to: string; subject: string; html: string; text: string; idempotencyKey: string; headers: Record<string, string> }) {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  if (!apiKey) return { ok: false, error: "no_api_key" };
+  const from = Deno.env.get("EMAIL_FROM") ?? "DataYego <noreply@datayego.com>";
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": input.idempotencyKey },
+    body: JSON.stringify({ from, to: [input.to], subject: input.subject, html: input.html, text: input.text, reply_to: "support@yiego.shop", headers: input.headers }),
+  });
+  if (res.ok) return { ok: true, error: null };
+  return { ok: false, error: `${res.status} ${(await res.text().catch(() => "")).slice(0, 160)}` };
+}
+
+function frame(inner: string) {
+  return `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);"><tr><td style="background:#0b1512;padding:18px 28px;"><img src="https://datayego.com/yiego-icon-192.png" width="34" height="34" alt="DataYego" style="display:inline-block;vertical-align:middle;border-radius:9px;" /><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;margin-left:10px;">DataYego</span></td></tr><tr><td style="padding:28px;">${inner}</td></tr></table><p style="margin:16px 0 0;font-size:11px;color:#8a968f;">DataYego · Ghana data bundles</p></td></tr></table></body></html>`;
+}
+
 const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 function render(d: Due) {
@@ -30,7 +48,7 @@ function render(d: Due) {
     + `<p style="margin:22px 0 0;font-size:11.5px;line-height:1.6;color:#8a968f;">You are getting this because you have a DataYego account. <a href="${unsubscribe}" style="color:#8a968f;text-decoration:underline;">Stop these reminders</a>. Order emails are not affected.</p>`
     + `<img src="${SELF}?o=${d.token}" width="1" height="1" alt="" style="display:block;border:0;" />`;
   const text = `${fill(d.heading)}\n\n${paragraphs.join("\n\n")}\n\n${d.cta_label}: ${link}\n\nStop these reminders: ${unsubscribe}`;
-  return { subject: fill(d.subject), html: frame(undefined, inner), text, unsubscribe };
+  return { subject: fill(d.subject), html: frame(inner), text, unsubscribe };
 }
 
 Deno.serve(async (req) => {
@@ -63,11 +81,10 @@ Deno.serve(async (req) => {
         try {
           const mail = render(d);
           const result = await sendEmail({
-            to: d.email, subject: mail.subject, html: mail.html, text: mail.text, replyTo: "support@yiego.shop", idempotencyKey: `follow-up-${d.id}`,
+            to: d.email, subject: mail.subject, html: mail.html, text: mail.text, idempotencyKey: `follow-up-${d.id}`,
             headers: { "List-Unsubscribe": `<${SELF}?u=${d.token}>, <${mail.unsubscribe}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
           });
-          ok = !result.skipped && result.ok;
-          if (!ok) error = result.skipped ? result.reason : `${result.status} ${JSON.stringify(result.payload ?? "").slice(0, 160)}`;
+          ok = result.ok; error = result.error;
         } catch (e) { error = e instanceof Error ? e.message : "send failed"; }
         await db.rpc("follow_up_finish", { p_id: d.id, p_ok: ok, p_error: error });
         if (ok) sent += 1; else failed += 1;
