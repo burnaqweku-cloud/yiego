@@ -101,3 +101,8 @@ verify_jwt = false
 # their own secret header rather than a user sign-in.
 [functions.push-send]
 verify_jwt = false
+
+# Follow-up emails: run by a scheduled job with its own secret; the open pixel and one-click
+# unsubscribe are called by mail apps with no sign-in.
+[functions.follow-up-run]
+verify_jwt = false

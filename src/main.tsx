@@ -68,3 +68,4 @@ else createRoot(rootEl).render(tree);
 void import("@/lib/appInstall").then((m) => m.trackAppOpen()).catch(() => undefined);
 // Inside the Android app: a phone that already allows notifications refreshes its address with us.
 void import("@/lib/push").then((m) => m.initPush()).catch(() => undefined);
+void import("@/lib/followUps").then((m) => m.noteFollowUpClick()).catch(() => undefined);

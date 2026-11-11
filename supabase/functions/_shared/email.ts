@@ -1,12 +1,14 @@
 const RESEND_URL = "https://api.resend.com/emails";
 const SUPPORT_EMAIL = "support@yiego.shop";
 
-export async function sendEmail(input: { to: string; subject: string; html: string; replyTo?: string; from?: string; idempotencyKey?: string }) {
+export async function sendEmail(input: { to: string; subject: string; html: string; text?: string; replyTo?: string; from?: string; idempotencyKey?: string; headers?: Record<string, string> }) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return { skipped: true as const, reason: "no_api_key" };
   const from = input.from ?? Deno.env.get("EMAIL_FROM") ?? "DataYego <noreply@datayego.com>";
   const body: Record<string, unknown> = { from, to: [input.to], subject: input.subject, html: input.html };
   if (input.replyTo) body.reply_to = input.replyTo;
+  if (input.text) body.text = input.text;
+  if (input.headers) body.headers = input.headers;
   const headers: Record<string, string> = { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" };
   // Resend replays the original send for a repeated key, so retries never duplicate an email.
   if (input.idempotencyKey) headers["Idempotency-Key"] = input.idempotencyKey.slice(0, 256);
@@ -16,7 +18,7 @@ export async function sendEmail(input: { to: string; subject: string; html: stri
 }
 
 /* ── Shared frame. `brand` swaps the DataYego header/footer for a store's. ── */
-function frame(brand: string | undefined, inner: string) {
+export function frame(brand: string | undefined, inner: string) {
   const header = brand
     ? `<tr><td style="background:#0b1512;padding:18px 28px;"><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;">${brand}</span></td></tr>`
     : `<tr><td style="background:#0b1512;padding:18px 28px;"><img src="https://datayego.com/yiego-icon-192.png" width="34" height="34" alt="DataYego" style="display:inline-block;vertical-align:middle;border-radius:9px;" /><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;margin-left:10px;">DataYego</span></td></tr>`;
