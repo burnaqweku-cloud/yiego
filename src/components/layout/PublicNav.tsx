@@ -173,6 +173,7 @@ export default function PublicNav() {
   const accountItems = (
     <>
       <MenuItem to="/account" icon={UserRound} label="Account settings" />
+      {agentLink?.to === "/agent" && <MenuItem to="/wallet" icon={Wallet} label="Wallet" />}
       <MenuItem to="/track-order" icon={Search} label="Track an order" />
       <MenuItem to="/check-mtn" icon={PhoneForwarded} label="Check MTN number" />
       {agentLink && <MenuItem to={agentLink.to} icon={Store} label={agentLink.label === "My store" ? "Agent dashboard" : agentLink.label} />}
@@ -189,7 +190,8 @@ export default function PublicNav() {
         { label: "Home", to: "/", end: true, icon: Home },
         { label: "Buy data", to: "/shop", icon: Wifi },
         { label: "Orders", to: "/orders", icon: ListOrdered },
-        { label: "Wallet", to: "/wallet", icon: Wallet },
+        // An agent's way back to their dashboard takes the Wallet slot; their wallet moves under the profile circle.
+        agentLink?.to === "/agent" ? { label: "Agent", to: "/agent", icon: Store } : { label: "Wallet", to: "/wallet", icon: Wallet },
         { label: "Support", to: "/support", icon: LifeBuoy },
       ]
     : [
