@@ -21,4 +21,9 @@ from the run, or from the "android-latest" release. By hand: `npm ci && npx cap 
 - Back button: `android/app/src/main/java/com/datayego/app/MainActivity.java`
 - Offline screen: `www/offline.html`
 
+## Signing
+The real app is signed with the key held in the `ANDROID_SIGNING` GitHub secret (one line: `<password>:<base64 PKCS12 keystore>`, alias `datayego`).
+With it, the build makes `DataYego.apk` and writes it, with `version.json`, to `public/app/` for the Get the app page.
+Without it, the build only makes `DataYego-test.apk`, which is never put on the site. The owner keeps the only backup of the key.
+
 The app ID `com.datayego.app` cannot be changed once the app is on the Play Store.
