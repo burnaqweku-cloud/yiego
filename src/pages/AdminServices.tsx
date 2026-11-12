@@ -83,7 +83,7 @@ export default function AdminServices() {
         <Panel title="Stock and prices" icon={GraduationCap}>
           <Rows empty="No services yet.">
             {(data?.products ?? []).map((p) => <Row key={p.code}
-              primary={<>{p.name} {!p.is_active && <Pill tone="muted">hidden</Pill>}{p.left === 0 ? <Pill tone="bad">sold out</Pill> : p.left <= p.low_stock_at ? <Pill tone="warn">low</Pill> : null}</>}
+              primary={<>{p.name} {!p.is_active && <Pill tone="muted">hidden</Pill>}{p.left === 0 ? <Pill tone="bad">out of stock</Pill> : p.left <= p.low_stock_at ? <Pill tone="warn">low</Pill> : null}</>}
               secondary={<>{p.left} left{p.held > 0 ? ` · ${p.held} held for buyers paying now` : ""} · {p.sold_today} sold today · customers {formatGHS(Number(p.customer_price))} · agents {formatGHS(Number(p.agent_price))}</>}
               right={data?.can_edit ? <span className="flex gap-1.5"><Button size="sm" onClick={() => openAdd(p)}><PackagePlus size={14} />Add stock</Button><Button size="sm" variant="ghost" onClick={() => setEdit({ ...p })}>Edit</Button></span> : `${p.left}`} />)}
           </Rows>

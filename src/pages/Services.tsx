@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, GraduationCap, PhoneCall, Plus, UserPlus, Wallet } from "lucide-react";
+import { ChevronDown, GraduationCap, Minus, PhoneCall, Plus, UserPlus, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import Seo from "@/components/seo/Seo";
 import { Card } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
    moment payment is confirmed, sent by SMS and email, and kept under "Your checkers". */
 
 type Pay = "wallet" | "paystack";
+const MAX_QUANTITY = 100;
 const validPhone = (v: string) => /^0\d{9}$/.test(v.replace(/\D/g, ""));
 
 function BuySheet({ product, onClose, onBought }: { product: ServiceProduct | null; onClose: () => void; onBought: () => void }) {
@@ -47,7 +48,7 @@ function BuySheet({ product, onClose, onBought }: { product: ServiceProduct | nu
   const base = Math.round(product.price * quantity * 100) / 100;
   const fee = pay === "paystack" ? serviceFee(base) : 0;
   const short = pay === "wallet" && balance < base;
-  const maxQuantity = Math.max(1, Math.min(5, product.left));
+  const waits = quantity > product.left;
 
   const submit = async () => {
     if (!validPhone(phone)) { toast.error("Enter the 10-digit Ghana number that should get the SMS."); return; }
@@ -67,19 +68,21 @@ function BuySheet({ product, onClose, onBought }: { product: ServiceProduct | nu
 
   return (
     <Modal open onClose={onClose} label={product.name}>
-      <FlowHeader title={order ? "Here you go" : product.name} subtitle={order ? undefined : `${formatGHS(product.price)} each`} onClose={onClose} />
-      {busy ? <ProcessingView label={pay === "wallet" ? "Getting your checker…" : "Opening the payment page…"} /> : order ? (
+      <FlowHeader title={order ? (order.status === "delivered" ? "Here you go" : "Order received") : product.name} subtitle={order ? undefined : `${formatGHS(product.price)} each`} onClose={onClose} />
+      {busy ? <ProcessingView label={pay === "wallet" ? "Placing your order…" : "Opening the payment page…"} /> : order ? (
         <div className="space-y-4 px-5 pb-6 pt-5"><OrderResult order={order} /><button type="button" className="onyx-btn-primary w-full" onClick={onClose}>Done</button></div>
       ) : (
         <div className="space-y-4 px-5 pb-6 pt-5">
           <div>
             <p className="text-[13px] font-semibold text-foreground">How many?</p>
-            <div className="mt-2 flex gap-2" role="radiogroup" aria-label="How many">
-              {Array.from({ length: maxQuantity }, (_, i) => i + 1).map((n) => (
-                <button key={n} type="button" role="radio" aria-checked={quantity === n} onClick={() => setQuantity(n)}
-                  className={cn("h-11 min-w-11 flex-1 rounded-xl border text-[15px] font-semibold transition-colors", quantity === n ? "border-primary-glow bg-primary/[0.14] text-foreground" : "border-white/[0.1] text-muted-foreground")}>{n}</button>
-              ))}
+            <div className="mt-2 flex items-center gap-2">
+              <button type="button" aria-label="One fewer" disabled={quantity <= 1} onClick={() => setQuantity(Math.max(1, quantity - 1))} className="onyx-iconbtn h-12 w-12 shrink-0 rounded-xl disabled:opacity-40"><Minus size={18} /></button>
+              <input className="onyx-field h-12 w-full text-center text-[17px] font-semibold" inputMode="numeric" aria-label="How many" value={String(quantity)}
+                onChange={(e) => setQuantity(Math.min(MAX_QUANTITY, Math.max(1, Number(e.target.value.replace(/\D/g, "")) || 1)))} />
+              <button type="button" aria-label="One more" disabled={quantity >= MAX_QUANTITY} onClick={() => setQuantity(Math.min(MAX_QUANTITY, quantity + 1))} className="onyx-iconbtn h-12 w-12 shrink-0 rounded-xl disabled:opacity-40"><Plus size={18} /></button>
             </div>
+            {waits && <p role="status" className="mt-2 rounded-xl border border-amber/30 bg-amber/[0.08] px-3 py-2 text-[12.5px] leading-relaxed text-foreground">
+              {product.left === 0 ? "We're out of stock right now." : `We have ${product.left} ready right now.`} You can still order: your {quantity > 1 ? "checkers are" : "checker is"} sent by SMS and shown here as soon as we restock. You won't need to pay again.</p>}
           </div>
           <label className="block"><span className="text-[13px] font-semibold text-foreground">Phone number for the SMS</span>
             <input className="onyx-field mt-2 w-full" inputMode="numeric" autoComplete="tel" placeholder="024 000 0000" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^\d ]/g, "").slice(0, 13))} />
@@ -166,13 +169,13 @@ export default function Services() {
         {products === null ? <p className="mt-4 text-[13.5px] text-muted-foreground">Loading…</p> : checkers.length === 0 ? <p className="mt-4 text-[13.5px] text-muted-foreground">Result checkers aren't available right now. Please check back soon.</p> : (
           <ul className="mt-4 space-y-2.5">
             {checkers.map((p) => (
-              <li key={p.code} className={cn("rounded-2xl border border-white/[0.09] p-4", !p.in_stock && "opacity-70")}>
+              <li key={p.code} className="rounded-2xl border border-white/[0.09] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0"><p className="text-[15px] font-semibold text-foreground">{p.name}</p><p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground">{p.blurb}</p></div>
                   <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-semibold", p.in_stock ? "bg-primary/[0.14] text-primary-glow" : "bg-white/[0.06] text-muted-foreground")}>{p.in_stock ? "In stock" : "Sold out"}</span>
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-3"><span className="font-display text-[20px] font-semibold text-foreground">{formatGHS(p.price)}</span>
-                  <button type="button" disabled={!p.in_stock} onClick={() => setBuying(p)} className="onyx-btn-primary px-6 py-2.5 text-[14px] disabled:pointer-events-none disabled:opacity-40">Buy</button></div>
+                  <button type="button" onClick={() => setBuying(p)} className="onyx-btn-primary px-6 py-2.5 text-[14px]">Buy</button></div>
               </li>
             ))}
           </ul>

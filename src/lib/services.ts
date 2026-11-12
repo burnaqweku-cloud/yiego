@@ -16,10 +16,9 @@ export interface ServiceOrder {
 }
 
 const MESSAGES: Record<string, string> = {
-  sold_out: "That one just sold out. Please check back shortly.",
   insufficient_balance: "Your wallet balance isn't enough. Top up, or pay with mobile money or card.",
   phone_invalid: "That phone number doesn't look right. Use a 10-digit Ghana number.",
-  quantity_invalid: "Choose between 1 and 5.",
+  quantity_invalid: "Choose between 1 and 100.",
   sign_in_required: "Sign in to pay from your wallet.",
   service_unavailable: "This isn't available right now.",
 };

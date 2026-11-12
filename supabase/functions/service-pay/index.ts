@@ -14,9 +14,8 @@ const SITE = "https://datayego.com";
 const PAYSTACK = "https://api.paystack.co";
 
 const FRIENDLY: Record<string, string> = {
-  sold_out: "That one just sold out. Please check back shortly.",
   service_unavailable: "This isn't available right now.",
-  quantity_invalid: "Choose between 1 and 5.",
+  quantity_invalid: "Choose between 1 and 100.",
   phone_invalid: "That phone number doesn't look right. Use a 10-digit Ghana number.",
   email_invalid: "That email doesn't look right. Fix it, or leave it empty.",
 };
@@ -86,8 +85,10 @@ Deno.serve(async (req) => {
       for (const reference of ((work?.check ?? []) as string[]).slice(0, 25)) { if ((await checkPayment(db, reference)) === "delivered") confirmed += 1; }
       // Anything the checks above just delivered is picked up on the next run (two minutes at most); the buyer already sees it on screen.
       for (const o of (work?.deliver ?? []) as Delivered[]) {
+        // A few checkers fit in a text; a big order gets a link to all of them instead of a wall of numbers.
         const list = o.pins.map((p, i) => `${o.pins.length > 1 ? `${i + 1}) ` : ""}Serial ${p.serial} PIN ${p.pin}`).join("; ");
-        const sms = await sendSms(o.phone, `DataYego: your ${o.name}. ${list}. Order ${o.reference}.`.slice(0, 640));
+        const text = o.pins.length <= 3 ? `DataYego: your ${o.name}. ${list}. Order ${o.reference}.` : `DataYego: your ${o.pins.length} x ${o.name} are ready. See all serial numbers and PINs here: ${SITE}/services/order/${o.token}`;
+        const sms = await sendSms(o.phone, text.slice(0, 640));
         const email = await sendEmail(o);
         await db.rpc("service_outbox_done", { p_order: o.id, p_sms: sms, p_email: email });
         sent += 1;
