@@ -5,7 +5,7 @@ import { Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid } from "@/comp
 import { adminDatabase } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 
-/* Read-only history behind the two Finance cards: supplier top-ups, and money moved in/out by the master admin
+/* Read-only history behind the two Finance cards: supplier top-ups (and result-checker stock bought), and money moved in/out by the master admin
    (business costs, capital returned, capital put in). Reads existing ledger entries; never changes them. */
 
 interface Entry { id: string; created_by: string | null; kind: string; occurred_at: string; amount: number; note: string | null; metadata: Record<string, unknown> | null; supplier_id: string | null; postings: { account: string; amount: number }[] }
@@ -32,7 +32,7 @@ export default function AdminFinanceHistory() {
 
   useEffect(() => { (async () => {
     setLoading(true); setError(false);
-    const kinds = topups ? ["supplier_topup"] : ["master_adjustment", "partner_capital"];
+    const kinds = topups ? ["supplier_topup", "service_stock"] : ["master_adjustment", "partner_capital"];
     const [en, rev, su, who] = await Promise.all([
       db().from("finance_entries").select("id, created_by, kind, occurred_at, amount, note, metadata, supplier_id, postings:finance_postings(account, amount)").in("kind", kinds).order("occurred_at", { ascending: false }).limit(1000),
       db().from("finance_entries").select("reverses").not("reverses", "is", null).limit(5000),
@@ -51,11 +51,11 @@ export default function AdminFinanceHistory() {
   const shown = useMemo(() => topups || filter === "all" ? live : live.filter((e) => moneyMoveType(e) === filter), [live, filter, topups]);
   const total = (f: (e: Entry) => boolean, v: (e: Entry) => number) => live.filter(f).reduce((a, e) => a + v(e), 0);
   const fee = (e: Entry) => post(e, "supplier_topup_fees");
-  const into = (e: Entry) => Number(e.postings.find((p) => p.account.startsWith("float_"))?.amount ?? e.amount);
+  const into = (e: Entry) => Number(e.postings.find((p) => p.account.startsWith("float_") || p.account === "stock_services")?.amount ?? e.amount);
   const abs = (e: Entry) => Math.abs(Number(e.amount));
 
   return <div className="space-y-5">
-    <AdminPageHeader title={topups ? "Top-up history" : "Money in & out history"} description={topups ? "Every supplier top-up, its charges and who recorded it." : "Business costs, capital returned and capital put in."} />
+    <AdminPageHeader title={topups ? "Top-up history" : "Money in & out history"} description={topups ? "Every supplier top-up and result-checker stock purchase, its charges and who recorded it." : "Business costs, capital returned and capital put in."} />
     {error && <div role="alert" className="border-l-2 border-danger bg-danger/10 p-4 text-sm text-danger">Records could not be loaded.</div>}
     {topups ? <StatGrid cols={3}>
       <Stat loading={loading} label="Topped up" value={<Money value={total(() => true, into)} />} note={`${live.length} top-ups`} />
@@ -71,7 +71,7 @@ export default function AdminFinanceHistory() {
       <Rows empty={loading ? "Loading…" : "Nothing recorded yet."}>
         {shown.map((e) => {
           const by = e.created_by ? admins[e.created_by] ?? "Admin" : "System";
-          if (topups) return <Row key={e.id} primary={suppliers[e.supplier_id ?? ""] ?? "Supplier"} secondary={`${when(e.occurred_at)} · ${by}${e.note ? ` · ${e.note}` : ""}`}
+          if (topups) return <Row key={e.id} primary={e.kind === "service_stock" ? "Result checker stock" : suppliers[e.supplier_id ?? ""] ?? "Supplier"} secondary={`${when(e.occurred_at)} · ${by}${e.note ? ` · ${e.note}` : ""}`}
             right={formatGHS(into(e))} rightNote={fee(e) ? `+ ${formatGHS(fee(e))} charges` : "no charges"} />;
           const t = moneyMoveType(e);
           return <Row key={e.id} primary={e.note || LABEL[t]} secondary={`${when(e.occurred_at)} · ${by}`}
