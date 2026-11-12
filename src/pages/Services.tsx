@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
    moment payment is confirmed, sent by SMS and email, and kept under "Your checkers". */
 
 type Pay = "wallet" | "paystack";
-const MAX_QUANTITY = 100;
+const MAX_QUANTITY = 1000;
 const validPhone = (v: string) => /^0\d{9}$/.test(v.replace(/\D/g, ""));
 
 function BuySheet({ product, onClose, onBought }: { product: ServiceProduct | null; onClose: () => void; onBought: () => void }) {
@@ -48,7 +48,6 @@ function BuySheet({ product, onClose, onBought }: { product: ServiceProduct | nu
   const base = Math.round(product.price * quantity * 100) / 100;
   const fee = pay === "paystack" ? serviceFee(base) : 0;
   const short = pay === "wallet" && balance < base;
-  const waits = quantity > product.left;
 
   const submit = async () => {
     if (!validPhone(phone)) { toast.error("Enter the 10-digit Ghana number that should get the SMS."); return; }
@@ -81,8 +80,6 @@ function BuySheet({ product, onClose, onBought }: { product: ServiceProduct | nu
                 onChange={(e) => setQuantity(Math.min(MAX_QUANTITY, Math.max(1, Number(e.target.value.replace(/\D/g, "")) || 1)))} />
               <button type="button" aria-label="One more" disabled={quantity >= MAX_QUANTITY} onClick={() => setQuantity(Math.min(MAX_QUANTITY, quantity + 1))} className="onyx-iconbtn h-12 w-12 shrink-0 rounded-xl disabled:opacity-40"><Plus size={18} /></button>
             </div>
-            {waits && <p role="status" className="mt-2 rounded-xl border border-amber/30 bg-amber/[0.08] px-3 py-2 text-[12.5px] leading-relaxed text-foreground">
-              {product.left === 0 ? "We're out of stock right now." : `We have ${product.left} ready right now.`} You can still order: your {quantity > 1 ? "checkers are" : "checker is"} sent by SMS and shown here as soon as we restock. You won't need to pay again.</p>}
           </div>
           <label className="block"><span className="text-[13px] font-semibold text-foreground">Phone number for the SMS</span>
             <input className="onyx-field mt-2 w-full" inputMode="numeric" autoComplete="tel" placeholder="024 000 0000" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^\d ]/g, "").slice(0, 13))} />
@@ -172,7 +169,6 @@ export default function Services() {
               <li key={p.code} className="rounded-2xl border border-white/[0.09] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0"><p className="text-[15px] font-semibold text-foreground">{p.name}</p><p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground">{p.blurb}</p></div>
-                  <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-semibold", p.in_stock ? "bg-primary/[0.14] text-primary-glow" : "bg-white/[0.06] text-muted-foreground")}>{p.in_stock ? "In stock" : "Sold out"}</span>
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-3"><span className="font-display text-[20px] font-semibold text-foreground">{formatGHS(p.price)}</span>
                   <button type="button" onClick={() => setBuying(p)} className="onyx-btn-primary px-6 py-2.5 text-[14px]">Buy</button></div>

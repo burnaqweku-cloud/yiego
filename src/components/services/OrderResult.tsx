@@ -13,7 +13,7 @@ export default function OrderResult({ order }: { order: ServiceOrder }) {
       <p className="text-[12.5px] leading-relaxed text-muted-foreground">Keep these safe. Anyone with the serial number and PIN can use the checker.</p>
     </div>
   );
-  const text = order.status === "paid_waiting_stock" ? ["Payment received", `We're restocking. Your ${order.quantity > 1 ? `${order.quantity} checkers` : "checker"} will appear here and arrive by SMS as soon as ${order.quantity > 1 ? "they're" : "it's"} ready. You don't need to pay again.`]
+  const text = order.status === "paid_waiting_stock" ? ["Pending", `Payment received. We're working on your order: your ${order.quantity > 1 ? `${order.quantity} checkers` : "checker"} will appear here and arrive by SMS shortly. You don't need to pay again.`]
     : order.status === "refunded" ? ["Refunded", "This order was refunded."]
     : ["Waiting for your payment", "Once your payment goes through, your checker appears here straight away. If you've already paid, give it a moment."];
   return (

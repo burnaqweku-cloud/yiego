@@ -20,7 +20,7 @@ create table if not exists phase1.service_stock_batches (
 create table if not exists phase1.service_orders (
   id uuid primary key default gen_random_uuid(), reference text not null unique,
   token uuid not null default gen_random_uuid() unique,
-  product_code text not null references phase1.service_products(code), quantity int not null check (quantity between 1 and 100),
+  product_code text not null references phase1.service_products(code), quantity int not null check (quantity between 1 and 1000),
   unit_price numeric(10,2) not null, amount numeric(12,2) not null, fee_amount numeric(12,2) not null default 0, cost_amount numeric(12,2),
   user_id uuid, guest_email text, phone text not null, device_id text,
   agent_id uuid, agent_price numeric(10,2), agent_margin numeric(12,2), agent_self boolean not null default false,
@@ -187,7 +187,7 @@ declare p phase1.service_products; o phase1.service_orders; v_phone text := phas
 begin
   select * into p from phase1.service_products where code = p_product and is_active;
   if p.code is null then raise exception 'service_unavailable'; end if;
-  if p_qty is null or p_qty < 1 or p_qty > 100 then raise exception 'quantity_invalid'; end if;
+  if p_qty is null or p_qty < 1 or p_qty > 1000 then raise exception 'quantity_invalid'; end if;
   if v_phone is null then raise exception 'phone_invalid'; end if;
   if p_email is not null and p_email <> '' and p_email !~ '^[^\s@]+@[^\s@]+\.[^\s@]+$' then raise exception 'email_invalid'; end if;
   v_fee := case when p_method = 'paystack' then round(p.customer_price * p_qty * 0.04, 2) else 0 end;

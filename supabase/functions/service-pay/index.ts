@@ -15,7 +15,7 @@ const PAYSTACK = "https://api.paystack.co";
 
 const FRIENDLY: Record<string, string> = {
   service_unavailable: "This isn't available right now.",
-  quantity_invalid: "Choose between 1 and 100.",
+  quantity_invalid: "Choose between 1 and 1,000.",
   phone_invalid: "That phone number doesn't look right. Use a 10-digit Ghana number.",
   email_invalid: "That email doesn't look right. Fix it, or leave it empty.",
 };
