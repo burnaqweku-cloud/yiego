@@ -95,18 +95,26 @@ async function registerAfa(db: any, r: Registration, key: string): Promise<strin
 }
 /** A sandbox key reports a pretend wallet; that must never reach Finance. */
 const isTestKey = (key: string) => /^otess_test_/i.test(key);
-/* A registration OtessData accepted but had not finished: ask how it ended (GET /orders/:id, by their order ID or our reference). */
+/* A registration OtessData accepted but had not finished: ask how it ended (GET /orders/:id). Their order ID is tried first, then our own
+   reference; what they answered is kept on the registration so an admin can see why one is still waiting. */
 // deno-lint-ignore no-explicit-any
-async function checkAfa(db: any, orderId: string, lookup: string, key: string): Promise<void> {
-  try {
-    const res = await fetch(`${(Deno.env.get("OTESSDATA_BASE_URL") ?? "https://www.otessdata.app/api/v1").replace(/\/$/, "")}/orders/${encodeURIComponent(lookup)}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(20000) });
-    const payload = await res.json().catch(() => null);
-    const state = String(payload?.data?.status ?? "").toLowerCase();
-    if (!res.ok || payload?.success !== true || !["delivered", "completed", "failed"].includes(state)) return;
-    const cost = Number(payload.data.amountCharged ?? payload.data.amount);
-    await db.rpc("service_registration_result", { p_order: orderId, p_outcome: state === "failed" ? "rejected" : "done", p_cost: Number.isFinite(cost) ? cost : null, p_supplier_reference: payload.data.orderId ? String(payload.data.orderId) : null,
-      p_note: state === "failed" ? "OtessData says this registration failed." : null, p_reply: { http: res.status, body: payload }, p_balance: null });
-  } catch { /* try again on the next run */ }
+async function checkAfa(db: any, orderId: string, lookups: string[], key: string): Promise<void> {
+  const seen: Record<string, unknown>[] = [];
+  for (const lookup of lookups.filter(Boolean)) {
+    try {
+      const res = await fetch(`${(Deno.env.get("OTESSDATA_BASE_URL") ?? "https://www.otessdata.app/api/v1").replace(/\/$/, "")}/orders/${encodeURIComponent(lookup)}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(20000) });
+      const payload = await res.json().catch(() => null);
+      const state = String(payload?.data?.status ?? "").toLowerCase();
+      seen.push({ lookup, http: res.status, status: state || null, message: payload?.message ?? payload?.error ?? null });
+      if (!res.ok || payload?.success !== true) continue;
+      if (!["delivered", "completed", "failed"].includes(state)) break;
+      const cost = Number(payload.data.amountCharged ?? payload.data.amount);
+      await db.rpc("service_registration_result", { p_order: orderId, p_outcome: state === "failed" ? "rejected" : "done", p_cost: Number.isFinite(cost) ? cost : null, p_supplier_reference: payload.data.orderId ? String(payload.data.orderId) : null,
+        p_note: state === "failed" ? "OtessData says this registration failed." : null, p_reply: { http: res.status, body: payload }, p_balance: null });
+      return;
+    } catch (e) { seen.push({ lookup, error: e instanceof Error ? e.message : String(e) }); }
+  }
+  await db.from("service_registrations").update({ note: `Sent. Waiting for OtessData to finish it. Last check: ${seen.map((x) => `${x.lookup} -> ${x.http ?? "no answer"}${x.status ? ` ${x.status}` : ""}`).join("; ")}`.slice(0, 300) }).eq("order_id", orderId).eq("status", "submitted");
 }
 
 async function sendEmail(o: Delivered): Promise<string> {
@@ -163,7 +171,7 @@ Deno.serve(async (req) => {
       if (afaKey) {
         const { data: open } = await db.from("service_registrations").select("order_id, supplier_reference, service_orders(reference)").eq("status", "submitted").limit(10);
         // deno-lint-ignore no-explicit-any
-        for (const s of (open ?? []) as any[]) await checkAfa(db, s.order_id, s.supplier_reference ?? s.service_orders?.reference ?? "", afaKey);
+        for (const s of (open ?? []) as any[]) await checkAfa(db, s.order_id, [s.supplier_reference, s.service_orders?.reference], afaKey);
       }
       return json({ confirmed, sent, texts, registered });
     }
