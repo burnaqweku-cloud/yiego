@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
       for (const o of (work?.deliver ?? []) as Delivered[]) {
         // A few checkers fit in a text; a big order points to the email instead. The network drops texts with links or the word "data", so neither appears here.
         const list = o.pins.map((p, i) => `${o.pins.length > 1 ? `${i + 1}) ` : ""}Serial ${p.serial} PIN ${p.pin}`).join("; ");
-        const text = o.pins.length <= 3 ? `DY Services: your ${o.name}. ${list}. Order ${o.reference}.` : `DY Services: your ${o.pins.length} ${o.name}s are ready. ${o.email ? "Open the email we sent you" : `Track order ${o.reference} on our site`} to see every serial number and PIN.`;
+        const text = o.pins.length <= 3 ? `DY Services: your ${o.name}. ${list}. Order ${o.reference}.` : `DY Services: your ${o.pins.length} ${o.name}s are ready. ${o.email && !/@guest\.datayego\.com$/i.test(o.email) ? "Open the email we sent you" : `Track order ${o.reference} on our site`} to see every serial number and PIN.`;
         // SMS for services has its own switch and sender ID (Admin → DY Services); off means on screen and by email only.
         const sms = work?.sms?.enabled ? await sendSms(o.phone, text.slice(0, 640), String(work.sms.sender ?? "Dyservice")) : "off";
         const email = await sendEmail(o);
