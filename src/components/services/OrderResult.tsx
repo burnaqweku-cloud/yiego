@@ -2,8 +2,20 @@ import { CheckCircle2, Clock3 } from "lucide-react";
 import PinCard from "@/components/services/PinCard";
 import type { ServiceOrder } from "@/lib/services";
 
-/* What a buyer sees for one service order: the PINs, or what is still happening. */
+/* What a buyer sees for one service order: the PINs (or the AFA result), or what is still happening. */
 export default function OrderResult({ order, sms = false }: { order: ServiceOrder; sms?: boolean }) {
+  if (order.kind === "afa") {
+    const number = order.afa?.phone ?? order.phone;
+    const [title, text, done] = order.status === "delivered" ? ["Registered", `${number} is now on MTN AFA${order.afa?.name ? `, in the name of ${order.afa.name}` : ""}.`, true]
+      : order.status === "processing" ? ["Registration in progress", `Payment received. We're registering ${number} on MTN AFA. This page updates when it's done${sms ? " and we'll text you" : ", and we'll email you"}. You don't need to pay again.`, false]
+      : order.status === "refunded" ? ["Refunded", "This registration didn't go through and the payment was refunded.", false]
+      : ["Waiting for your payment", "Once your payment goes through, we start the registration. If you've already paid, give it a moment.", false];
+    const Icon = done ? CheckCircle2 : Clock3;
+    return (
+      <div className="flex items-start gap-3"><Icon size={22} className={done ? "mt-0.5 shrink-0 text-primary-glow" : "mt-0.5 shrink-0 text-amber"} aria-hidden="true" />
+        <div className="min-w-0"><p className="text-[15px] font-semibold text-foreground">{title}</p><p className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">{text}</p><p className="mt-1 text-[12px] text-faint-foreground">{order.name} · order {order.reference}</p></div></div>
+    );
+  }
   if (order.status === "delivered") return (
     <div className="space-y-3">
       <div className="flex items-start gap-3"><CheckCircle2 size={22} className="mt-0.5 shrink-0 text-primary-glow" aria-hidden="true" />

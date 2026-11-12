@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { GraduationCap, PackagePlus, RefreshCw } from "lucide-react";
+import { GraduationCap, PackagePlus, RefreshCw, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import SmsSendersPanel from "@/components/admin/SmsSendersPanel";
@@ -9,15 +9,19 @@ import Modal from "@/components/ui/modal";
 import { Switch } from "@/components/ui/switch";
 import { formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
-import { addServiceStock, loadAdminServices, recordServiceRefund, refundServiceToWallet, refundServiceViaPaystack, setServiceProduct, type AddStockResult, type AdminServiceOrder, type AdminServiceProduct, type AdminServices as Data } from "@/lib/services";
+import { addServiceStock, loadAdminServices, markRegistrationDone, recordServiceRefund, refundServiceToWallet, refundServiceViaPaystack, setServiceProduct, type AddStockResult, type AdminServiceOrder, type AdminRegistration, type AdminServiceProduct, type AdminServices as Data } from "@/lib/services";
 
 /* DY Services in admin: the stock of result-checker PINs, prices, sales and refunds.
    PINs are never shown here after they are added; a PIN is only ever revealed to the person who bought it. */
 
 const PAID_FROM = [["bank", "Bank"], ["outside_funding", "My own money (adds to capital)"], ["kora_held", "Kora balance"]] as const;
 const STATUS: Record<string, [string, "good" | "warn" | "bad" | "muted"]> = {
-  delivered: ["delivered", "good"], paid_waiting_stock: ["paid, waiting for stock", "bad"], refunded: ["refunded", "muted"], awaiting_payment: ["not paid", "muted"], expired: ["not paid", "muted"], cancelled: ["not paid", "muted"],
+  delivered: ["delivered", "good"], processing: ["being registered", "warn"], paid_waiting_stock: ["paid, waiting for stock", "bad"], refunded: ["refunded", "muted"], awaiting_payment: ["not paid", "muted"], expired: ["not paid", "muted"], cancelled: ["not paid", "muted"],
 };
+const STEP: Record<AdminRegistration["step"], [string, "good" | "warn" | "bad" | "muted"]> = {
+  queued: ["to register", "warn"], sending: ["sending now", "warn"], submitted: ["sent, waiting for result", "warn"], unclear: ["check with supplier", "bad"], rejected: ["not sent: refund", "bad"], done: ["registered", "good"], cancelled: ["refunded", "muted"],
+};
+const copyText = (text: string) => { void navigator.clipboard.writeText(text).then(() => toast.success("Copied."), () => toast.error("Couldn't copy.")); };
 
 export default function AdminServices() {
   const [data, setData] = useState<Data | null>(null);
@@ -27,6 +31,7 @@ export default function AdminServices() {
   const [result, setResult] = useState<AddStockResult | null>(null); const [saving, setSaving] = useState(false);
   const [edit, setEdit] = useState<AdminServiceProduct | null>(null);
   const [order, setOrder] = useState<AdminServiceOrder | null>(null); const [reason, setReason] = useState(""); const [ref, setRef] = useState("");
+  const [reg, setReg] = useState<AdminRegistration | null>(null); const [regCost, setRegCost] = useState(""); const [regFrom, setRegFrom] = useState<string>("bank"); const [regNote, setRegNote] = useState("");
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -56,6 +61,18 @@ export default function AdminServices() {
     if (r.error || !r.data) return toast.error("Couldn't save. The agent price can't be higher than the customer price.");
     toast.success("Saved."); setEdit(null); void load();
   };
+  const openReg = (r: AdminRegistration) => { setReg(r); setRegCost(""); setRegFrom("bank"); setRegNote(""); };
+  const finishReg = async () => {
+    if (!reg) return;
+    const value = Number(regCost);
+    if (regCost === "" || !Number.isFinite(value) || value < 0) return toast.error("Enter what this registration cost you.");
+    setSaving(true);
+    const r = await markRegistrationDone(reg.id, value, regFrom, regNote);
+    setSaving(false);
+    if (r.error) return toast.error(/registration_sending/.test(r.error.message ?? "") ? "This one is being sent right now. Try again in a few minutes." : "Couldn't save. Only the owner can do this.");
+    if (r.data !== "delivered") return toast.error(`This order is already ${r.data ?? "closed"}.`);
+    toast.success("Marked as registered. The buyer has been told."); setReg(null); void load();
+  };
   const refund = async (how: "wallet" | "paystack" | "manual") => {
     if (!order) return;
     if (!reason.trim()) return toast.error("Say why, in a few words.");
@@ -64,7 +81,7 @@ export default function AdminServices() {
     const r = how === "wallet" ? await refundServiceToWallet(order.id, reason.trim()) : how === "manual" ? await recordServiceRefund(order.id, ref.trim(), reason.trim()) : await refundServiceViaPaystack(order.id, reason.trim());
     setSaving(false);
     const message = "error" in r && r.error ? (typeof r.error === "string" ? r.error : r.error.message) : null;
-    if (message) return toast.error(/no_wallet_for_guest/.test(message) ? "This buyer has no account, so there is no wallet to refund to." : /[_]/.test(message) ? "Couldn't refund. Only the owner can refund." : message);
+    if (message) return toast.error(/registration_sending/.test(message) ? "This registration is being sent right now. Try again in a few minutes." : /no_wallet_for_guest/.test(message) ? "This buyer has no account, so there is no wallet to refund to." : /[_]/.test(message) ? "Couldn't refund. Only the owner can refund." : message);
     toast.success("Refunded."); setOrder(null); void load();
   };
 
@@ -72,7 +89,7 @@ export default function AdminServices() {
   const stockValue = (data?.products ?? []).reduce((s, p) => s + Number(p.stock_value), 0);
   return (
     <div className="space-y-5">
-      <AdminPageHeader title="DY Services" description="Result checkers sold from your own stock of PINs. Each PIN is sold once, and only the buyer ever sees it."
+      <AdminPageHeader title="DY Services" description="Result checkers sold from your own stock of PINs, and MTN AFA registrations. Each PIN is sold once, and only the buyer ever sees it."
         action={<Button variant="ghost" size="sm" onClick={() => void load()} disabled={busy} aria-label="Refresh" title="Refresh"><RefreshCw size={14} className={busy ? "animate-spin" : ""} /></Button>} />
       {failed ? <p role="alert" className="text-[13px] text-danger">Couldn’t load DY Services. Tap refresh.</p> : <>
         <StatGrid cols={4}>
@@ -84,12 +101,25 @@ export default function AdminServices() {
 
         <Panel title="Stock and prices" icon={GraduationCap}>
           <Rows empty="No services yet.">
-            {(data?.products ?? []).map((p) => <Row key={p.code}
+            {(data?.products ?? []).map((p) => p.kind === "afa" ? <Row key={p.code}
+              primary={<>{p.name} {!p.is_active && <Pill tone="muted">hidden</Pill>}</>}
+              secondary={<>no stock needed · {p.sold_today} registered today · customers {formatGHS(Number(p.customer_price))} · agents {formatGHS(Number(p.agent_price))}</>}
+              right={data?.can_edit ? <Button size="sm" variant="ghost" onClick={() => setEdit({ ...p })}>Edit</Button> : undefined} />
+            : <Row key={p.code}
               primary={<>{p.name} {!p.is_active && <Pill tone="muted">hidden</Pill>}{p.left === 0 ? <Pill tone="bad">out of stock</Pill> : p.left <= p.low_stock_at ? <Pill tone="warn">low</Pill> : null}</>}
               secondary={<>{p.left} left{p.held > 0 ? ` · ${p.held} held for buyers paying now` : ""} · {p.sold_today} sold today · customers {formatGHS(Number(p.customer_price))} · agents {formatGHS(Number(p.agent_price))}</>}
               right={data?.can_edit ? <span className="flex gap-1.5"><Button size="sm" onClick={() => openAdd(p)}><PackagePlus size={14} />Add stock</Button><Button size="sm" variant="ghost" onClick={() => setEdit({ ...p })}>Edit</Button></span> : `${p.left}`} />)}
           </Rows>
         </Panel>
+
+        {(data?.registrations?.length ?? 0) > 0 && <Panel title="AFA registrations" icon={UserPlus} note={(data?.registering ?? 0) > 0 ? `${data?.registering} waiting` : "all done"}>
+          <Rows empty="No AFA orders yet.">
+            {(data?.registrations ?? []).map((r) => { const [label, tone] = r.status === "refunded" ? STEP.cancelled : STEP[r.step] ?? [r.step, "muted"]; return <Row key={r.id} onClick={() => openReg(r)}
+              primary={<>{r.details.full_name ?? "AFA"} · {r.details.afa_phone ?? r.phone} <Pill tone={tone}>{label}</Pill></>}
+              secondary={`${r.reference} · ${r.payment_method === "wallet" ? "wallet" : "MoMo/card"} · ${formatAdminDate(r.paid_at ?? r.step_at)}${r.note ? ` · ${r.note}` : ""}`}
+              right={formatGHS(Number(r.amount))} rightNote={r.cost_amount != null ? `profit ${formatGHS(Number(r.amount) - Number(r.cost_amount))}` : undefined} />; })}
+          </Rows>
+        </Panel>}
 
         <Panel title="Orders" note="paid orders, newest first">
           <Rows empty="No sales yet.">
@@ -137,7 +167,7 @@ export default function AdminServices() {
             <Field label="Customer price (GH₵)"><input className={inputCls} inputMode="decimal" value={String(edit.customer_price)} onChange={(e) => setEdit({ ...edit, customer_price: Number(e.target.value.replace(/[^\d.]/g, "")) || 0 })} /></Field>
             <Field label="Agent price (GH₵)"><input className={inputCls} inputMode="decimal" value={String(edit.agent_price)} onChange={(e) => setEdit({ ...edit, agent_price: Number(e.target.value.replace(/[^\d.]/g, "")) || 0 })} /></Field>
           </div>
-          <Field label="Warn me when this many are left"><input className={inputCls} inputMode="numeric" value={String(edit.low_stock_at)} onChange={(e) => setEdit({ ...edit, low_stock_at: Number(e.target.value.replace(/\D/g, "")) || 0 })} /></Field>
+          {edit.kind !== "afa" && <Field label="Warn me when this many are left"><input className={inputCls} inputMode="numeric" value={String(edit.low_stock_at)} onChange={(e) => setEdit({ ...edit, low_stock_at: Number(e.target.value.replace(/\D/g, "")) || 0 })} /></Field>}
           <label className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.08] px-3 py-2 text-[12.5px] text-foreground">Show it for sale<Switch checked={edit.is_active} onCheckedChange={(v) => setEdit({ ...edit, is_active: v })} aria-label="Show it for sale" /></label>
           <div className="flex justify-end gap-2 pt-1"><Button variant="ghost" size="sm" onClick={() => setEdit(null)}>Cancel</Button><Button size="sm" onClick={() => void saveProduct()}>Save</Button></div>
         </div>}
@@ -146,13 +176,37 @@ export default function AdminServices() {
       <Modal open={order !== null} onClose={() => setOrder(null)} label="Refund">
         {order && <div className="w-[min(94vw,460px)] space-y-2.5 p-5">
           <h2 className="text-[16px] font-semibold text-foreground">Refund {order.reference}</h2>
-          <p className="text-[12px] leading-5 text-faint-foreground">{order.quantity > 1 ? `${order.quantity} × ` : ""}{order.name} · {formatGHS(Number(order.amount))}{Number(order.fee_amount) > 0 ? ` + ${formatGHS(Number(order.fee_amount))} fee` : ""} · {order.phone}. {order.status === "delivered" ? "The buyer has already seen the PIN, so it is written off and not sold again." : "No PIN was given out for this order."}</p>
+          <p className="text-[12px] leading-5 text-faint-foreground">{order.quantity > 1 ? `${order.quantity} × ` : ""}{order.name} · {formatGHS(Number(order.amount))}{Number(order.fee_amount) > 0 ? ` + ${formatGHS(Number(order.fee_amount))} fee` : ""} · {order.phone}. {order.kind === "afa" ? (order.status === "delivered" ? "This number is already registered; refunding does not undo the registration." : "This number has not been registered yet.") : order.status === "delivered" ? "The buyer has already seen the PIN, so it is written off and not sold again." : "No PIN was given out for this order."}</p>
           <Field label="Why?"><input className={inputCls} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. PIN did not work" /></Field>
           <div className="flex flex-wrap gap-2">
             {order.payment_method === "paystack" && <Button size="sm" onClick={() => void refund("paystack")} disabled={saving}>Refund to their MoMo/card (Paystack)</Button>}
             <Button size="sm" variant="soft" onClick={() => void refund("wallet")} disabled={saving}>Refund to their wallet</Button>
           </div>
           <Field label="Or record money you sent yourself" hint="Enter the reference, then tap Record."><div className="flex gap-2"><input className={inputCls} value={ref} onChange={(e) => setRef(e.target.value)} placeholder="MoMo reference" /><Button size="sm" variant="ghost" onClick={() => void refund("manual")} disabled={saving}>Record</Button></div></Field>
+        </div>}
+      </Modal>
+
+      <Modal open={reg !== null} onClose={() => setReg(null)} label="AFA registration">
+        {reg && <div className="w-[min(94vw,480px)] space-y-2.5 p-5">
+          <h2 className="text-[16px] font-semibold text-foreground">AFA registration {reg.reference}</h2>
+          <dl className="divide-y divide-white/[0.06] rounded-xl border border-white/[0.08] text-[12.5px]">
+            {([["Full name", reg.details.full_name], ["MTN number", reg.details.afa_phone], ["Ghana Card", reg.details.ghana_card], ["Date of birth", reg.details.dob], ["Occupation", reg.details.occupation], ["Region", reg.details.region], ["Address", reg.details.address], ["Buyer's contact", reg.phone]] as const).map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between gap-3 px-3 py-1.5"><dt className="shrink-0 text-faint-foreground">{k}</dt>
+                <dd className="flex min-w-0 items-center gap-2 text-right text-foreground"><span className="min-w-0 break-words">{v ?? "-"}</span>{v && <button type="button" className="shrink-0 text-[11px] font-semibold text-primary-glow" onClick={() => copyText(String(v))}>Copy</button>}</dd></div>))}
+          </dl>
+          {reg.note && <p className="text-[12px] leading-5 text-danger">{reg.note}</p>}
+          {reg.status === "processing" && data?.can_edit ? <>
+            <p className="text-[12px] leading-5 text-faint-foreground">Registered this one yourself? Enter what it cost you and it is marked done, the buyer is told, and Finance records the cost.</p>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <Field label="What it cost you (GH₵)"><input className={inputCls} inputMode="decimal" value={regCost} onChange={(e) => setRegCost(e.target.value.replace(/[^\d.]/g, ""))} /></Field>
+              <Field label="Paid from"><select className={inputCls} value={regFrom} onChange={(e) => setRegFrom(e.target.value)}>{PAID_FROM.map(([k, label]) => <option key={k} value={k}>{label}</option>)}</select></Field>
+            </div>
+            <Field label="Note (optional)"><input className={inputCls} value={regNote} onChange={(e) => setRegNote(e.target.value)} placeholder="e.g. supplier order number" /></Field>
+            <div className="flex flex-wrap justify-end gap-2 pt-1">
+              <Button variant="ghost" size="sm" onClick={() => { const o = (data?.orders ?? []).find((x) => x.id === reg.id); if (o) { setReg(null); setOrder(o); setReason(""); setRef(""); } else toast.error("Find this order in the Orders list to refund it."); }}>Refund instead</Button>
+              <Button size="sm" onClick={() => void finishReg()} disabled={saving}>{saving ? "Saving…" : "Mark as registered"}</Button>
+            </div></>
+            : <p className="text-[12px] leading-5 text-faint-foreground">{reg.status === "delivered" ? `Registered ${formatAdminDate(reg.delivered_at ?? reg.step_at)}${reg.cost_amount != null ? ` · cost ${formatGHS(Number(reg.cost_amount))}` : ""}.` : reg.status === "refunded" ? "This order was refunded." : "Only the owner can mark this as registered."}</p>}
         </div>}
       </Modal>
     </div>

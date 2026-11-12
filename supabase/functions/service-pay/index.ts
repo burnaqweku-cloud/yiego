@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 /* DY Services: paying for a service order with Paystack, and sending what was bought.
    The database owns every rule (stock, prices, who gets which PIN, and that a payment delivers once).
-     { action: "start", productCode, quantity, phone, email?, deviceId? }   open a Paystack checkout (guest or signed in)
+     { action: "start", productCode, quantity, phone, email?, deviceId?, details? }   open a Paystack checkout (guest or signed in; details = the AFA form)
      { action: "confirm", token }                                           on return from Paystack: check the payment, give back the order
      { action: "run" } + internal secret                                    send SMS/email for delivered orders; re-check unpaid ones; send queued texts
      { action: "refund", orderId, reason } + admin sign-in                  send the money back through Paystack
@@ -18,6 +18,14 @@ const FRIENDLY: Record<string, string> = {
   quantity_invalid: "Choose between 1 and 1,000.",
   phone_invalid: "That phone number doesn't look right. Use a 10-digit Ghana number.",
   email_invalid: "That email doesn't look right. Fix it, or leave it empty.",
+  afa_already_registered: "This number already has an AFA registration with us. You don't need to pay again.",
+  afa_name_invalid: "Enter the full name exactly as it is on the Ghana Card (first name and surname).",
+  afa_phone_invalid: "That MTN number doesn't look right. Use the 10-digit number.",
+  afa_card_invalid: "That Ghana Card number doesn't look right. It looks like GHA-123456789-0.",
+  afa_dob_invalid: "Check the date of birth. The person must be 16 or older.",
+  afa_job_invalid: "Enter the person's occupation.",
+  afa_region_invalid: "Choose a region.",
+  afa_address_invalid: "Enter the address: town and area or house number.",
 };
 const friendly = (message: string | undefined, fallback: string) => { for (const key of Object.keys(FRIENDLY)) if (message?.includes(key)) return FRIENDLY[key]; return fallback; };
 
@@ -40,7 +48,7 @@ async function checkPayment(db: any, reference: string): Promise<string> {
   return error ? "error" : String(data);
 }
 
-interface Delivered { id: string; reference: string; name: string; quantity: number; phone: string; email: string | null; token: string; pins: { serial: string; pin: string }[] }
+interface Delivered { id: string; reference: string; kind?: string; name: string; quantity: number; phone: string; email: string | null; token: string; pins: { serial: string; pin: string }[]; afa?: { name?: string; phone?: string } | null }
 const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 async function sendSms(to: string, message: string, sender: string): Promise<string> {
@@ -58,11 +66,12 @@ async function sendSms(to: string, message: string, sender: string): Promise<str
 async function sendEmail(o: Delivered): Promise<string> {
   const key = Deno.env.get("RESEND_API_KEY");
   if (!key || !o.email || /@guest\.datayego\.com$/i.test(o.email)) return "skipped";
+  const isAfa = o.kind === "afa";
   const rows = o.pins.map((p, i) => `<tr><td style="padding:10px 12px;border-top:1px solid #e3ebe6;font-size:13px;color:#5a6a64;">${o.pins.length > 1 ? `#${i + 1}` : "Your checker"}</td><td style="padding:10px 12px;border-top:1px solid #e3ebe6;font-size:14px;"><b>Serial:</b> ${esc(p.serial)}<br /><b>PIN:</b> ${esc(p.pin)}</td></tr>`).join("");
-  const html = `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;"><tr><td style="background:#0b1512;padding:18px 28px;"><span style="color:#7cf0b4;font-size:20px;font-weight:700;">DataYego</span></td></tr><tr><td style="padding:28px;"><h1 style="margin:0 0 8px;font-size:21px;">${esc(o.name)}</h1><p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#3c4a46;">Thank you. Here ${o.pins.length > 1 ? "are your checkers" : "is your checker"} for order ${esc(o.reference)}. Keep this email safe: anyone with the serial and PIN can use it.</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e3ebe6;border-radius:12px;">${rows}</table><a href="${SITE}/services/order/${o.token}" style="display:block;margin:20px 0 0;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">View it on DataYego</a></td></tr></table></td></tr></table></body></html>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;"><tr><td style="background:#0b1512;padding:18px 28px;"><span style="color:#7cf0b4;font-size:20px;font-weight:700;">DataYego</span></td></tr><tr><td style="padding:28px;"><h1 style="margin:0 0 8px;font-size:21px;">${esc(o.name)}</h1>${isAfa ? `<p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:#3c4a46;">Thank you. ${esc(o.afa?.phone ?? o.phone)} is now registered on MTN AFA${o.afa?.name ? `, in the name of ${esc(o.afa.name)}` : ""}. Order ${esc(o.reference)}.</p>` : `<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#3c4a46;">Thank you. Here ${o.pins.length > 1 ? "are your checkers" : "is your checker"} for order ${esc(o.reference)}. Keep this email safe: anyone with the serial and PIN can use it.</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e3ebe6;border-radius:12px;">${rows}</table>`}<a href="${SITE}/services/order/${o.token}" style="display:block;margin:20px 0 0;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">View it on DataYego</a></td></tr></table></td></tr></table></body></html>`;
   try {
     const res = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", "Idempotency-Key": `service-${o.id}` },
-      body: JSON.stringify({ from: Deno.env.get("EMAIL_FROM") ?? "DataYego <noreply@datayego.com>", to: [o.email], reply_to: "support@yiego.shop", subject: `Your ${o.name}: order ${o.reference}`, html }) });
+      body: JSON.stringify({ from: Deno.env.get("EMAIL_FROM") ?? "DataYego <noreply@datayego.com>", to: [o.email], reply_to: "support@yiego.shop", subject: isAfa ? `Your AFA registration is done: order ${o.reference}` : `Your ${o.name}: order ${o.reference}`, html }) });
     return res.ok ? "sent" : "failed";
   } catch { return "failed"; }
 }
@@ -87,7 +96,7 @@ Deno.serve(async (req) => {
       for (const o of (work?.deliver ?? []) as Delivered[]) {
         // A few checkers fit in a text; a big order points to the email instead. The network drops texts with links or the word "data", so neither appears here.
         const list = o.pins.map((p, i) => `${o.pins.length > 1 ? `${i + 1}) ` : ""}Serial ${p.serial} PIN ${p.pin}`).join("; ");
-        const text = o.pins.length <= 3 ? `DY Services: your ${o.name}. ${list}. Order ${o.reference}.` : `DY Services: your ${o.pins.length} ${o.name}s are ready. ${o.email && !/@guest\.datayego\.com$/i.test(o.email) ? "Open the email we sent you" : `Track order ${o.reference} on our site`} to see every serial number and PIN.`;
+        const text = o.kind === "afa" ? `DY Services: ${o.afa?.phone ?? o.phone} is now registered on AFA. Order ${o.reference}.` : o.pins.length <= 3 ? `DY Services: your ${o.name}. ${list}. Order ${o.reference}.` : `DY Services: your ${o.pins.length} ${o.name}s are ready. ${o.email && !/@guest\.datayego\.com$/i.test(o.email) ? "Open the email we sent you" : `Track order ${o.reference} on our site`} to see every serial number and PIN.`;
         // SMS for services has its own switch and sender ID (Admin → DY Services); off means on screen and by email only.
         const sms = work?.sms?.enabled ? await sendSms(o.phone, text.slice(0, 640), String(work.sms.sender ?? "Dyservice")) : "off";
         const email = await sendEmail(o);
@@ -110,7 +119,8 @@ Deno.serve(async (req) => {
 
     if (action === "start") {
       const phone = String(body.phone ?? ""); const email = String(body.email ?? "").trim();
-      const { data: o, error } = await db.rpc("service_checkout_start", { p_user: userId, p_product: String(body.productCode ?? ""), p_qty: Number(body.quantity ?? 1), p_phone: phone, p_email: email || null, p_device: typeof body.deviceId === "string" ? body.deviceId : null });
+      const { data: o, error } = await db.rpc("service_checkout_start", { p_user: userId, p_product: String(body.productCode ?? ""), p_qty: Number(body.quantity ?? 1), p_phone: phone, p_email: email || null, p_device: typeof body.deviceId === "string" ? body.deviceId : null,
+        ...(body.details && typeof body.details === "object" ? { p_details: body.details } : {}) });
       if (error || !o) return json({ error: friendly(error?.message, "We couldn't start this order. Please try again.") }, 400);
       const sub = Deno.env.get("PAYSTACK_SUBACCOUNT")?.trim();
       const init = await paystack("/transaction/initialize", { method: "POST", body: JSON.stringify({

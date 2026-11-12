@@ -9,10 +9,13 @@ const phase1 = () => (supabase as unknown as { schema(name: string): Rpc }).sche
 
 export interface ServiceProduct { code: string; kind: "checker" | "afa"; name: string; blurb: string; price: number; in_stock: boolean; left: number }
 export interface ServicePin { serial: string; pin: string }
+/** The MTN AFA registration form. The database checks every field again. */
+export interface AfaDetails { full_name: string; afa_phone: string; ghana_card: string; dob: string; occupation: string; region: string; address: string }
+export const GHANA_REGIONS = ["Ahafo", "Ashanti", "Bono", "Bono East", "Central", "Eastern", "Greater Accra", "North East", "Northern", "Oti", "Savannah", "Upper East", "Upper West", "Volta", "Western", "Western North"] as const;
 export interface ServiceOrder {
-  reference: string; token: string; product: string; name: string; quantity: number; amount: number; fee: number; phone: string;
-  status: "awaiting_payment" | "paid_waiting_stock" | "delivered" | "refunded" | "cancelled" | "expired"; paid: boolean; method: "wallet" | "paystack";
-  created_at: string; delivered_at: string | null; pins: ServicePin[];
+  reference: string; token: string; product: string; kind?: "checker" | "afa"; name: string; quantity: number; amount: number; fee: number; phone: string;
+  status: "awaiting_payment" | "paid_waiting_stock" | "processing" | "delivered" | "refunded" | "cancelled" | "expired"; paid: boolean; method: "wallet" | "paystack";
+  created_at: string; delivered_at: string | null; pins: ServicePin[]; afa?: { name: string; phone: string } | null;
 }
 
 const MESSAGES: Record<string, string> = {
@@ -21,6 +24,14 @@ const MESSAGES: Record<string, string> = {
   quantity_invalid: "Choose between 1 and 1,000.",
   sign_in_required: "Sign in to pay from your wallet.",
   service_unavailable: "This isn't available right now.",
+  afa_already_registered: "This number already has an AFA registration with us. You don't need to pay again.",
+  afa_name_invalid: "Enter the full name exactly as it is on the Ghana Card (first name and surname).",
+  afa_phone_invalid: "That MTN number doesn't look right. Use the 10-digit number.",
+  afa_card_invalid: "That Ghana Card number doesn't look right. It looks like GHA-123456789-0.",
+  afa_dob_invalid: "Check the date of birth. The person must be 16 or older.",
+  afa_job_invalid: "Enter the person's occupation.",
+  afa_region_invalid: "Choose a region.",
+  afa_address_invalid: "Enter the address: town and area or house number.",
 };
 /** A plain sentence for whatever the server said. */
 export function serviceError(message: string | null | undefined, fallback = "Something went wrong. Please try again."): string {
@@ -37,8 +48,8 @@ export async function servicesSendSms(): Promise<boolean> {
   const { data } = await phase1().rpc<{ sms?: boolean }>("service_info");
   return Boolean(data?.sms);
 }
-export async function buyServiceWithWallet(productCode: string, quantity: number, phone: string): Promise<{ order: ServiceOrder | null; error: string | null }> {
-  const { data, error } = await phase1().rpc<ServiceOrder>("service_buy_wallet", { p_product: productCode, p_qty: quantity, p_phone: phone, p_device: appDeviceId() });
+export async function buyServiceWithWallet(productCode: string, quantity: number, phone: string, details?: AfaDetails): Promise<{ order: ServiceOrder | null; error: string | null }> {
+  const { data, error } = await phase1().rpc<ServiceOrder>("service_buy_wallet", { p_product: productCode, p_qty: quantity, p_phone: phone, p_device: appDeviceId(), ...(details ? { p_details: details } : {}) });
   return { order: data ?? null, error: error ? serviceError(error.message) : data ? null : serviceError(null) };
 }
 async function call<T>(body: Record<string, unknown>): Promise<{ data: T | null; error: string | null }> {
@@ -49,7 +60,7 @@ async function call<T>(body: Record<string, unknown>): Promise<{ data: T | null;
   return { data: null, error: serviceError(message) };
 }
 /** Opens a mobile money / card payment for a service order. The buyer comes back to /services/order/<token>. */
-export const startServiceCheckout = (input: { productCode: string; quantity: number; phone: string; email?: string }) =>
+export const startServiceCheckout = (input: { productCode: string; quantity: number; phone: string; email?: string; details?: AfaDetails }) =>
   call<{ authorizationUrl: string; token: string; reference: string; total: number }>({ action: "start", ...input, deviceId: appDeviceId() });
 /** On return from the payment page: checks the payment and gives back the order (with its PINs once delivered). */
 export const confirmServiceOrder = (token: string) => call<ServiceOrder>({ action: "confirm", token });
@@ -62,9 +73,11 @@ export const serviceFee = (base: number) => Math.round(base * SERVICE_FEE_RATE *
 
 /* Admin */
 export interface AdminServiceProduct { code: string; kind: string; name: string; customer_price: number; agent_price: number; is_active: boolean; low_stock_at: number; left: number; held: number; stock_value: number; sold: number; sold_today: number }
-export interface AdminServiceOrder { id: string; reference: string; name: string; quantity: number; amount: number; fee_amount: number; cost_amount: number | null; phone: string; status: ServiceOrder["status"]; payment_method: "wallet" | "paystack"; agent_id: string | null; agent_margin: number | null; created_at: string; paid_at: string | null; delivered_at: string | null; sent: string | null }
+export interface AdminServiceOrder { id: string; reference: string; name: string; quantity: number; amount: number; fee_amount: number; cost_amount: number | null; phone: string; status: ServiceOrder["status"]; payment_method: "wallet" | "paystack"; agent_id: string | null; agent_margin: number | null; created_at: string; paid_at: string | null; delivered_at: string | null; sent: string | null; kind?: string }
+export interface AdminRegistration { id: string; reference: string; status: ServiceOrder["status"]; amount: number; fee_amount: number; cost_amount: number | null; phone: string; payment_method: "wallet" | "paystack"; paid_at: string | null; delivered_at: string | null;
+  details: Partial<AfaDetails>; step: "queued" | "sending" | "submitted" | "unclear" | "rejected" | "done" | "cancelled"; note: string | null; supplier: string | null; supplier_reference: string | null; step_at: string }
 export interface AdminServices {
-  can_edit: boolean; products: AdminServiceProduct[]; waiting: number;
+  can_edit: boolean; products: AdminServiceProduct[]; waiting: number; registering?: number; registrations?: AdminRegistration[];
   totals: { sales: number; cost: number; margins: number; orders: number; sales_today: number; profit_today: number };
   orders: AdminServiceOrder[]; batches: { id: string; name: string; quantity: number; total_cost: number; paid_from: string; note: string | null; created_at: string }[];
 }
@@ -76,6 +89,8 @@ export const setServiceProduct = (p: AdminServiceProduct) =>
   phase1().rpc<boolean>("admin_service_set", { p_product: p.code, p_customer_price: p.customer_price, p_agent_price: p.agent_price, p_active: p.is_active, p_low_stock_at: p.low_stock_at });
 export const refundServiceToWallet = (orderId: string, reason: string) => phase1().rpc<{ refunded: number }>("admin_service_refund", { p_order: orderId, p_method: "wallet", p_reference: null, p_reason: reason });
 export const recordServiceRefund = (orderId: string, reference: string, reason: string) => phase1().rpc<{ refunded: number }>("admin_service_refund", { p_order: orderId, p_method: "manual", p_reference: reference, p_reason: reason });
+/** The owner registered this AFA order by hand: what it cost and where that money came from. */
+export const markRegistrationDone = (orderId: string, cost: number, paidFrom: string, note: string) => phase1().rpc<string>("admin_service_registration_done", { p_order: orderId, p_cost: cost, p_paid_from: paidFrom, p_note: note || null });
 export const refundServiceViaPaystack = (orderId: string, reason: string) => call<unknown>({ action: "refund", orderId, reason });
 
 export interface SmsSenders { can_edit: boolean; services_enabled: boolean; services_sender: string; agents_enabled: boolean; agents_sender: string; agent_approved_text: string; verify_sender: string; verify_enabled: boolean; credits: number | null;
