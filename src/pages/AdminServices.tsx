@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { GraduationCap, PackagePlus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
+import SmsSendersPanel from "@/components/admin/SmsSendersPanel";
 import { Field, Panel, Pill, Row, Rows, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
@@ -98,6 +99,8 @@ export default function AdminServices() {
               right={formatGHS(Number(o.amount))} rightNote={o.cost_amount != null ? `profit ${formatGHS(Number(o.amount) - Number(o.cost_amount) - Number(o.agent_margin ?? 0))}` : undefined} />; })}
           </Rows>
         </Panel>
+
+        <SmsSendersPanel />
 
         <Panel title="Stock added" note="each batch, with what you paid">
           <Rows empty="Nothing added yet.">

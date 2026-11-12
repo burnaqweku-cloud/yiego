@@ -392,3 +392,9 @@ select cron.schedule('service-pay', '*/2 * * * *', $job$select net.http_post(url
 
 -- Later the same day (applied live): admin_service_add_stock first picks out every "Serial Number: X ... PIN: Y" pair from
 -- whatever is pasted (a whole voucher page), and only falls back to one-per-line when it finds none.
+
+-- SMS senders (applied live 12 Nov): sms_settings gains services_enabled/services_sender (Dyservice) and
+-- agents_enabled/agents_sender (Dyagents) + agent_approved_text; sender_id (verification) is now Dyverify.
+-- phase1.sms_queue holds one-off texts (agent approved, via trigger zz_agent_approved_sms_trg on agent_applications),
+-- drained by service-pay's run. service_info() tells the site whether PINs are also sent by SMS.
+-- admin_sms_senders() / admin_sms_senders_save() back the SMS panel on /admin/services. Both switches start off.

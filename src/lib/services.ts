@@ -32,6 +32,11 @@ export async function loadServices(): Promise<ServiceProduct[]> {
   const { data } = await phase1().rpc<ServiceProduct[]>("service_catalog");
   return (data ?? []).map((p) => ({ ...p, price: Number(p.price) }));
 }
+/** Whether result-checker PINs are also sent by SMS right now (an admin switch). When off, they go on screen and by email. */
+export async function servicesSendSms(): Promise<boolean> {
+  const { data } = await phase1().rpc<{ sms?: boolean }>("service_info");
+  return Boolean(data?.sms);
+}
 export async function buyServiceWithWallet(productCode: string, quantity: number, phone: string): Promise<{ order: ServiceOrder | null; error: string | null }> {
   const { data, error } = await phase1().rpc<ServiceOrder>("service_buy_wallet", { p_product: productCode, p_qty: quantity, p_phone: phone, p_device: appDeviceId() });
   return { order: data ?? null, error: error ? serviceError(error.message) : data ? null : serviceError(null) };
@@ -72,3 +77,8 @@ export const setServiceProduct = (p: AdminServiceProduct) =>
 export const refundServiceToWallet = (orderId: string, reason: string) => phase1().rpc<{ refunded: number }>("admin_service_refund", { p_order: orderId, p_method: "wallet", p_reference: null, p_reason: reason });
 export const recordServiceRefund = (orderId: string, reference: string, reason: string) => phase1().rpc<{ refunded: number }>("admin_service_refund", { p_order: orderId, p_method: "manual", p_reference: reference, p_reason: reason });
 export const refundServiceViaPaystack = (orderId: string, reason: string) => call<unknown>({ action: "refund", orderId, reason });
+
+export interface SmsSenders { can_edit: boolean; services_enabled: boolean; services_sender: string; agents_enabled: boolean; agents_sender: string; agent_approved_text: string; verify_sender: string; verify_enabled: boolean; credits: number | null;
+  recent: { kind: string; phone_end: string; status: string; result: string | null; created_at: string }[] }
+export const loadSmsSenders = () => phase1().rpc<SmsSenders>("admin_sms_senders");
+export const saveSmsSenders = (s: SmsSenders) => phase1().rpc<boolean>("admin_sms_senders_save", { p_services_enabled: s.services_enabled, p_services_sender: s.services_sender, p_agents_enabled: s.agents_enabled, p_agents_sender: s.agents_sender, p_agent_text: s.agent_approved_text });

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import OrderResult from "@/components/services/OrderResult";
-import { confirmServiceOrder, type ServiceOrder as Order } from "@/lib/services";
+import { confirmServiceOrder, servicesSendSms, type ServiceOrder as Order } from "@/lib/services";
 
 /* Where a buyer lands after paying for a service with mobile money or card, and the link in their email.
    It checks the payment and shows the PIN as soon as the order is delivered. */
@@ -11,6 +11,8 @@ export default function ServiceOrder() {
   const [order, setOrder] = useState<Order | null>(null);
   const [failed, setFailed] = useState(false);
   const tries = useRef(0);
+  const [sms, setSms] = useState(false);
+  useEffect(() => { void servicesSendSms().then(setSms, () => undefined); }, []);
 
   useEffect(() => {
     let live = true; let timer: number | undefined;
@@ -31,7 +33,7 @@ export default function ServiceOrder() {
       <Card className="p-5 sm:p-6">
         {failed ? <><h1 className="font-display text-[22px] font-semibold text-foreground">We couldn't find that order</h1><p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">Open the link from your SMS or email again. If you paid and see this, message us with your phone number and we'll sort it out.</p></>
           : !order ? <p role="status" className="text-[14px] text-muted-foreground">Checking your payment…</p>
-          : <OrderResult order={order} />}
+          : <OrderResult order={order} sms={sms} />}
       </Card>
       <p className="text-center text-[13px] text-muted-foreground"><Link to="/services" className="font-semibold text-primary-glow">Back to DY Services</Link></p>
     </div>

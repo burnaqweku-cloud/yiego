@@ -13,7 +13,7 @@ import { useProfile } from "@/store/profile";
 import { useFlows } from "@/store/flows";
 import { formatGHS } from "@/lib/format";
 import { metaFor } from "@/lib/site";
-import { buyServiceWithWallet, loadServices, myServiceOrders, serviceFee, startServiceCheckout, type ServiceOrder, type ServiceProduct } from "@/lib/services";
+import { buyServiceWithWallet, loadServices, myServiceOrders, serviceFee, servicesSendSms, startServiceCheckout, type ServiceOrder, type ServiceProduct } from "@/lib/services";
 import { cn } from "@/lib/utils";
 
 /* DY Services: things DataYego sells besides data. Result checkers are live; the PIN is shown the
@@ -23,7 +23,7 @@ type Pay = "wallet" | "paystack";
 const MAX_QUANTITY = 1000;
 const validPhone = (v: string) => /^0\d{9}$/.test(v.replace(/\D/g, ""));
 
-function BuySheet({ product, onClose, onBought }: { product: ServiceProduct | null; onClose: () => void; onBought: () => void }) {
+function BuySheet({ product, sms, onClose, onBought }: { product: ServiceProduct | null; sms: boolean; onClose: () => void; onBought: () => void }) {
   const { isAuthenticated } = useAuth();
   const { balance, refresh } = useWallet();
   const { profile } = useProfile();
@@ -51,7 +51,9 @@ function BuySheet({ product, onClose, onBought }: { product: ServiceProduct | nu
 
   const submit = async () => {
     if (!validPhone(phone)) { toast.error("Enter the 10-digit Ghana number that should get the SMS."); return; }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("That email doesn't look right. Fix it, or leave it empty."); return; }
+    // Without SMS, a guest's email is the only copy they keep once this page is closed.
+    if (!isAuthenticated && !sms && !email) { toast.error("Enter your email so we can send you the serial number and PIN."); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("That email doesn't look right. Please check it."); return; }
     setBusy(true);
     if (pay === "wallet") {
       const r = await buyServiceWithWallet(product.code, quantity, phone);
@@ -69,7 +71,7 @@ function BuySheet({ product, onClose, onBought }: { product: ServiceProduct | nu
     <Modal open onClose={onClose} label={product.name}>
       <FlowHeader title={order ? (order.status === "delivered" ? "Here you go" : "Order received") : product.name} subtitle={order ? undefined : `${formatGHS(product.price)} each`} onClose={onClose} />
       {busy ? <ProcessingView label={pay === "wallet" ? "Placing your order…" : "Opening the payment page…"} /> : order ? (
-        <div className="space-y-4 px-5 pb-6 pt-5"><OrderResult order={order} /><button type="button" className="onyx-btn-primary w-full" onClick={onClose}>Done</button></div>
+        <div className="space-y-4 px-5 pb-6 pt-5"><OrderResult order={order} sms={sms} /><button type="button" className="onyx-btn-primary w-full" onClick={onClose}>Done</button></div>
       ) : (
         <div className="space-y-4 px-5 pb-6 pt-5">
           <div>
@@ -81,11 +83,12 @@ function BuySheet({ product, onClose, onBought }: { product: ServiceProduct | nu
               <button type="button" aria-label="One more" disabled={quantity >= MAX_QUANTITY} onClick={() => setQuantity(Math.min(MAX_QUANTITY, quantity + 1))} className="onyx-iconbtn h-12 w-12 shrink-0 rounded-xl disabled:opacity-40"><Plus size={18} /></button>
             </div>
           </div>
-          <label className="block"><span className="text-[13px] font-semibold text-foreground">Phone number for the SMS</span>
+          <label className="block"><span className="text-[13px] font-semibold text-foreground">{sms ? "Phone number for the SMS" : "Your phone number"}</span>
             <input className="onyx-field mt-2 w-full" inputMode="numeric" autoComplete="tel" placeholder="024 000 0000" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^\d ]/g, "").slice(0, 13))} />
-            <span className="mt-1 block text-[12px] text-muted-foreground">The serial number and PIN are shown here straight away and also sent to this number.</span></label>
-          {!isAuthenticated && <label className="block"><span className="text-[13px] font-semibold text-foreground">Email <span className="font-normal text-muted-foreground">(optional)</span></span>
-            <input className="onyx-field mt-2 w-full" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value.trim())} /></label>}
+            <span className="mt-1 block text-[12px] text-muted-foreground">{sms ? "The serial number and PIN are shown here straight away and also sent to this number." : "So we can reach you about this order. The serial number and PIN are shown here straight away."}</span></label>
+          {!isAuthenticated && <label className="block"><span className="text-[13px] font-semibold text-foreground">Email {sms && <span className="font-normal text-muted-foreground">(optional)</span>}</span>
+            <input className="onyx-field mt-2 w-full" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value.trim())} />
+            {!sms && <span className="mt-1 block text-[12px] text-muted-foreground">We send the serial number and PIN here too, so you can find them again.</span>}</label>}
           <div>
             <p className="text-[13px] font-semibold text-foreground">Pay with</p>
             <div className="mt-2 space-y-2" role="radiogroup" aria-label="Pay with">
@@ -109,7 +112,7 @@ function BuySheet({ product, onClose, onBought }: { product: ServiceProduct | nu
   );
 }
 
-function MyCheckers({ orders }: { orders: ServiceOrder[] }) {
+function MyCheckers({ orders, sms }: { orders: ServiceOrder[]; sms: boolean }) {
   const [open, setOpen] = useState<string | null>(null);
   if (orders.length === 0) return null;
   return (
@@ -123,7 +126,7 @@ function MyCheckers({ orders }: { orders: ServiceOrder[] }) {
                 <span className="block text-[12px] text-muted-foreground">{new Date(o.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} · {o.status === "delivered" ? "tap to see the PIN" : o.status === "paid_waiting_stock" ? "on its way" : o.status}</span></span>
               <ChevronDown size={18} className={cn("shrink-0 text-muted-foreground transition-transform", open === o.reference && "rotate-180")} aria-hidden="true" />
             </button>
-            {open === o.reference && <div className="mt-3"><OrderResult order={o} /></div>}
+            {open === o.reference && <div className="mt-3"><OrderResult order={o} sms={sms} /></div>}
           </li>
         ))}
       </ul>
@@ -138,6 +141,8 @@ export default function Services() {
   const [products, setProducts] = useState<ServiceProduct[] | null>(null);
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
   const [buying, setBuying] = useState<ServiceProduct | null>(null);
+  const [sms, setSms] = useState(false);
+  useEffect(() => { void servicesSendSms().then(setSms, () => undefined); }, []);
 
   const load = useCallback(() => {
     void loadServices().then(setProducts, () => setProducts([]));
@@ -188,10 +193,10 @@ export default function Services() {
         </ul>
       </Card>
 
-      <MyCheckers orders={orders} />
-      {!isAuthenticated && <p className="pb-2 text-center text-[13px] text-muted-foreground">Bought one before? <Link to="/auth" className="font-semibold text-primary-glow">Sign in</Link> to see your checkers, or open the link in your SMS or email.</p>}
+      <MyCheckers orders={orders} sms={sms} />
+      {!isAuthenticated && <p className="pb-2 text-center text-[13px] text-muted-foreground">Bought one before? <Link to="/auth" className="font-semibold text-primary-glow">Sign in</Link> to see your checkers, or open the link in your email.</p>}
 
-      <BuySheet product={buying} onClose={() => setBuying(null)} onBought={load} />
+      <BuySheet product={buying} sms={sms} onClose={() => setBuying(null)} onBought={load} />
     </div>
   );
 }

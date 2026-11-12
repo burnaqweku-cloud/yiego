@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
    The database owns every rule (stock, prices, who gets which PIN, and that a payment delivers once).
      { action: "start", productCode, quantity, phone, email?, deviceId? }   open a Paystack checkout (guest or signed in)
      { action: "confirm", token }                                           on return from Paystack: check the payment, give back the order
-     { action: "run" } + internal secret                                    send SMS/email for delivered orders; re-check unpaid ones
+     { action: "run" } + internal secret                                    send SMS/email for delivered orders; re-check unpaid ones; send queued texts
      { action: "refund", orderId, reason } + admin sign-in                  send the money back through Paystack
    This file is self-contained on purpose: it shares no code with the data checkout, so changing one can never break the other. */
 
@@ -43,14 +43,14 @@ async function checkPayment(db: any, reference: string): Promise<string> {
 interface Delivered { id: string; reference: string; name: string; quantity: number; phone: string; email: string | null; token: string; pins: { serial: string; pin: string }[] }
 const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-async function sendSms(to: string, message: string): Promise<string> {
+async function sendSms(to: string, message: string, sender: string): Promise<string> {
   const key = Deno.env.get("VYNFY_API_KEY");
   const digits = to.replace(/\D/g, "");
   const msisdn = /^0\d{9}$/.test(digits) ? "233" + digits.slice(1) : /^233\d{9}$/.test(digits) ? digits : null;
   if (!key || !msisdn) return "skipped";
   try {
     const res = await fetch("https://sms.vynfy.com/api/v1/send", { method: "POST", headers: { "X-API-Key": key, "Content-Type": "application/json" }, signal: AbortSignal.timeout(15000),
-      body: JSON.stringify({ sender: (Deno.env.get("VYNFY_SENDER") ?? "DTYEGO").slice(0, 11), recipients: [msisdn], message, metadata: { purpose: "service_order" } }) });
+      body: JSON.stringify({ sender: sender.slice(0, 11), recipients: [msisdn], message }) });
     const body = await res.json().catch(() => ({}));
     return res.ok && body?.success !== false ? "sent" : "failed";
   } catch { return "failed"; }
@@ -88,12 +88,19 @@ Deno.serve(async (req) => {
         // A few checkers fit in a text; a big order gets a link to all of them instead of a wall of numbers.
         const list = o.pins.map((p, i) => `${o.pins.length > 1 ? `${i + 1}) ` : ""}Serial ${p.serial} PIN ${p.pin}`).join("; ");
         const text = o.pins.length <= 3 ? `DataYego: your ${o.name}. ${list}. Order ${o.reference}.` : `DataYego: your ${o.pins.length} x ${o.name} are ready. See all serial numbers and PINs here: ${SITE}/services/order/${o.token}`;
-        const sms = await sendSms(o.phone, text.slice(0, 640));
+        // SMS for services has its own switch and sender ID (Admin → DY Services); off means on screen and by email only.
+        const sms = work?.sms?.enabled ? await sendSms(o.phone, text.slice(0, 640), String(work.sms.sender ?? "Dyservice")) : "off";
         const email = await sendEmail(o);
         await db.rpc("service_outbox_done", { p_order: o.id, p_sms: sms, p_email: email });
         sent += 1;
       }
-      return json({ confirmed, sent });
+      // One-off texts queued by the database (an agent being approved, for example), each with its own sender ID.
+      let texts = 0;
+      for (const q of (work?.queue ?? []) as { id: number; phone: string; message: string; sender: string }[]) {
+        await db.rpc("sms_queue_done", { p_id: q.id, p_result: await sendSms(q.phone, q.message, q.sender) });
+        texts += 1;
+      }
+      return json({ confirmed, sent, texts });
     }
 
     // Who is calling (optional for start/confirm; required for refund).
