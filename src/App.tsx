@@ -226,7 +226,7 @@ export const MainSite = () => (
       <Route element={<AppPage />}>
         <Route path="/shop" element={<Shop />} />
         <Route path="/promo" element={<Promotion />} />
-        <Route path="/track-order" element={<TrackOrder />} /><Route path="/app" element={<GetApp />} /><Route path="/unsubscribe" element={<Unsubscribe />} /><Route path="/services" element={<Services />} /><Route path="/services/order/:token" element={<ServiceOrder />} /><Route path="/r/:code" element={<Invite />} /><Route path="/g/:slug" element={<Giveaway />} /><Route path="/giveaway" element={<Giveaway />} /><Route path="/check-mtn" element={<CheckMtn />} /><Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/track-order" element={<TrackOrder />} /><Route path="/app" element={<GetApp />} /><Route path="/unsubscribe" element={<Unsubscribe />} /><Route path="/services" element={<Services />} /><Route path="/services/:section" element={<Services />} /><Route path="/services/order/:token" element={<ServiceOrder />} /><Route path="/r/:code" element={<Invite />} /><Route path="/g/:slug" element={<Giveaway />} /><Route path="/giveaway" element={<Giveaway />} /><Route path="/check-mtn" element={<CheckMtn />} /><Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/support/ai" element={<AISupport />} />
         <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
         <Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />

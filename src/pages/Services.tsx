@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ChevronDown, GraduationCap, Minus, PhoneCall, Plus, UserPlus, Wallet } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight, ChevronDown, GraduationCap, Minus, PhoneCall, Plus, UserPlus, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import Seo from "@/components/seo/Seo";
 import { Card } from "@/components/ui/card";
@@ -18,7 +18,8 @@ import { metaFor } from "@/lib/site";
 import { buyServiceWithWallet, loadServices, myServiceOrders, serviceFee, servicesSendSms, startServiceCheckout, type ServiceOrder, type ServiceProduct } from "@/lib/services";
 import { cn } from "@/lib/utils";
 
-/* DY Services: things DataYego sells besides data. Result checkers are live; the PIN is shown the
+/* DY Services: things DataYego sells besides data. The first screen is one card per service; tapping a card
+   opens that service on its own (/services/checkers, /services/afa). Result checkers are live; the PIN is shown the
    moment payment is confirmed, sent by SMS and email, and kept under "Your checkers". */
 
 const MAX_QUANTITY = 1000;
@@ -142,13 +143,20 @@ export default function Services() {
   const checkers = (products ?? []).filter((p) => p.kind === "checker");
   const afa = (products ?? []).find((p) => p.kind === "afa") ?? null;
   const [registering, setRegistering] = useState(false);
-  const soon = ([[UserPlus, "MTN AFA registration", "Put an MTN number on AFA for cheaper calls."], [PhoneCall, "Airtime", "Top up MTN, Telecel and AirtelTigo airtime."]] as const).filter(([, title]) => !(afa && title.includes("AFA")));
+  const { section } = useParams();
+  const view = section === "checkers" || (section === "afa" && afa) ? section : "home";
+  const cards = [
+    { key: "checkers", icon: GraduationCap, title: "Result checkers", text: "WASSCE and BECE checker PINs, shown the moment you pay.", to: "/services/checkers" },
+    ...(afa ? [{ key: "afa", icon: UserPlus, title: afa.name, text: afa.blurb, to: "/services/afa" }] : [{ key: "afa", icon: UserPlus, title: "MTN AFA registration", text: "Put an MTN number on AFA for cheaper calls.", to: null }]),
+    { key: "airtime", icon: PhoneCall, title: "Airtime", text: "Top up MTN, Telecel and AirtelTigo airtime.", to: null },
+  ];
   return (
     <div className="mx-auto w-full max-w-[560px] space-y-4">
       <Seo {...metaFor("/services")} />
       <header className="px-1 pt-1">
-        <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-foreground">DY Services</h1>
-        <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{afa ? "More from DataYego, with the same account and wallet: result checkers and MTN AFA registration. Airtime is next." : "More from DataYego, with the same account and wallet. Result checkers are here now; AFA registration and airtime are next."}</p>
+        {view !== "home" && <Link to="/services" className="mb-2 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-primary-glow"><ArrowLeft size={15} aria-hidden="true" />All services</Link>}
+        <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-foreground">{view === "checkers" ? "Result checkers" : view === "afa" && afa ? afa.name : "DY Services"}</h1>
+        <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{view === "checkers" ? "Serial number and PIN, shown the moment you pay." : view === "afa" && afa ? afa.blurb : "More from DataYego, with the same account and wallet. Pick a service."}</p>
       </header>
 
       {isAuthenticated && <Card className="flex items-center justify-between gap-3 p-4">
@@ -157,11 +165,23 @@ export default function Services() {
         <button type="button" onClick={openAddMoney} className="onyx-btn-ghost flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[13.5px]"><Plus size={15} />Top up</button>
       </Card>}
 
-      <Card className="p-5 sm:p-6">
-        <div className="flex items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/[0.12] text-primary-glow"><GraduationCap size={21} aria-hidden="true" /></span>
-          <div className="min-w-0"><h2 className="font-display text-[19px] font-semibold tracking-tight text-foreground">Result checkers</h2><p className="text-[13px] text-muted-foreground">Serial number and PIN, shown the moment you pay.</p></div></div>
-        {products === null ? <p className="mt-4 text-[13.5px] text-muted-foreground">Loading…</p> : checkers.length === 0 ? <p className="mt-4 text-[13.5px] text-muted-foreground">Result checkers aren't available right now. Please check back soon.</p> : (
-          <ul className="mt-4 space-y-2.5">
+      {view === "home" && <ul className="grid grid-cols-2 gap-3">
+        {cards.map(({ key, icon: Icon, title, text, to }) => {
+          const inner = <>
+            <span className={cn("grid h-11 w-11 place-items-center rounded-2xl", to ? "bg-primary/[0.12] text-primary-glow" : "bg-white/[0.06] text-muted-foreground")}><Icon size={21} aria-hidden="true" /></span>
+            <span className="mt-3 block font-display text-[16.5px] font-semibold leading-snug tracking-tight text-foreground">{title}</span>
+            <span className="mt-1 block text-[12.5px] leading-relaxed text-muted-foreground">{text}</span>
+            <span className={cn("mt-3 inline-flex items-center gap-1.5 text-[13.5px] font-semibold", to ? "text-primary-glow" : "text-muted-foreground")}>{to ? <>Open<ArrowRight size={15} aria-hidden="true" /></> : "Coming soon"}</span>
+          </>;
+          return <li key={key}>{to
+            ? <Link to={to} className="block h-full"><Card className="h-full p-4 transition-colors hover:border-primary-glow/40">{inner}</Card></Link>
+            : <Card className="h-full p-4 opacity-75">{inner}</Card>}</li>;
+        })}
+      </ul>}
+
+      {view === "checkers" && <Card className="p-5 sm:p-6">
+        {products === null ? <p className="text-[13.5px] text-muted-foreground">Loading…</p> : checkers.length === 0 ? <p className="text-[13.5px] text-muted-foreground">Result checkers aren't available right now. Please check back soon.</p> : (
+          <ul className="space-y-2.5">
             {checkers.map((p) => (
               <li key={p.code} className="rounded-2xl border border-white/[0.09] p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -173,25 +193,13 @@ export default function Services() {
             ))}
           </ul>
         )}
-      </Card>
+      </Card>}
 
-      {afa && <Card className="p-5 sm:p-6">
-        <div className="flex items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/[0.12] text-primary-glow"><UserPlus size={21} aria-hidden="true" /></span>
-          <div className="min-w-0"><h2 className="font-display text-[19px] font-semibold tracking-tight text-foreground">{afa.name}</h2><p className="text-[13px] text-muted-foreground">{afa.blurb}</p></div></div>
-        <p className="mt-3 text-[12.5px] leading-relaxed text-muted-foreground">You'll need the person's Ghana Card details. Fill in a short form, pay, and we register the number for you.</p>
+      {view === "afa" && afa && <Card className="p-5 sm:p-6">
+        <p className="text-[13.5px] leading-relaxed text-muted-foreground">You'll need the person's Ghana Card details. Fill in a short form, pay, and we register the number for you.</p>
         <div className="mt-3 flex items-center justify-between gap-3"><span className="font-display text-[20px] font-semibold text-foreground">{formatGHS(afa.price)}</span>
           <button type="button" onClick={() => setRegistering(true)} className="onyx-btn-primary px-6 py-2.5 text-[14px]">Register</button></div>
       </Card>}
-
-      <Card className="p-5 sm:p-6">
-        <h2 className="font-display text-[19px] font-semibold tracking-tight text-foreground">Coming soon</h2>
-        <ul className="mt-3 space-y-3">
-          {soon.map(([Icon, title, text]) => (
-            <li key={title} className="flex items-center gap-3.5 opacity-80"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/[0.06] text-muted-foreground"><Icon size={18} aria-hidden="true" /></span>
-              <div className="min-w-0"><p className="text-[14.5px] font-semibold text-foreground">{title}</p><p className="text-[12.5px] text-muted-foreground">{text}</p></div></li>
-          ))}
-        </ul>
-      </Card>
 
       <MyCheckers orders={orders} sms={sms} />
       {!isAuthenticated && <p className="pb-2 text-center text-[13px] text-muted-foreground">Bought one before? <Link to="/auth" className="font-semibold text-primary-glow">Sign in</Link> to see your orders, or open the link in your email.</p>}
