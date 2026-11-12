@@ -12,6 +12,7 @@ import Modal from "@/components/ui/modal";
 import { supabase } from "@/integrations/supabase/client";
 import { adminDatabase, formatAdminDate, type AdminOrderRow } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
+import { csvText } from "@/lib/csv";
 
 /* Paid, not delivered — every order a customer has paid for that has not
    ended in delivered or refunded. Their money is with us; they have no data.
@@ -87,7 +88,7 @@ export default function AdminUndelivered() {
 
   const exportCsv = () => {
     const rows = [["paid at", "waiting", "reason", "order", "network", "bundle", "recipient", "amount", "supplier", "supplier status", "note"], ...filtered.map((o) => [o.paid_at ?? "", age(o.paid_at ?? o.created_at), BUCKET_LABEL[bucketOf(o)], o.order_reference, o.networks?.name ?? "", o.data_products?.name ?? "", o.recipient_phone ?? "", Number(o.amount).toFixed(2), o.suppliers?.name ?? "", o.supplier_status ?? "", (o.failure_reason ?? o.admin_resolution_reason ?? "").replace(/"/g, "'")])];
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n")], { type: "text/csv" })); a.download = `datayego-undelivered-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csvText(rows)], { type: "text/csv" })); a.download = `datayego-undelivered-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
   };
 
   const run = async () => {

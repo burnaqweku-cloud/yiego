@@ -5,6 +5,7 @@ import { formatGHS } from "@/lib/format";
 import { type AgentOrder, useAgent } from "@/components/agent/AgentShell";
 import { stageOf, toneClass } from "@/components/agent/orderStage";
 import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { csvText } from "@/lib/csv";
 
 /* The agent's orders: every paid order placed in their store, newest first.
    Period and stage filters, network chips, search, grouped by day, 20 at a time,
@@ -84,7 +85,7 @@ export default function AgentOrders() {
   const copy = async (v: string, what: string) => { try { await navigator.clipboard.writeText(v); toast.success(`${what} copied.`); } catch { toast.error("Couldn't copy."); } };
   const exportCsv = () => {
     const rows = [["Order ID", "Date", "Time", "Network", "Bundle", "Recipient", "Customer paid (GHS)", "Your profit (GHS)", "Status"], ...list.map((o) => [o.order_reference, new Date(when(o)).toLocaleDateString("en-GB"), timeOf(when(o)), o.networks?.name ?? "", o.data_products?.name?.replace(/^.*?—\s*/, "") ?? "", o.recipient_phone, Number(o.amount).toFixed(2), Number(o.agent_margin ?? 0).toFixed(2), stageOf(o).label])];
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = csvText(rows);
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `orders-${period}-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(a.href);
   };
 

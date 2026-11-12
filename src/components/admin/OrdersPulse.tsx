@@ -4,6 +4,7 @@ import { Money, Panel, Row, Rows, Segmented, Stat, StatGrid, inputCls } from "@/
 import { Button } from "@/components/ui/button";
 import { adminDatabase } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
+import { csvText } from "@/lib/csv";
 
 /* Orders pulse — how many orders came in, for any day or range.
    Counts paid orders by the moment the customer paid. */
@@ -79,7 +80,7 @@ export default function OrdersPulse({ onRefresh }: { onRefresh?: () => void } = 
   const drill = (bucket: string) => `/admin/orders/received?bucket=${bucket}&source=${source}&from=${ymd(start)}&to=${ymd(end)}`;
   const exportCsv = () => {
     const lines = [["day", "orders"], ...(byDay.length ? byDay : [[ymd(start), String(n)]]).map(([d, c]) => [d, String(c)])];
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lines.map((r) => r.join(",")).join("\n")], { type: "text/csv" })); a.download = `datayego-orders-${ymd(start)}-to-${ymd(end)}.csv`; a.click();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csvText(lines)], { type: "text/csv" })); a.download = `datayego-orders-${ymd(start)}-to-${ymd(end)}.csv`; a.click();
   };
 
   return (

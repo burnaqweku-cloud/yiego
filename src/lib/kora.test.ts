@@ -8,7 +8,7 @@ const env = new Map<string, string>([["KORA_SECRET_KEY", "sk_test_fixture_not_a_
 vi.stubGlobal("Deno", { env: { get: (key: string) => env.get(key) } });
 vi.stubGlobal("crypto", webcrypto);
 beforeEach(() => { vi.stubGlobal("AbortSignal", { timeout: () => new AbortController().signal }); });
-afterEach(() => { vi.unstubAllGlobals(); env.delete("KORA_LIVE_ENABLED"); env.delete("KORA_GHS_REFUNDS_VERIFIED"); env.set("KORA_SECRET_KEY", "sk_test_fixture_not_a_credential"); vi.stubGlobal("Deno", { env: { get: (key: string) => env.get(key) } }); vi.stubGlobal("crypto", webcrypto); });
+afterEach(() => { vi.unstubAllGlobals(); env.delete("KORA_LIVE_ENABLED"); env.set("KORA_SECRET_KEY", "sk_test_fixture_not_a_credential"); vi.stubGlobal("Deno", { env: { get: (key: string) => env.get(key) } }); vi.stubGlobal("crypto", webcrypto); });
 
 describe("Kora rollout and financial safety", () => {
   it("never enables live payments just because a live key replaces the test key", () => {
@@ -52,9 +52,25 @@ describe("Kora rollout and financial safety", () => {
     expect(koraRefundState("success")).toBe("success");
     expect(koraRefundState("accepted")).toBe("unknown");
   });
-  it("blocks GHS refunds until support is explicitly verified", async () => {
+  it("asks Kora for a refund with our own reference and treats 'processing' as accepted, not finished", async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: true, message: "Refund successfully initiated", data: { status: "processing", refund_reference: "RF-YG-TEST000001" } })));
+    vi.stubGlobal("fetch", fetcher);
+    const r = await initiateKoraRefund({ paymentReference: "YGDATA-test", reference: "RF-YG-TEST000001", reason: "MTN verification", webhookUrl: "https://example.invalid/hook" });
+    expect(fetcher.mock.calls[0][0]).toBe("https://api.korapay.com/merchant/api/v1/refunds/initiate");
+    const sent = JSON.parse(fetcher.mock.calls[0][1].body);
+    expect(sent).toEqual({ payment_reference: "YGDATA-test", reference: "RF-YG-TEST000001", reason: "MTN verification", webhook_url: "https://example.invalid/hook" });
+    expect(sent.amount).toBeUndefined(); // no amount = the full payment goes back
+    expect(r.ok).toBe(true); expect(r.state).toBe("processing");
+  });
+  it("does not count a refused refund as accepted", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: false, message: "Amount can't be less than GHS 10", data: null }), { status: 400 })));
+    const r = await initiateKoraRefund({ paymentReference: "YGDATA-test", reference: "RF-YG-TEST000001" });
+    expect(r.ok).toBe(false); expect(r.state).toBe("unknown");
+  });
+  it("refuses a malformed refund request before anything is sent", async () => {
     const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
-    await expect(initiateKoraRefund({ paymentReference: "TEST", reference: "REFUND", amount: 4.17 })).rejects.toThrow("not yet verified");
+    await expect(initiateKoraRefund({ paymentReference: "", reference: "RF-1" })).rejects.toThrow("Invalid Kora refund request");
+    await expect(initiateKoraRefund({ paymentReference: "P", reference: "R".repeat(51) })).rejects.toThrow("Invalid Kora refund request");
     expect(fetcher).not.toHaveBeenCalled();
   });
   it("passes checkout amounts as decimal GHS, without multiplying by 100", async () => {

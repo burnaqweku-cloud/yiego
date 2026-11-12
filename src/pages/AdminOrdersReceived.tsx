@@ -12,6 +12,7 @@ import SupplierBadge, { useFallbackOrigins } from "@/components/admin/SupplierBa
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { exactOrderReference, findAdminOrder } from "@/lib/admin-order-search";
+import { csvText } from "@/lib/csv";
 
 /* Orders received, drilled in: every order behind one of the cards on the
    Orders page, for the same day or range. */
@@ -116,7 +117,7 @@ export default function AdminOrdersReceived() {
 
   const exportCsv = () => {
     const lines = [["paid at", "order", "network", "bundle", "recipient", "amount", "status", "detail", "source"], ...list.map((o) => [o.paid_at, o.order_reference, o.networks?.name ?? "", o.data_products?.name ?? "", o.recipient_phone, Number(o.amount).toFixed(2), o.status, reasonOf(o).replace(/"/g, "'"), o.agent_id ? "agent" : "platform"])];
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lines.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n")], { type: "text/csv" })); a.download = `datayego-orders-${bucket}-${from}-${to}.csv`; a.click();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csvText(lines)], { type: "text/csv" })); a.download = `datayego-orders-${bucket}-${from}-${to}.csv`; a.click();
   };
 
   return (

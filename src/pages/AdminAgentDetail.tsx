@@ -12,6 +12,7 @@ import AdminRecordModal from "@/components/admin/AdminRecordModal";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
+import { csvText } from "@/lib/csv";
 
 /* One agent, in full: who they are, their plan, every order through them
    (store sale vs their own purchase), earnings, payouts, free months. */
@@ -106,7 +107,7 @@ export default function AdminAgentDetail() {
   };
   const exportCsv = () => {
     const lines = [["paid at", "order", "source", "network", "gb", "recipient", "sold for", "agent price", "agent share", "status"], ...shown.map((o) => [o.paid_at, o.order_reference, isSelf(o) ? "own purchase" : "store sale", o.networks?.name ?? "", String(o.data_products?.capacity_gb ?? ""), o.recipient_phone, Number(o.amount).toFixed(2), Number(o.agent_price ?? 0).toFixed(2), Number(o.agent_margin ?? 0).toFixed(2), stage(o)])];
-    const el = document.createElement("a"); el.href = URL.createObjectURL(new Blob([lines.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n")], { type: "text/csv" })); el.download = `datayego-agent-${a?.slug}-${range}.csv`; el.click();
+    const el = document.createElement("a"); el.href = URL.createObjectURL(new Blob([csvText(lines)], { type: "text/csv" })); el.download = `datayego-agent-${a?.slug}-${range}.csv`; el.click();
   };
 
   if (a === undefined) return null;

@@ -15,8 +15,12 @@ export async function sendEmail(input: { to: string; subject: string; html: stri
   return { skipped: false as const, ok: res.ok, status: res.status, payload };
 }
 
+/** A store's name is typed by its agent: it is shown as text, never run as markup. */
+const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
 /* ── Shared frame. `brand` swaps the DataYego header/footer for a store's. ── */
-function frame(brand: string | undefined, inner: string) {
+function frame(rawBrand: string | undefined, inner: string) {
+  const brand = rawBrand ? esc(rawBrand) : undefined;
   const header = brand
     ? `<tr><td style="background:#0b1512;padding:18px 28px;"><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;">${brand}</span></td></tr>`
     : `<tr><td style="background:#0b1512;padding:18px 28px;"><img src="https://datayego.com/yiego-icon-192.png" width="34" height="34" alt="DataYego" style="display:inline-block;vertical-align:middle;border-radius:9px;" /><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;margin-left:10px;">DataYego</span></td></tr>`;
@@ -60,7 +64,7 @@ export async function sendOrderConfirmation(supabase: any, orderId: string) {
   const trackUrl = store ? `${siteUrl}/s/${store.slug}/track?reference=${encodeURIComponent(row.order_reference)}` : `${siteUrl}/track-order?reference=${encodeURIComponent(row.order_reference)}`;
   const amount = `${row.currency ?? "GHS"} ${Number(row.amount).toFixed(2)}`;
   const product = row.data_products?.name ?? "Data bundle"; const network = row.networks?.name ?? "";
-  const hint = store ? `Or open ${store.store_name} and use “Track an order” with <b>${row.order_reference}</b>.` : `Or go to datayego.com, choose “Track an order”, and enter <b>${row.order_reference}</b>.`;
+  const hint = store ? `Or open ${esc(store.store_name)} and use “Track an order” with <b>${row.order_reference}</b>.` : `Or go to datayego.com, choose “Track an order”, and enter <b>${row.order_reference}</b>.`;
   const eyebrow = handedOver ? "Order confirmed" : "Payment received";
   const title = handedOver ? "Your data order is on its way" : "We're verifying your order";
   const intro = handedOver

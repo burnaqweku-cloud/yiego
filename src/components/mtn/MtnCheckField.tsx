@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Clock, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
-import { checkNumbers, isMtn, isValidGh, normalizeGh, STATUS_COPY, SUBMIT_COPY, submitNumbers, type CheckResult } from "@/lib/mtnCheck";
+import { checkNumbers, isMtn, isValidGh, normalizeGh, STATUS_COPY, SUBMIT_COPY, submitLanded, submitNumbers, type CheckResult } from "@/lib/mtnCheck";
 
 /* One field. Checks itself as soon as a full number is typed; colours the field;
    offers "Submit for verification" on numbers MTN hasn't approved yet. */
@@ -33,7 +33,7 @@ export default function MtnCheckField({ source, placeholder = "Enter MTN number"
   const submit = async () => {
     if (!result) return;
     setSubmitting(true);
-    try { const [o] = await submitNumbers([result.msisdn], source === "shop" ? "shop" : "checker"); setSubmitNote(SUBMIT_COPY[o.outcome]); if (o.outcome === "already_approved") setResult({ ...result, status: "approved" }); else setResult({ ...result, status: "unapproved", submitted: new Date().toISOString() }); }
+    try { const [o] = await submitNumbers([result.msisdn], source === "shop" ? "shop" : "checker"); setSubmitNote(SUBMIT_COPY[o.outcome]); if (o.outcome === "already_approved") setResult({ ...result, status: "approved" }); else if (submitLanded(o.outcome)) setResult({ ...result, status: "unapproved", submitted: new Date().toISOString() }); }
     catch { toast.error("Couldn't submit right now. Please try again."); }
     finally { setSubmitting(false); }
   };

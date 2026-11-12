@@ -103,7 +103,9 @@ async function findConversation(supabase: SupabaseAdmin, token: string, userId: 
   if (userId) { const { data } = await supabase.from("support_conversations").select("id, conversation_token, user_id, status").eq("user_id", userId).neq("status", "closed").order("last_message_at", { ascending: false }).limit(1).maybeSingle<ConversationRow>(); if (data) return data; }
   return null;
 }
-function sanitizeClientHistory(history: RequestBody["history"]): Msg[] { if (!Array.isArray(history)) return []; return history.slice(-8).map((i) => ({ role: i.role === "assistant" ? "assistant" as const : "user" as const, content: String(i.content ?? "").slice(0, 1500) })).filter((i) => i.content); }
+/* History sent by the browser is only ever the customer's own words: a line marked "assistant" could be written by
+   anyone to put words in the assistant's mouth, so those are dropped. The assistant's real replies come from the database. */
+function sanitizeClientHistory(history: RequestBody["history"]): Msg[] { if (!Array.isArray(history)) return []; return history.slice(-8).filter((i) => i?.role !== "assistant").map((i) => ({ role: "user" as const, content: String(i.content ?? "").slice(0, 1500) })).filter((i) => i.content); }
 
 /* ---- Tools ---- */
 function customerDeliveryStatus(orderStatus: string, paymentStatus: string, resolution: string | null) {

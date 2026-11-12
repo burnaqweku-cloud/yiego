@@ -42,4 +42,12 @@ describe("agreed refund policy", () => {
     expect(() => validateRefundAgreement(quote, {})).toThrow("credited our balance");
     expect(() => validateRefundAgreement(quote, { supplierCreditConfirmed: true, supplierCreditNote: "Supplier confirmed balance credited in support chat" })).not.toThrow();
   });
+  it("refunds a Kora payment in full through Kora, never with a fee deduction", () => {
+    const kora = { ...base, gateway: "kora" as const, paidPesewas: 1404, feePesewas: undefined, orderAmount: 13.5 };
+    expect(calculateRefundQuote({ ...kora, policy: "full" })).toMatchObject({ method: "kora", policy: "full", paid: 14.04, processingFee: 0, refund: 14.04 });
+    expect(() => calculateRefundQuote(kora)).toThrow("only to Paystack");
+  });
+  it("still names Paystack when no gateway is given", () => {
+    expect(calculateRefundQuote({ ...base, policy: "full" }).method).toBe("paystack");
+  });
 });

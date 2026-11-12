@@ -112,11 +112,14 @@ export async function readKoraRefund(reference: string) {
   return { ...result, state: koraRefundState(result.payload?.data?.status) };
 }
 
-/** Prepared API adapter only: no order/ledger mutations. A processing result is NOT completion.
- * GHS refund availability is not established by the public docs (only NGN minimum is listed).
- * Do not connect this to the refund engine until GHS support and accounting are verified. */
+/** Kora support confirmed in writing (12 Nov 2026) that GHS mobile-money payments can be refunded through this API:
+ *  minimum GHS 10, and the customer is paid back within 24 to 48 working hours. */
+export const KORA_MIN_REFUND_GHS = 10;
+
+/** Asks Kora to refund a payment. This only makes the request: it changes no order and no ledger.
+ *  "processing" means Kora accepted it, not that the customer has the money yet. `reference` is ours and must be
+ *  unique per attempt; Kora refuses a repeat of the same reference, which is what stops a double refund. */
 export async function initiateKoraRefund(input: { paymentReference: string; reference: string; amount?: number; reason?: string; webhookUrl?: string }) {
-  if (Deno.env.get("KORA_GHS_REFUNDS_VERIFIED") !== "true") throw new Error("Kora GHS refunds are not yet verified");
   if (!input.paymentReference || !input.reference || input.reference.length > 50 || (input.amount !== undefined && (!Number.isFinite(input.amount) || input.amount <= 0))) throw new Error("Invalid Kora refund request");
   const result = await koraRequest("/refunds/initiate", {
     payment_reference: input.paymentReference, reference: input.reference,

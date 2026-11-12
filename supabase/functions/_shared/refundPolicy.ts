@@ -1,6 +1,6 @@
 export type RefundPolicy = "full" | "mtn_verification_fee";
 export type RefundQuote = {
-  method: "wallet" | "paystack";
+  method: "wallet" | "paystack" | "kora";
   policy: RefundPolicy;
   paid: number;
   processingFee: number;
@@ -14,6 +14,8 @@ export function calculateRefundQuote(input: {
   wallet: boolean; orderAmount: number; paidPesewas?: number;
   feePesewas?: number; verificationHold: boolean; supplierAttemptOpen: boolean;
   supplierPurchased: boolean; policy: RefundPolicy; reducedEnabled: boolean;
+  /** Which gateway took the payment. Kora refunds are always the full amount paid. */
+  gateway?: "paystack" | "kora";
 }): RefundQuote {
   if (input.supplierAttemptOpen) throw new Error("Supplier funds must be resolved before refunding.");
   const orderPesewas = Math.round(input.orderAmount * 100);
@@ -26,6 +28,7 @@ export function calculateRefundQuote(input: {
   const paid = input.paidPesewas;
   if (paid === undefined || !Number.isSafeInteger(paid) || paid < orderPesewas) throw new Error("Verified payment amount is unavailable.");
   if (input.policy === "mtn_verification_fee") {
+    if (input.gateway === "kora") throw new Error("Fee deduction applies only to Paystack payments. Use a full refund.");
     if (!input.reducedEnabled) throw new Error("Fee-excluding refunds are not activated. Use a full refund.");
     if (!input.verificationHold) throw new Error("Fee deduction applies only to MTN verification holds.");
     const fee = input.feePesewas;
@@ -33,7 +36,7 @@ export function calculateRefundQuote(input: {
     return { method: "paystack", policy: input.policy, paid: paid / 100, processingFee: fee / 100,
       refund: (paid - fee) / 100, verificationHold: true, supplierConfirmationRequired: input.supplierPurchased };
   }
-  return { method: "paystack", policy: "full", paid: paid / 100, processingFee: 0,
+  return { method: input.gateway ?? "paystack", policy: "full", paid: paid / 100, processingFee: 0,
     refund: paid / 100, verificationHold: input.verificationHold, supplierConfirmationRequired: input.supplierPurchased };
 }
 

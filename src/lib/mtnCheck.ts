@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 /* MTN number check against our supplier's approved list. Public, no login, no limits. */
 export type CheckStatus = "approved" | "not_approved" | "unapproved" | "blocked" | "not_enforced" | "invalid" | "not_mtn";
 export interface CheckResult { msisdn: string; status: CheckStatus; message: string | null; submitted: string | null }
-export interface SubmitOutcome { msisdn: string; outcome: "submitted" | "submitted_unconfirmed" | "already_submitted" | "already_approved" | "blocked"; message?: string | null }
+export interface SubmitOutcome { msisdn: string; outcome: "submitted" | "submitted_unconfirmed" | "already_submitted" | "already_approved" | "blocked" | "try_later" | "limit_reached"; message?: string | null }
 
 const MTN = ["024", "025", "053", "054", "055", "059"];
 export const normalizeGh = (v: string) => { const d = v.replace(/\D/g, ""); return d.startsWith("233") ? `0${d.slice(3)}` : d; };
@@ -37,4 +37,8 @@ export const SUBMIT_COPY: Record<SubmitOutcome["outcome"], string> = {
   already_submitted: "This number is already with MTN for verification.",
   already_approved: "Good news: this number is already approved.",
   blocked: "Our supplier can't send bundles to this number.",
+  try_later: "We couldn't reach MTN's list just now, so nothing was submitted. Please try again in a few minutes.",
+  limit_reached: "You've reached today's limit for submitting numbers. Try again tomorrow. You can still buy: MTN verifies the number with your first order.",
 };
+/** The number is now with MTN (or already was). The other outcomes changed nothing. */
+export const submitLanded = (o: SubmitOutcome["outcome"]) => o === "submitted" || o === "submitted_unconfirmed" || o === "already_submitted";

@@ -10,6 +10,7 @@ import { RecordTopupModal } from "@/components/admin/FinanceForms";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
+import { csvText } from "@/lib/csv";
 
 /* One supplier's money: what they report, what our books say, where it went. */
 interface Supplier { id: string; code: string; name: string; status: string; confirmed_balance: number | null; confirmed_at: string | null; metadata?: { topup_fee_rate?: number } | null }
@@ -59,7 +60,7 @@ export default function AdminSupplierBalance() {
 
   const exportCsv = () => {
     const lines = [["paid at", "order", "network", "gb", "recipient", "cost", "status"], ...orders.map((o) => [o.paid_at, o.order_reference, o.networks?.name ?? "", String(o.data_products?.capacity_gb ?? ""), o.recipient_phone, Number(o.cost_amount ?? 0).toFixed(2), o.status])];
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lines.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n")], { type: "text/csv" })); a.download = `datayego-${code}-${range}.csv`; a.click();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csvText(lines)], { type: "text/csv" })); a.download = `datayego-${code}-${range}.csv`; a.click();
   };
 
   if (!loading && !s) return <div className="text-[13px] text-muted-foreground">No supplier called “{code}”.</div>;

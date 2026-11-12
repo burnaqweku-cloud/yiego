@@ -7,6 +7,7 @@ import { Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid, inputCls } fr
 import { Button } from "@/components/ui/button";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
+import { csvText } from "@/lib/csv";
 
 /* Customer wallets — who is holding what, and every movement behind it.
    Tap a customer to see only their history. */
@@ -64,7 +65,7 @@ export default function AdminWallet() {
 
   const exportCsv = () => {
     const rows = [["date", "customer", "type", "direction", "amount", "balance after", "reference", "note"], ...filteredEntries.map((e) => [e.created_at, walletById.get(e.wallet_id)?.email ?? "", e.type, e.direction, Number(e.amount).toFixed(2), Number(e.balance_after).toFixed(2), e.reference, (e.note ?? "").replace(/"/g, "'")])];
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n")], { type: "text/csv" })); a.download = `datayego-wallets-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csvText(rows)], { type: "text/csv" })); a.download = `datayego-wallets-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
   };
 
   return (

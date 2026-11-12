@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
+import { csvText } from "@/lib/csv";
 
 /* Money put in — every cedi that came from you rather than from customers:
    supplier top-ups (with their charges) and balances carried in at launch. */
@@ -66,7 +67,7 @@ export default function AdminFunding() {
 
   const exportCsv = () => {
     const rows = [["date", "type", "paid from", "supplier", "amount", "fee", "total paid", "note"], ...filtered.map((e) => [e.occurred_at, e.kind === "opening_balance" ? "carried in" : "top-up", e.kind === "opening_balance" ? "" : fromBusiness(e) ? "business account" : "outside", supplierById.get(e.supplier_id ?? "")?.name ?? "", intoOf(e).toFixed(2), feeOf(e).toFixed(2), (intoOf(e) + feeOf(e)).toFixed(2), (e.note ?? "").replace(/"/g, "'")])];
-    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const csv = csvText(rows);
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `datayego-money-put-in-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
   };
 

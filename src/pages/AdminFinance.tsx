@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
+import { csvText } from "@/lib/csv";
 
 /* ═══════════════════════════════════════════════════════════════════════
    Finance — one page over the ledger.
@@ -93,7 +94,7 @@ export default function AdminFinance() {
   const exportCsv = () => {
     const head = ["date", "kind", "reference", "amount", "source", "note"];
     const rows = ledger.map((e) => [e.occurred_at, e.kind, e.reference ?? "", e.amount, e.source, (e.note ?? "").replace(/"/g, "'")]);
-    const csv = [head, ...rows].map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+    const csv = csvText([head, ...rows]);
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `datayego-ledger-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
   };
 

@@ -6,7 +6,7 @@ import Seo from "@/components/seo/Seo";
 import { metaFor } from "@/lib/site";
 import { Button } from "@/components/ui/button";
 import MtnCheckField from "@/components/mtn/MtnCheckField";
-import { checkNumbers, normalizeGh, STATUS_COPY, SUBMIT_COPY, submitNumbers, type CheckResult, type CheckStatus } from "@/lib/mtnCheck";
+import { checkNumbers, normalizeGh, STATUS_COPY, SUBMIT_COPY, submitLanded, submitNumbers, type CheckResult, type CheckStatus } from "@/lib/mtnCheck";
 
 /* datayego.com/check-mtn: check one number, or paste up to 100. Public, free, no login. */
 const parse = (text: string) => [...new Set(text.split(/[^\d+]+/).map(normalizeGh).filter((n) => n.length >= 9))].slice(0, 100);
@@ -38,8 +38,11 @@ export default function CheckMtn({ embedded = false }: { embedded?: boolean } = 
       const notes: Record<string, string> = {}; for (const o of outcomes) notes[o.msisdn] = SUBMIT_COPY[o.outcome];
       setSubmitNotes(notes);
       const n = outcomes.filter((o) => o.outcome === "submitted" || o.outcome === "submitted_unconfirmed").length;
-      toast.success(n ? `${n} number${n === 1 ? "" : "s"} submitted for MTN verification.` : "Nothing new to submit.");
-      setResults((prev) => (prev ?? []).map((r) => notes[r.msisdn] ? { ...r, status: outcomes.find((o) => o.msisdn === r.msisdn)?.outcome === "already_approved" ? "approved" : "unapproved" as CheckStatus, submitted: new Date().toISOString() } : r));
+      const held = outcomes.filter((o) => o.outcome === "limit_reached" || o.outcome === "try_later").length;
+      if (held && !n) toast.error(outcomes.some((o) => o.outcome === "limit_reached") ? "Today's limit for submitting numbers is reached. Try again tomorrow." : "We couldn't reach MTN's list just now. Please try again in a few minutes.");
+      else toast.success(n ? `${n} number${n === 1 ? "" : "s"} submitted for MTN verification.${held ? ` ${held} not submitted: see the note beside each.` : ""}` : "Nothing new to submit.");
+      // Only numbers that really went to MTN (or were found approved) change; the rest stay as they were so they can be tried again.
+      setResults((prev) => (prev ?? []).map((r) => { const o = outcomes.find((x) => x.msisdn === r.msisdn)?.outcome; return o === "already_approved" ? { ...r, status: "approved" as CheckStatus } : o && submitLanded(o) ? { ...r, status: "unapproved" as CheckStatus, submitted: new Date().toISOString() } : r; }));
     } catch { toast.error("Couldn't submit right now. Please try again."); } finally { setBusy(false); }
   };
   const copyApproved = async () => {

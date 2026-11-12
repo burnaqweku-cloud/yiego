@@ -2,6 +2,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3.25.76";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { calculateRefundQuote, validateRefundAgreement } from "../_shared/refundPolicy.ts";
+import { KORA_MIN_REFUND_GHS, koraConfigured, verifyKoraCharge } from "../_shared/kora.ts";
 
 // MTN verification fee deduction: refund-order re-verifies the actual fee, locks the order and books the retained fee.
 const REDUCED_ENABLED = true;
@@ -55,7 +56,18 @@ Deno.serve(async (req) => {
     const wallet = Boolean(order.wallet_ledger_entry_id);
     let paidPesewas: number | undefined;
     let feePesewas: number | undefined;
-    if (!wallet) {
+    // Which gateway took the money: the confirmed payment record says, not the order's checkout choice.
+    const paidIntent = wallet ? null : checked(await db.from("payment_intents").select("provider, amount").eq("order_id", order.id).eq("status", "succeeded").order("verified_at", { ascending: false }).limit(1).maybeSingle());
+    const viaKora = paidIntent?.provider === "kora";
+    if (viaKora) {
+      // Kora-paid: the order keeps Kora's reference in the same column. Confirm the charge with Kora itself.
+      if (!order.paystack_reference) return json({ error: "No supported payment channel found" }, 409);
+      if (!koraConfigured()) return json({ error: "Kora is not configured" }, 503);
+      const charge = await verifyKoraCharge(order.paystack_reference);
+      const pesewas = Math.round(charge.amount * 100);
+      if (!charge.ok || !Number.isSafeInteger(pesewas) || Math.abs(pesewas - Math.round(Number(paidIntent.amount) * 100)) > 2) return json({ error: "Verified payment does not match this order" }, 409);
+      paidPesewas = pesewas;
+    } else if (!wallet) {
       if (!order.paystack_reference) return json({ error: "No supported payment channel found" }, 409);
       const secret = Deno.env.get("PAYSTACK_SECRET_KEY");
       if (!secret) return json({ error: "Paystack is not configured" }, 503);
@@ -71,28 +83,40 @@ Deno.serve(async (req) => {
     // Manual credit confirmation can resolve an admin-reviewed supplier failure, never a verification fee exception.
     const manualRecovery = !hold && b.supplierCreditConfirmed === true && (b.supplierCreditNote?.length ?? 0) >= 5;
     const inputs = { wallet, orderAmount: Number(order.amount), paidPesewas, feePesewas, verificationHold: hold,
-      supplierAttemptOpen: unresolved && !manualRecovery, supplierPurchased: purchased || Boolean(last), policy: b.policy, reducedEnabled: REDUCED_ENABLED };
+      supplierAttemptOpen: unresolved && !manualRecovery, supplierPurchased: purchased || Boolean(last), policy: b.policy, reducedEnabled: REDUCED_ENABLED,
+      gateway: viaKora ? "kora" as const : "paystack" as const };
+    // Kora will not refund small payments. The money can still be sent by hand and recorded as a manual refund.
+    const koraTooSmall = viaKora && (paidPesewas ?? 0) < KORA_MIN_REFUND_GHS * 100;
+    const koraBlock = koraTooSmall ? `Kora cannot refund less than GHS ${KORA_MIN_REFUND_GHS}. Send the money yourself, then record it with the manual refund.` : null;
     if (b.action === "quote") {
       const fullInputs = { ...inputs, policy: "full" as const, supplierAttemptOpen: false };
       const quote = calculateRefundQuote(fullInputs);
       let alternative = null;
-      if (hold && !wallet && !unresolved) {
+      if (hold && !wallet && !unresolved && !viaKora) {
         try { alternative = calculateRefundQuote({ ...inputs, policy: "mtn_verification_fee", reducedEnabled: true }); } catch { /* no guessed fee */ }
       }
       return json({ quote, alternative, reducedEnabled: REDUCED_ENABLED,
-        blockedReason: hold && unresolved ? "A supplier purchase is still unresolved. Confirm recovery before any refund." : null });
+        blockedReason: hold && unresolved ? "A supplier purchase is still unresolved. Confirm recovery before any refund." : null,
+        // Stops the automatic refund only; a manual refund with a transfer reference is still allowed.
+        channelBlockedReason: koraBlock });
     }
     const quote = calculateRefundQuote(inputs);
     validateRefundAgreement(quote, b);
     if (!b.reason || b.expectedRefund === undefined || Math.round(b.expectedRefund * 100) !== Math.round(quote.refund * 100)) return json({ error: "Refresh the quote and confirm its amount and reason" }, 409);
     if (b.manual && (!b.manualReference || b.policy !== "full")) return json({ error: "Manual refunds require a full refund and transfer reference" }, 400);
+    if (koraBlock && !b.manual) return json({ error: koraBlock }, 409);
     // refund-order stays the money authority; it re-verifies the fee and amount before refunding.
     const { data, error } = await db.functions.invoke("refund-order", {
       headers: { Authorization: `Bearer ${token}` },
       body: { orderReference: order.order_reference, reason: b.reason, ...(b.manual ? { manual: true, manualReference: b.manualReference } : {}),
         ...(quote.policy === "mtn_verification_fee" ? { policy: "mtn_verification_fee", refundPesewas: Math.round(quote.refund * 100), customerAcceptanceNote: b.customerAcceptanceNote } : {}) },
     });
-    if (error || data?.error) return json({ error: "Refund could not be confirmed. Review the order before retrying." }, 409);
+    if (error || data?.error) {
+      // Say why when the refund engine said why (a gateway decline, a busy order), so the admin is not left guessing.
+      let detail = String(data?.error ?? "");
+      try { const body = await (error as { context?: Response } | null)?.context?.json(); detail = String(body?.detail ?? body?.error ?? detail); } catch { /* no readable reason */ }
+      return json({ error: detail && !/[_{}]/.test(detail) ? `Refund not completed: ${detail}` : "Refund could not be confirmed. Review the order before retrying." }, 409);
+    }
     checked(await db.from("order_events").insert({ order_id: order.id, event_type: "refund.policy_confirmation", message: quote.policy === "mtn_verification_fee" ? "Administrator confirmed the fee-deducted refund the customer accepted" : "Administrator confirmed the full refund quote", metadata: { adminId: auth.user.id, quote, supplierCreditNote: b.supplierCreditNote, customerAcceptanceNote: b.customerAcceptanceNote, manualReference: b.manualReference } }));
     return json(data);
   } catch (error) { return json({ error: error instanceof Error ? error.message : "Refund quote is unavailable" }, 409); }

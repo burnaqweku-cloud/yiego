@@ -7,7 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
 import type { RefundQuote } from "../../../supabase/functions/_shared/refundPolicy";
 
-type Preview = { quote: RefundQuote; alternative: RefundQuote | null; reducedEnabled: boolean; blockedReason: string | null };
+type Preview = { quote: RefundQuote; alternative: RefundQuote | null; reducedEnabled: boolean; blockedReason: string | null; channelBlockedReason?: string | null };
+/** The reason the server gave. A refused request carries it in the response body, which the client does not unpack by itself. */
+async function serverReason(err: unknown, data?: { error?: string } | null): Promise<string> {
+  if (data?.error) return data.error;
+  try { const body = await (err as { context?: Response } | null)?.context?.json(); if (typeof body?.error === "string") return body.error; } catch { /* no readable reason */ }
+  return "";
+}
 export default function RefundDialog({ reference, manual = false, fullOnly = false, initialReason = "", onClose, onDone }: {
   reference: string; manual?: boolean; fullOnly?: boolean; initialReason?: string; onClose: () => void; onDone: () => void;
 }) {
@@ -23,15 +29,18 @@ export default function RefundDialog({ reference, manual = false, fullOnly = fal
   const [transferReference, setTransferReference] = useState("");
   useEffect(() => {
     let active = true;
-    void supabase.functions.invoke<Preview & { error?: string }>("refund-policy", { body: { action: "quote", orderReference: reference } }).then(({ data, error: err }) => {
+    void supabase.functions.invoke<Preview & { error?: string }>("refund-policy", { body: { action: "quote", orderReference: reference } }).then(async ({ data, error: err }) => {
+      const why = err || data?.error || !data?.quote ? await serverReason(err, data) : "";
       if (!active) return;
-      if (err || data?.error || !data?.quote) setError(data?.error || "Could not read the refund quote. No money has moved.");
+      if (err || data?.error || !data?.quote) setError(why || "Could not read the refund quote. No money has moved.");
       else setPreview(data);
     });
     return () => { active = false; };
   }, [reference]);
   const quote = reduced ? preview?.alternative : preview?.quote;
-  const customerMessage = quote ? `Your order ${reference} can be refunded. ${quote.verificationHold ? "You can instead wait for MTN verification and delivery. " : ""}${quote.policy === "mtn_verification_fee" ? `You paid ${formatGHS(quote.paid)}. Paystack's processing fee is ${formatGHS(quote.processingFee)}. If you choose and agree to this refund, you receive ${formatGHS(quote.refund)}.` : `A full refund of ${formatGHS(quote.refund)} returns ${quote.method === "wallet" ? "to your DataYego wallet, without a new fee" : "to your original payment channel"}.`}` : "";
+  const customerMessage = quote ? `Your order ${reference} can be refunded. ${quote.verificationHold ? "You can instead wait for MTN verification and delivery. " : ""}${quote.policy === "mtn_verification_fee" ? `You paid ${formatGHS(quote.paid)}. Paystack's processing fee is ${formatGHS(quote.processingFee)}. If you choose and agree to this refund, you receive ${formatGHS(quote.refund)}.` : `A full refund of ${formatGHS(quote.refund)} returns ${quote.method === "wallet" ? "to your DataYego wallet, without a new fee" : quote.method === "kora" && !manual ? "to the mobile money or card you paid with, usually within 24 to 48 working hours" : "to your original payment channel"}.`}` : "";
+  const viaKora = quote?.method === "kora" && !manual;
+  const channelBlock = !manual ? preview?.channelBlockedReason ?? null : null;
   const confirm = async () => {
     if (!quote || busy) return;
     setBusy(true); setError("");
@@ -40,12 +49,13 @@ export default function RefundDialog({ reference, manual = false, fullOnly = fal
         supplierCreditConfirmed: credit, supplierCreditNote: creditNote, customerAccepted: accepted, customerAcceptanceNote: acceptanceNote,
         ...(manual ? { manual: true, manualReference: transferReference } : {}) },
     });
+    const why = err || data?.error || data?.status !== "refunded" ? await serverReason(err, data) : "";
     setBusy(false);
-    if (err || data?.error || data?.status !== "refunded") { setError(data?.error || "Refund outcome was not confirmed. Review the order before retrying."); return; }
-    toast.success(data.method === "wallet" ? "Full refund returned to the wallet." : quote.policy === "mtn_verification_fee" ? `Refunded ${formatGHS(quote.refund)} after Paystack's ${formatGHS(quote.processingFee)} fee.` : "Full refund recorded through the original payment channel.");
+    if (err || data?.error || data?.status !== "refunded") { setError(why || "Refund outcome was not confirmed. Review the order before retrying."); return; }
+    toast.success(data.method === "wallet" ? "Full refund returned to the wallet." : data.method === "kora" ? "Refund sent through Kora. The customer gets it within 24 to 48 working hours." : quote.policy === "mtn_verification_fee" ? `Refunded ${formatGHS(quote.refund)} after Paystack's ${formatGHS(quote.processingFee)} fee.` : "Full refund recorded through the original payment channel.");
     onDone(); onClose();
   };
-  const disabled = !quote || busy || Boolean(preview?.blockedReason) || !reason.trim()
+  const disabled = !quote || busy || Boolean(preview?.blockedReason) || Boolean(channelBlock) || !reason.trim()
     || (quote.supplierConfirmationRequired && (!credit || creditNote.trim().length < 5))
     || (reduced && (!accepted || acceptanceNote.trim().length < 5)) || (manual && !transferReference.trim());
   return <Modal open onClose={() => { if (!busy) onClose(); }} label="Refund quote">
@@ -63,7 +73,8 @@ export default function RefundDialog({ reference, manual = false, fullOnly = fal
       {reduced && <div className="space-y-2"><label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />Customer requested and accepted this exact reduced refund</label><textarea aria-label="Customer acceptance record" className="onyx-field" value={acceptanceNote} onChange={(e) => setAcceptanceNote(e.target.value)} maxLength={500} placeholder="Record informed agreement, amount and support reference" /></div>}
       {quote && !fullOnly && <label className="block space-y-2 text-sm"><span>Refund reason</span><textarea className="onyx-field" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300} /></label>}
       {manual && <label className="block space-y-2 text-sm"><span>Transfer reference — money already sent in full</span><input className="onyx-field" value={transferReference} onChange={(e) => setTransferReference(e.target.value)} maxLength={120} /></label>}
-      {(error || preview?.blockedReason) && <p role="alert" className="text-sm leading-6 text-danger">{error || preview?.blockedReason}</p>}
+      {viaKora && !channelBlock && <p className="text-sm leading-6 text-muted-foreground">Paid through Kora. Confirming sends the money back through Kora; the customer gets it within 24 to 48 working hours.</p>}
+      {(error || preview?.blockedReason || channelBlock) && <p role="alert" className="text-sm leading-6 text-danger">{error || preview?.blockedReason || channelBlock}</p>}
       <footer className="flex justify-end gap-2"><Button variant="quiet" disabled={busy} onClick={onClose}>Cancel</Button><Button disabled={disabled} onClick={() => void confirm()}>{busy ? <Loader2 className="animate-spin" /> : <RotateCcw />}{manual ? "Record refund" : fullOnly ? "Process refund" : "Confirm refund"}</Button></footer>
     </div>
   </Modal>;
