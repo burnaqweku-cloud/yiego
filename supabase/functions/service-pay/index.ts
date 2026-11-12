@@ -6,6 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
      { action: "confirm", token }                                           on return from Paystack: check the payment, give back the order
      { action: "run" } + internal secret                                    send SMS/email for delivered orders; re-check unpaid ones; send queued texts
      { action: "refund", orderId, reason } + admin sign-in                  send the money back through Paystack
+     (no action)                                                            OtessData's webhook: re-check open AFA registrations
    This file is self-contained on purpose: it shares no code with the data checkout, so changing one can never break the other. */
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-yiego-internal-secret", "Access-Control-Allow-Methods": "POST, OPTIONS" };
@@ -114,7 +115,16 @@ async function checkAfa(db: any, orderId: string, lookups: string[], key: string
       return;
     } catch (e) { seen.push({ lookup, error: e instanceof Error ? e.message : String(e) }); }
   }
-  await db.from("service_registrations").update({ note: `Sent. Waiting for OtessData to finish it. Last check: ${seen.map((x) => `${x.lookup} -> ${x.http ?? "no answer"}${x.status ? ` ${x.status}` : ""}`).join("; ")}`.slice(0, 300) }).eq("order_id", orderId).eq("status", "submitted");
+  await db.from("service_registrations").update({ updated_at: new Date().toISOString(), note: `Sent. Waiting for OtessData to finish it (can take 24 hours). Last check: ${seen.map((x) => `${x.lookup} -> ${x.http ?? "no answer"}${x.status ? ` ${x.status}` : ""}`).join("; ")}`.slice(0, 300) }).eq("order_id", orderId).eq("status", "submitted");
+}
+
+/** Checks registrations still open at OtessData that were not checked in the last `minutes` minutes. */
+// deno-lint-ignore no-explicit-any
+async function checkOpenAfa(db: any, key: string, minutes: number): Promise<void> {
+  const { data: open } = await db.from("service_registrations").select("order_id, supplier_reference, service_orders(reference)").eq("status", "submitted")
+    .lt("updated_at", new Date(Date.now() - minutes * 60000).toISOString()).order("updated_at").limit(10);
+  // deno-lint-ignore no-explicit-any
+  for (const s of (open ?? []) as any[]) await checkAfa(db, s.order_id, [s.supplier_reference, s.service_orders?.reference], key);
 }
 
 async function sendEmail(o: Delivered): Promise<string> {
@@ -168,12 +178,16 @@ Deno.serve(async (req) => {
       const { data: forms } = await db.rpc("service_registration_claim", { p_auto: Boolean(afaKey) });
       let registered = 0;
       for (const f of (forms ?? []) as Registration[]) { if ((await registerAfa(db, f, afaKey)) === "delivered") registered += 1; }
-      if (afaKey) {
-        const { data: open } = await db.from("service_registrations").select("order_id, supplier_reference, service_orders(reference)").eq("status", "submitted").limit(10);
-        // deno-lint-ignore no-explicit-any
-        for (const s of (open ?? []) as any[]) await checkAfa(db, s.order_id, [s.supplier_reference, s.service_orders?.reference], afaKey);
-      }
+      // A registration can take up to a day. OtessData's webhook wakes us when one ends; this slow re-check is the safety net.
+      if (afaKey) await checkOpenAfa(db, afaKey, 15);
       return json({ confirmed, sent, texts, registered });
+    }
+
+    // OtessData's webhook (it sends no "action"). What it says is not trusted: it only makes us ask OtessData, with our key, how the open registrations ended.
+    if (!action) {
+      const afaKey = Deno.env.get("OTESSDATA_API_KEY")?.trim() ?? "";
+      if (afaKey) await checkOpenAfa(db, afaKey, 0);
+      return json({ received: true });
     }
 
     // Who is calling (optional for start/confirm; required for refund).

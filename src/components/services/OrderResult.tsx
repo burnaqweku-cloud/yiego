@@ -7,7 +7,7 @@ export default function OrderResult({ order, sms = false }: { order: ServiceOrde
   if (order.kind === "afa") {
     const number = order.afa?.phone ?? order.phone;
     const [title, text, done] = order.status === "delivered" ? ["Registered", `${number} is now on MTN AFA${order.afa?.name ? `, in the name of ${order.afa.name}` : ""}.`, true]
-      : order.status === "processing" ? ["Registration in progress", `Payment received. We're registering ${number} on MTN AFA. This page updates when it's done${sms ? " and we'll text you" : ", and we'll email you"}. You don't need to pay again.`, false]
+      : order.status === "processing" ? ["Registration in progress", `Payment received. We're registering ${number} on MTN AFA. It can take up to 24 hours. This page updates when it's done${sms ? " and we'll text you" : ", and we'll email you"}. You don't need to pay again.`, false]
       : order.status === "refunded" ? ["Refunded", "This registration didn't go through and the payment was refunded.", false]
       : ["Waiting for your payment", "Once your payment goes through, we start the registration. If you've already paid, give it a moment.", false];
     const Icon = done ? CheckCircle2 : Clock3;

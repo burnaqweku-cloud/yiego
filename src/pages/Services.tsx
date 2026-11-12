@@ -196,7 +196,7 @@ export default function Services() {
       </Card>}
 
       {view === "afa" && afa && <Card className="p-5 sm:p-6">
-        <p className="text-[13.5px] leading-relaxed text-muted-foreground">You'll need the person's Ghana Card details. Fill in a short form, pay, and we register the number for you.</p>
+        <p className="text-[13.5px] leading-relaxed text-muted-foreground">You'll need the person's Ghana Card details. Fill in a short form, pay, and we register the number for you. It can take up to 24 hours.</p>
         <div className="mt-3 flex items-center justify-between gap-3"><span className="font-display text-[20px] font-semibold text-foreground">{formatGHS(afa.price)}</span>
           <button type="button" onClick={() => setRegistering(true)} className="onyx-btn-primary px-6 py-2.5 text-[14px]">Register</button></div>
       </Card>}
