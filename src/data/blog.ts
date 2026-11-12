@@ -216,7 +216,7 @@ export const BLOG_POSTS: BlogPost[] = [
       { type: "h3", text: "1. Network bonuses and promos" },
       { type: "p", text: "MTN, Telecel and AirtelTigo all run bonus campaigns from time to time: extra data on top of a bundle, a bonus for buying through their own app, a welcome offer on a new SIM, or a special bundle for a holiday weekend. These are real because they come from the network itself, through its own app, its own short code or its official social accounts. They are also small and temporary, and they change often, so check the network's own channels for what is running this month rather than trusting a forwarded message about it." },
       { type: "h3", text: "2. Referral and invite rewards" },
-      { type: "p", text: "Shops reward you for bringing customers. On DataYego, when you share your invite link and a friend buys their first bundle, your friend pays our agent price on that first bundle, and you get GH₵1.00 in your DataYego wallet once their order is delivered. If that friend goes on to become a DataYego agent and pays their first month, you get another GH₵5.00. There is no limit on how many friends you invite, and the reward is data money you spend in the shop, so it is free data in the plain sense: data you did not pay for." },
+      { type: "p", text: "Shops reward you for bringing customers. On DataYego, when you share your invite link and a friend buys their first bundle, your friend gets a special invite price on their first order, and you get GH₵1.00 in your DataYego wallet once their order is delivered. If that friend goes on to become a DataYego agent and pays their first month, you get another GH₵5.00. There is no limit on how many friends you invite, and the reward is data money you spend in the shop, so it is free data in the plain sense: data you did not pay for." },
       { type: "p", text: "Your link is in the Invite & earn panel on the [home page](/) and in your account once you sign up. Share it on WhatsApp; the preview carries your name." },
       { type: "h3", text: "3. Giveaways" },
       { type: "p", text: "A giveaway is a bundle at a special price, sometimes a token amount, for a limited number of people, one claim per phone number. DataYego announces ours on the WhatsApp channel first, and the [giveaway page](/giveaway) always shows the one that is running. When nothing is running the page says so. A real giveaway never asks you to forward a message to ten groups, install an unknown app or enter your PIN anywhere except the normal Mobile Money prompt on your own phone." },
@@ -239,7 +239,7 @@ export const BLOG_POSTS: BlogPost[] = [
       ] },
       { type: "h2", text: "The honest summary" },
       { type: "p", text: "Real free data in Ghana is small, specific and comes from a source you can name: a network bonus in the network's own app, a referral reward from a shop you already use, a giveaway with a stated number of claims. Everything else is a way of getting your PIN. Use the real kinds, ignore the rest, and spend the money you save on a bigger bundle." },
-      { type: "cta", label: "Get your invite link", to: "/", text: "Share it with a friend: they pay the agent price on their first bundle, and you get data money in your wallet when it is delivered." },
+      { type: "cta", label: "Get your invite link", to: "/", text: "Share it with a friend: they get a special invite price on their first order, and you get data money in your wallet when it is delivered." },
     ],
   },
   {

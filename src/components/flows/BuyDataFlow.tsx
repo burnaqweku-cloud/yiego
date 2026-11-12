@@ -14,7 +14,7 @@ import DeliveryProgress from "@/components/shop/DeliveryProgress";
 import { useWallet } from "@/store/wallet";
 import { useProfile } from "@/store/profile";
 import { useAuth } from "@/store/auth-context";
-import { friendPriceEligible, recordDevice } from "@/lib/referrals";
+import { friendPrices as loadFriendPrices, recordDevice } from "@/lib/referrals";
 import { networkForNumber, NUMBER_NETWORK_LABEL } from "@/lib/numberNetwork";
 import { checkNumbers, isMtn, STATUS_COPY, type CheckResult } from "@/lib/mtnCheck";
 import { Check, Clock } from "lucide-react";
@@ -127,8 +127,8 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
   // The build-time catalogue snapshot is the first render, so a tapped bundle shows its number box at once; the
   // live catalogue replaces it as soon as it arrives.
   const [products, setProducts] = useState<Phase1Product[]>(() => (catalogSnapshot.products as Phase1Product[]).map(p => ({ ...p, is_paused: true, pause_reason: "Checking availability…" })));
-  // Referred customer, first order: agent price ("friend price"). Decided by the server; this only affects what is displayed.
-  const [friendPrice, setFriendPrice] = useState(false);
+  // Invited customer, first order: the invite offer (one bundle at a set price). Decided by the server; this only affects what is displayed.
+  const [friendPrices, setFriendPrices] = useState<Record<string, number>>({});
   const [networkRows, setNetworkRows] = useState<Phase1NetworkRow[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
@@ -154,7 +154,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     // after its own recipient is entered; never let another number block it.
     setUnpaidReference(null);
     setActiveOrder(null); setHighlightOrder(null); setLookupReference(""); setReceiptRef(null);
-    if (open && auth.isAuthenticated && !agent) { void friendPriceEligible().then(setFriendPrice); void recordDevice(); } else setFriendPrice(false);
+    if (open && auth.isAuthenticated && !agent) { void recordDevice().then(loadFriendPrices).then(setFriendPrices, () => setFriendPrices({})); } else setFriendPrices({});
   }, [open, profile.email, profile.phone, user?.email, auth.isAuthenticated, agent]);
 
   useEffect(() => {
@@ -255,13 +255,13 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       size: product.name.replace(/^.*?—\s*/, ""),
       validity: product.validity ?? "Supplier terms",
       price: preselect?.kind === "bundle" && preselect.promotion?.productId === product.id ? preselect.promotion.price : promoPriceFor(product.id) ?? basePrice(product),
-      wasPrice: !agent && promoPriceFor(product.id) == null && friendPrice && product.agent_price != null && Number(product.agent_price) < Number(product.customer_price) ? Number(product.customer_price) : undefined,
+      wasPrice: !agent && promoPriceFor(product.id) == null && friendPrices[product.id] != null && friendPrices[product.id] < Number(product.customer_price) ? Number(product.customer_price) : undefined,
       tag: !agent && Number(product.customer_price) <= 10 ? "Popular" : !agent && Number(product.customer_price) >= 40 ? "Best value" : undefined,
       unavailable: product.is_paused ? (product.pause_reason ?? "Currently unavailable. Please try again later.") : undefined,
     }));
   }
   function basePrice(product: Phase1Product): number {
-    return agent ? Number(agent.prices[product.id] ?? product.customer_price) : friendPrice ? Number(product.agent_price ?? product.customer_price) : Number(product.customer_price);
+    return agent ? Number(agent.prices[product.id] ?? product.customer_price) : Number(friendPrices[product.id] ?? product.customer_price);
   }
   function promoPriceFor(productId: string): number | null {
     if (agent || campaign || promoDeclined.has(productId)) return null;
@@ -274,7 +274,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
     const fresh = bundlesFor(network.id).find((b) => b.id === bundle.id);
     if (fresh && fresh.price !== bundle.price) setBundle(fresh);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [promoPrices, promoDeclined, friendPrice]);
+  }, [promoPrices, promoDeclined, friendPrices]);
   /** The offer isn't available for this device/number/account: drop to the normal price, without blocking. */
   function declinePromo(productId: string) {
     setGuestPromoToken(null);
@@ -445,7 +445,7 @@ export default function BuyDataFlow({ open, preselect, onClose, onAddMoney, agen
       {pendingOrders.length > 0 && <SelectRow onClick={() => setStep("pending")} leading={<span className="onyx-tile-icon"><ListChecks size={18} /></span>} title="Pending orders" subtitle={`${pendingOrders.length} active order${pendingOrders.length === 1 ? "" : "s"} to continue or track`} trailing={<ChevronRight size={18} className="text-faint-foreground" />} />}</>}
     </div></>}
 
-    {!settling && step === "bundle" && network && <><FlowHeader title={`${network.name} bundles`} subtitle="Choose a data bundle" onBack={() => setStep("network")} onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">{friendPrice && <div className="rounded-xl border border-primary-glow/25 bg-primary/[0.08] px-3.5 py-2.5 text-[12.5px] leading-5 text-foreground"><b>Referral price on your first order.</b> You were invited, so every bundle below is at agent price this once.</div>}{bundlesFor(network.id).map((b) => <SelectRow key={b.id} disabled={Boolean(b.unavailable)} onClick={() => { setBundle(b); setStep("phone"); }} leading={<span className="onyx-tile-icon"><Wifi size={18} /></span>} title={<span className="flex items-center gap-2">{b.size}{b.tag && !b.unavailable && <BundleTag tag={b.tag} />}</span>} subtitle={b.unavailable ?? validityLabel(b.validity)} trailing={b.unavailable ? <span className="text-[11px] font-semibold text-amber">Unavailable</span> : <span className="text-right"><span className="font-display text-[15px] font-semibold text-white">{formatGHS(b.price)}</span>{b.wasPrice != null && <span className="block text-[10.5px] text-faint-foreground line-through">{formatGHS(b.wasPrice)}</span>}</span>} />)}</div></>}
+    {!settling && step === "bundle" && network && <><FlowHeader title={`${network.name} bundles`} subtitle="Choose a data bundle" onBack={() => setStep("network")} onClose={onClose} /><div className="space-y-2.5 px-5 pb-6 pt-4">{bundlesFor(network.id).some((b) => b.wasPrice != null && friendPrices[products.find((p) => (p.app_product_code ?? p.id) === b.id)?.id ?? ""] != null) && <div className="rounded-xl border border-primary-glow/25 bg-primary/[0.08] px-3.5 py-2.5 text-[12.5px] leading-5 text-foreground"><b>Your invite price.</b> You were invited, so the bundle marked below is at a special price on your first order.</div>}{bundlesFor(network.id).map((b) => <SelectRow key={b.id} disabled={Boolean(b.unavailable)} onClick={() => { setBundle(b); setStep("phone"); }} leading={<span className="onyx-tile-icon"><Wifi size={18} /></span>} title={<span className="flex items-center gap-2">{b.size}{b.tag && !b.unavailable && <BundleTag tag={b.tag} />}</span>} subtitle={b.unavailable ?? validityLabel(b.validity)} trailing={b.unavailable ? <span className="text-[11px] font-semibold text-amber">Unavailable</span> : <span className="text-right"><span className="font-display text-[15px] font-semibold text-white">{formatGHS(b.price)}</span>{b.wasPrice != null && <span className="block text-[10.5px] text-faint-foreground line-through">{formatGHS(b.wasPrice)}</span>}</span>} />)}</div></>}
 
     {step === "phone" && network && bundle && <><FlowHeader title={campaign ? "Giveaway" : "Who gets the data?"} subtitle={`${network.name} ${bundle.size} · ${formatGHS(campaign ? campaign.price : bundle.price)}`} onBack={campaign ? onClose : () => setStep("bundle")} onClose={onClose} /><div className="space-y-4 px-5 pb-2 pt-5"><div><label htmlFor="buydata-phone" className="text-[13px] font-semibold text-foreground">Phone number receiving the data</label><input id="buydata-phone" className="onyx-field mt-2 text-[16px] tracking-wide" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="024 000 0000" readOnly={Boolean(campaign)} />{campaign && <p className="mt-1.5 text-[12px] text-primary-glow">Giveaway price {formatGHS(campaign.price)} for this number. The number was fixed when you claimed.</p>}{phone.length > 0 && !phoneValid && <p className="mt-1.5 text-[12px] text-danger">Enter a valid 10-digit Ghana number.</p>}<p className="mt-2 text-[12px] leading-5 text-muted-foreground">Check this number carefully. It must be on {network.name}. A bundle sent to the wrong number can't be reversed or refunded.</p>{prefixMismatch && network && detectedNetwork && <div className="mt-3 rounded-xl border border-amber/30 bg-amber/[0.07] p-3.5"><p className="text-[13px] font-semibold leading-5 text-amber">This number looks like {NUMBER_NETWORK_LABEL[detectedNetwork]}. Is it on {network.name} (ported)?</p><p className="mt-1 text-[12px] leading-5 text-muted-foreground">Some numbers moved to another network and kept their old prefix. If this one is really on {network.name}, tick the box below. If you're not sure, change the number or pick {NUMBER_NETWORK_LABEL[detectedNetwork]} instead, because a bundle sent to the wrong network can't be reversed.</p><label className="mt-2.5 flex cursor-pointer items-start gap-2.5 text-[13px] leading-5 text-foreground"><input type="checkbox" checked={prefixOk} onChange={(e) => setPrefixOk(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#3cf0aa]" /><span>Yes, this number is on {network.name}</span></label><button type="button" className="mt-2 text-[12px] font-semibold text-primary-glow underline" onClick={() => { setBundle(null); setStep("network"); }}>Choose a different network</button></div>}{mtnCheck && (STATUS_COPY[mtnCheck.status].tone === "ok" || STATUS_COPY[mtnCheck.status].tone === "wait") && <p className={`mt-2 flex items-start gap-1.5 text-[12px] leading-5 ${STATUS_COPY[mtnCheck.status].tone === "ok" ? "text-primary-glow" : "text-amber"}`}>{STATUS_COPY[mtnCheck.status].tone === "ok" ? <Check size={14} className="mt-0.5 shrink-0" /> : <Clock size={14} className="mt-0.5 shrink-0" />}<span><b>{STATUS_COPY[mtnCheck.status].title}.</b> {STATUS_COPY[mtnCheck.status].text}</span></p>}</div>{!isAuthenticated && <div><label htmlFor="buydata-email" className="text-[13px] font-semibold text-foreground">Your email <span className="font-normal text-faint-foreground">(optional, for a receipt)</span></label><input id="buydata-email" className="onyx-field mt-2" inputMode="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} /></div>}<div className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5"><div><p className="text-[13.5px] font-semibold">{network.name} · {bundle.size}</p><p className="text-[12px] text-faint-foreground">{validityLabel(bundle.validity)}</p></div><span className="font-display text-[16px] font-semibold">{formatGHS(bundle.price)}</span></div><ImportantNotice compact network={network.id} /></div><FlowFooter><button type="button" className="onyx-btn-primary w-full disabled:opacity-40" disabled={!phoneValid || (prefixMismatch && !prefixOk) || (!isAuthenticated && !emailValid)} onClick={() => void continueFromPhone()}>Continue</button></FlowFooter></>}
 
