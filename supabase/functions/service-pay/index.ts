@@ -83,15 +83,30 @@ async function registerAfa(db: any, r: Registration, key: string): Promise<strin
   const num = (v: unknown) => { const n = Number(v); return v != null && v !== "" && Number.isFinite(n) ? n : null; };
   let outcome = "unclear"; let note: string | null = status === 0 ? null : said || null;
   if (status >= 200 && status < 300 && payload?.success === true) {
-    outcome = ["completed", "success", "successful", "registered"].includes(state) ? "done" : ["failed", "refunded", "rejected"].includes(state) ? "rejected" : "submitted";
+    outcome = ["completed", "success", "successful", "registered", "delivered"].includes(state) ? "done" : ["failed", "refunded", "rejected"].includes(state) ? "rejected" : "submitted";
   } else if (status === 402 || /insufficient|low balance|not enough/i.test(said)) { outcome = "no_funds"; note = null; }
   else if (status === 401 || status === 403) { outcome = "no_funds"; note = "OtessData did not accept our API key. Check the key; these go by themselves once it works."; }
   else if (status === 429) { outcome = "no_funds"; note = "OtessData asked us to slow down. These are tried again shortly."; }
   else if (status === 400 || status === 404 || status === 422) outcome = "rejected";
   else if (status === 502 && payload?.success === false) { outcome = "rejected"; note = said || "OtessData's supplier had an error and OtessData refunded the charge."; }
   const { data: result } = await db.rpc("service_registration_result", { p_order: r.id, p_outcome: outcome, p_cost: num(data?.amount), p_supplier_reference: data?.orderId ? String(data.orderId) : null,
-    p_note: note, p_reply: { http: status, body: payload }, p_balance: outcome === "done" ? num(data?.balance) : null });
+    p_note: note, p_reply: { http: status, body: payload }, p_balance: outcome === "done" && !isTestKey(key) ? num(data?.balance) : null });
   return String(result ?? outcome);
+}
+/** A sandbox key reports a pretend wallet; that must never reach Finance. */
+const isTestKey = (key: string) => /^otess_test_/i.test(key);
+/* A registration OtessData accepted but had not finished: ask how it ended (GET /orders/:id, by their order ID or our reference). */
+// deno-lint-ignore no-explicit-any
+async function checkAfa(db: any, orderId: string, lookup: string, key: string): Promise<void> {
+  try {
+    const res = await fetch(`${(Deno.env.get("OTESSDATA_BASE_URL") ?? "https://www.otessdata.app/api/v1").replace(/\/$/, "")}/orders/${encodeURIComponent(lookup)}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(20000) });
+    const payload = await res.json().catch(() => null);
+    const state = String(payload?.data?.status ?? "").toLowerCase();
+    if (!res.ok || payload?.success !== true || !["delivered", "completed", "failed"].includes(state)) return;
+    const cost = Number(payload.data.amountCharged ?? payload.data.amount);
+    await db.rpc("service_registration_result", { p_order: orderId, p_outcome: state === "failed" ? "rejected" : "done", p_cost: Number.isFinite(cost) ? cost : null, p_supplier_reference: payload.data.orderId ? String(payload.data.orderId) : null,
+      p_note: state === "failed" ? "OtessData says this registration failed." : null, p_reply: { http: res.status, body: payload }, p_balance: null });
+  } catch { /* try again on the next run */ }
 }
 
 async function sendEmail(o: Delivered): Promise<string> {
@@ -145,6 +160,11 @@ Deno.serve(async (req) => {
       const { data: forms } = await db.rpc("service_registration_claim", { p_auto: Boolean(afaKey) });
       let registered = 0;
       for (const f of (forms ?? []) as Registration[]) { if ((await registerAfa(db, f, afaKey)) === "delivered") registered += 1; }
+      if (afaKey) {
+        const { data: open } = await db.from("service_registrations").select("order_id, supplier_reference, service_orders(reference)").eq("status", "submitted").limit(10);
+        // deno-lint-ignore no-explicit-any
+        for (const s of (open ?? []) as any[]) await checkAfa(db, s.order_id, s.supplier_reference ?? s.service_orders?.reference ?? "", afaKey);
+      }
       return json({ confirmed, sent, texts, registered });
     }
 

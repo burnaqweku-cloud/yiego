@@ -33,6 +33,12 @@ const PROBES: Record<string, { base: string; auth: () => HeadersInit; paths: Pro
     auth: () => ({ Authorization: `Bearer ${Deno.env.get("DATASIKA_API_KEY") ?? ""}`, Accept: "application/json" }),
     paths: [{ path: "/api-wallet", pick: (p) => num(p?.balance) }],
   },
+  // AFA registrations only. Skipped while the key is missing or a sandbox key (a sandbox wallet is pretend money).
+  otessdata: {
+    base: (Deno.env.get("OTESSDATA_BASE_URL") ?? "https://www.otessdata.app/api/v1").replace(/\/$/, ""),
+    auth: () => ({ Authorization: `Bearer ${Deno.env.get("OTESSDATA_API_KEY") ?? ""}`, Accept: "application/json" }),
+    paths: [{ path: "/balance", pick: (p) => num(p?.data?.balance) }],
+  },
   datamartgh: {
     base: (Deno.env.get("DATAMARTGH_BASE_URL") ?? "https://api.datamartgh.shop/api/developer").replace(/\/$/, ""),
     auth: () => ({ "X-API-Key": Deno.env.get("DATAMARTGH_API_KEY") ?? "", Accept: "application/json" }),
@@ -54,6 +60,7 @@ Deno.serve(async (req) => {
 
   for (const s of suppliers ?? []) {
     const cfg = PROBES[s.code];
+    if (s.code === "otessdata" && !/^otess_live_/i.test((Deno.env.get("OTESSDATA_API_KEY") ?? "").trim())) continue;
     const known = s.metadata?.balance_path as string | undefined;
     const order = known ? [cfg.paths.find((p) => p.path === known), ...cfg.paths.filter((p) => p.path !== known)].filter(Boolean) as Probe[] : cfg.paths;
     let outcome: Record<string, unknown> = { supplier: s.code, balance: null, tried: [] as string[] };
