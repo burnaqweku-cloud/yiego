@@ -1,0 +1,198 @@
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ChevronDown, GraduationCap, PhoneCall, Plus, UserPlus, Wallet } from "lucide-react";
+import { toast } from "sonner";
+import Seo from "@/components/seo/Seo";
+import { Card } from "@/components/ui/card";
+import Modal from "@/components/ui/modal";
+import { FlowHeader, ProcessingView } from "@/components/flows/flow-parts";
+import OrderResult from "@/components/services/OrderResult";
+import { useAuth } from "@/store/auth-context";
+import { useWallet } from "@/store/wallet";
+import { useProfile } from "@/store/profile";
+import { useFlows } from "@/store/flows";
+import { formatGHS } from "@/lib/format";
+import { metaFor } from "@/lib/site";
+import { buyServiceWithWallet, loadServices, myServiceOrders, serviceFee, startServiceCheckout, type ServiceOrder, type ServiceProduct } from "@/lib/services";
+import { cn } from "@/lib/utils";
+
+/* DY Services: things DataYego sells besides data. Result checkers are live; the PIN is shown the
+   moment payment is confirmed, sent by SMS and email, and kept under "Your checkers". */
+
+type Pay = "wallet" | "paystack";
+const validPhone = (v: string) => /^0\d{9}$/.test(v.replace(/\D/g, ""));
+
+function BuySheet({ product, onClose, onBought }: { product: ServiceProduct | null; onClose: () => void; onBought: () => void }) {
+  const { isAuthenticated } = useAuth();
+  const { balance, refresh } = useWallet();
+  const { profile } = useProfile();
+  const { openAddMoney } = useFlows();
+  const [quantity, setQuantity] = useState(1);
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [pay, setPay] = useState<Pay>("paystack");
+  const [busy, setBusy] = useState(false);
+  const [order, setOrder] = useState<ServiceOrder | null>(null);
+
+  useEffect(() => {
+    if (!product) return;
+    setQuantity(1); setOrder(null); setBusy(false); setEmail("");
+    setPhone(isAuthenticated && validPhone(profile.phone ?? "") ? profile.phone.replace(/\D/g, "") : "");
+    setPay(isAuthenticated && balance >= product.price ? "wallet" : "paystack");
+    // Only when a different product is opened: typing must not be reset by a balance refresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.code]);
+
+  if (!product) return <Modal open={false} onClose={onClose} label="Buy">{null}</Modal>;
+  const base = Math.round(product.price * quantity * 100) / 100;
+  const fee = pay === "paystack" ? serviceFee(base) : 0;
+  const short = pay === "wallet" && balance < base;
+  const maxQuantity = Math.max(1, Math.min(5, product.left));
+
+  const submit = async () => {
+    if (!validPhone(phone)) { toast.error("Enter the 10-digit Ghana number that should get the SMS."); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("That email doesn't look right. Fix it, or leave it empty."); return; }
+    setBusy(true);
+    if (pay === "wallet") {
+      const r = await buyServiceWithWallet(product.code, quantity, phone);
+      setBusy(false);
+      if (!r.order) { toast.error(r.error ?? "Something went wrong. Please try again."); return; }
+      setOrder(r.order); void refresh(); onBought();
+      return;
+    }
+    const r = await startServiceCheckout({ productCode: product.code, quantity, phone, email: email || undefined });
+    if (!r.data) { setBusy(false); toast.error(r.error ?? "We couldn't open the payment page. Please try again."); return; }
+    window.location.assign(r.data.authorizationUrl);
+  };
+
+  return (
+    <Modal open onClose={onClose} label={product.name}>
+      <FlowHeader title={order ? "Here you go" : product.name} subtitle={order ? undefined : `${formatGHS(product.price)} each`} onClose={onClose} />
+      {busy ? <ProcessingView label={pay === "wallet" ? "Getting your checker…" : "Opening the payment page…"} /> : order ? (
+        <div className="space-y-4 px-5 pb-6 pt-5"><OrderResult order={order} /><button type="button" className="onyx-btn-primary w-full" onClick={onClose}>Done</button></div>
+      ) : (
+        <div className="space-y-4 px-5 pb-6 pt-5">
+          <div>
+            <p className="text-[13px] font-semibold text-foreground">How many?</p>
+            <div className="mt-2 flex gap-2" role="radiogroup" aria-label="How many">
+              {Array.from({ length: maxQuantity }, (_, i) => i + 1).map((n) => (
+                <button key={n} type="button" role="radio" aria-checked={quantity === n} onClick={() => setQuantity(n)}
+                  className={cn("h-11 min-w-11 flex-1 rounded-xl border text-[15px] font-semibold transition-colors", quantity === n ? "border-primary-glow bg-primary/[0.14] text-foreground" : "border-white/[0.1] text-muted-foreground")}>{n}</button>
+              ))}
+            </div>
+          </div>
+          <label className="block"><span className="text-[13px] font-semibold text-foreground">Phone number for the SMS</span>
+            <input className="onyx-field mt-2 w-full" inputMode="numeric" autoComplete="tel" placeholder="024 000 0000" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^\d ]/g, "").slice(0, 13))} />
+            <span className="mt-1 block text-[12px] text-muted-foreground">The serial number and PIN are shown here straight away and also sent to this number.</span></label>
+          {!isAuthenticated && <label className="block"><span className="text-[13px] font-semibold text-foreground">Email <span className="font-normal text-muted-foreground">(optional)</span></span>
+            <input className="onyx-field mt-2 w-full" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value.trim())} /></label>}
+          <div>
+            <p className="text-[13px] font-semibold text-foreground">Pay with</p>
+            <div className="mt-2 space-y-2" role="radiogroup" aria-label="Pay with">
+              {isAuthenticated && <button type="button" role="radio" aria-checked={pay === "wallet"} onClick={() => setPay("wallet")}
+                className={cn("flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-colors", pay === "wallet" ? "border-primary-glow bg-primary/[0.1]" : "border-white/[0.1]")}>
+                <span><span className="block text-[14px] font-semibold text-foreground">DataYego wallet</span><span className="block text-[12px] text-muted-foreground">Balance {formatGHS(balance)} · no payment fee</span></span>
+                <Wallet size={18} className="shrink-0 text-primary-glow" aria-hidden="true" /></button>}
+              <button type="button" role="radio" aria-checked={pay === "paystack"} onClick={() => setPay("paystack")}
+                className={cn("flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-colors", pay === "paystack" ? "border-primary-glow bg-primary/[0.1]" : "border-white/[0.1]")}>
+                <span><span className="block text-[14px] font-semibold text-foreground">Mobile money or card</span><span className="block text-[12px] text-muted-foreground">{formatGHS(serviceFee(base))} payment fee</span></span>
+                <PhoneCall size={18} className="shrink-0 text-primary-glow" aria-hidden="true" /></button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between border-t border-white/[0.08] pt-3 text-[14px]"><span className="text-muted-foreground">You pay</span><span className="font-display text-[20px] font-semibold text-foreground">{formatGHS(base + fee)}</span></div>
+          {short
+            ? <button type="button" className="onyx-btn-primary flex w-full items-center justify-center gap-2" onClick={() => { onClose(); openAddMoney(); }}><Plus size={16} />Top up {formatGHS(base - balance)} or more</button>
+            : <button type="button" className="onyx-btn-primary w-full" onClick={() => void submit()}>{pay === "wallet" ? `Pay ${formatGHS(base)} from wallet` : `Pay ${formatGHS(base + fee)}`}</button>}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function MyCheckers({ orders }: { orders: ServiceOrder[] }) {
+  const [open, setOpen] = useState<string | null>(null);
+  if (orders.length === 0) return null;
+  return (
+    <Card className="p-5 sm:p-6">
+      <h2 className="font-display text-[19px] font-semibold tracking-tight text-foreground">Your checkers</h2>
+      <ul className="mt-3 divide-y divide-white/[0.08]">
+        {orders.map((o) => (
+          <li key={o.reference} className="py-3">
+            <button type="button" onClick={() => setOpen(open === o.reference ? null : o.reference)} aria-expanded={open === o.reference} className="flex w-full items-center justify-between gap-3 text-left">
+              <span className="min-w-0"><span className="block truncate text-[14.5px] font-semibold text-foreground">{o.quantity > 1 ? `${o.quantity} × ` : ""}{o.name}</span>
+                <span className="block text-[12px] text-muted-foreground">{new Date(o.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} · {o.status === "delivered" ? "tap to see the PIN" : o.status === "paid_waiting_stock" ? "on its way" : o.status}</span></span>
+              <ChevronDown size={18} className={cn("shrink-0 text-muted-foreground transition-transform", open === o.reference && "rotate-180")} aria-hidden="true" />
+            </button>
+            {open === o.reference && <div className="mt-3"><OrderResult order={o} /></div>}
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+export default function Services() {
+  const { isAuthenticated } = useAuth();
+  const { balance } = useWallet();
+  const { openAddMoney } = useFlows();
+  const [products, setProducts] = useState<ServiceProduct[] | null>(null);
+  const [orders, setOrders] = useState<ServiceOrder[]>([]);
+  const [buying, setBuying] = useState<ServiceProduct | null>(null);
+
+  const load = useCallback(() => {
+    void loadServices().then(setProducts, () => setProducts([]));
+    if (isAuthenticated) void myServiceOrders().then(setOrders, () => undefined); else setOrders([]);
+  }, [isAuthenticated]);
+  useEffect(() => { load(); }, [load]);
+
+  const checkers = (products ?? []).filter((p) => p.kind === "checker");
+  return (
+    <div className="mx-auto w-full max-w-[560px] space-y-4">
+      <Seo {...metaFor("/services")} />
+      <header className="px-1 pt-1">
+        <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-foreground">DY Services</h1>
+        <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">More from DataYego, with the same account and wallet. Result checkers are here now; AFA registration and airtime are next.</p>
+      </header>
+
+      {isAuthenticated && <Card className="flex items-center justify-between gap-3 p-4">
+        <span className="flex min-w-0 items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/[0.12] text-primary-glow"><Wallet size={18} aria-hidden="true" /></span>
+          <span className="min-w-0"><span className="block text-[12px] text-muted-foreground">Wallet balance</span><span className="block font-display text-[19px] font-semibold text-foreground">{formatGHS(balance)}</span></span></span>
+        <button type="button" onClick={openAddMoney} className="onyx-btn-ghost flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[13.5px]"><Plus size={15} />Top up</button>
+      </Card>}
+
+      <Card className="p-5 sm:p-6">
+        <div className="flex items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/[0.12] text-primary-glow"><GraduationCap size={21} aria-hidden="true" /></span>
+          <div className="min-w-0"><h2 className="font-display text-[19px] font-semibold tracking-tight text-foreground">Result checkers</h2><p className="text-[13px] text-muted-foreground">Serial number and PIN, shown the moment you pay.</p></div></div>
+        {products === null ? <p className="mt-4 text-[13.5px] text-muted-foreground">Loading…</p> : checkers.length === 0 ? <p className="mt-4 text-[13.5px] text-muted-foreground">Result checkers aren't available right now. Please check back soon.</p> : (
+          <ul className="mt-4 space-y-2.5">
+            {checkers.map((p) => (
+              <li key={p.code} className={cn("rounded-2xl border border-white/[0.09] p-4", !p.in_stock && "opacity-70")}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0"><p className="text-[15px] font-semibold text-foreground">{p.name}</p><p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground">{p.blurb}</p></div>
+                  <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-semibold", p.in_stock ? "bg-primary/[0.14] text-primary-glow" : "bg-white/[0.06] text-muted-foreground")}>{p.in_stock ? "In stock" : "Sold out"}</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3"><span className="font-display text-[20px] font-semibold text-foreground">{formatGHS(p.price)}</span>
+                  <button type="button" disabled={!p.in_stock} onClick={() => setBuying(p)} className="onyx-btn-primary px-6 py-2.5 text-[14px] disabled:pointer-events-none disabled:opacity-40">Buy</button></div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
+      <Card className="p-5 sm:p-6">
+        <h2 className="font-display text-[19px] font-semibold tracking-tight text-foreground">Coming soon</h2>
+        <ul className="mt-3 space-y-3">
+          {([[UserPlus, "MTN AFA registration", "Put an MTN number on AFA for cheaper calls."], [PhoneCall, "Airtime", "Top up MTN, Telecel and AirtelTigo airtime."]] as const).map(([Icon, title, text]) => (
+            <li key={title} className="flex items-center gap-3.5 opacity-80"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/[0.06] text-muted-foreground"><Icon size={18} aria-hidden="true" /></span>
+              <div className="min-w-0"><p className="text-[14.5px] font-semibold text-foreground">{title}</p><p className="text-[12.5px] text-muted-foreground">{text}</p></div></li>
+          ))}
+        </ul>
+      </Card>
+
+      <MyCheckers orders={orders} />
+      {!isAuthenticated && <p className="pb-2 text-center text-[13px] text-muted-foreground">Bought one before? <Link to="/auth" className="font-semibold text-primary-glow">Sign in</Link> to see your checkers, or open the link in your SMS or email.</p>}
+
+      <BuySheet product={buying} onClose={() => setBuying(null)} onBought={load} />
+    </div>
+  );
+}

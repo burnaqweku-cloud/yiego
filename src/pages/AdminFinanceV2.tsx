@@ -73,6 +73,9 @@ export default function AdminFinanceV2() {
     const supplierLines: (Line & { reportedAt: string | null; reported: boolean })[] = suppliers.map((s) => ({
       code: s.code, name: s.name, amount: s.confirmed_balance != null ? Number(s.confirmed_balance) : num(`float_${s.code}`), reportedAt: s.confirmed_at, reported: s.confirmed_balance != null,
     }));
+    // Result-checker PINs bought and not yet sold are something we own, counted at what was paid for them.
+    const stock = num("stock_services");
+    if (stock !== 0) supplierLines.push({ code: "stock_services", name: "Result checker stock", amount: stock, reportedAt: null, reported: true });
     const owed: Line[] = balances.filter((x) => x.kind === "liability").map((x) => ({ code: x.code, name: x.name, amount: Number(x.balance) }));
     const bank = num("bank"), capital = num("outside_funding"), kora = kor.held.total;
     return { bank, capital, kora, supplierLines, owed, ...financeProfit({ bank, paystack: ps.held.total, kora, suppliers: supplierLines, owed, capital }) };
@@ -130,8 +133,8 @@ export default function AdminFinanceV2() {
 
       <Panel title="At suppliers" icon={Store} note={`total ${formatGHS(view.supplierTotal)}`}>
         <StatGrid cols={3}>{view.supplierLines.map((s) => {
-          const tone = s.amount < 30 ? "bad" : s.amount < 80 ? "warn" : "default";
-          return <Stat key={s.code} label={s.name} value={<Money value={s.amount} tone={tone} />} note={s.reported && s.reportedAt ? `reported ${formatAdminDate(s.reportedAt)}` : "not reported"} tone={tone} to={`/admin/finance/suppliers/${s.code}`} />;
+          const tone = s.code === "stock_services" ? "default" : s.amount < 30 ? "bad" : s.amount < 80 ? "warn" : "default";
+          return <Stat key={s.code} label={s.name} value={<Money value={s.amount} tone={tone} />} note={s.code === "stock_services" ? "unsold PINs, at cost" : s.reported && s.reportedAt ? `reported ${formatAdminDate(s.reportedAt)}` : "not reported"} tone={tone} to={s.code === "stock_services" ? "/admin/services" : `/admin/finance/suppliers/${s.code}`} />;
         })}</StatGrid>
       </Panel>
 

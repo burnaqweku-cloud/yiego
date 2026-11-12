@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { MailCheck, Handshake, Route, BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText, Send, History } from "lucide-react";
+import { GraduationCap, MailCheck, Handshake, Route, BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText, Send, History } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
 export interface AdminPage {
@@ -71,6 +71,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
   ] },
   { id: "announcements", label: "Announcements", icon: Megaphone, pages: [
     { id: "announcements", label: "Announcements", to: "/admin/announcements", icon: Megaphone, keywords: ["notification", "announce", "update", "notice", "bell", "broadcast"] },
+    { id: "services", label: "DY Services", to: "/admin/services", icon: GraduationCap, keywords: ["checker", "wassce", "bece", "pin", "stock", "result", "afa", "services"] },
     { id: "follow-ups", label: "Follow-ups", to: "/admin/follow-ups", icon: MailCheck, keywords: ["campaign", "reminder", "email", "never bought", "win back", "inactive", "nudge", "automatic"] },
     { id: "giveaways", label: "Giveaways", to: "/admin/giveaways", icon: Gift, keywords: ["giveaway", "campaign", "promo", "free", "discount"] },
     { id: "help", label: "Help Center", to: "/admin/help", icon: LifeBuoy, keywords: ["help", "article", "faq", "docs", "guide", "agents"] },

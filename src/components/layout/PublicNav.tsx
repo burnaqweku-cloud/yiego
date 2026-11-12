@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronDown, CircleHelp, Download, Home, LifeBuoy, ListOrdered, LogOut, Menu, PhoneForwarded, Search, ShieldCheck, Store, UserRound, Wallet, Wifi, X } from "lucide-react";
+import { ArrowRight, ChevronDown, CircleHelp, Download, Home, LayoutGrid, LifeBuoy, ListOrdered, LogOut, Menu, PhoneForwarded, Search, ShieldCheck, Store, UserRound, Wallet, Wifi, X } from "lucide-react";
 import { toast } from "sonner";
 import Wordmark from "@/components/brand/Wordmark";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -33,6 +33,7 @@ interface NavLinkItem {
 const GUEST_LINKS: NavLinkItem[] = [
   { label: "Home", to: "/" },
   { label: "Shop", to: "/shop" },
+  { label: "Services", to: "/services" },
   { label: "Prices", to: "/prices" },
   { label: "Guides", to: "/blog" },
   { label: "FAQ", to: "/faq" },
@@ -43,6 +44,7 @@ const GUEST_LINKS: NavLinkItem[] = [
 const MEMBER_LINKS: NavLinkItem[] = [
   { label: "Home", to: "/" },
   { label: "Shop", to: "/shop" },
+  { label: "Services", to: "/services" },
   { label: "Wallet", to: "/wallet" },
   { label: "Orders", to: "/orders" },
   { label: "Support", to: "/support" },
@@ -179,6 +181,7 @@ export default function PublicNav() {
       {agentLink && <MenuItem to={agentLink.to} icon={Store} label={agentLink.label === "My store" ? "Agent dashboard" : agentLink.label} />}
       {isAdmin && <MenuItem to="/admin" icon={ShieldCheck} label="Admin panel" />}
       {!runningAsApp() && <MenuItem to="/app" icon={Download} label="Get the app" />}
+      <MenuItem to="/support" icon={LifeBuoy} label="Support" />
       <MenuItem to="/faq" icon={CircleHelp} label="Help & FAQ" />
     </>
   );
@@ -189,16 +192,16 @@ export default function PublicNav() {
     ? [
         { label: "Home", to: "/", end: true, icon: Home },
         { label: "Buy data", to: "/shop", icon: Wifi },
+        { label: "Services", to: "/services", icon: LayoutGrid },
         { label: "Orders", to: "/orders", icon: ListOrdered },
         // An agent's way back to their dashboard takes the Wallet slot; their wallet moves under the profile circle.
         agentLink?.to === "/agent" ? { label: "Agent", to: "/agent", icon: Store } : { label: "Wallet", to: "/wallet", icon: Wallet },
-        { label: "Support", to: "/support", icon: LifeBuoy },
       ]
     : [
         { label: "Home", to: "/", end: true, icon: Home },
         { label: "Buy data", to: "/shop", icon: Wifi },
+        { label: "Services", to: "/services", icon: LayoutGrid },
         { label: "Track", to: "/track-order", icon: Search },
-        { label: "Support", to: "/support", icon: LifeBuoy },
         { label: "More", icon: Menu, onClick: () => setOpen(true), active: open },
       ];
 

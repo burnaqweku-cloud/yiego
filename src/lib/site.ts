@@ -100,6 +100,13 @@ const STATIC_ROUTES: PublicRoute[] = [
     description: "How buying data on DataYego works: payments, delivery times, refunds, wallet and order tracking — answered simply.",
   },
   {
+    path: "/services",
+    priority: 0.8,
+    changefreq: "weekly",
+    title: "DY Services: WASSCE & BECE Result Checkers | DataYego",
+    description: "Buy WASSCE and BECE result checkers on DataYego. The serial number and PIN are shown the moment you pay and sent by SMS. Pay with mobile money, card or your wallet.",
+  },
+  {
     path: "/app",
     priority: 0.7,
     changefreq: "monthly",

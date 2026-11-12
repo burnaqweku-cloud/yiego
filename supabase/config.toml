@@ -106,3 +106,7 @@ verify_jwt = false
 # unsubscribe are called by mail apps with no sign-in.
 [functions.follow-up-run]
 verify_jwt = false
+
+# DY Services checkout: guests can pay without signing in; the scheduled run uses its own secret.
+[functions.service-pay]
+verify_jwt = false
