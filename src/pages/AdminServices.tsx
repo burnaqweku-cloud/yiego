@@ -34,7 +34,8 @@ export default function AdminServices() {
   }, []);
   useEffect(() => { void load(); }, [load]);
 
-  const count = lines.split(/\r?\n/).filter((l) => l.trim()).length;
+  const pairs = lines.match(/serial\s*(?:number|no\.?)?\s*[:#=-]*\s*[A-Za-z0-9]{4,}\s+pin\s*(?:code|number|no\.?)?\s*[:#=-]*\s*[A-Za-z0-9]{4,}/gi)?.length ?? 0;
+  const count = pairs > 0 ? pairs : lines.split(/\r?\n/).filter((l) => l.trim()).length;
   const openAdd = (p: AdminServiceProduct) => { setAdding(p); setLines(""); setCost(""); setNote(""); setResult(null); setFrom("bank"); };
   const add = async () => {
     if (!adding) return;
@@ -109,8 +110,8 @@ export default function AdminServices() {
       <Modal open={adding !== null} onClose={() => setAdding(null)} label="Add stock">
         {adding && <div className="w-[min(94vw,540px)] space-y-2.5 p-5">
           <h2 className="text-[16px] font-semibold text-foreground">Add {adding.name} PINs</h2>
-          <Field label="Checkers" hint="One per line: the serial number, then the PIN. A space, comma or tab between them is fine.">
-            <textarea className={`${inputCls} h-40 py-2 font-mono text-[12.5px] leading-5`} placeholder={"WGR240012345 123456789012\nWGR240012346 210987654321"} value={lines} onChange={(e) => setLines(e.target.value)} autoCapitalize="off" autoCorrect="off" spellCheck={false} />
+          <Field label="Checkers" hint="Paste the whole voucher page as it is: every “Serial Number … PIN …” pair is picked out for you. Or type one per line: serial number, then PIN.">
+            <textarea className={`${inputCls} h-40 py-2 font-mono text-[12.5px] leading-5`} placeholder={"Paste here. For example:\nSerial Number: WGR240012345\nPIN: 123456789012"} value={lines} onChange={(e) => setLines(e.target.value)} autoCapitalize="off" autoCorrect="off" spellCheck={false} />
           </Field>
           <div className="grid gap-2.5 sm:grid-cols-2">
             <Field label={`Total you paid for ${count || "these"}${count ? ` checker${count === 1 ? "" : "s"}` : ""} (GH₵)`} hint={count > 0 && Number(cost) > 0 ? `${formatGHS(Number(cost) / count)} each` : undefined}><input className={inputCls} inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value.replace(/[^\d.]/g, ""))} /></Field>

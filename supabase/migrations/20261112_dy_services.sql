@@ -389,3 +389,6 @@ grant execute on function phase1.service_buy_wallet(text,int,text,text), phase1.
 
 select cron.unschedule(jobid) from cron.job where jobname = 'service-pay';
 select cron.schedule('service-pay', '*/2 * * * *', $job$select net.http_post(url:='https://nhxgebulvqhtiiotetoo.supabase.co/functions/v1/service-pay',body:='{"action":"run"}'::jsonb,headers:=jsonb_build_object('Content-Type','application/json','x-yiego-internal-secret',(select value from phase1.internal_secrets where key='cron')),timeout_milliseconds:=60000) where exists (select 1 from phase1.service_orders where (paid_at is null and pay_reference is not null and created_at > now() - interval '3 hours') or status = 'awaiting_payment') or exists (select 1 from phase1.service_outbox where status = 'pending')$job$);
+
+-- Later the same day (applied live): admin_service_add_stock first picks out every "Serial Number: X ... PIN: Y" pair from
+-- whatever is pasted (a whole voucher page), and only falls back to one-per-line when it finds none.
