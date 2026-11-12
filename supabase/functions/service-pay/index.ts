@@ -20,7 +20,7 @@ const FRIENDLY: Record<string, string> = {
   email_invalid: "That email doesn't look right. Fix it, or leave it empty.",
   afa_already_registered: "This number already has an AFA registration with us. You don't need to pay again.",
   afa_name_invalid: "Enter the full name exactly as it is on the Ghana Card (first name and surname).",
-  afa_phone_invalid: "That MTN number doesn't look right. Use the 10-digit number.",
+  afa_phone_invalid: "That doesn't look like an MTN number. AFA is for MTN only: 024, 025, 053, 054, 055 or 059.",
   afa_card_invalid: "That Ghana Card number doesn't look right. It looks like GHA-123456789-0.",
   afa_dob_invalid: "Check the date of birth. The person must be 16 or older.",
   afa_job_invalid: "Enter the person's occupation.",
@@ -63,6 +63,37 @@ async function sendSms(to: string, message: string, sender: string): Promise<str
     return res.ok && body?.success !== false ? "sent" : "failed";
   } catch { return "failed"; }
 }
+/* MTN AFA registration through OtessData. One request per order; the order reference is the Idempotency-Key, so a repeat can't be charged twice.
+   The reply decides what happens: registered (with what was charged), refused (nothing charged), wallet short, or unclear (a person checks). */
+interface Registration { id: string; reference: string; key: string; details: Record<string, string> }
+// deno-lint-ignore no-explicit-any
+async function registerAfa(db: any, r: Registration, key: string): Promise<string> {
+  const d = r.details ?? {};
+  // deno-lint-ignore no-explicit-any
+  let status = 0; let payload: any = null;
+  try {
+    const res = await fetch(`${(Deno.env.get("OTESSDATA_BASE_URL") ?? "https://www.otessdata.app/api/v1").replace(/\/$/, "")}/afa/register`, { method: "POST", signal: AbortSignal.timeout(50000),
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", "Idempotency-Key": r.key },
+      body: JSON.stringify({ name: d.full_name, phoneNumber: d.afa_phone, idNumber: d.ghana_card, occupation: d.occupation, location: d.address, region: d.region, dateOfBirth: d.dob, reference: r.key }) });
+    status = res.status; payload = await res.json().catch(() => null);
+  } catch (e) { payload = { error: e instanceof Error ? e.message : String(e) }; }
+  const data = payload?.data ?? {};
+  const said = String(payload?.message ?? payload?.error?.message ?? (typeof payload?.error === "string" ? payload.error : "") ?? "").slice(0, 200);
+  const state = String(data?.status ?? "").toLowerCase();
+  const num = (v: unknown) => { const n = Number(v); return v != null && v !== "" && Number.isFinite(n) ? n : null; };
+  let outcome = "unclear"; let note: string | null = status === 0 ? null : said || null;
+  if (status >= 200 && status < 300 && payload?.success === true) {
+    outcome = ["completed", "success", "successful", "registered"].includes(state) ? "done" : ["failed", "refunded", "rejected"].includes(state) ? "rejected" : "submitted";
+  } else if (status === 402 || /insufficient|low balance|not enough/i.test(said)) { outcome = "no_funds"; note = null; }
+  else if (status === 401 || status === 403) { outcome = "no_funds"; note = "OtessData did not accept our API key. Check the key; these go by themselves once it works."; }
+  else if (status === 429) { outcome = "no_funds"; note = "OtessData asked us to slow down. These are tried again shortly."; }
+  else if (status === 400 || status === 404 || status === 422) outcome = "rejected";
+  else if (status === 502 && payload?.success === false) { outcome = "rejected"; note = said || "OtessData's supplier had an error and OtessData refunded the charge."; }
+  const { data: result } = await db.rpc("service_registration_result", { p_order: r.id, p_outcome: outcome, p_cost: num(data?.amount), p_supplier_reference: data?.orderId ? String(data.orderId) : null,
+    p_note: note, p_reply: { http: status, body: payload }, p_balance: outcome === "done" ? num(data?.balance) : null });
+  return String(result ?? outcome);
+}
+
 async function sendEmail(o: Delivered): Promise<string> {
   const key = Deno.env.get("RESEND_API_KEY");
   if (!key || !o.email || /@guest\.datayego\.com$/i.test(o.email)) return "skipped";
@@ -109,7 +140,12 @@ Deno.serve(async (req) => {
         await db.rpc("sms_queue_done", { p_id: q.id, p_result: await sendSms(q.phone, q.message, q.sender) });
         texts += 1;
       }
-      return json({ confirmed, sent, texts });
+      // AFA forms waiting to be registered. Without the API key nothing is sent: the admins are told and register by hand.
+      const afaKey = Deno.env.get("OTESSDATA_API_KEY")?.trim() ?? "";
+      const { data: forms } = await db.rpc("service_registration_claim", { p_auto: Boolean(afaKey) });
+      let registered = 0;
+      for (const f of (forms ?? []) as Registration[]) { if ((await registerAfa(db, f, afaKey)) === "delivered") registered += 1; }
+      return json({ confirmed, sent, texts, registered });
     }
 
     // Who is calling (optional for start/confirm; required for refund).

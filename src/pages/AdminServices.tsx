@@ -9,7 +9,7 @@ import Modal from "@/components/ui/modal";
 import { Switch } from "@/components/ui/switch";
 import { formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
-import { addServiceStock, loadAdminServices, markRegistrationDone, recordServiceRefund, refundServiceToWallet, refundServiceViaPaystack, setServiceProduct, type AddStockResult, type AdminServiceOrder, type AdminRegistration, type AdminServiceProduct, type AdminServices as Data } from "@/lib/services";
+import { addServiceStock, loadAdminServices, markRegistrationDone, recordServiceRefund, retryRegistration, refundServiceToWallet, refundServiceViaPaystack, setServiceProduct, type AddStockResult, type AdminServiceOrder, type AdminRegistration, type AdminServiceProduct, type AdminServices as Data } from "@/lib/services";
 
 /* DY Services in admin: the stock of result-checker PINs, prices, sales and refunds.
    PINs are never shown here after they are added; a PIN is only ever revealed to the person who bought it. */
@@ -72,6 +72,14 @@ export default function AdminServices() {
     if (r.error) return toast.error(/registration_sending/.test(r.error.message ?? "") ? "This one is being sent right now. Try again in a few minutes." : "Couldn't save. Only the owner can do this.");
     if (r.data !== "delivered") return toast.error(`This order is already ${r.data ?? "closed"}.`);
     toast.success("Marked as registered. The buyer has been told."); setReg(null); void load();
+  };
+  const retryReg = async () => {
+    if (!reg) return;
+    setSaving(true);
+    const r = await retryRegistration(reg.id);
+    setSaving(false);
+    if (r.error || r.data !== "queued") return toast.error(/afa_already_registered/.test(r.error?.message ?? "") ? "This number already has another paid AFA order." : "Couldn't send it again.");
+    toast.success("Sending it again."); setReg(null); void load();
   };
   const refund = async (how: "wallet" | "paystack" | "manual") => {
     if (!order) return;
@@ -196,7 +204,7 @@ export default function AdminServices() {
           </dl>
           {reg.note && <p className="text-[12px] leading-5 text-danger">{reg.note}</p>}
           {reg.status === "processing" && data?.can_edit ? <>
-            <p className="text-[12px] leading-5 text-faint-foreground">Registered this one yourself? Enter what it cost you and it is marked done, the buyer is told, and Finance records the cost.</p>
+            <p className="text-[12px] leading-5 text-faint-foreground">Registrations go to OtessData by themselves. If you registered this one yourself, enter what it cost you: it is marked done, the buyer is told, and Finance records the cost.</p>
             <div className="grid gap-2.5 sm:grid-cols-2">
               <Field label="What it cost you (GH₵)"><input className={inputCls} inputMode="decimal" value={regCost} onChange={(e) => setRegCost(e.target.value.replace(/[^\d.]/g, ""))} /></Field>
               <Field label="Paid from"><select className={inputCls} value={regFrom} onChange={(e) => setRegFrom(e.target.value)}>{PAID_FROM.map(([k, label]) => <option key={k} value={k}>{label}</option>)}</select></Field>
@@ -204,6 +212,7 @@ export default function AdminServices() {
             <Field label="Note (optional)"><input className={inputCls} value={regNote} onChange={(e) => setRegNote(e.target.value)} placeholder="e.g. supplier order number" /></Field>
             <div className="flex flex-wrap justify-end gap-2 pt-1">
               <Button variant="ghost" size="sm" onClick={() => { const o = (data?.orders ?? []).find((x) => x.id === reg.id); if (o) { setReg(null); setOrder(o); setReason(""); setRef(""); } else toast.error("Find this order in the Orders list to refund it."); }}>Refund instead</Button>
+              {(reg.step === "rejected" || reg.step === "unclear") && <Button variant="soft" size="sm" onClick={() => void retryReg()} disabled={saving}>Send again</Button>}
               <Button size="sm" onClick={() => void finishReg()} disabled={saving}>{saving ? "Saving…" : "Mark as registered"}</Button>
             </div></>
             : <p className="text-[12px] leading-5 text-faint-foreground">{reg.status === "delivered" ? `Registered ${formatAdminDate(reg.delivered_at ?? reg.step_at)}${reg.cost_amount != null ? ` · cost ${formatGHS(Number(reg.cost_amount))}` : ""}.` : reg.status === "refunded" ? "This order was refunded." : "Only the owner can mark this as registered."}</p>}

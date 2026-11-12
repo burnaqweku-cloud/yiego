@@ -26,7 +26,7 @@ const MESSAGES: Record<string, string> = {
   service_unavailable: "This isn't available right now.",
   afa_already_registered: "This number already has an AFA registration with us. You don't need to pay again.",
   afa_name_invalid: "Enter the full name exactly as it is on the Ghana Card (first name and surname).",
-  afa_phone_invalid: "That MTN number doesn't look right. Use the 10-digit number.",
+  afa_phone_invalid: "That doesn't look like an MTN number. AFA is for MTN only: 024, 025, 053, 054, 055 or 059.",
   afa_card_invalid: "That Ghana Card number doesn't look right. It looks like GHA-123456789-0.",
   afa_dob_invalid: "Check the date of birth. The person must be 16 or older.",
   afa_job_invalid: "Enter the person's occupation.",
@@ -91,6 +91,8 @@ export const refundServiceToWallet = (orderId: string, reason: string) => phase1
 export const recordServiceRefund = (orderId: string, reference: string, reason: string) => phase1().rpc<{ refunded: number }>("admin_service_refund", { p_order: orderId, p_method: "manual", p_reference: reference, p_reason: reason });
 /** The owner registered this AFA order by hand: what it cost and where that money came from. */
 export const markRegistrationDone = (orderId: string, cost: number, paidFrom: string, note: string) => phase1().rpc<string>("admin_service_registration_done", { p_order: orderId, p_cost: cost, p_paid_from: paidFrom, p_note: note || null });
+/** Send a refused or unclear AFA registration to the supplier again. */
+export const retryRegistration = (orderId: string) => phase1().rpc<string>("admin_service_registration_retry", { p_order: orderId });
 export const refundServiceViaPaystack = (orderId: string, reason: string) => call<unknown>({ action: "refund", orderId, reason });
 
 export interface SmsSenders { can_edit: boolean; services_enabled: boolean; services_sender: string; agents_enabled: boolean; agents_sender: string; agent_approved_text: string; verify_sender: string; verify_enabled: boolean; credits: number | null;

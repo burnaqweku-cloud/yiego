@@ -16,6 +16,8 @@ describe("AFA form", () => {
   it("names the first thing that is wrong", () => {
     expect(afaProblem({ ...good, full_name: "Ama" }, today)).toMatch(/full name/);
     expect(afaProblem({ ...good, afa_phone: "12345" }, today)).toMatch(/MTN number/);
+    expect(afaProblem({ ...good, afa_phone: "0201234567" }, today)).toMatch(/MTN numbers only/);
+    expect(afaProblem({ ...good, afa_phone: "0591234567" }, today)).toBeNull();
     expect(afaProblem({ ...good, ghana_card: "GHA-12345" }, today)).toMatch(/Ghana Card/);
     expect(afaProblem({ ...good, dob: "2015-01-01" }, today)).toMatch(/16 or older/);
     expect(afaProblem({ ...good, region: "" }, today)).toMatch(/region/);

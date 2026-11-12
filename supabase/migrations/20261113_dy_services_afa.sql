@@ -29,7 +29,7 @@ declare v_name text := regexp_replace(trim(coalesce(p->>'full_name', '')), '\s+'
   v_region text := trim(coalesce(p->>'region', '')); v_address text := regexp_replace(trim(coalesce(p->>'address', '')), '\s+', ' ', 'g');
 begin
   if length(v_name) < 5 or length(v_name) > 80 or v_name !~ '^[A-Za-z][A-Za-z .''-]+ [A-Za-z .''-]+$' then raise exception 'afa_name_invalid'; end if;
-  if v_phone is null then raise exception 'afa_phone_invalid'; end if;
+  if v_phone is null or v_phone !~ '^0(24|25|53|54|55|59)' then raise exception 'afa_phone_invalid'; end if;
   if v_card !~ '^GHA[0-9]{10}$' then raise exception 'afa_card_invalid'; end if;
   v_card := 'GHA-' || substr(v_card, 4, 9) || '-' || substr(v_card, 13, 1);
   begin v_dob := (p->>'dob')::date; exception when others then raise exception 'afa_dob_invalid'; end;
@@ -88,9 +88,7 @@ begin
     v_dupe := phase1.service_afa_taken(o.details->>'afa_phone', o.id);
     update phase1.service_orders set status = 'processing', updated_at = now() where id = o.id;
     insert into phase1.service_registrations (order_id, status, note) values (o.id, case when v_dupe then 'rejected' else 'queued' end, case when v_dupe then 'This number already has a paid AFA order. Refund this one.' end) on conflict do nothing;
-    if v_dupe then perform phase1.service_alert_admins('afa-dupe:' || o.reference, 'AFA paid twice for one number', o.reference || ': ' || (o.details->>'afa_phone') || ' already has a paid AFA order. It was not sent again. Refund it.');
-    else perform phase1.service_alert_admins('afa-new:' || o.reference, 'New AFA registration', (o.details->>'full_name') || ', ' || (o.details->>'afa_phone') || ' (' || o.reference || ') is paid and waiting to be registered.');
-    end if;
+    if v_dupe then perform phase1.service_alert_admins('afa-dupe:' || o.reference, 'AFA paid twice for one number', o.reference || ': ' || (o.details->>'afa_phone') || ' already has a paid AFA order. It was not sent again. Refund it.'); end if;
     begin
       perform net.http_post(url := 'https://nhxgebulvqhtiiotetoo.supabase.co/functions/v1/service-pay', body := '{"action":"run"}'::jsonb,
         headers := jsonb_build_object('Content-Type','application/json','x-yiego-internal-secret',(select value from phase1.internal_secrets where key = 'cron')), timeout_milliseconds := 30000);
@@ -302,3 +300,107 @@ revoke all on function phase1.service_afa_details(jsonb), phase1.service_afa_tak
 grant execute on function phase1.service_checkout_start(uuid,text,int,text,text,text,jsonb), phase1.service_registration_done(uuid,numeric,text,text,text,uuid) to service_role;
 revoke all on function phase1.service_buy_wallet(text,int,text,text,jsonb), phase1.admin_service_registration_done(uuid,numeric,text,text) from public, anon;
 grant execute on function phase1.service_buy_wallet(text,int,text,text,jsonb), phase1.admin_service_registration_done(uuid,numeric,text,text) to authenticated, service_role;
+
+-- ---------------------------------------------------------------------------------------------------------
+-- Supplier link: OtessData (POST /api/v1/afa/register). The service-pay function sends each queued form once,
+-- with the order reference as its Idempotency-Key, and reports back here. The cost is the amount OtessData
+-- says it charged (never a stored price) and comes out of the OtessData wallet (float_otessdata).
+-- The supplier row is 'paused' on purpose: it shows in Finance and top-ups but is never offered for data orders.
+alter table phase1.service_registrations add column if not exists key_no int not null default 0;
+alter table phase1.service_registrations add column if not exists alerted_at timestamptz;
+
+insert into phase1.suppliers (code, name, base_url, status, display_order, is_customer_visible, low_balance_threshold, metadata)
+select 'otessdata', 'OtessData', 'https://www.otessdata.app/api/v1', 'paused', 30, false, 50, jsonb_build_object('notes', 'MTN AFA registration only (DY Services). Added 2026-11-13.', 'topup_fee_rate', 0)
+where not exists (select 1 from phase1.suppliers where code = 'otessdata');
+insert into phase1.finance_accounts (code, name, kind, supplier_id, sort_order)
+select 'float_otessdata', 'Supplier float · OtessData', 'asset', (select id from phase1.suppliers where code = 'otessdata'), 25
+where not exists (select 1 from phase1.finance_accounts where code = 'float_otessdata');
+
+-- What the sender should send now. p_auto = false (no API key yet): nothing is handed out, the admins are told once per order instead.
+create or replace function phase1.service_registration_claim(p_auto boolean) returns jsonb language plpgsql security definer set search_path = phase1, public as $$
+declare v jsonb; r record;
+begin
+  -- A send that never reported back is not retried by itself: it may have gone through.
+  for r in update phase1.service_registrations x set status = 'unclear', note = 'We sent this and got no answer. Check it on OtessData before trying again.', updated_at = now()
+           where x.status = 'sending' and x.updated_at < now() - interval '10 minutes' returning x.order_id loop
+    perform phase1.service_alert_admins('afa-unclear:' || r.order_id, 'AFA registration needs checking', 'One registration was sent but we got no answer. Open DY Services to check it.');
+  end loop;
+  if not coalesce(p_auto, false) then
+    for r in update phase1.service_registrations x set alerted_at = now() from phase1.service_orders o
+             where o.id = x.order_id and x.status = 'queued' and x.alerted_at is null and o.status = 'processing' returning o.reference, o.details loop
+      perform phase1.service_alert_admins('afa-new:' || r.reference, 'New AFA registration', (r.details->>'full_name') || ', ' || (r.details->>'afa_phone') || ' (' || r.reference || ') is paid and waiting to be registered.');
+    end loop;
+    return '[]'::jsonb;
+  end if;
+  with picked as (
+    update phase1.service_registrations x set status = 'sending', attempts = x.attempts + 1, supplier = 'otessdata', updated_at = now()
+    where x.order_id in (select q.order_id from phase1.service_registrations q join phase1.service_orders o on o.id = q.order_id
+                         where q.status = 'queued' and o.status = 'processing' and (q.attempts = 0 or q.updated_at < now() - interval '15 minutes')
+                         order by q.created_at limit 10 for update of q skip locked)
+    returning x.order_id, x.key_no)
+  select coalesce(jsonb_agg(jsonb_build_object('id', o.id, 'reference', o.reference, 'key', o.reference || case when picked.key_no > 0 then '-' || picked.key_no else '' end, 'details', o.details)), '[]'::jsonb) into v
+  from picked join phase1.service_orders o on o.id = picked.order_id;
+  return v;
+end $$;
+
+-- How a send went. 'done' = registered and charged p_cost; 'rejected' = refused, nothing charged; 'no_funds' = our OtessData wallet is short (stays queued);
+-- 'submitted' = accepted but not finished yet; 'unclear' = no clear answer, a person must check.
+create or replace function phase1.service_registration_result(p_order uuid, p_outcome text, p_cost numeric default null, p_supplier_reference text default null, p_note text default null, p_reply jsonb default null, p_balance numeric default null)
+returns text language plpgsql security definer set search_path = phase1, public as $$
+declare r phase1.service_registrations; o phase1.service_orders; v_note text := left(nullif(trim(coalesce(p_note, '')), ''), 300);
+begin
+  select * into r from phase1.service_registrations where order_id = p_order for update;
+  if r.order_id is null then return 'missing'; end if;
+  if r.status not in ('sending','submitted') then return r.status; end if;
+  select * into o from phase1.service_orders where id = p_order;
+  update phase1.service_registrations set last_reply = coalesce(p_reply, last_reply), supplier_reference = coalesce(p_supplier_reference, supplier_reference), updated_at = now() where order_id = p_order;
+  if p_balance is not null then perform phase1.finance_note_supplier_balance('otessdata', p_balance, now(), 'afa_register', null, false); end if;
+  if p_outcome = 'done' then
+    if p_cost is null or p_cost <= 0 then
+      update phase1.service_registrations set status = 'unclear', note = 'Registered, but OtessData did not say what it charged. Check it and mark it done with the cost.' where order_id = p_order;
+      perform phase1.service_alert_admins('afa-cost:' || o.reference, 'AFA registered, cost missing', o.reference || ' went through but the charge was not in the reply. Open DY Services to finish it.');
+      return 'unclear';
+    end if;
+    update phase1.service_registrations set submitted_at = coalesce(submitted_at, now()), note = null where order_id = p_order;
+    return phase1.service_registration_done(p_order, p_cost, 'float_otessdata', 'otessdata', p_supplier_reference, null);
+  elsif p_outcome = 'no_funds' then
+    update phase1.service_registrations set status = 'queued', note = coalesce(v_note, 'The OtessData wallet is too low. Top it up and this goes by itself.') where order_id = p_order;
+    perform phase1.service_alert_admins('afa-funds:' || to_char(now(), 'YYYYMMDDHH24'), 'AFA registrations are waiting', coalesce(v_note, 'The OtessData wallet is too low. Top it up and they go by themselves.'));
+    return 'queued';
+  elsif p_outcome = 'submitted' then
+    update phase1.service_registrations set status = 'submitted', submitted_at = coalesce(submitted_at, now()), note = coalesce(v_note, 'Sent. Waiting for OtessData to finish it.') where order_id = p_order;
+    return 'submitted';
+  elsif p_outcome = 'rejected' then
+    update phase1.service_registrations set status = 'rejected', note = coalesce(v_note, 'OtessData refused this registration. Nothing was charged.') where order_id = p_order;
+    perform phase1.service_alert_admins('afa-rejected:' || o.reference, 'AFA registration refused', o.reference || ': ' || coalesce(v_note, 'OtessData refused it') || '. Try again or refund the buyer.');
+    return 'rejected';
+  end if;
+  update phase1.service_registrations set status = 'unclear', note = coalesce(v_note, 'No clear answer from OtessData. Check it there before trying again.') where order_id = p_order;
+  perform phase1.service_alert_admins('afa-unclear:' || o.reference, 'AFA registration needs checking', o.reference || ' was sent but the answer was not clear. Check it on OtessData.');
+  return 'unclear';
+end $$;
+
+-- Owner: send it again. After a clear refusal it goes as a fresh request; after an unclear answer it reuses the same key, so OtessData can't charge twice.
+create or replace function phase1.admin_service_registration_retry(p_order uuid) returns text language plpgsql security definer set search_path = phase1, public as $$
+declare r phase1.service_registrations;
+begin
+  if not phase1.caller_is_admin(null, true) then raise exception 'master_required'; end if;
+  select * into r from phase1.service_registrations where order_id = p_order for update;
+  if r.order_id is null then raise exception 'not_a_registration'; end if;
+  if r.status not in ('rejected','unclear') or not exists (select 1 from phase1.service_orders where id = p_order and status = 'processing') then return r.status; end if;
+  if phase1.service_afa_taken((select details->>'afa_phone' from phase1.service_orders where id = p_order), p_order) then raise exception 'afa_already_registered'; end if;
+  update phase1.service_registrations set status = 'queued', attempts = 0, key_no = key_no + case when r.status = 'rejected' then 1 else 0 end, note = null, updated_at = now() where order_id = p_order;
+  begin
+    perform net.http_post(url := 'https://nhxgebulvqhtiiotetoo.supabase.co/functions/v1/service-pay', body := '{"action":"run"}'::jsonb,
+      headers := jsonb_build_object('Content-Type','application/json','x-yiego-internal-secret',(select value from phase1.internal_secrets where key = 'cron')), timeout_milliseconds := 30000);
+  exception when others then null; end;
+  return 'queued';
+end $$;
+
+revoke all on function phase1.service_registration_claim(boolean), phase1.service_registration_result(uuid,text,numeric,text,text,jsonb,numeric) from public, anon, authenticated;
+grant execute on function phase1.service_registration_claim(boolean), phase1.service_registration_result(uuid,text,numeric,text,text,jsonb,numeric) to service_role;
+revoke all on function phase1.admin_service_registration_retry(uuid) from public, anon;
+grant execute on function phase1.admin_service_registration_retry(uuid) to authenticated, service_role;
+
+select cron.unschedule(jobid) from cron.job where jobname = 'service-pay';
+select cron.schedule('service-pay', '*/2 * * * *', $job$select net.http_post(url:='https://nhxgebulvqhtiiotetoo.supabase.co/functions/v1/service-pay',body:='{"action":"run"}'::jsonb,headers:=jsonb_build_object('Content-Type','application/json','x-yiego-internal-secret',(select value from phase1.internal_secrets where key='cron')),timeout_milliseconds:=60000) where exists (select 1 from phase1.service_orders where (paid_at is null and pay_reference is not null and created_at > now() - interval '3 hours') or status = 'awaiting_payment') or exists (select 1 from phase1.service_outbox where status = 'pending') or exists (select 1 from phase1.sms_queue where status = 'pending') or exists (select 1 from phase1.service_registrations where status in ('queued','sending'))$job$);
