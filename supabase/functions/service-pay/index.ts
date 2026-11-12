@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 /* DY Services: paying for a service order with Paystack, and sending what was bought.
    The database owns every rule (stock, prices, who gets which PIN, and that a payment delivers once).
-     { action: "start", productCode, quantity, phone, email?, deviceId?, details? }   open a Paystack checkout (guest or signed in; details = the AFA form)
+     { action: "start", productCode, quantity, phone, email?, deviceId?, details?, store? }   open a Paystack checkout (guest or signed in; details = the AFA form; store = an agent's store slug)
      { action: "confirm", token }                                           on return from Paystack: check the payment, give back the order
      { action: "run" } + internal secret                                    send SMS/email for delivered orders; re-check unpaid ones; send queued texts
      { action: "refund", orderId, reason } + admin sign-in                  send the money back through Paystack
@@ -49,7 +49,7 @@ async function checkPayment(db: any, reference: string): Promise<string> {
   return error ? "error" : String(data);
 }
 
-interface Delivered { id: string; reference: string; kind?: string; name: string; quantity: number; phone: string; email: string | null; token: string; pins: { serial: string; pin: string }[]; afa?: { name?: string; phone?: string } | null }
+interface Delivered { id: string; reference: string; kind?: string; name: string; quantity: number; phone: string; email: string | null; token: string; pins: { serial: string; pin: string }[]; afa?: { name?: string; phone?: string } | null; store?: { name?: string; site?: string } | null }
 const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 async function sendSms(to: string, message: string, sender: string): Promise<string> {
@@ -131,11 +131,14 @@ async function sendEmail(o: Delivered): Promise<string> {
   const key = Deno.env.get("RESEND_API_KEY");
   if (!key || !o.email || /@guest\.datayego\.com$/i.test(o.email)) return "skipped";
   const isAfa = o.kind === "afa";
+  // Bought in an agent's store: the email carries that store's name and links back to that store, not to DataYego.
+  const brand = o.store?.name?.trim() || "DataYego";
+  const site = /^https:\/\/[a-z0-9.-]+$/i.test(o.store?.site ?? "") ? String(o.store?.site) : SITE;
   const rows = o.pins.map((p, i) => `<tr><td style="padding:10px 12px;border-top:1px solid #e3ebe6;font-size:13px;color:#5a6a64;">${o.pins.length > 1 ? `#${i + 1}` : "Your checker"}</td><td style="padding:10px 12px;border-top:1px solid #e3ebe6;font-size:14px;"><b>Serial:</b> ${esc(p.serial)}<br /><b>PIN:</b> ${esc(p.pin)}</td></tr>`).join("");
-  const html = `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;"><tr><td style="background:#0b1512;padding:18px 28px;"><span style="color:#7cf0b4;font-size:20px;font-weight:700;">DataYego</span></td></tr><tr><td style="padding:28px;"><h1 style="margin:0 0 8px;font-size:21px;">${esc(o.name)}</h1>${isAfa ? `<p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:#3c4a46;">Thank you. ${esc(o.afa?.phone ?? o.phone)} is now registered on MTN AFA${o.afa?.name ? `, in the name of ${esc(o.afa.name)}` : ""}. Order ${esc(o.reference)}.</p>` : `<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#3c4a46;">Thank you. Here ${o.pins.length > 1 ? "are your checkers" : "is your checker"} for order ${esc(o.reference)}. Keep this email safe: anyone with the serial and PIN can use it.</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e3ebe6;border-radius:12px;">${rows}</table>`}<a href="${SITE}/services/order/${o.token}" style="display:block;margin:20px 0 0;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">View it on DataYego</a></td></tr></table></td></tr></table></body></html>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;"><tr><td style="background:#0b1512;padding:18px 28px;"><span style="color:#7cf0b4;font-size:20px;font-weight:700;">${esc(brand)}</span></td></tr><tr><td style="padding:28px;"><h1 style="margin:0 0 8px;font-size:21px;">${esc(o.name)}</h1>${isAfa ? `<p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:#3c4a46;">Thank you. ${esc(o.afa?.phone ?? o.phone)} is now registered on MTN AFA${o.afa?.name ? `, in the name of ${esc(o.afa.name)}` : ""}. Order ${esc(o.reference)}.</p>` : `<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#3c4a46;">Thank you. Here ${o.pins.length > 1 ? "are your checkers" : "is your checker"} for order ${esc(o.reference)}. Keep this email safe: anyone with the serial and PIN can use it.</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e3ebe6;border-radius:12px;">${rows}</table>`}<a href="${site}/services/order/${o.token}" style="display:block;margin:20px 0 0;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">View your order</a></td></tr></table></td></tr></table></body></html>`;
   try {
     const res = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", "Idempotency-Key": `service-${o.id}` },
-      body: JSON.stringify({ from: Deno.env.get("EMAIL_FROM") ?? "DataYego <noreply@datayego.com>", to: [o.email], reply_to: "support@yiego.shop", subject: isAfa ? `Your AFA registration is done: order ${o.reference}` : `Your ${o.name}: order ${o.reference}`, html }) });
+      body: JSON.stringify({ from: o.store?.name ? `${brand.replace(/[<>"\r\n]/g, "").slice(0, 60)} <noreply@datayego.com>` : Deno.env.get("EMAIL_FROM") ?? "DataYego <noreply@datayego.com>", to: [o.email], reply_to: "support@yiego.shop", subject: isAfa ? `Your AFA registration is done: order ${o.reference}` : `Your ${o.name}: order ${o.reference}`, html }) });
     return res.ok ? "sent" : "failed";
   } catch { return "failed"; }
 }
@@ -198,12 +201,12 @@ Deno.serve(async (req) => {
     if (action === "start") {
       const phone = String(body.phone ?? ""); const email = String(body.email ?? "").trim();
       const { data: o, error } = await db.rpc("service_checkout_start", { p_user: userId, p_product: String(body.productCode ?? ""), p_qty: Number(body.quantity ?? 1), p_phone: phone, p_email: email || null, p_device: typeof body.deviceId === "string" ? body.deviceId : null,
-        ...(body.details && typeof body.details === "object" ? { p_details: body.details } : {}) });
+        ...(body.details && typeof body.details === "object" ? { p_details: body.details } : {}), ...(typeof body.store === "string" && body.store ? { p_store: body.store.slice(0, 80) } : {}) });
       if (error || !o) return json({ error: friendly(error?.message, "We couldn't start this order. Please try again.") }, 400);
       const sub = Deno.env.get("PAYSTACK_SUBACCOUNT")?.trim();
       const init = await paystack("/transaction/initialize", { method: "POST", body: JSON.stringify({
         email: userEmail ?? (o.email || `${o.phone}@guest.datayego.com`), amount: Math.round(Number(o.total) * 100), reference: o.pay_reference, currency: "GHS", channels: ["card", "mobile_money"],
-        callback_url: `${SITE}/services/order/${o.token}`, metadata: { purpose: "service_purchase", orderReference: o.reference, product: o.name },
+        callback_url: `${/^https:\/\/[a-z0-9.-]+$/i.test(String(o.site ?? "")) ? o.site : SITE}/services/order/${o.token}`, metadata: { purpose: "service_purchase", orderReference: o.reference, product: o.name },
         ...(sub ? { subaccount: sub, bearer: "subaccount" } : {}) }) });
       if (!init.ok || !init.payload?.status || !init.payload?.data?.authorization_url) {
         await db.rpc("service_checkout_abort", { p_order: o.id });

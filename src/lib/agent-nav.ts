@@ -11,6 +11,7 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
   { id: "sell", label: "Sell", icon: ShoppingBag, pages: [
     { id: "buy", label: "Buy data", to: "/agent/buy" },
     { id: "prices", label: "Prices", to: "/agent/prices" },
+    { id: "services", label: "Services", to: "/agent/services" },
   ] },
   { id: "store", label: "My store", icon: Settings, pages: [
     { id: "store-details", label: "Store details", to: "/agent/store/details", sections: ["details", "payout", "alerts"] },

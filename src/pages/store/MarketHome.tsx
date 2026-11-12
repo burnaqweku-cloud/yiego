@@ -11,6 +11,7 @@ import { DEFAULT_FAQ } from "@/pages/store/StoreFaq";
 import { useHomeData } from "@/pages/store/homeData";
 import type { Phase1Product } from "@/lib/phase1-api";
 import type { Network } from "@/data/bundles";
+import StoreServicesTeaser from "@/components/store/StoreServicesTeaser";
 
 /* Market's front door: the same painted signboard and sticker language as its bundle list,
    arranged as a home page. Buying happens on /bundles. */
@@ -52,6 +53,7 @@ export default function MarketHome() {
           ))}
         </div>
       </section>
+      <StoreServicesTeaser />
 
       {picks.length > 0 && (
         <section>

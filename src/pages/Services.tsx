@@ -1,106 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, ChevronDown, GraduationCap, Minus, PhoneCall, Plus, UserPlus, Wallet } from "lucide-react";
-import { toast } from "sonner";
+import { ArrowLeft, ArrowRight, ChevronDown, GraduationCap, PhoneCall, Plus, UserPlus, Wallet } from "lucide-react";
 import Seo from "@/components/seo/Seo";
 import { Card } from "@/components/ui/card";
-import Modal from "@/components/ui/modal";
-import { FlowHeader, ProcessingView } from "@/components/flows/flow-parts";
 import AfaSheet from "@/components/services/AfaSheet";
+import BuySheet from "@/components/services/BuySheet";
 import OrderResult from "@/components/services/OrderResult";
-import PayWith, { type Pay } from "@/components/services/PayWith";
 import { useAuth } from "@/store/auth-context";
 import { useWallet } from "@/store/wallet";
-import { useProfile } from "@/store/profile";
 import { useFlows } from "@/store/flows";
 import { formatGHS } from "@/lib/format";
 import { metaFor } from "@/lib/site";
-import { buyServiceWithWallet, loadServices, myServiceOrders, serviceFee, servicesSendSms, startServiceCheckout, type ServiceOrder, type ServiceProduct } from "@/lib/services";
+import { loadServices, myServiceOrders, servicesSendSms, type ServiceOrder, type ServiceProduct } from "@/lib/services";
 import { cn } from "@/lib/utils";
 
 /* DY Services: things DataYego sells besides data. The first screen is one card per service; tapping a card
-   opens that service on its own (/services/checkers, /services/afa). Result checkers are live; the PIN is shown the
+   opens that service on its own (/services/checkers, /services/afa). The same screens run inside an agent's store
+   (`store` prop): there they show only what that store sells, at its prices, under its name. Result checkers are live; the PIN is shown the
    moment payment is confirmed, sent by SMS and email, and kept under "Your checkers". */
-
-const MAX_QUANTITY = 1000;
-const validPhone = (v: string) => /^0\d{9}$/.test(v.replace(/\D/g, ""));
-
-function BuySheet({ product, sms, onClose, onBought }: { product: ServiceProduct | null; sms: boolean; onClose: () => void; onBought: () => void }) {
-  const { isAuthenticated } = useAuth();
-  const { balance, refresh } = useWallet();
-  const { profile } = useProfile();
-  const { openAddMoney } = useFlows();
-  const [quantity, setQuantity] = useState(1);
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [pay, setPay] = useState<Pay>("paystack");
-  const [busy, setBusy] = useState(false);
-  const [order, setOrder] = useState<ServiceOrder | null>(null);
-
-  useEffect(() => {
-    if (!product) return;
-    setQuantity(1); setOrder(null); setBusy(false); setEmail("");
-    setPhone(isAuthenticated && validPhone(profile.phone ?? "") ? profile.phone.replace(/\D/g, "") : "");
-    setPay(isAuthenticated && balance >= product.price ? "wallet" : "paystack");
-    // Only when a different product is opened: typing must not be reset by a balance refresh.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product?.code]);
-
-  if (!product) return <Modal open={false} onClose={onClose} label="Buy">{null}</Modal>;
-  const base = Math.round(product.price * quantity * 100) / 100;
-  const fee = pay === "paystack" ? serviceFee(base) : 0;
-  const short = pay === "wallet" && balance < base;
-
-  const submit = async () => {
-    if (!validPhone(phone)) { toast.error("Enter the 10-digit Ghana number that should get the SMS."); return; }
-    // Without SMS, a guest's email is the only copy they keep once this page is closed.
-    if (!isAuthenticated && !sms && !email) { toast.error("Enter your email so we can send you the serial number and PIN."); return; }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("That email doesn't look right. Please check it."); return; }
-    setBusy(true);
-    if (pay === "wallet") {
-      const r = await buyServiceWithWallet(product.code, quantity, phone);
-      setBusy(false);
-      if (!r.order) { toast.error(r.error ?? "Something went wrong. Please try again."); return; }
-      setOrder(r.order); void refresh(); onBought();
-      return;
-    }
-    const r = await startServiceCheckout({ productCode: product.code, quantity, phone, email: email || undefined });
-    if (!r.data) { setBusy(false); toast.error(r.error ?? "We couldn't open the payment page. Please try again."); return; }
-    window.location.assign(r.data.authorizationUrl);
-  };
-
-  return (
-    <Modal open onClose={onClose} label={product.name}>
-      <FlowHeader title={order ? (order.status === "delivered" ? "Here you go" : "Order received") : product.name} subtitle={order ? undefined : `${formatGHS(product.price)} each`} onClose={onClose} />
-      {busy ? <ProcessingView label={pay === "wallet" ? "Placing your order…" : "Opening the payment page…"} /> : order ? (
-        <div className="space-y-4 px-5 pb-6 pt-5"><OrderResult order={order} sms={sms} /><button type="button" className="onyx-btn-primary w-full" onClick={onClose}>Done</button></div>
-      ) : (
-        <div className="space-y-4 px-5 pb-6 pt-5">
-          <div>
-            <p className="text-[13px] font-semibold text-foreground">How many?</p>
-            <div className="mt-2 flex items-center gap-2">
-              <button type="button" aria-label="One fewer" disabled={quantity <= 1} onClick={() => setQuantity(Math.max(1, quantity - 1))} className="onyx-iconbtn h-12 w-12 shrink-0 rounded-xl disabled:opacity-40"><Minus size={18} /></button>
-              <input className="onyx-field h-12 w-full text-center text-[17px] font-semibold" inputMode="numeric" aria-label="How many" value={String(quantity)}
-                onChange={(e) => setQuantity(Math.min(MAX_QUANTITY, Math.max(1, Number(e.target.value.replace(/\D/g, "")) || 1)))} />
-              <button type="button" aria-label="One more" disabled={quantity >= MAX_QUANTITY} onClick={() => setQuantity(Math.min(MAX_QUANTITY, quantity + 1))} className="onyx-iconbtn h-12 w-12 shrink-0 rounded-xl disabled:opacity-40"><Plus size={18} /></button>
-            </div>
-          </div>
-          <label className="block"><span className="text-[13px] font-semibold text-foreground">{sms ? "Phone number for the SMS" : "Your phone number"}</span>
-            <input className="onyx-field mt-2 w-full" inputMode="numeric" autoComplete="tel" placeholder="024 000 0000" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^\d ]/g, "").slice(0, 13))} />
-            <span className="mt-1 block text-[12px] text-muted-foreground">{sms ? "The serial number and PIN are shown here straight away and also sent to this number." : "So we can reach you about this order. The serial number and PIN are shown here straight away."}</span></label>
-          {!isAuthenticated && <label className="block"><span className="text-[13px] font-semibold text-foreground">Email {sms && <span className="font-normal text-muted-foreground">(optional)</span>}</span>
-            <input className="onyx-field mt-2 w-full" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value.trim())} />
-            {!sms && <span className="mt-1 block text-[12px] text-muted-foreground">We send the serial number and PIN here too, so you can find them again.</span>}</label>}
-          <PayWith pay={pay} onChange={setPay} base={base} balance={balance} signedIn={isAuthenticated} />
-          <div className="flex items-center justify-between border-t border-white/[0.08] pt-3 text-[14px]"><span className="text-muted-foreground">You pay</span><span className="font-display text-[20px] font-semibold text-foreground">{formatGHS(base + fee)}</span></div>
-          {short
-            ? <button type="button" className="onyx-btn-primary flex w-full items-center justify-center gap-2" onClick={() => { onClose(); openAddMoney(); }}><Plus size={16} />Top up {formatGHS(base - balance)} or more</button>
-            : <button type="button" className="onyx-btn-primary w-full" onClick={() => void submit()}>{pay === "wallet" ? `Pay ${formatGHS(base)} from wallet` : `Pay ${formatGHS(base + fee)}`}</button>}
-        </div>
-      )}
-    </Modal>
-  );
-}
 
 function MyCheckers({ orders, sms }: { orders: ServiceOrder[]; sms: boolean }) {
   const [open, setOpen] = useState<string | null>(null);
@@ -124,7 +41,10 @@ function MyCheckers({ orders, sms }: { orders: ServiceOrder[]; sms: boolean }) {
   );
 }
 
-export default function Services() {
+/** An agent's store, when these screens run inside one. `base` is where its services live, e.g. "/s/kofi/services". */
+export interface ServicesStore { slug: string; name: string; base: string }
+
+export default function Services({ store }: { store?: ServicesStore } = {}) {
   const { isAuthenticated } = useAuth();
   const { balance } = useWallet();
   const { openAddMoney } = useFlows();
@@ -135,9 +55,9 @@ export default function Services() {
   useEffect(() => { void servicesSendSms().then(setSms, () => undefined); }, []);
 
   const load = useCallback(() => {
-    void loadServices().then(setProducts, () => setProducts([]));
+    void loadServices(store?.slug).then(setProducts, () => setProducts([]));
     if (isAuthenticated) void myServiceOrders().then(setOrders, () => undefined); else setOrders([]);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, store?.slug]);
   useEffect(() => { load(); }, [load]);
 
   const checkers = (products ?? []).filter((p) => p.kind === "checker");
@@ -145,18 +65,22 @@ export default function Services() {
   const [registering, setRegistering] = useState(false);
   const { section } = useParams();
   const view = section === "checkers" || (section === "afa" && afa) ? section : "home";
+  const base = store?.base ?? "/services";
+  const context = store ? { store: store.slug } : {};
+  const walletName = store ? "Wallet" : "DataYego wallet";
+  // A store shows only what it sells; the main site also shows what is coming.
   const cards = [
-    { key: "checkers", icon: GraduationCap, title: "Result checkers", text: "WASSCE and BECE checker PINs, shown the moment you pay.", to: "/services/checkers" },
-    ...(afa ? [{ key: "afa", icon: UserPlus, title: afa.name, text: afa.blurb, to: "/services/afa" }] : [{ key: "afa", icon: UserPlus, title: "MTN AFA registration", text: "Put an MTN number on AFA for cheaper calls.", to: null }]),
-    { key: "airtime", icon: PhoneCall, title: "Airtime", text: "Top up MTN, Telecel and AirtelTigo airtime.", to: null },
+    ...(!store || checkers.length > 0 ? [{ key: "checkers", icon: GraduationCap, title: "Result checkers", text: "WASSCE and BECE checker PINs, shown the moment you pay.", to: `${base}/checkers` as string | null }] : []),
+    ...(afa ? [{ key: "afa", icon: UserPlus, title: afa.name, text: afa.blurb, to: `${base}/afa` as string | null }] : store ? [] : [{ key: "afa", icon: UserPlus, title: "MTN AFA registration", text: "Put an MTN number on AFA for cheaper calls.", to: null }]),
+    ...(store ? [] : [{ key: "airtime", icon: PhoneCall, title: "Airtime", text: "Top up MTN, Telecel and AirtelTigo airtime.", to: null }]),
   ];
   return (
     <div className="mx-auto w-full max-w-[560px] space-y-4">
-      <Seo {...metaFor("/services")} />
+      {!store && <Seo {...metaFor("/services")} />}
       <header className="px-1 pt-1">
-        {view !== "home" && <Link to="/services" className="mb-2 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-primary-glow"><ArrowLeft size={15} aria-hidden="true" />All services</Link>}
-        <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-foreground">{view === "checkers" ? "Result checkers" : view === "afa" && afa ? afa.name : "DY Services"}</h1>
-        <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{view === "checkers" ? "Serial number and PIN, shown the moment you pay." : view === "afa" && afa ? afa.blurb : "More from DataYego, with the same account and wallet. Pick a service."}</p>
+        {view !== "home" && <Link to={base} className="mb-2 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-primary-glow"><ArrowLeft size={15} aria-hidden="true" />All services</Link>}
+        <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-foreground">{view === "checkers" ? "Result checkers" : view === "afa" && afa ? afa.name : store ? "Services" : "DY Services"}</h1>
+        <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{view === "checkers" ? "Serial number and PIN, shown the moment you pay." : view === "afa" && afa ? afa.blurb : store ? `More from ${store.name}. Pick a service.` : "More from DataYego, with the same account and wallet. Pick a service."}</p>
       </header>
 
       {isAuthenticated && <Card className="flex items-center justify-between gap-3 p-4">
@@ -165,6 +89,7 @@ export default function Services() {
         <button type="button" onClick={openAddMoney} className="onyx-btn-ghost flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[13.5px]"><Plus size={15} />Top up</button>
       </Card>}
 
+      {view === "home" && store && products !== null && cards.length === 0 && <Card className="p-5 text-[13.5px] text-muted-foreground">No services are on sale here right now.</Card>}
       {view === "home" && <ul className="grid grid-cols-2 gap-3">
         {cards.map(({ key, icon: Icon, title, text, to }) => {
           const inner = <>
@@ -202,10 +127,10 @@ export default function Services() {
       </Card>}
 
       <MyCheckers orders={orders} sms={sms} />
-      {!isAuthenticated && <p className="pb-2 text-center text-[13px] text-muted-foreground">Bought one before? <Link to="/auth" className="font-semibold text-primary-glow">Sign in</Link> to see your orders, or open the link in your email.</p>}
+      {!isAuthenticated && <p className="pb-2 text-center text-[13px] text-muted-foreground">Bought one before? <Link to={store ? store.base.replace(/\/services$/, "/sign-in") : "/auth"} className="font-semibold text-primary-glow">Sign in</Link> to see your orders, or open the link in your email.</p>}
 
-      <BuySheet product={buying} sms={sms} onClose={() => setBuying(null)} onBought={load} />
-      <AfaSheet product={registering ? afa : null} sms={sms} onClose={() => setRegistering(false)} onBought={load} />
+      <BuySheet product={buying} sms={sms} onClose={() => setBuying(null)} onBought={load} context={context} walletName={walletName} />
+      <AfaSheet product={registering ? afa : null} sms={sms} onClose={() => setRegistering(false)} onBought={load} context={context} walletName={walletName} />
     </div>
   );
 }

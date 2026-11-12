@@ -11,13 +11,13 @@ import { useProfile } from "@/store/profile";
 import { useFlows } from "@/store/flows";
 import { formatGHS } from "@/lib/format";
 import { afaProblem, formatGhanaCard, latestBirth, onlyDigits as digits, validGhanaPhone as validPhone } from "@/lib/afa";
-import { GHANA_REGIONS, buyServiceWithWallet, serviceFee, startServiceCheckout, type AfaDetails, type ServiceOrder, type ServiceProduct } from "@/lib/services";
+import { GHANA_REGIONS, buyServiceWithWallet, serviceFee, startServiceCheckout, type AfaDetails, type ServiceContext, type ServiceOrder, type ServiceProduct } from "@/lib/services";
 
 /* MTN AFA registration: a short form, then payment. Nothing is sent anywhere until the payment is confirmed,
    and one number can only be registered once. */
 
 const EMPTY: AfaDetails = { full_name: "", afa_phone: "", ghana_card: "", dob: "", occupation: "", region: "", address: "" };
-export default function AfaSheet({ product, sms, onClose, onBought }: { product: ServiceProduct | null; sms: boolean; onClose: () => void; onBought: () => void }) {
+export default function AfaSheet({ product, sms, onClose, onBought, context = {}, walletName = "DataYego wallet" }: { product: ServiceProduct | null; sms: boolean; onClose: () => void; onBought: () => void; context?: ServiceContext; walletName?: string }) {
   const { isAuthenticated } = useAuth();
   const { balance, refresh } = useWallet();
   const { profile } = useProfile();
@@ -31,7 +31,7 @@ export default function AfaSheet({ product, sms, onClose, onBought }: { product:
   useEffect(() => {
     if (!product) return;
     setForm(EMPTY); setEmail(""); setOrder(null); setBusy(false);
-    setPay(isAuthenticated && balance >= product.price ? "wallet" : "paystack");
+    setPay(context.asAgent || (isAuthenticated && balance >= product.price) ? "wallet" : "paystack");
     // Only when the sheet is opened: typing must not be reset by a balance refresh.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.code]);
@@ -53,13 +53,13 @@ export default function AfaSheet({ product, sms, onClose, onBought }: { product:
     const contact = isAuthenticated && validPhone(profile.phone ?? "") ? digits(profile.phone) : details.afa_phone;
     setBusy(true);
     if (pay === "wallet") {
-      const r = await buyServiceWithWallet(product.code, 1, contact, details);
+      const r = await buyServiceWithWallet(product.code, 1, contact, details, context);
       setBusy(false);
       if (!r.order) { toast.error(r.error ?? "Something went wrong. Please try again."); return; }
       setOrder(r.order); void refresh(); onBought();
       return;
     }
-    const r = await startServiceCheckout({ productCode: product.code, quantity: 1, phone: contact, email: email || undefined, details });
+    const r = await startServiceCheckout({ productCode: product.code, quantity: 1, phone: contact, email: email || undefined, details, store: context.store });
     if (!r.data) { setBusy(false); toast.error(r.error ?? "We couldn't open the payment page. Please try again."); return; }
     window.location.assign(r.data.authorizationUrl);
   };
@@ -93,7 +93,7 @@ export default function AfaSheet({ product, sms, onClose, onBought }: { product:
           {!isAuthenticated && <label className="block"><span className={label}>Your email {sms && <span className="font-normal text-muted-foreground">(optional)</span>}</span>
             <input className="onyx-field mt-2 w-full" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value.trim())} />
             <span className="mt-1 block text-[12px] text-muted-foreground">We tell you here when the registration is done.</span></label>}
-          <PayWith pay={pay} onChange={setPay} base={base} balance={balance} signedIn={isAuthenticated} />
+          <PayWith pay={pay} onChange={setPay} base={base} balance={balance} signedIn={isAuthenticated} walletOnly={context.asAgent} walletName={walletName} />
           <div className="flex items-center justify-between border-t border-white/[0.08] pt-3 text-[14px]"><span className="text-muted-foreground">You pay</span><span className="font-display text-[20px] font-semibold text-foreground">{formatGHS(base + fee)}</span></div>
           {short
             ? <button type="button" className="onyx-btn-primary flex w-full items-center justify-center gap-2" onClick={() => { onClose(); openAddMoney(); }}><Plus size={16} />Top up {formatGHS(base - balance)} or more</button>

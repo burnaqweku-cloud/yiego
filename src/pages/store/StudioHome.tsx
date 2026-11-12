@@ -10,6 +10,7 @@ import { NETWORKS, type Network } from "@/data/bundles";
 import { formatGHS } from "@/lib/format";
 import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
 import { DEFAULT_FAQ } from "@/pages/store/StoreFaq";
+import StoreServicesTeaser from "@/components/store/StoreServicesTeaser";
 
 /* The Studio template's home page. This is the store's front door: who they are,
    what it costs, how to buy, why to trust them. Buying itself happens on /bundles
@@ -97,6 +98,7 @@ export default function StudioHome() {
           </div>
         </div>
       </section>
+      <StoreServicesTeaser />
 
       {/* How it works: a real three-step sequence, so the numbers earn their place. */}
       <section className="px-5 py-12 sm:px-8">

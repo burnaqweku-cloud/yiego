@@ -15,8 +15,10 @@ export const GHANA_REGIONS = ["Ahafo", "Ashanti", "Bono", "Bono East", "Central"
 export interface ServiceOrder {
   reference: string; token: string; product: string; kind?: "checker" | "afa"; name: string; quantity: number; amount: number; fee: number; phone: string;
   status: "awaiting_payment" | "paid_waiting_stock" | "processing" | "delivered" | "refunded" | "cancelled" | "expired"; paid: boolean; method: "wallet" | "paystack";
-  created_at: string; delivered_at: string | null; pins: ServicePin[]; afa?: { name: string; phone: string } | null;
+  created_at: string; delivered_at: string | null; pins: ServicePin[]; afa?: { name: string; phone: string } | null; store?: { name: string; site: string } | null;
 }
+/** Where a purchase is made: nothing = the main site; store = an agent's store (its prices); asAgent = the agent buying for themselves at the agent price. */
+export interface ServiceContext { store?: string; asAgent?: boolean }
 
 const MESSAGES: Record<string, string> = {
   insufficient_balance: "Your wallet balance isn't enough. Top up, or pay with mobile money or card.",
@@ -24,6 +26,7 @@ const MESSAGES: Record<string, string> = {
   quantity_invalid: "Choose between 1 and 1,000.",
   sign_in_required: "Sign in to pay from your wallet.",
   service_unavailable: "This isn't available right now.",
+  not_an_agent: "This price is for agents with an active plan.",
   afa_already_registered: "This number already has an AFA registration with us. You don't need to pay again.",
   afa_name_invalid: "Enter the full name exactly as it is on the Ghana Card (first name and surname).",
   afa_phone_invalid: "That doesn't look like an MTN number. AFA is for MTN only: 024, 025, 053, 054, 055 or 059.",
@@ -39,8 +42,8 @@ export function serviceError(message: string | null | undefined, fallback = "Som
   return message && !/[_{}]/.test(message) && message.length < 160 ? message : fallback;
 }
 
-export async function loadServices(): Promise<ServiceProduct[]> {
-  const { data } = await phase1().rpc<ServiceProduct[]>("service_catalog");
+export async function loadServices(store?: string): Promise<ServiceProduct[]> {
+  const { data } = await phase1().rpc<ServiceProduct[]>("service_catalog", store ? { p_store: store } : {});
   return (data ?? []).map((p) => ({ ...p, price: Number(p.price) }));
 }
 /** Whether result-checker PINs are also sent by SMS right now (an admin switch). When off, they go on screen and by email. */
@@ -48,8 +51,9 @@ export async function servicesSendSms(): Promise<boolean> {
   const { data } = await phase1().rpc<{ sms?: boolean }>("service_info");
   return Boolean(data?.sms);
 }
-export async function buyServiceWithWallet(productCode: string, quantity: number, phone: string, details?: AfaDetails): Promise<{ order: ServiceOrder | null; error: string | null }> {
-  const { data, error } = await phase1().rpc<ServiceOrder>("service_buy_wallet", { p_product: productCode, p_qty: quantity, p_phone: phone, p_device: appDeviceId(), ...(details ? { p_details: details } : {}) });
+export async function buyServiceWithWallet(productCode: string, quantity: number, phone: string, details?: AfaDetails, context: ServiceContext = {}): Promise<{ order: ServiceOrder | null; error: string | null }> {
+  const { data, error } = await phase1().rpc<ServiceOrder>("service_buy_wallet", { p_product: productCode, p_qty: quantity, p_phone: phone, p_device: appDeviceId(), ...(details ? { p_details: details } : {}),
+    ...(context.store ? { p_store: context.store } : {}), ...(context.asAgent ? { p_as_agent: true } : {}) });
   return { order: data ?? null, error: error ? serviceError(error.message) : data ? null : serviceError(null) };
 }
 async function call<T>(body: Record<string, unknown>): Promise<{ data: T | null; error: string | null }> {
@@ -60,7 +64,7 @@ async function call<T>(body: Record<string, unknown>): Promise<{ data: T | null;
   return { data: null, error: serviceError(message) };
 }
 /** Opens a mobile money / card payment for a service order. The buyer comes back to /services/order/<token>. */
-export const startServiceCheckout = (input: { productCode: string; quantity: number; phone: string; email?: string; details?: AfaDetails }) =>
+export const startServiceCheckout = (input: { productCode: string; quantity: number; phone: string; email?: string; details?: AfaDetails; store?: string }) =>
   call<{ authorizationUrl: string; token: string; reference: string; total: number }>({ action: "start", ...input, deviceId: appDeviceId() });
 /** On return from the payment page: checks the payment and gives back the order (with its PINs once delivered). */
 export const confirmServiceOrder = (token: string) => call<ServiceOrder>({ action: "confirm", token });
@@ -68,6 +72,12 @@ export async function myServiceOrders(): Promise<ServiceOrder[]> {
   const { data } = await phase1().rpc<ServiceOrder[]>("service_my_orders");
   return data ?? [];
 }
+/* Agents: which services their store sells, and at what price. */
+export interface AgentServiceProduct { code: string; kind: "checker" | "afa"; name: string; blurb: string; agent_price: number; customer_price: number; price: number; enabled: boolean; in_stock: boolean }
+export interface AgentServices { active: boolean; products: AgentServiceProduct[]; earned: number;
+  sales: { reference: string; name: string; quantity: number; amount: number; margin: number | null; self: boolean; status: ServiceOrder["status"]; at: string; phone: string }[] }
+export const loadAgentServices = () => phase1().rpc<AgentServices>("agent_services");
+export const setAgentService = (code: string, price: number, enabled: boolean) => phase1().rpc<boolean>("agent_service_set", { p_product: code, p_price: price, p_enabled: enabled });
 export const SERVICE_FEE_RATE = 0.04;
 export const serviceFee = (base: number) => Math.round(base * SERVICE_FEE_RATE * 100) / 100;
 

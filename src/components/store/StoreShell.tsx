@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { storeBase } from "@/lib/storeHost";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Bell, Facebook, Instagram, LayoutDashboard, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound, Users } from "lucide-react";
+import { Bell, Facebook, Instagram, LayoutDashboard, LayoutGrid, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound, Users } from "lucide-react";
 import { dashboardHref } from "@/lib/agentDashboard";
 import { useAuth } from "@/store/auth-context";
 import StoreMissing from "@/components/store/StoreMissing";
@@ -96,6 +96,15 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
       window.location.replace(`https://${host}${rest || "/"}${window.location.search}${window.location.hash}`);
     });
   }, [slug, hostSlug]);
+  // The Services link shows only when this store sells at least one service.
+  const [hasServices, setHasServices] = useState(false);
+  useEffect(() => {
+    if (!slug) return;
+    let alive = true;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("service_catalog", { p_store: slug }).then((r: { data: unknown[] | null }) => { if (alive) setHasServices(Array.isArray(r.data) && r.data.length > 0); }, () => undefined);
+    return () => { alive = false; };
+  }, [slug]);
   const template = store?.template ?? "classic";
   useEffect(() => {
     const href = TEMPLATE_FONTS[template]; if (!href) return;
@@ -128,6 +137,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
   const NAV = [
     { to: `${storeBase(store.slug)}` || "/", label: "Home", icon: Store, end: true },
     { to: `${storeBase(store.slug)}/bundles`, label: "Bundles", icon: Package },
+    ...(hasServices ? [{ to: `${storeBase(store.slug)}/services`, label: "Services", icon: LayoutGrid }] : []),
     { to: `${storeBase(store.slug)}/track`, label: "Track order", icon: Search },
     { to: `${storeBase(store.slug)}/check-mtn`, label: "Check MTN number", icon: PhoneForwarded },
     { to: `${storeBase(store.slug)}/about`, label: "About", icon: Info },

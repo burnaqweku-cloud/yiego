@@ -6,7 +6,7 @@ import { confirmServiceOrder, servicesSendSms, type ServiceOrder as Order } from
 
 /* Where a buyer lands after paying for a service with mobile money or card, and the link in their email.
    It checks the payment and shows the PIN as soon as the order is delivered. */
-export default function ServiceOrder() {
+export default function ServiceOrder({ back }: { back?: { to: string; label: string } } = {}) {
   const { token = "" } = useParams();
   const [order, setOrder] = useState<Order | null>(null);
   const [failed, setFailed] = useState(false);
@@ -35,7 +35,7 @@ export default function ServiceOrder() {
           : !order ? <p role="status" className="text-[14px] text-muted-foreground">Checking your payment…</p>
           : <OrderResult order={order} sms={sms} />}
       </Card>
-      <p className="text-center text-[13px] text-muted-foreground"><Link to="/services" className="font-semibold text-primary-glow">Back to DY Services</Link></p>
+      <p className="text-center text-[13px] text-muted-foreground"><Link to={back?.to ?? "/services"} className="font-semibold text-primary-glow">{back?.label ?? "Back to DY Services"}</Link></p>
     </div>
   );
 }

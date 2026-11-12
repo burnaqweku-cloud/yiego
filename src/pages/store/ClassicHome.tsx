@@ -11,6 +11,7 @@ import { DEFAULT_FAQ } from "@/pages/store/StoreFaq";
 import { NET_COLOURS, NET_SHORT, useHomeData } from "@/pages/store/homeData";
 import type { Phase1Product } from "@/lib/phase1-api";
 import type { Network } from "@/data/bundles";
+import StoreServicesTeaser from "@/components/store/StoreServicesTeaser";
 
 /* Classic's front door: the dark green card language of its bundle grid, as a home page. */
 export default function ClassicHome() {
@@ -35,6 +36,7 @@ export default function ClassicHome() {
         <h2 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Pick a network</h2>
         <div className="grid gap-2 sm:grid-cols-3">{perNetwork.map(({ n, count, from }) => <button key={n.id} type="button" onClick={() => navigate(`${base}/bundles?network=${n.id}`)} className="onyx-panel flex items-center gap-3 rounded-2xl p-3.5 text-left transition hover:border-primary/40"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[11px] font-extrabold" style={{ background: NET_COLOURS[n.id], color: n.id === "mtn" ? "#1f1600" : "#fff" }}>{NET_SHORT[n.id]}</span><span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">{n.name}</span><span className="block text-[12px] text-faint-foreground">{loaded ? (from != null ? `${count} bundles · from ${formatGHS(from)}` : "none right now") : "loading…"}</span></span><ArrowRight size={16} className="text-faint-foreground" /></button>)}</div>
       </section>
+      <StoreServicesTeaser />
 
       {picks.length > 0 && (
         <section>
