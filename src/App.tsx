@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isStoreHost, setHostSlug } from "@/lib/storeHost";
 import { useStore } from "@/components/store/StoreShell";
+import StoreSplash from "@/components/store/StoreSplash";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -158,7 +159,7 @@ const AGENT_ROUTES = <><Route index element={<AgentHome />} /><Route path="buy" 
 
 /* A connected custom domain or slug.datayego.com: that store lives at the root. */
 const StoreHostApp = ({ slug }: { slug: string }) => (
-  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><MaintenanceGate hostSlug={slug}><FlowsProvider><ThemedToaster /><Suspense fallback={<RouteFallback />}><Routes>
+  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><ThemeProvider><AuthProvider><WalletProvider><ProfileProvider><MaintenanceGate hostSlug={slug}><FlowsProvider><ThemedToaster /><Suspense fallback={<StoreSplash />}><Routes>
     <Route path="/" element={<StoreShell hostSlug={slug} />}>{STORE_ROUTES}</Route>
     <Route path="/s/:slug" element={<StoreShell />}>{STORE_ROUTES}</Route>
     <Route path="/agent" element={<AgentShell />}>{AGENT_ROUTES}</Route>
@@ -177,7 +178,7 @@ const StoreHostGate = () => {
       .catch(() => { if (done) return; done = true; clearTimeout(timer); setSlug("error"); });
     return () => { done = true; clearTimeout(timer); };
   }, []);
-  if (slug === undefined) return <div className="min-h-dvh bg-[#0b1512]" />;
+  if (slug === undefined) return <StoreSplash />;
   if (slug === null) return <StoreMissing kind="no-store-at-address" />;
   if (slug === "error") return <StoreMissing kind="could-not-load" />;
   setHostSlug(slug);

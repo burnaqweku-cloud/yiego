@@ -9,6 +9,7 @@ import "@fontsource/ibm-plex-mono/500.css";
 import "@fontsource/ibm-plex-mono/600.css";
 import "./index.css";
 import { capturePartnerCode } from "@/lib/partners";
+import { isStoreHost } from "@/lib/storeHost";
 import "./styles/site.css"; // after index.css: the public-site rules must win ties with the app rules
 
 // A page left open across a publish asks for code files that no longer exist,
@@ -56,11 +57,20 @@ const rootEl = document.getElementById("root")!;
 capturePartnerCode();
 const tree = <AppErrorBoundary><App /></AppErrorBoundary>;
 // The host serves index.html (the pre-rendered home page) for any address it has no file for. Only reuse markup that
-// was rendered for this exact address; otherwise drop it so the home page never flashes before /admin, /wallet, etc.
+// was rendered for this exact address on the main site; otherwise drop it. An agent's store is never the main site,
+// even at "/". Until this code runs, index.html keeps that markup hidden behind its start-up screen (html.yg-boot),
+// so the home page is never seen before a store, /admin, /wallet, etc.
 const trimSlash = (p: string) => (p.length > 1 ? p.replace(/\/+$/, "") : p);
 const prerenderedFor = rootEl.dataset.prerendered;
-const markupFits = prerenderedFor !== undefined && trimSlash(prerenderedFor) === trimSlash(window.location.pathname);
+const markupFits = !isStoreHost() && prerenderedFor !== undefined && trimSlash(prerenderedFor) === trimSlash(window.location.pathname);
 if (rootEl.hasChildNodes() && !markupFits) { rootEl.replaceChildren(); }
+// Take the start-up screen away the moment the app has put its first screen in place (a loader or the page itself).
+if (document.documentElement.classList.contains("yg-boot")) {
+  const endBoot = () => { document.documentElement.classList.remove("yg-boot", "yg-boot-store"); document.getElementById("yg-boot")?.remove(); };
+  const seen = new MutationObserver(() => { if (rootEl.hasChildNodes()) { seen.disconnect(); endBoot(); } });
+  seen.observe(rootEl, { childList: true });
+  window.setTimeout(() => { seen.disconnect(); endBoot(); }, 12000); // never leave it up if the app could not start
+}
 if (rootEl.hasChildNodes()) hydrateRoot(rootEl, tree, { onRecoverableError(err) { document.documentElement.dataset.hydration = "recovered"; document.documentElement.dataset.hydrationNote = String((err as Error)?.message ?? err).slice(0, 200); if (import.meta.env.DEV) console.warn(err); } });
 else createRoot(rootEl).render(tree);
 

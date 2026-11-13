@@ -85,7 +85,8 @@ async function prerenderRoutes(outDir: string) {
         // data-prerendered names the page this markup belongs to. index.html is also the fallback for every other address
         // (/admin, /wallet, …), so the client must only reuse the markup when the address matches — otherwise the home
         // page flashes before the real page appears.
-        fs.writeFileSync(file, shell.replace('<div id="root"></div>', `<div id="root" data-prerendered="${route.path}">${body}</div>`));
+        // The same name goes on <html> so the script in <head> can decide before the markup is even read (index.html).
+        fs.writeFileSync(file, shell.replace(/<html\b([^>]*)>/, `<html$1 data-prerendered="${route.path}">`).replace('<div id="root"></div>', `<div id="root" data-prerendered="${route.path}">${body}</div>`));
         ok += 1;
       } catch (err) {
         console.warn(`[seo] prerender skipped ${route.path}:`, err instanceof Error ? err.message : err);

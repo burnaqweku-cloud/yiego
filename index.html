@@ -20,9 +20,38 @@
     <meta name="twitter:title" content="DataYego · Buy Cheap MTN, Telecel & AirtelTigo Data Bundles in Ghana" />
     <meta name="twitter:image" content="https://datayego.com/brand/yiego-og-1200x630.png" />
     <meta name="theme-color" content="#f2f7f4" />
+    <style>
+      /* Start-up screen. This file is also what the host sends for every address that has no file of its own:
+         an agent's store, the dashboards, an order page. Its pre-built page (the DataYego home page, with prices)
+         must never be seen there, not even for a moment while the app loads. The script below decides, before
+         anything is drawn, whether the pre-built page belongs to this address; if not, it is hidden and this plain
+         screen shows instead. main.tsx takes it away the moment the real page is on screen.
+         .yg-splash is also the look of the store loading screen the app itself draws (components/store/StoreSplash). */
+      .yg-splash{position:fixed;inset:0;z-index:2147483000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#f2f7f4;color:#101e1c;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+      html.yg-boot #yg-boot,.yg-splash.is-on{display:flex}
+      html.yg-boot #root>*{display:none!important}
+      .yg-splash-logo{width:64px;height:64px;border-radius:50%;object-fit:contain;background:#fff;padding:3px;box-shadow:0 0 0 1px rgba(0,0,0,.06)}
+      .yg-splash-name{margin:0;max-width:80vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:17px;font-weight:600;letter-spacing:-.01em}
+      .yg-splash-spin{width:26px;height:26px;border-radius:50%;border:3px solid rgba(16,30,28,.12);border-top-color:rgba(16,30,28,.6);animation:yg-splash-spin .8s linear infinite}
+      @keyframes yg-splash-spin{to{transform:rotate(360deg)}}
+      @media (prefers-reduced-motion:reduce){.yg-splash-spin{animation-duration:2.4s}}
+    </style>
     <script>
       // The site is light only (dark mode was removed 10 Nov 2026). Set before first paint so nothing flashes.
       document.documentElement.classList.add("light");
+      // Does the pre-built page in this file belong to the address being opened? Only on the main site, and only
+      // at the exact address it was built for (data-prerendered, written at build time). Keep the list of main-site
+      // addresses the same as src/lib/storeHost.ts.
+      (function () {
+        var d = document.documentElement, h = location.hostname.toLowerCase(), p = location.pathname;
+        var main = ["datayego.com", "www.datayego.com", "yiego.shop", "www.yiego.shop", "localhost", "127.0.0.1"].indexOf(h) > -1 || /\.(lovable\.app|lovableproject\.com|lovable\.dev)$/.test(h);
+        var trim = function (x) { return x.length > 1 ? x.replace(/\/+$/, "") : x; };
+        var built = d.getAttribute("data-prerendered");
+        var store = !main || p.indexOf("/s/") === 0;
+        if (!store && built !== null && trim(built) === trim(p)) return;
+        d.classList.add("yg-boot");
+        if (store) d.classList.add("yg-boot-store");
+      })();
     </script>
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -30,6 +59,24 @@
     <!-- Fonts are self-hosted (main.tsx imports them): no third-party request before first paint. -->
   </head>
   <body>
+    <div id="yg-boot" class="yg-splash" aria-hidden="true"><img id="yg-boot-logo" class="yg-splash-logo" alt="" hidden /><p id="yg-boot-name" class="yg-splash-name" hidden></p><span id="yg-boot-spin" class="yg-splash-spin"></span></div>
+    <script>
+      // On an agent's store: show that store's own name and logo while it loads, remembered from the last visit
+      // (src/lib/storeBrand.ts saves them). A first visit shows the plain screen. Nothing here is DataYego's.
+      (function () {
+        if (!document.documentElement.classList.contains("yg-boot-store")) return;
+        try {
+          var h = location.hostname.toLowerCase(), m = location.pathname.match(/^\/s\/([^/]+)/);
+          var raw = localStorage.getItem(m ? "yg-store-brand:slug:" + m[1].toLowerCase() : "yg-store-brand:host:" + h);
+          var b = raw ? JSON.parse(raw) : null;
+          if (b && typeof b.name === "string" && b.name) { var n = document.getElementById("yg-boot-name"); n.textContent = b.name.slice(0, 60); n.hidden = false; document.title = b.name.slice(0, 60); }
+          else if (!m) document.title = h;
+          if (b && typeof b.logo === "string" && /^https:\/\//.test(b.logo)) { var i = document.getElementById("yg-boot-logo"); i.src = b.logo; i.hidden = false; }
+          if (b && (b.template === "market" || b.template === "studio")) document.getElementById("yg-boot").style.background = b.template === "market" ? "#fff8ec" : "#fff";
+          if (b && typeof b.accent === "string" && /^#[0-9a-fA-F]{6}$/.test(b.accent)) document.getElementById("yg-boot-spin").style.borderTopColor = b.accent;
+        } catch (e) { /* no saved name: the plain screen is fine */ }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

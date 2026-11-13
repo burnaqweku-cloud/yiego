@@ -6,6 +6,8 @@ import MobileTabBar, { TabBarSpace, type TabItem } from "@/components/layout/Mob
 import { dashboardHref } from "@/lib/agentDashboard";
 import { useAuth } from "@/store/auth-context";
 import StoreMissing from "@/components/store/StoreMissing";
+import StoreSplash from "@/components/store/StoreSplash";
+import { forgetStoreBrand, saveStoreBrand } from "@/lib/storeBrand";
 import StoreSupport from "@/components/store/StoreSupport";
 import StorePopup from "@/components/store/StorePopup";
 import { openCookieSettings } from "@/components/tracking/TikTokConsent";
@@ -108,6 +110,11 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
     void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("service_catalog", { p_store: slug }).then((r: { data: unknown[] | null }) => { if (alive) setHasServices(Array.isArray(r.data) && r.data.length > 0); }, () => undefined);
     return () => { alive = false; };
   }, [slug]);
+  // Remember this store's name and logo on this device, so its loading screen shows them at once next time.
+  useEffect(() => {
+    if (store === null) forgetStoreBrand();
+    else if (store) saveStoreBrand({ name: store.header_name || store.store_name, logo: store.logo_url, template: store.template ?? "classic", accent: store.accent_color });
+  }, [store]);
   const template = store?.template ?? "classic";
   useEffect(() => {
     const href = TEMPLATE_FONTS[template]; if (!href) return;
@@ -122,9 +129,9 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
     document.body.classList.add(cls, "st-body"); if (store.accent_color) document.body.classList.add("has-accent"); Object.entries(vars).forEach(([k, v]) => document.body.style.setProperty(k, v));
     return () => { document.body.classList.remove(cls, "st-body", "has-accent"); Object.keys(vars).forEach((k) => document.body.style.removeProperty(k)); };
   }, [store]);
-  if (redirecting !== false) return <div className="min-h-dvh bg-[#0b1512]" />;
+  if (redirecting !== false) return <StoreSplash />;
   if (loadFailed && !store) return <StoreMissing kind="could-not-load" />;
-  if (store === undefined) return <div className="min-h-dvh bg-[#0b1512]" />;
+  if (store === undefined) return <StoreSplash />;
   if (store === null) return <StoreMissing kind="not-open" />;
   const wa = store.support?.whatsapp_url ?? waLink(store);
   if (store.status === "closed") return (
