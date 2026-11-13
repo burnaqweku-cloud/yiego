@@ -26,7 +26,8 @@ describe("the proof card for advert visitors", () => {
     expect(screen.getByText("to 055*****47")).toBeInTheDocument();
     expect(screen.getByText("Delivered 3 min ago")).toBeInTheDocument();
     expect(screen.getByText("Paystack")).toBeInTheDocument();
-    expect(screen.getByText("not delivered")).toBeInTheDocument();
+    expect(screen.getByText("tracked")).toBeInTheDocument();
+    expect(screen.queryByText(/refund|not delivered/i)).toBeNull();
     expect(screen.getByRole("link", { name: /WhatsApp/ })).toHaveAttribute("href", "https://wa.me/233209975451?text=Hello");
   });
 

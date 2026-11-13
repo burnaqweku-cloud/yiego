@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useLocation } from "react-router-dom";
-import { Check, MessageCircle, RotateCcw, ShieldCheck } from "lucide-react";
+import { Check, MessageCircle, ReceiptText, ShieldCheck } from "lucide-react";
 import { useContactSettings } from "@/hooks/useContactSettings";
 import { agoLabel, cameFromAdvert, loadProof, networkMark, proofCount, recentCount, sinceLabel, type Proof } from "@/lib/advertProof";
 import "./advert-proof.css";
@@ -9,7 +9,8 @@ const REFRESH_MS = 60_000;
 const TURN_MS = 3200;
 
 /* What a stranger from an advert needs before paying someone they have never heard of: that many others already
-   have, that orders are going out right now, how the payment is protected, and a person to ask. Shown above the
+   have, that orders are going out right now, how the payment is protected, that their order can be followed, and a
+   person to ask. It never mentions refunds or failure: naming the doubt plants it (owner, 13 Nov 2026). Shown above the
    bundles to advert visitors only; everyone else already knows us. All of it is read from the real records. */
 export default function AdvertProof() {
   const { search } = useLocation();
@@ -68,7 +69,7 @@ export default function AdvertProof() {
 
       <ul className="yg-proof__points" style={{ "--n": whatsappUrl ? 3 : 2 } as CSSProperties}>
         <li><span className="yg-proof__point"><ShieldCheck size={17} aria-hidden="true" /><span>Secured by<b>Paystack</b></span></span></li>
-        <li><span className="yg-proof__point"><RotateCcw size={17} aria-hidden="true" /><span>Refund if<b>not delivered</b></span></span></li>
+        <li><span className="yg-proof__point"><ReceiptText size={17} aria-hidden="true" /><span>Every order<b>tracked</b></span></span></li>
         {whatsappUrl && <li><a className="yg-proof__point" href={whatsappUrl} target="_blank" rel="noopener noreferrer"><MessageCircle size={17} aria-hidden="true" /><span>Ask us on<b>WhatsApp</b></span></a></li>}
       </ul>
     </section>
