@@ -6,6 +6,7 @@ import AgentShopCard from "@/components/agents/AgentShopCard";
 import { metaFor } from "@/lib/site";
 import BalanceCard from "@/components/dashboard/BalanceCard";
 import RecentActivity from "@/components/dashboard/RecentActivity";
+import AdvertProof from "@/components/shop/AdvertProof";
 import BundleCatalogue from "@/components/shop/BundleCatalogue";
 import ImportantNotice from "@/components/shop/ImportantNotice";
 import { TRUST_POINTS } from "@/data/marketing";
@@ -95,10 +96,13 @@ export default function Shop() {
             Buy Ghana data online
           </h1>
           <p className="mt-1.5 max-w-[62ch] text-[14px] leading-6 text-muted-foreground">
-            Tap a bundle, enter the number, pay with MoMo or card. No account needed.
+            Tap a bundle, enter the number, pay with MoMo or card.
           </p>
         </header>
       )}
+
+      {/* ── For someone an advert just sent: proof before prices ── */}
+      {!isAuthenticated && <AdvertProof />}
 
       {/* ── The catalogue ───────────────────────────────────────── */}
       <BundleCatalogue />
