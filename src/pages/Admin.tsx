@@ -8,6 +8,7 @@ import { InlineAction, Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid 
 import SupplierBadge, { useFallbackOrigins } from "@/components/admin/SupplierBadge";
 import { adminDatabase, formatAdminDate, readableStatus } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
+import { settled } from "@/lib/settled";
 
 /* Overview — the first screen of the day. Counts for the chosen period,
    money for the same period, what needs a human, and the latest orders. */
@@ -19,8 +20,9 @@ const since = (p: Period) => { if (p === "all") return "2026-09-12T00:00:00Z"; c
 
 interface OrderRow { id: string; order_reference: string; recipient_phone: string; amount: number; status: string; payment_status: string; admin_resolution_status: string | null; supplier_retry_after: string | null; created_at: string; networks: { name: string } | null; data_products: { name: string } | null; suppliers: { code: string; name: string } | null }
 interface Overview { period: { revenue: number; net: number; fee_income: number; gross_profit: number; order_profit: number; order_fee_income: number }; owed: { undelivered: number; undelivered_count: number }; cash: { supplier_float: Record<string, number> } }
+// A database call is "thenable", not a real Promise (no .catch()): PromiseLike says so, and lib/settled gives a call its fallback.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown }> };
+const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => PromiseLike<{ data: unknown }> };
 const statusTone = (s: string) => s === "delivered" ? "good" : s.startsWith("failed") ? "bad" : s === "processing" || s === "pending_supplier" ? "warn" : "muted";
 
 export default function Admin() {
@@ -33,17 +35,22 @@ export default function Admin() {
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
   const [suppliers, setSuppliers] = useState<{ code: string; name: string; balance: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [profitLoading, setProfitLoading] = useState(true);
 
+  // Each part falls back to "nothing" on its own, and the profit figure loads beside the rest, not in front of it:
+  // the counts and the latest orders never wait for it, and a problem in one call cannot leave the page on dashes.
   const load = useCallback(async () => {
-    const [o, ov, su, c, op] = await Promise.all([
-      db().from("orders").select("id, order_reference, recipient_phone, amount, status, payment_status, admin_resolution_status, supplier_retry_after, created_at, networks(name), data_products(name), suppliers(code, name)").gte("created_at", since(period)).order("created_at", { ascending: false }).limit(50),
-      db().rpc("finance_overview", { p_from: since(period), p_to: null }),
-      db().from("suppliers").select("code, name, balance").neq("status", "disabled").order("display_order"),
-      db().rpc("admin_overview_counts", { p_from: since(period) }),
-      // The same strict figure the Orders page shows: after agents and what Paystack or Kora took.
-      db().rpc("admin_orders_profit", { p_from: since(period), p_to: null, p_source: "all" }).catch(() => ({ data: null })),
+    const none = { data: null };
+    setProfitLoading(true);
+    // The same strict figure the Orders page shows: after agents and what Paystack or Kora took.
+    void settled(db().rpc("admin_orders_profit", { p_from: since(period), p_to: null, p_source: "all" }), none)
+      .then((op) => { setOrderProfit((op.data as OrdersProfit | null) ?? null); setProfitLoading(false); });
+    const [o, ov, su, c] = await Promise.all([
+      settled<{ data: OrderRow[] | null }>(db().from("orders").select("id, order_reference, recipient_phone, amount, status, payment_status, admin_resolution_status, supplier_retry_after, created_at, networks(name), data_products(name), suppliers(code, name)").gte("created_at", since(period)).order("created_at", { ascending: false }).limit(50), none),
+      settled(db().rpc("finance_overview", { p_from: since(period), p_to: null }), none),
+      settled<{ data: { code: string; name: string; balance: number | null }[] | null }>(db().from("suppliers").select("code, name, balance").neq("status", "disabled").order("display_order"), none),
+      settled(db().rpc("admin_overview_counts", { p_from: since(period) }), none),
     ]);
-    setOrderProfit((op.data as OrdersProfit | null) ?? null);
     setOrders(o.data ?? []); setOverview((ov.data as Overview) ?? null); setSuppliers(su.data ?? []); setCounts((c.data as Record<string, number>) ?? null); setLoading(false);
   }, [period]);
   useEffect(() => { void load(); }, [load]);
@@ -65,7 +72,7 @@ export default function Admin() {
         <Stat loading={loading} label="In progress" value={inFlightCount} note={cooldown ? `${cooldown} waiting on supplier cooldown` : "with the supplier"} icon={Clock3} tone={inFlightCount ? "warn" : "default"} to="/admin/orders?status=pending" />
         <Stat loading={loading} label="Needs a human" value={failed + verification + wrongNetwork} note={`${failed} failed · ${verification} MTN verification${wrongNetwork ? ` · ${wrongNetwork} wrong network` : ""}`} icon={AlertTriangle} tone={failed ? "bad" : verification ? "warn" : "default"} to="/admin/orders?status=failed" />
         <Stat loading={loading} label="Revenue" value={<Money value={p?.revenue} />} note="delivered bundles" icon={TrendingUp} to="/admin/finance" />
-        <Stat loading={loading} label="Order profit" value={<Money value={orderProfit ? Number(orderProfit.profit) : undefined} tone="good" />} note={orderProfit ? `delivered orders only · after agents and ${formatGHS(paymentCharges(orderProfit))} payment charges · overall on Finance` : "delivered orders only · overall on Finance"} icon={Receipt} tone="good" to="/admin/finance" />
+        <Stat loading={profitLoading} label="Order profit" value={<Money value={orderProfit ? Number(orderProfit.profit) : undefined} tone="good" />} note={orderProfit ? `delivered orders only · after agents and ${formatGHS(paymentCharges(orderProfit))} payment charges · overall on Finance` : "delivered orders only · overall on Finance"} icon={Receipt} tone="good" to="/admin/finance" />
       </StatGrid>
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
