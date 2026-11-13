@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { adminDatabase } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { csvText } from "@/lib/csv";
+import { profitParts, type OrdersProfit } from "@/lib/ordersProfit";
 
 /* Orders pulse — how many orders came in, for any day or range.
    Counts paid orders by the moment the customer paid. */
@@ -45,18 +46,19 @@ export default function OrdersPulse({ onRefresh }: { onRefresh?: () => void } = 
   const [loading, setLoading] = useState(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- tick is the refresh signal
   const [start, end] = useMemo(() => rangeFor(preset, from, to), [preset, from, to, tick]);
-  // Profit on the range's delivered orders only (bundle margin after agents' share + the checkout fees on
-  // those orders), dated by purchase day. Only entries tied to an order count — supplier wallet corrections,
-  // top-up fees, subscriptions and other spending live on Finance and never move this number.
-  const [profit, setProfit] = useState<number | null>(null);
+  // Strict profit on the range's delivered orders, dated by purchase day: what is left after the supplier cost,
+  // the agents' earnings (and a parent agent's share), and what Paystack or Kora actually took from each payment,
+  // plus the checkout fee the customer paid. Worked out per order by phase1.admin_orders_profit from the orders'
+  // own records. Top-up fees, subscriptions and other spending live on Finance and never move this number.
+  const [profit, setProfit] = useState<OrdersProfit | null>(null);
   useEffect(() => {
     let mounted = true; setProfit(null);
-    (db() as unknown as { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: { period?: { order_profit?: number | string; order_fee_income?: number | string } } | null }> })
-      .rpc("finance_overview", { p_from: iso(startOfDay(start)), p_to: iso(new Date(endOfDay(end).getTime() + 1)) })
-      .then((r) => { const p = r.data?.period; if (mounted) setProfit(p?.order_profit == null ? null : Number(p.order_profit) + Number(p.order_fee_income ?? 0)); })
+    (db() as unknown as { rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: OrdersProfit | null }> })
+      .rpc("admin_orders_profit", { p_from: iso(startOfDay(start)), p_to: iso(new Date(endOfDay(end).getTime() + 1)), p_source: source })
+      .then((r) => { if (mounted) setProfit(r.data?.profit == null ? null : r.data); })
       .catch(() => { if (mounted) setProfit(null); });
     return () => { mounted = false; };
-  }, [start, end]);
+  }, [start, end, source]);
 
   useEffect(() => {
     let mounted = true; setLoading(true);
@@ -96,9 +98,14 @@ export default function OrdersPulse({ onRefresh }: { onRefresh?: () => void } = 
       <StatGrid cols={4}>
         <Stat loading={loading} label="Orders" value={String(n)} note={days > 1 ? `${(n / days).toFixed(1)} a day` : "paid"} tone="good" to={drill("all")} />
         <Stat loading={loading} label="Sales" value={<Money value={revenue} />} note={source === "agents" ? `${gb} GB · agents earn ${formatGHS(rows.reduce((a, r) => a + Number(r.agent_margin ?? 0), 0))}` : `${gb} GB`} to={drill("all")} />
-        <Stat loading={loading} label="Delivered" value={String(delivered)} note={`${n ? `${Math.round((delivered / n) * 100)}%` : "—"}${profit != null && source === "all" ? ` · profit ${formatGHS(profit)}` : ""}`} tone="good" to={drill("delivered")} />
+        <Stat loading={loading} label="Delivered" value={String(delivered)} note={`${n ? `${Math.round((delivered / n) * 100)}%` : "—"}${profit != null ? ` · profit ${formatGHS(Number(profit.profit))}` : ""}`} tone="good" to={drill("delivered")} />
         <Stat loading={loading} label="Waiting / refunded" value={`${waiting} / ${refunded}`} note={waiting ? "still to deliver" : "all settled"} tone={waiting ? "warn" : "default"} to={drill("waiting")} />
       </StatGrid>
+      {profit != null && Number(profit.delivered) > 0 && <p className="mt-2 px-1 text-[11.5px] leading-5 text-faint-foreground">
+        Profit on delivered orders: {profitParts(profit).map((x, i) => <span key={x.label}>{i === 0 ? "" : x.sign > 0 ? " + " : " − "}{formatGHS(x.amount)} {x.label}</span>)} = <span className="font-semibold text-foreground">{formatGHS(Number(profit.profit))}</span>.
+        {Number(profit.no_charge_recorded) > 0 && <span className="text-amber"> {profit.no_charge_recorded} of these have no payment charge on record, so nothing was taken off for them.</span>}
+        {Number(profit.no_cost_recorded) > 0 && <span className="text-amber"> {profit.no_cost_recorded} have no supplier cost on record.</span>}
+      </p>}
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
         <Rows empty="">{byNetwork.map(([name, v]) => <Row key={name} primary={name} secondary={`${v.n} order${v.n === 1 ? "" : "s"}`} right={formatGHS(v.amt)} />)}</Rows>
         {days > 1

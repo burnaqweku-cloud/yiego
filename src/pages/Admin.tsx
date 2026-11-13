@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { paymentCharges, type OrdersProfit } from "@/lib/ordersProfit";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, ClipboardList, Clock3, Receipt, ShieldCheck, Store, TrendingUp, Users, Wallet } from "lucide-react";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -28,17 +29,21 @@ export default function Admin() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const origins = useFallbackOrigins(orders);
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [orderProfit, setOrderProfit] = useState<OrdersProfit | null>(null);
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
   const [suppliers, setSuppliers] = useState<{ code: string; name: string; balance: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const [o, ov, su, c] = await Promise.all([
+    const [o, ov, su, c, op] = await Promise.all([
       db().from("orders").select("id, order_reference, recipient_phone, amount, status, payment_status, admin_resolution_status, supplier_retry_after, created_at, networks(name), data_products(name), suppliers(code, name)").gte("created_at", since(period)).order("created_at", { ascending: false }).limit(50),
       db().rpc("finance_overview", { p_from: since(period), p_to: null }),
       db().from("suppliers").select("code, name, balance").neq("status", "disabled").order("display_order"),
       db().rpc("admin_overview_counts", { p_from: since(period) }),
+      // The same strict figure the Orders page shows: after agents and what Paystack or Kora took.
+      db().rpc("admin_orders_profit", { p_from: since(period), p_to: null, p_source: "all" }).catch(() => ({ data: null })),
     ]);
+    setOrderProfit((op.data as OrdersProfit | null) ?? null);
     setOrders(o.data ?? []); setOverview((ov.data as Overview) ?? null); setSuppliers(su.data ?? []); setCounts((c.data as Record<string, number>) ?? null); setLoading(false);
   }, [period]);
   useEffect(() => { void load(); }, [load]);
@@ -60,7 +65,7 @@ export default function Admin() {
         <Stat loading={loading} label="In progress" value={inFlightCount} note={cooldown ? `${cooldown} waiting on supplier cooldown` : "with the supplier"} icon={Clock3} tone={inFlightCount ? "warn" : "default"} to="/admin/orders?status=pending" />
         <Stat loading={loading} label="Needs a human" value={failed + verification + wrongNetwork} note={`${failed} failed · ${verification} MTN verification${wrongNetwork ? ` · ${wrongNetwork} wrong network` : ""}`} icon={AlertTriangle} tone={failed ? "bad" : verification ? "warn" : "default"} to="/admin/orders?status=failed" />
         <Stat loading={loading} label="Revenue" value={<Money value={p?.revenue} />} note="delivered bundles" icon={TrendingUp} to="/admin/finance" />
-        <Stat loading={loading} label="Order profit" value={<Money value={Number(p?.order_profit ?? 0) + Number(p?.order_fee_income ?? 0)} tone="good" />} note={`delivered orders only · incl. ${formatGHS(Number(p?.order_fee_income ?? 0))} checkout fee · overall on Finance`} icon={Receipt} tone="good" to="/admin/finance" />
+        <Stat loading={loading} label="Order profit" value={<Money value={orderProfit ? Number(orderProfit.profit) : undefined} tone="good" />} note={orderProfit ? `delivered orders only · after agents and ${formatGHS(paymentCharges(orderProfit))} payment charges · overall on Finance` : "delivered orders only · overall on Finance"} icon={Receipt} tone="good" to="/admin/finance" />
       </StatGrid>
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
