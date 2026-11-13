@@ -1,7 +1,7 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { requireCronSecret } from "../_shared/internal.ts";
-import { sendEmail } from "../_shared/email.ts";
+import { sendEmail, storeFrom } from "../_shared/email.ts";
 
 /* One email per order, sent once: the order's MTN number has passed first-time
    verification and the order has been re-sent. Store orders are branded as the
@@ -14,7 +14,7 @@ function frame(brand: string | undefined, inner: string) {
   const header = brand
     ? `<tr><td style="background:#0b1512;padding:18px 28px;"><span style="color:#7cf0b4;font-size:20px;font-weight:700;">${brand}</span></td></tr>`
     : `<tr><td style="background:#0b1512;padding:18px 28px;"><img src="https://datayego.com/yiego-icon-192.png" width="34" height="34" alt="DataYego" style="display:inline-block;vertical-align:middle;border-radius:9px;" /><span style="color:#7cf0b4;font-size:20px;font-weight:700;vertical-align:middle;margin-left:10px;">DataYego</span></td></tr>`;
-  const footer = brand ? `${brand} · payments secured by DataYego` : "DataYego · Ghana data bundles";
+  const footer = brand ? `${brand} · payments secured by Paystack` : "DataYego · Ghana data bundles";
   return `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;">${header}<tr><td style="padding:28px;">${inner}</td></tr></table><p style="margin:16px 0 0;font-size:11px;color:#8a968f;">${footer}</p></td></tr></table></body></html>`;
 }
 
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 <a href="${shopUrl}" style="display:block;margin:8px 0 10px;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">Buy data on ${name}</a>
 <a href="${trackUrl}" style="display:block;margin:0 0 6px;border:1px solid #cfe0d8;color:#101e1c;text-decoration:none;text-align:center;font-weight:600;font-size:14px;padding:12px;border-radius:12px;">Track this order</a>
 <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#8a968f;">Thank you for your patience. Save <a href="${shopUrl}" style="color:#22c387;">${shopUrl.replace("https://", "")}</a> for your next bundle.</p>`;
-      const r = await sendEmail({ to, subject: `Congratulations — your number is verified (${o.order_reference})`, html: frame(store?.store_name, inner), replyTo: SUPPORT_EMAIL });
+      const r = await sendEmail({ to, subject: `Congratulations — your number is verified (${o.order_reference})`, html: frame(store?.store_name, inner), replyTo: SUPPORT_EMAIL, ...(store ? { from: storeFrom(store.store_name) } : {}) });
       if (!r.skipped && r.ok) {
         await supabase.from("order_events").insert({ order_id: o.id, event_type: EVENT, message: "Number verified email sent", metadata: { to, store: store?.slug ?? null } });
         sent.push(o.order_reference);

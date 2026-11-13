@@ -15,6 +15,9 @@ export async function sendEmail(input: { to: string; subject: string; html: stri
   return { skipped: false as const, ok: res.ok, status: res.status, payload };
 }
 
+/** Who a store's email comes from: the store's own name, never ours. */
+export const storeFrom = (storeName: string) => `${storeName.replace(/[<>"\r\n]/g, "").trim().slice(0, 60) || "Your store"} <stores@datayego.com>`;
+
 /** A store's name is typed by its agent: it is shown as text, never run as markup. */
 const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -24,7 +27,8 @@ function frame(rawBrand: string | undefined, inner: string) {
   const header = brand
     ? `<tr><td style="background:#0b1512;padding:18px 28px;"><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;">${brand}</span></td></tr>`
     : `<tr><td style="background:#0b1512;padding:18px 28px;"><img src="https://datayego.com/yiego-icon-192.png" width="34" height="34" alt="DataYego" style="display:inline-block;vertical-align:middle;border-radius:9px;" /><span style="color:#7cf0b4;font-size:20px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;margin-left:10px;">DataYego</span></td></tr>`;
-  const footer = brand ? `${brand} · payments secured by DataYego` : "DataYego · Ghana data bundles";
+  // A store's customers never see our name: the foot of a store email names the store and the payment company only.
+  const footer = brand ? `${brand} · payments secured by Paystack` : "DataYego · Ghana data bundles";
   return `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">${header}<tr><td style="padding:28px;">${inner}</td></tr></table><p style="margin:16px 0 0;font-size:11px;color:#8a968f;">${footer}</p></td></tr></table></body></html>`;
 }
 
@@ -71,7 +75,8 @@ export async function sendOrderConfirmation(supabase: any, orderId: string) {
     ? "Keep this email — your Order ID is how you track this order any time."
     : `We received your payment and are verifying your order. We will update you shortly. Your Order ID is <b>${row.order_reference}</b>.`;
   const inner = `<p style="margin:0 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#22c387;">${eyebrow}</p><h1 style="margin:0 0 14px;font-size:22px;line-height:1.25;">${title}</h1><p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#3c4a46;">${intro}</p><table role="presentation" width="100%" style="border:1px solid #e2ebe7;border-radius:14px;"><tr><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:13px;color:#5a6864;">Order ID</td><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:15px;font-weight:700;text-align:right;">${row.order_reference}</td></tr><tr><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:13px;color:#5a6864;">Bundle</td><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:14px;font-weight:600;text-align:right;">${network} · ${product}</td></tr><tr><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:13px;color:#5a6864;">Recipient</td><td style="padding:14px 16px;border-bottom:1px solid #eef3f0;font-size:14px;font-weight:600;text-align:right;">${row.recipient_phone ?? ""}</td></tr><tr><td style="padding:14px 16px;font-size:13px;color:#5a6864;">Amount</td><td style="padding:14px 16px;font-size:14px;font-weight:600;text-align:right;">${amount}</td></tr></table><a href="${trackUrl}" style="display:block;margin:22px 0 6px;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">Track this order</a><p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#8a968f;">${hint}</p>`;
-  const result = await sendEmail({ to, subject: store ? `Your ${store.store_name} order ${row.order_reference}` : `Your DataYego order ${row.order_reference}`, replyTo: SUPPORT_EMAIL, html: frame(store?.store_name, inner) });
+  // Store orders are normally emailed by store-order-email (the database queues them and writes the event checked above); this is the same email if that ever does not happen.
+  const result = await sendEmail({ to, subject: store ? `Your ${store.store_name} order ${row.order_reference}` : `Your DataYego order ${row.order_reference}`, replyTo: SUPPORT_EMAIL, html: frame(store?.store_name, inner), ...(store ? { from: storeFrom(store.store_name) } : {}) });
   if (!result.skipped && result.ok) await supabase.from("order_events").insert({ order_id: orderId, event_type: eventType, message: handedOver ? "Order confirmation email sent" : "Payment received / verifying email sent", metadata: { to, store: store?.slug ?? null } });
   return result;
 }

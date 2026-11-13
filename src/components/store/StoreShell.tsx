@@ -143,7 +143,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
       <h1 className="mt-4 text-[20px] font-semibold text-foreground">{store.store_name}</h1>
       <p className="mt-2 max-w-xs text-[13.5px] text-muted-foreground">Data plans aren't available right now. {wa ? `Message ${store.store_name} on WhatsApp and they'll help you out.` : "Please check back soon."}</p>
       {wa && <a href={wa} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-[13.5px] font-semibold text-[#062b16]"><MessageCircle size={16} />WhatsApp {store.store_name}</a>}
-      <p className="mt-8 flex items-center gap-1 text-[11px] text-faint-foreground"><ShieldCheck size={11} />Payments secured by DataYego</p>
+      <p className="mt-8 flex items-center gap-1 text-[11px] text-faint-foreground"><ShieldCheck size={11} />Payments secured by Paystack</p>
     </div>
   );
   const studio = template === "studio";
