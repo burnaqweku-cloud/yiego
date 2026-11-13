@@ -62,7 +62,7 @@ export default function StoreSupport() {
   const askHuman = async () => { if (!conv) return; await p1().rpc("store_chat_request_human", { p_conversation: conv, p_visitor: visitorKey() }); await load(conv); };
   return (
     <>
-      <div className="pointer-events-none fixed inset-x-4 bottom-4 z-40 flex items-end justify-between">
+      <div className="pointer-events-none fixed inset-x-4 bottom-[74px] z-40 flex items-end justify-between md:bottom-4" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
         {support.whatsapp_url ? <WhatsAppFab href={support.whatsapp_url} label={`${store.store_name} on WhatsApp`} /> : <span />}
         {support.chat_on && <button type="button" onClick={() => setOpen(true)} aria-label="Chat with the store" className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"><MessagesSquare size={24} /></button>}
       </div>

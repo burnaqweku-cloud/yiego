@@ -66,7 +66,7 @@ export default function AgentServices() {
     <div className="space-y-3">
       <h1 className="font-display text-[22px] font-semibold text-foreground">Services</h1>
       <div className="flex items-start gap-2 rounded-2xl bg-primary/8 px-3.5 py-3 text-[12.5px] leading-5 text-muted-foreground"><Info size={15} className="mt-0.5 shrink-0 text-primary-glow" />
-        <span>Sell result checkers and MTN AFA registration in your store. The <b className="text-foreground">agent price</b> is what you pay. Type <b className="text-foreground">your price</b>, switch it on, and the difference is your profit on every sale. Customers find them under <b className="text-foreground">Services</b> in your store menu.</span></div>
+        <span>Result checkers and MTN AFA registration are <b className="text-foreground">already on sale in your store</b> at DataYego's price. The <b className="text-foreground">agent price</b> is what you pay, and the difference is your profit on every sale. Change <b className="text-foreground">your price</b> any time, or switch a service off. Customers find them under <b className="text-foreground">Services</b> in your store.</span></div>
 
       {failed ? <p role="alert" className="text-[13px] text-danger">Couldn't load your services. Pull down to refresh.</p> : !data ? <p className="text-[13px] text-muted-foreground">Loading…</p> : <>
         <div className="onyx-panel rounded-2xl p-2">
@@ -93,7 +93,7 @@ export default function AgentServices() {
 
         <div className="onyx-panel rounded-2xl p-4">
           <div className="flex items-baseline justify-between gap-3"><h2 className="text-[15px] font-semibold text-foreground">Service sales</h2><span className="text-[12.5px] text-muted-foreground">earned {formatGHS(Number(data.earned))}</span></div>
-          {data.sales.length === 0 ? <p className="mt-2 text-[13px] text-muted-foreground">No service sales yet. Switch one on and share your store link.</p> : (
+          {data.sales.length === 0 ? <p className="mt-2 text-[13px] text-muted-foreground">No service sales yet. Share your store link to get the first one.</p> : (
             <ul className="mt-2 divide-y divide-white/[0.06]">
               {data.sales.map((s) => (
                 <li key={s.reference} className="flex items-center justify-between gap-3 py-2.5">

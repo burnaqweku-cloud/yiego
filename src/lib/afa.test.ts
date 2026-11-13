@@ -21,7 +21,13 @@ describe("AFA form", () => {
     expect(afaProblem({ ...good, ghana_card: "GHA-12345" }, today)).toMatch(/Ghana Card/);
     expect(afaProblem({ ...good, dob: "2015-01-01" }, today)).toMatch(/16 or older/);
     expect(afaProblem({ ...good, region: "" }, today)).toMatch(/region/);
-    expect(afaProblem({ ...good, address: "x" }, today)).toMatch(/address/);
+    expect(afaProblem({ ...good, address: "x" }, today)).toMatch(/town or area/);
+    expect(afaProblem({ ...good, address: "Wa" }, today)).toBeNull();
+    expect(afaProblem({ ...good, occupation: "" }, today)).toMatch(/occupation/);
+  });
+  it("reports problems from the top of the form down", () => {
+    expect(afaProblem({ ...good, afa_phone: "", full_name: "", region: "" }, today)).toMatch(/MTN number/);
+    expect(afaProblem({ ...good, full_name: "", region: "" }, today)).toMatch(/full name/);
   });
   it("allows someone who turns 16 today and not a day younger", () => {
     expect(latestBirth(today)).toBe("2010-11-13");

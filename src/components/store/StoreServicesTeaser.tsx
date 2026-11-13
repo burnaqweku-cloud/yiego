@@ -7,7 +7,7 @@ import { storeBase } from "@/lib/storeHost";
 import { loadServices, type ServiceProduct } from "@/lib/services";
 
 /* On a store's home page: the other things this store sells (result checkers, AFA registration), each with
-   the store's price. Shows nothing when the agent has not switched any service on. */
+   the store's price. Every active store sells them unless the agent switched them off; it shows nothing then. */
 export default function StoreServicesTeaser() {
   const store = useStore();
   const [items, setItems] = useState<ServiceProduct[]>([]);

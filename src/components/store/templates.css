@@ -49,6 +49,9 @@
 .tpl-market .st-pill { background: #fff; border: 2px solid #1d2460; color: #1d2460; font-weight: 700; border-radius: 999px; }
 .tpl-market .st-pill.on { background: #1d2460; color: #fff8ec; }
 .tpl-market .st-drawer { background: #fff8ec; color: #15131f; border-right: 3px solid #1d2460; }
+.tpl-market .st-tabbar { background: #fff8ec; border-top: 3px solid #1d2460; box-shadow: none; }
+.tpl-market .st-tabbar .yg-tab { font-weight: 700; color: #1d2460; }
+.tpl-market .st-tabbar .yg-tab.is-active .yg-tab-ico { background: #1d2460; color: #fff8ec; }
 .tpl-market footer.st-foot { background: var(--st-board); color: #fff8ec; border: 0; }
 .tpl-market footer.st-foot a, .tpl-market footer.st-foot p { color: #fff8ec; }
 
@@ -126,6 +129,9 @@
 .tpl-studio .st-pill { background: #fff; border: 1.5px solid var(--st-line); color: var(--st-slate); font-weight: 600; border-radius: 999px; }
 .tpl-studio .st-pill.on { background: var(--st-ink); color: #fff; border-color: var(--st-ink); }
 .tpl-studio .st-drawer { background: #fff; color: var(--st-ink); border-right: 1px solid var(--st-line); }
+.tpl-studio .st-tabbar { background: #fff; border-top: 1px solid var(--st-line); box-shadow: 0 -6px 20px -16px rgba(15, 23, 42, 0.35); }
+.tpl-studio .st-tabbar .yg-tab { color: var(--st-slate); }
+.tpl-studio .st-tabbar .yg-tab.is-active { color: var(--st-ink); }
 .tpl-studio footer.st-foot { background: var(--st-ink); color: #cbd5e1; border: 0; text-align: left; }
 .tpl-studio footer.st-foot a { color: #cbd5e1; }
 .tpl-studio footer.st-foot a:hover { color: #fff; }

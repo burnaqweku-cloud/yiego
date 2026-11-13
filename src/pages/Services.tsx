@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ChevronDown, GraduationCap, PhoneCall, Plus, UserPlus, Wallet } from "lucide-react";
 import Seo from "@/components/seo/Seo";
 import { Card } from "@/components/ui/card";
-import AfaSheet from "@/components/services/AfaSheet";
+import AfaForm from "@/components/services/AfaForm";
 import BuySheet from "@/components/services/BuySheet";
 import OrderResult from "@/components/services/OrderResult";
 import { useAuth } from "@/store/auth-context";
@@ -15,16 +15,17 @@ import { loadServices, myServiceOrders, servicesSendSms, type ServiceOrder, type
 import { cn } from "@/lib/utils";
 
 /* DY Services: things DataYego sells besides data. The first screen is one card per service; tapping a card
-   opens that service on its own (/services/checkers, /services/afa). The same screens run inside an agent's store
+   opens that service on its own (/services/checkers, /services/afa). The AFA page is the registration form itself,
+   so everything that will be asked is on screen before any money is. The same screens run inside an agent's store
    (`store` prop): there they show only what that store sells, at its prices, under its name. Result checkers are live; the PIN is shown the
    moment payment is confirmed, sent by SMS and email, and kept under "Your checkers". */
 
-function MyCheckers({ orders, sms }: { orders: ServiceOrder[]; sms: boolean }) {
+function MyCheckers({ orders, sms, title }: { orders: ServiceOrder[]; sms: boolean; title?: string }) {
   const [open, setOpen] = useState<string | null>(null);
   if (orders.length === 0) return null;
   return (
     <Card className="p-5 sm:p-6">
-      <h2 className="font-display text-[19px] font-semibold tracking-tight text-foreground">{orders.some((o) => o.kind === "afa") ? "Your orders" : "Your checkers"}</h2>
+      <h2 className="font-display text-[19px] font-semibold tracking-tight text-foreground">{title ?? (orders.some((o) => o.kind === "afa") ? "Your orders" : "Your checkers")}</h2>
       <ul className="mt-3 divide-y divide-white/[0.08]">
         {orders.map((o) => (
           <li key={o.reference} className="py-3">
@@ -62,7 +63,6 @@ export default function Services({ store }: { store?: ServicesStore } = {}) {
 
   const checkers = (products ?? []).filter((p) => p.kind === "checker");
   const afa = (products ?? []).find((p) => p.kind === "afa") ?? null;
-  const [registering, setRegistering] = useState(false);
   const { section } = useParams();
   const view = section === "checkers" || (section === "afa" && afa) ? section : "home";
   const base = store?.base ?? "/services";
@@ -80,7 +80,7 @@ export default function Services({ store }: { store?: ServicesStore } = {}) {
       <header className="px-1 pt-1">
         {view !== "home" && <Link to={base} className="mb-2 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-primary-glow"><ArrowLeft size={15} aria-hidden="true" />All services</Link>}
         <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-foreground">{view === "checkers" ? "Result checkers" : view === "afa" && afa ? afa.name : store ? "Services" : "DY Services"}</h1>
-        <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{view === "checkers" ? "Serial number and PIN, shown the moment you pay." : view === "afa" && afa ? afa.blurb : store ? `More from ${store.name}. Pick a service.` : "More from DataYego, with the same account and wallet. Pick a service."}</p>
+        <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{view === "checkers" ? "Serial number and PIN, shown the moment you pay." : view === "afa" && afa ? `${formatGHS(afa.price)}. ${afa.blurb}` : store ? `More from ${store.name}. Pick a service.` : "More from DataYego, with the same account and wallet. Pick a service."}</p>
       </header>
 
       {isAuthenticated && <Card className="flex items-center justify-between gap-3 p-4">
@@ -120,17 +120,14 @@ export default function Services({ store }: { store?: ServicesStore } = {}) {
         )}
       </Card>}
 
-      {view === "afa" && afa && <Card className="p-5 sm:p-6">
-        <p className="text-[13.5px] leading-relaxed text-muted-foreground">You'll need the person's Ghana Card details. Fill in a short form, pay, and we register the number for you. It can take up to 24 hours.</p>
-        <div className="mt-3 flex items-center justify-between gap-3"><span className="font-display text-[20px] font-semibold text-foreground">{formatGHS(afa.price)}</span>
-          <button type="button" onClick={() => setRegistering(true)} className="onyx-btn-primary px-6 py-2.5 text-[14px]">Register</button></div>
-      </Card>}
+      {view === "afa" && afa && <AfaForm product={afa} sms={sms} onBought={load} context={context} walletName={walletName} boxed />}
 
-      <MyCheckers orders={orders} sms={sms} />
+      {view === "afa" ? <MyCheckers orders={orders.filter((o) => o.kind === "afa")} sms={sms} title="Your AFA registrations" />
+        : view === "checkers" ? <MyCheckers orders={orders.filter((o) => o.kind !== "afa")} sms={sms} title="Your checkers" />
+        : <MyCheckers orders={orders} sms={sms} />}
       {!isAuthenticated && <p className="pb-2 text-center text-[13px] text-muted-foreground">Bought one before? <Link to={store ? store.base.replace(/\/services$/, "/sign-in") : "/auth"} className="font-semibold text-primary-glow">Sign in</Link> to see your orders, or open the link in your email.</p>}
 
       <BuySheet product={buying} sms={sms} onClose={() => setBuying(null)} onBought={load} context={context} walletName={walletName} />
-      <AfaSheet product={registering ? afa : null} sms={sms} onClose={() => setRegistering(false)} onBought={load} context={context} walletName={walletName} />
     </div>
   );
 }

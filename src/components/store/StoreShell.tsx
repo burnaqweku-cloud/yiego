@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { storeBase } from "@/lib/storeHost";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Bell, Facebook, Instagram, LayoutDashboard, LayoutGrid, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, X, Info, HelpCircle, Clock, UserRound, Users } from "lucide-react";
+import { Bell, Facebook, Instagram, LayoutDashboard, LayoutGrid, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, Wifi, X, Info, HelpCircle, Clock, UserRound, Users } from "lucide-react";
+import MobileTabBar, { TabBarSpace, type TabItem } from "@/components/layout/MobileTabBar";
 import { dashboardHref } from "@/lib/agentDashboard";
 import { useAuth } from "@/store/auth-context";
 import StoreMissing from "@/components/store/StoreMissing";
@@ -24,7 +25,9 @@ function accentVars(hex: string | null): Record<string, string> {
 const TEMPLATE_FONTS: Record<string, string> = { market: "https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap", studio: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" };
 
 /* The agent's storefront frame: their header with a menu, their pages, their footer.
-   Nothing of DataYego's on the page. Pages inside read the store via useStore(). */
+   Nothing of DataYego's on the page. Pages inside read the store via useStore().
+   On phones the store works like an app: a bar along the bottom (Home, Buy data, Services, Track, More) replaces
+   the three-line menu, and "More" opens the full menu. Wider screens keep the menu in the header. */
 export interface StoreBranding { template: "classic" | "market" | "studio"; accent_color: string | null; banner_url: string | null; about_text: string | null; hours_text: string | null; store_notice: string | null; contact_phone: string | null; socials: Record<string, string>; featured_product_ids: string[]; faq: Array<{ q: string; a: string }>; delivered_count: number }
 export interface StoreData extends StoreBranding { network?: { fee: number; pitch: string | null } | null; custom_domain_for_network?: string | null; support?: { whatsapp_url: string | null; chat_on: boolean }; promos?: Record<string, { was: number; ends_at: string }>; id: string; slug: string; store_name: string; header_name?: string | null; tagline: string | null; logo_url: string | null; whatsapp: string | null; status: "active" | "closed"; prices: Record<string, number> }
 const StoreContext = createContext<StoreData | null>(null);
@@ -96,7 +99,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
       window.location.replace(`https://${host}${rest || "/"}${window.location.search}${window.location.hash}`);
     });
   }, [slug, hostSlug]);
-  // The Services link shows only when this store sells at least one service.
+  // Services are on in every active store unless the agent switched them all off; the link follows what is on sale.
   const [hasServices, setHasServices] = useState(false);
   useEffect(() => {
     if (!slug) return;
@@ -148,6 +151,13 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
     ...(isAgent ? [{ to: dashboardHref(), label: "Your dashboard", icon: LayoutDashboard, external: dashboardHref().startsWith("http") }] : []),
   ] as Array<{ to: string; label: string; icon: typeof Package; end?: boolean; external?: boolean }>;
   const isHome = location.pathname.replace(/\/$/, "") === (storeBase(store.slug) || "");
+  const tabs: TabItem[] = [
+    { label: "Home", to: storeBase(store.slug) || "/", end: true, icon: Store },
+    { label: "Buy data", to: `${storeBase(store.slug)}/bundles`, icon: Wifi },
+    ...(hasServices ? [{ label: "Services", to: `${storeBase(store.slug)}/services`, icon: LayoutGrid }] : []),
+    { label: "Track", to: `${storeBase(store.slug)}/track`, icon: Search },
+    { label: "More", icon: Menu, onClick: () => setMenu(true), active: menu, badge: unread || undefined },
+  ];
   return (
     <StoreContext.Provider value={store}>
       <div className={`tpl-${template} ${store.accent_color ? "has-accent" : ""}`} style={accentVars(store.accent_color) as React.CSSProperties}>
@@ -167,12 +177,11 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
                 {isAgent && <a href={dashboardHref()} className="hidden h-9 items-center gap-1.5 rounded-xl px-3 text-[14px] font-medium text-muted-foreground md:flex"><LayoutDashboard size={15} />Dashboard</a>}
                 <Link to={`${storeBase(store.slug)}/${isAuthenticated ? "account" : "sign-in"}`} className="hidden h-9 items-center rounded-xl px-3 text-[14px] font-medium text-muted-foreground md:flex">{isAuthenticated ? "Account" : "Sign in"}</Link>
                 <Link to={`${storeBase(store.slug)}/bundles`} className="st-btn fill shrink-0 whitespace-nowrap !px-3 !py-1.5 !text-[13px] sm:!px-4 sm:!py-2 sm:!text-[14px]">Buy data</Link>
-                <button type="button" onClick={() => setMenu(true)} aria-label={unread > 0 ? "Menu, new store news" : "Menu"} className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.1] text-foreground md:hidden"><Menu size={18} />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background" />}</button>
               </div>
             </div>
           ) : (
           <div className="mx-auto flex max-w-2xl items-center gap-2.5 px-4 py-3">
-            <button type="button" onClick={() => setMenu(true)} aria-label="Menu" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.1] text-foreground"><Menu size={18} /></button>
+            <button type="button" onClick={() => setMenu(true)} aria-label="Menu" className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.1] text-foreground md:flex"><Menu size={18} /></button>
             <Link to={`${storeBase(store.slug)}` || "/"} className="flex min-w-0 flex-1 items-center gap-2.5">
               {store.logo_url ? <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-contain p-[2px]" style={{ background: "#fff", boxShadow: "0 0 0 1px rgba(0,0,0,0.06)" }} /> : null}
               <span className="min-w-0"><FitName text={store.header_name || store.store_name} base={15.5} className="block truncate font-semibold text-foreground" />{store.tagline && <span className="block truncate text-[11.5px] text-muted-foreground">{store.tagline}</span>}</span>
@@ -248,6 +257,8 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
           </div>
         </footer>
         )}
+        <TabBarSpace className="md:hidden" />
+        <MobileTabBar items={tabs} className="st-tabbar md:hidden" label={store.store_name} />
       </div>
       </div>
     </StoreContext.Provider>

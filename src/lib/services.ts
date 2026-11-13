@@ -34,7 +34,7 @@ const MESSAGES: Record<string, string> = {
   afa_dob_invalid: "Check the date of birth. The person must be 16 or older.",
   afa_job_invalid: "Enter the person's occupation.",
   afa_region_invalid: "Choose a region.",
-  afa_address_invalid: "Enter the address: town and area or house number.",
+  afa_address_invalid: "Enter the town or area.",
 };
 /** A plain sentence for whatever the server said. */
 export function serviceError(message: string | null | undefined, fallback = "Something went wrong. Please try again."): string {
