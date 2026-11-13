@@ -77,3 +77,9 @@ end $$;
 -- service-pay's two-minute job also runs when a text is waiting for its delivery report.
 select cron.unschedule(jobid) from cron.job where jobname = 'service-pay';
 select cron.schedule('service-pay', '*/2 * * * *', $job$select net.http_post(url:='https://nhxgebulvqhtiiotetoo.supabase.co/functions/v1/service-pay',body:='{"action":"run"}'::jsonb,headers:=jsonb_build_object('Content-Type','application/json','x-yiego-internal-secret',(select value from phase1.internal_secrets where key='cron')),timeout_milliseconds:=60000) where exists (select 1 from phase1.service_orders where (paid_at is null and pay_reference is not null and created_at > now() - interval '3 hours') or status = 'awaiting_payment') or exists (select 1 from phase1.sms_queue where status = 'pending') or exists (select 1 from phase1.service_outbox where status = 'pending') or exists (select 1 from phase1.service_registrations where status in ('queued','sending','submitted')) or exists (select 1 from phase1.service_sms_due())$job$);
+
+-- Same day, on the owner's word ("turn it on"), after the delivery reports showed the wording delivered:
+-- texts for service orders and for agent approval are switched on, and the approval text carries the dashboard link.
+update phase1.sms_settings set services_enabled = true, agents_enabled = true,
+  agent_approved_text = 'Hi {name}, you are approved as a DY agent. Sign in at datayego.com/agent to activate your store and start selling.'
+where id = true;
