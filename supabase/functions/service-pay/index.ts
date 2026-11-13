@@ -70,6 +70,18 @@ async function sendSms(to: string, message: string, sender: string): Promise<str
     return "failed";
   } catch (e) { console.log("sms not sent", e instanceof Error ? e.message : String(e)); return "failed"; }
 }
+/* Several texts to one phone in the same second lose some on the way: tested 13 Nov 2026, 0.4 seconds apart, one to three
+   of every five never arrived, and the same texts sent alone did. So texts to the same phone are spaced out. */
+const TEXT_GAP_MS = 5000;
+const lastText = new Map<string, number>();
+async function sendSpaced(to: string, message: string, sender: string): Promise<string> {
+  const phone = to.replace(/\D/g, "").slice(-9);
+  const wait = (lastText.get(phone) ?? 0) + TEXT_GAP_MS - Date.now();
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+  const result = await sendSms(to, message, sender);
+  lastText.set(phone, Date.now());
+  return result;
+}
 /* MTN AFA registration through OtessData. One request per order; the order reference is the Idempotency-Key, so a repeat can't be charged twice.
    The reply decides what happens: registered (with what was charged), refused (nothing charged), wallet short, or unclear (a person checks). */
 interface Registration { id: string; reference: string; key: string; details: Record<string, string> }
@@ -175,7 +187,7 @@ Deno.serve(async (req) => {
         let sms = "off";
         if (work?.sms?.enabled) {
           let accepted = 0; let last = "skipped";
-          for (const text of serviceTexts(o)) { last = await sendSms(o.phone, text, String(work.sms.sender ?? "Dyservice")); if (last !== "sent") break; accepted += 1; }
+          for (const text of serviceTexts(o)) { last = await sendSpaced(o.phone, text, String(work.sms.sender ?? "Dyservice")); if (last !== "sent") break; accepted += 1; }
           // One accepted text counts as sent: the buyer has every PIN on screen and by email, and sending the lot again would repeat PINs.
           sms = accepted > 0 ? "sent" : last;
         }
@@ -186,7 +198,7 @@ Deno.serve(async (req) => {
       // One-off texts queued by the database (an agent being approved, for example), each with its own sender ID.
       let texts = 0;
       for (const q of (work?.queue ?? []) as { id: number; phone: string; message: string; sender: string }[]) {
-        await db.rpc("sms_queue_done", { p_id: q.id, p_result: await sendSms(q.phone, q.message, q.sender) });
+        await db.rpc("sms_queue_done", { p_id: q.id, p_result: await sendSpaced(q.phone, q.message, q.sender) });
         texts += 1;
       }
       // AFA forms waiting to be registered. Without the API key nothing is sent: the admins are told and register by hand.
