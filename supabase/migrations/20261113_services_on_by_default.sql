@@ -99,3 +99,9 @@ end $function$;
 -- Applied live by replacing only the pattern inside phase1.admin_service_add_stock:
 --   old: serial\s*(?:number|no\.?)?\s*[:#=-]*\s*([A-Za-z0-9]{4,})\s+pin
 --   new: (?:serial\s*(?:number|no\.?)?|\ms/?n\M)\s*[:#=-]*\s*([A-Za-z0-9]{4,})[\s,;|]+pin
+
+-- 13 Nov 2026: a voucher can be in stock under one product only. Add stock used to check for repeats inside the same
+-- product, so yesterday's WASSCE vouchers were accepted a second time under BECE (caught before any sale).
+-- Applied live by replacing only this check inside phase1.admin_service_add_stock:
+--   old: exists (select 1 from phase1.service_pins where product_code = p_product and serial = v_parts[1])
+--   new: exists (select 1 from phase1.service_pins where serial = v_parts[1] and (product_code = p_product or status <> 'void'))
