@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { serviceTexts } from "./texts.ts";
+import { deliveryOf, jobIdOf, reasonOf, withoutText } from "./delivery.ts";
 
 /* DY Services: paying for a service order with Paystack, and sending what was bought.
    The database owns every rule (stock, prices, who gets which PIN, and that a payment delivers once).
@@ -9,7 +10,7 @@ import { serviceTexts } from "./texts.ts";
      { action: "refund", orderId, reason } + admin sign-in                  send the money back through Paystack
      (no action)                                                            OtessData's webhook: re-check open AFA registrations
    This function is self-contained on purpose: it shares no code with the data checkout, so changing one can never break the other.
-   (texts.ts beside it holds only the wording of the texts.) */
+   (texts.ts beside it holds only the wording of the texts; delivery.ts reads the SMS provider's delivery reports.) */
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-yiego-internal-secret", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
@@ -54,33 +55,46 @@ async function checkPayment(db: any, reference: string): Promise<string> {
 interface Delivered { id: string; reference: string; kind?: string; name: string; quantity: number; phone: string; email: string | null; token: string; pins: { serial: string; pin: string }[]; afa?: { name?: string; phone?: string } | null; store?: { name?: string; site?: string } | null; use_at?: string | null }
 const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-async function sendSms(to: string, message: string, sender: string): Promise<string> {
+/** result: "sent" (the provider took it), "failed" (it refused or could not be reached) or "skipped" (nothing to send with). */
+interface Sent { result: string; jobId?: string | null; why?: string | null }
+async function sendSms(to: string, message: string, sender: string): Promise<Sent> {
   const key = Deno.env.get("VYNFY_API_KEY");
   const digits = to.replace(/\D/g, "");
   const msisdn = /^0\d{9}$/.test(digits) ? "233" + digits.slice(1) : /^233\d{9}$/.test(digits) ? digits : null;
-  if (!key || !msisdn) return "skipped";
+  if (!key || !msisdn) return { result: "skipped" };
   try {
     const res = await fetch("https://sms.vynfy.com/api/v1/send", { method: "POST", headers: { "X-API-Key": key, "Content-Type": "application/json" }, signal: AbortSignal.timeout(15000),
       body: JSON.stringify({ sender: sender.slice(0, 11), recipients: [msisdn], message }) });
     const body = await res.json().catch(() => ({}));
-    if (res.ok && body?.success !== false) return "sent";
-    // Why the provider said no goes in this function's log (its reason only, never the text or the number).
-    const why = body?.message ?? body?.error ?? body?.errors ?? null;
-    console.log("sms not accepted", res.status, (typeof why === "string" ? why : JSON.stringify(why) ?? "").slice(0, 200));
-    return "failed";
-  } catch (e) { console.log("sms not sent", e instanceof Error ? e.message : String(e)); return "failed"; }
+    if (res.ok && body?.success !== false) return { result: "sent", jobId: jobIdOf(body) };
+    // Why the provider said no is kept with the text's record and in this function's log (its reason only, never the text or the number).
+    const said = body?.message ?? body?.error ?? body?.errors ?? null;
+    const why = `${res.status} ${typeof said === "string" ? said : JSON.stringify(said) ?? ""}`.trim().slice(0, 200);
+    console.log("sms not accepted", why);
+    return { result: "failed", why };
+  } catch (e) { const why = (e instanceof Error ? e.message : String(e)).slice(0, 200); console.log("sms not sent", why); return { result: "failed", why }; }
 }
 /* Several texts to one phone in the same second lose some on the way: tested 13 Nov 2026, 0.4 seconds apart, one to three
    of every five never arrived, and the same texts sent alone did. So texts to the same phone are spaced out. */
 const TEXT_GAP_MS = 5000;
 const lastText = new Map<string, number>();
-async function sendSpaced(to: string, message: string, sender: string): Promise<string> {
+async function sendSpaced(to: string, message: string, sender: string): Promise<Sent> {
   const phone = to.replace(/\D/g, "").slice(-9);
   const wait = (lastText.get(phone) ?? 0) + TEXT_GAP_MS - Date.now();
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
   const result = await sendSms(to, message, sender);
   lastText.set(phone, Date.now());
   return result;
+}
+/* A record of every text: who it went to, whether the provider took it, and its id for asking later whether the phone
+   got it. Never the text itself (it can carry a PIN). Admin -> DY Services -> Text messages shows these. */
+// deno-lint-ignore no-explicit-any
+async function logText(db: any, row: { order_id?: string; queue_id?: number; part: number; parts: number; phone: string; sender: string; chars: number }, s: Sent): Promise<void> {
+  if (s.result === "skipped") return;
+  const ok = s.result === "sent";
+  // The record must never stop a send: a failed insert is only logged.
+  const { error } = await db.from("service_sms").insert({ ...row, accepted: ok, job_id: ok ? s.jobId ?? null : null, refusal: ok ? null : s.why ?? "not accepted", delivery: ok ? "pending" : "failed" });
+  if (error) console.log("sms record not kept", String(error.message ?? error).slice(0, 200));
 }
 /* MTN AFA registration through OtessData. One request per order; the order reference is the Idempotency-Key, so a repeat can't be charged twice.
    The reply decides what happens: registered (with what was charged), refused (nothing charged), wallet short, or unclear (a person checks). */
@@ -187,7 +201,12 @@ Deno.serve(async (req) => {
         let sms = "off";
         if (work?.sms?.enabled) {
           let accepted = 0; let last = "skipped";
-          for (const text of serviceTexts(o)) { last = await sendSpaced(o.phone, text, String(work.sms.sender ?? "Dyservice")); if (last !== "sent") break; accepted += 1; }
+          const texts = serviceTexts(o); const sender = String(work.sms.sender ?? "Dyservice");
+          for (let i = 0; i < texts.length; i++) {
+            const s = await sendSpaced(o.phone, texts[i], sender);
+            await logText(db, { order_id: o.id, part: i + 1, parts: texts.length, phone: o.phone, sender, chars: texts[i].length }, s);
+            last = s.result; if (last !== "sent") break; accepted += 1;
+          }
           // One accepted text counts as sent: the buyer has every PIN on screen and by email, and sending the lot again would repeat PINs.
           sms = accepted > 0 ? "sent" : last;
         }
@@ -198,7 +217,9 @@ Deno.serve(async (req) => {
       // One-off texts queued by the database (an agent being approved, for example), each with its own sender ID.
       let texts = 0;
       for (const q of (work?.queue ?? []) as { id: number; phone: string; message: string; sender: string }[]) {
-        await db.rpc("sms_queue_done", { p_id: q.id, p_result: await sendSpaced(q.phone, q.message, q.sender) });
+        const s = await sendSpaced(q.phone, q.message, q.sender);
+        await logText(db, { queue_id: q.id, part: 1, parts: 1, phone: q.phone, sender: q.sender, chars: q.message.length }, s);
+        await db.rpc("sms_queue_done", { p_id: q.id, p_result: s.result });
         texts += 1;
       }
       // AFA forms waiting to be registered. Without the API key nothing is sent: the admins are told and register by hand.
@@ -208,7 +229,22 @@ Deno.serve(async (req) => {
       for (const f of (forms ?? []) as Registration[]) { if ((await registerAfa(db, f, afaKey)) === "delivered") registered += 1; }
       // A registration can take up to a day. OtessData's webhook wakes us when one ends; this slow re-check is the safety net.
       if (afaKey) await checkOpenAfa(db, afaKey, 15);
-      return json({ confirmed, sent, texts, registered });
+      // What the network did with texts sent earlier: delivered, or sent and not delivered. The database decides which are due.
+      let reports = 0;
+      const smsKey = Deno.env.get("VYNFY_API_KEY");
+      const { data: due } = smsKey ? await db.rpc("service_sms_due") : { data: [] };
+      for (const d of (due ?? []) as { id: number; job_id: string }[]) {
+        let delivery = "unknown"; let reason: string | null = null; let raw: unknown = null;
+        try {
+          const res = await fetch(`https://sms.vynfy.com/api/v1/status/${encodeURIComponent(d.job_id)}`, { headers: { "X-API-Key": smsKey! }, signal: AbortSignal.timeout(15000) });
+          const reply = await res.json().catch(() => null);
+          raw = { http: res.status, reply: withoutText(reply) };
+          if (res.ok) { delivery = deliveryOf(reply); reason = reasonOf(reply); }
+        } catch { /* asked again on a later run */ }
+        await db.rpc("service_sms_report", { p_id: d.id, p_delivery: delivery, p_reason: reason, p_raw: raw });
+        reports += 1;
+      }
+      return json({ confirmed, sent, texts, registered, reports });
     }
 
     // OtessData's webhook (it sends no "action"). What it says is not trusted: it only makes us ask OtessData, with our key, how the open registrations ended.

@@ -108,6 +108,10 @@ export const retryRegistration = (orderId: string) => phase1().rpc<string>("admi
 export const refundServiceViaPaystack = (orderId: string, reason: string) => call<unknown>({ action: "refund", orderId, reason });
 
 export interface SmsSenders { can_edit: boolean; services_enabled: boolean; services_sender: string; agents_enabled: boolean; agents_sender: string; agent_approved_text: string; verify_sender: string; verify_enabled: boolean; credits: number | null;
-  recent: { kind: string; phone_end: string; status: string; result: string | null; created_at: string }[] }
+  recent: { kind: string; phone_end: string; status: string; result: string | null; created_at: string }[];
+  /** Every text sent lately and what the network did with it (see lib/smsDelivery). Absent until the server has the record. */
+  texts?: SmsText[]; texts_today?: { sent: number; delivered: number; not_delivered: number; waiting: number; refused: number } }
+export interface SmsText { id: number; sent_at: string; phone_end: string; sender: string; part: number; parts: number; accepted: boolean; refusal: string | null;
+  delivery: string; delivery_reason: string | null; delivery_checked_at: string | null; order_reference: string | null; queue_kind: string | null }
 export const loadSmsSenders = () => phase1().rpc<SmsSenders>("admin_sms_senders");
 export const saveSmsSenders = (s: SmsSenders) => phase1().rpc<boolean>("admin_sms_senders_save", { p_services_enabled: s.services_enabled, p_services_sender: s.services_sender, p_agents_enabled: s.agents_enabled, p_agents_sender: s.agents_sender, p_agent_text: s.agent_approved_text });

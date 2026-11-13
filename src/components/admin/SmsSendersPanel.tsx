@@ -4,7 +4,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Field, Panel, Pill, inputCls } from "@/components/admin/ui";
-import { loadSmsSenders, saveSmsSenders, type SmsSenders } from "@/lib/services";
+import { formatAdminDate } from "@/lib/admin-data";
+import { loadSmsSenders, saveSmsSenders, type SmsSenders, type SmsText } from "@/lib/services";
+import { textStatus } from "@/lib/smsDelivery";
+
+/** What a text was for, in a few words. */
+const what = (t: SmsText) => (t.order_reference ? `Order ${t.order_reference}${t.parts > 1 ? `, text ${t.part} of ${t.parts}` : ""}` : t.queue_kind === "agent_approved" ? "Agent approved" : t.queue_kind === "test" ? "Test" : t.queue_kind ?? "Text");
 
 /* The sender IDs for texts that are not about data orders: result-checker PINs and "you are approved" to agents.
    Each kind has its own ID and its own switch. An ID must be approved at Vynfy before its switch is turned on. */
@@ -42,7 +47,17 @@ export default function SmsSendersPanel() {
         <textarea className={`${inputCls} h-20 py-2 leading-5`} value={data.agent_approved_text} disabled={!data.can_edit} onChange={(e) => set({ agent_approved_text: e.target.value })} /></Field>
         <p className="mt-1 text-[11px] text-faint-foreground">{data.agent_approved_text.length} characters</p></div>
       {data.can_edit && <div className="mt-2 flex justify-end"><Button size="sm" onClick={() => void save()} disabled={saving}>{saving ? "Saving…" : "Save SMS settings"}</Button></div>}
-      {data.recent.length > 0 && <p className="mt-2 text-[11.5px] leading-5 text-faint-foreground">Last texts: {data.recent.slice(0, 5).map((t) => `${t.kind === "agent_approved" ? "agent approved" : t.kind} to …${t.phone_end} (${t.result ?? t.status})`).join(" · ")}</p>}
+      {data.texts && data.texts.length > 0 ? <div className="mt-3">
+        <p className="text-[13px] font-semibold text-foreground">What happened to each text</p>
+        <p className="mt-0.5 text-[11.5px] leading-5 text-faint-foreground">“Sent” means Vynfy took the text. “Delivered” means the network says it reached the phone; that report comes a little later.{data.texts_today ? ` Today: ${data.texts_today.delivered} delivered, ${data.texts_today.not_delivered} not delivered, ${data.texts_today.waiting} waiting for a report${data.texts_today.refused ? `, ${data.texts_today.refused} not sent` : ""}.` : ""}</p>
+        <ul className="mt-2 divide-y divide-white/[0.06] rounded-xl border border-white/[0.08]">
+          {data.texts.map((t) => { const st = textStatus(t); return (
+            <li key={t.id} className="flex items-start justify-between gap-3 px-3 py-2">
+              <div className="min-w-0"><p className="truncate text-[12.5px] font-medium text-foreground">{what(t)}</p><p className="text-[11px] text-faint-foreground">To …{t.phone_end} from {t.sender}, {formatAdminDate(t.sent_at)}{st.note ? `. ${st.note}` : ""}</p></div>
+              <Pill tone={st.tone}>{st.label}</Pill>
+            </li>); })}
+        </ul>
+      </div> : data.recent.length > 0 && <p className="mt-2 text-[11.5px] leading-5 text-faint-foreground">Last texts: {data.recent.slice(0, 5).map((t) => `${t.kind === "agent_approved" ? "agent approved" : t.kind} to …${t.phone_end} (${t.result ?? t.status})`).join(" · ")}</p>}
     </Panel>
   );
 }
