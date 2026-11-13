@@ -80,7 +80,8 @@ export default function Services({ store }: { store?: ServicesStore } = {}) {
       <header className="px-1 pt-1">
         {view !== "home" && <Link to={base} className="mb-2 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-primary-glow"><ArrowLeft size={15} aria-hidden="true" />All services</Link>}
         <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-foreground">{view === "checkers" ? "Result checkers" : view === "afa" && afa ? afa.name : store ? "Services" : "DY Services"}</h1>
-        <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{view === "checkers" ? "Serial number and PIN, shown the moment you pay." : view === "afa" && afa ? `${formatGHS(afa.price)}. ${afa.blurb}` : store ? `More from ${store.name}. Pick a service.` : "More from DataYego, with the same account and wallet. Pick a service."}</p>
+        <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{view === "checkers" ? "Serial number and PIN, shown the moment you pay." : view === "afa" && afa ? afa.blurb : store ? `More from ${store.name}. Pick a service.` : "More from DataYego, with the same account and wallet. Pick a service."}</p>
+        {view === "afa" && afa && <p className="mt-3 flex items-baseline gap-2"><span className="font-display text-[26px] font-semibold leading-none tracking-tight tabular-nums text-foreground">{formatGHS(afa.price)}</span><span className="text-[13px] text-muted-foreground">to register one number</span></p>}
       </header>
 
       {isAuthenticated && <Card className="flex items-center justify-between gap-3 p-4">

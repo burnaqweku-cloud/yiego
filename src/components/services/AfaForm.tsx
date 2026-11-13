@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { ProcessingView } from "@/components/flows/flow-parts";
 import OrderResult from "@/components/services/OrderResult";
 import PayWith, { type Pay } from "@/components/services/PayWith";
+import PriceBreakdown from "@/components/services/PriceBreakdown";
 import { useAuth } from "@/store/auth-context";
 import { useWallet } from "@/store/wallet";
 import { useProfile } from "@/store/profile";
@@ -148,10 +149,10 @@ export default function AfaForm({ product, sms, onBought, context = {}, walletNa
           <input className="onyx-field mt-2 w-full" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value.trim())} />
           <span className={hint}>We tell you here when the registration is done.</span></label>}
         <PayWith pay={pay} onChange={setPay} base={base} balance={balance} signedIn={isAuthenticated} walletOnly={context.asAgent} walletName={walletName} />
-        <div className="flex items-center justify-between border-t border-white/[0.08] pt-3 text-[14px]"><span className="text-muted-foreground">You pay</span><span className="font-display text-[20px] font-semibold tabular-nums text-foreground">{formatGHS(base + fee)}</span></div>
+        <PriceBreakdown label="AFA registration" base={base} fee={fee} />
         {short
           ? <button type="button" className="onyx-btn-primary flex w-full items-center justify-center gap-2" onClick={() => { onDone?.(); openAddMoney(); }}><Plus size={16} />Top up {formatGHS(base - balance)} or more</button>
-          : <button type="button" className="onyx-btn-primary w-full" onClick={() => void submit()}>{pay === "wallet" ? `Pay ${formatGHS(base)} from wallet` : `Pay ${formatGHS(base + fee)}`}</button>}
+          : <button type="button" className="onyx-btn-primary w-full" onClick={() => void submit()}>{pay === "wallet" ? `Pay ${formatGHS(base)} from wallet` : `Pay ${formatGHS(base + fee)} with MoMo or card`}</button>}
         <p className="flex items-start gap-2 text-[12.5px] leading-relaxed text-muted-foreground"><Clock size={14} className="mt-0.5 shrink-0" aria-hidden="true" /><span>Registration can take up to 24 hours. If it can't be completed, your money is refunded.</span></p>
         <p className="text-[12px] leading-relaxed text-muted-foreground">By paying you confirm these details are correct and the person agreed to be registered. We use them only for this registration.</p>
       </Section>
