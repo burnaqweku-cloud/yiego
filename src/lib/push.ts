@@ -121,7 +121,7 @@ export function watchOrderForPush(orderReference: string | null | undefined) {
 }
 
 /* Admin: the switches, the numbers and a test. */
-export interface PushSettings { enabled: boolean; order_paid: boolean; order_delivered: boolean; order_refunded: boolean; announcements: boolean }
+export interface PushSettings { enabled: boolean; order_paid: boolean; order_delivered: boolean; order_refunded: boolean; announcements: boolean; services: boolean; agent_approved: boolean }
 export interface PushOverview {
   settings: PushSettings | null; can_edit: boolean; phones: number; phones_signed_in: number; my_phones: number; sent_today: number;
   recent: { id: number; kind: string; title: string; body: string; status: string; recipients: number | null; delivered: number | null; error: string | null; created_at: string; sent_at: string | null }[];

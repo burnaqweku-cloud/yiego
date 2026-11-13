@@ -15,9 +15,11 @@ const KINDS: { key: Exclude<keyof PushSettings, "enabled">; label: string; hint:
   { key: "order_delivered", label: "Data delivered", hint: "When the data lands." },
   { key: "order_refunded", label: "Order refunded", hint: "When money goes back." },
   { key: "announcements", label: "Announcements", hint: "When you post one here." },
+  { key: "services", label: "DY Services orders", hint: "Checker ready, AFA done, refund." },
+  { key: "agent_approved", label: "Agent approved", hint: "When an application is approved." },
 ];
-const KIND_LABEL: Record<string, string> = { order_paid: "Payment", order_delivered: "Delivered", order_refunded: "Refund", announcement: "Announcement", test: "Test", campaign: "Follow-up", alert: "Alert to admins" };
-const OFF: PushSettings = { enabled: false, order_paid: true, order_delivered: true, order_refunded: true, announcements: true };
+const KIND_LABEL: Record<string, string> = { order_paid: "Payment", order_delivered: "Delivered", order_refunded: "Refund", announcement: "Announcement", test: "Test", campaign: "Follow-up", alert: "Alert to admins", service_delivered: "Service order", service_refunded: "Service refund", agent_approved: "Agent approved" };
+const OFF: PushSettings = { enabled: false, order_paid: true, order_delivered: true, order_refunded: true, announcements: true, services: true, agent_approved: true };
 
 export default function PushCard() {
   const [data, setData] = useState<PushOverview | null>(null);
@@ -29,7 +31,8 @@ export default function PushCard() {
   }, []);
   useEffect(() => { void load(); }, [load]);
 
-  const settings = data?.settings ?? OFF;
+  // Settings saved before a switch existed don't carry it: a missing switch is on, as the server reads it.
+  const settings: PushSettings = data?.settings ? { ...OFF, ...data.settings } : OFF;
   const change = async (patch: Partial<PushSettings>) => {
     if (!data) return;
     const next = { ...settings, ...patch };
