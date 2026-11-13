@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Globe, ListChecks, Megaphone, RefreshCw, ShieldCheck, Users, Wallet, X } from "lucide-react";
+import { ArrowLeft, Globe, ListChecks, Megaphone, RefreshCw, ShieldCheck, Users, Wallet, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 import { Field, inputCls, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid } from "@/components/admin/ui";
@@ -7,7 +7,8 @@ import { conversionRate, loadPromoTracking, loadPromoVisitor, type PromoEventKin
 import { formatGHS } from "@/lib/format";
 
 /* Everything a promo-link visitor does, from the ad click to the money.
-   Dates are Ghana days. Figures count what happened inside the chosen day(s). */
+   Dates are Ghana days. Figures count what happened inside the chosen day(s).
+   With `advert` it is the same page for the visitors one advert brought (opened from the Adverts page). */
 
 type Period = "all" | "today" | "yesterday" | "day" | "range";
 type Dimension = "platforms" | "campaigns" | "countries" | "devices" | "days" | "bundles";
@@ -27,6 +28,8 @@ function countryName(code: string | null | undefined) {
 const MTN: Record<string, string> = { approved: "Approved for instant delivery", not_approved: "Not approved yet", unapproved: "Waiting on MTN", invalid: "Invalid number", not_mtn: "Not an MTN number" };
 const text = (v: unknown) => (v == null || v === "" ? "" : String(v));
 const money = (v: unknown) => (Number.isFinite(Number(v)) && v != null && v !== "" ? formatGHS(Number(v)) : "");
+/** Figures added later (checker and AFA sales) read as 0 when an older report does not carry them. */
+const num = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
 /** One plain sentence per recorded step. */
 function describe(kind: PromoEventKind, d: Record<string, unknown>, orderRef: string | null, phone: string | null): string {
@@ -52,12 +55,13 @@ function describe(kind: PromoEventKind, d: Record<string, unknown>, orderRef: st
     case "topup_opened": return "Opened wallet top-up";
     case "topup_started": return `Started a wallet top-up${money(d.amount) ? ` of ${money(d.amount)}` : ""}`;
     case "topup_payment_started": return `Sent to payment for a top-up${money(d.amount) ? ` of ${money(d.amount)}` : ""}`;
+    case "service_order": return `Started a checker or AFA order${money(d.amount) ? ` for ${money(d.amount)}` : ""}${ref}`;
     default: return kind;
   }
 }
 
-export default function PromoTracking() {
-  const [period, setPeriod] = useState<Period>("today");
+export default function PromoTracking({ advert, onBack }: { advert?: { id: string; name: string }; onBack?: () => void } = {}) {
+  const [period, setPeriod] = useState<Period>(advert ? "all" : "today");
   const [day, setDay] = useState(ghanaDate());
   const [from, setFrom] = useState(ghanaDate(6)); const [to, setTo] = useState(ghanaDate());
   const [report, setReport] = useState<PromoTrackingReport | null>(null);
@@ -69,9 +73,9 @@ export default function PromoTracking() {
   const load = useCallback(async () => {
     if (range[0] && range[1] && range[0] > range[1]) { setFailed(true); return; }
     setBusy(true); setFailed(false);
-    const result = await loadPromoTracking(range[0], range[1]);
+    const result = await loadPromoTracking(range[0], range[1], advert?.id);
     setReport(result.data); setFailed(Boolean(result.error) || !result.data); setBusy(false);
-  }, [range]);
+  }, [range, advert?.id]);
   useEffect(() => { void load(); }, [load]);
 
   const t = report?.totals;
@@ -90,9 +94,13 @@ export default function PromoTracking() {
   const periodText = period === "all" ? "all time" : range[0] === range[1] && range[0] ? dayLabel(`${range[0]}T12:00:00Z`) : `${range[0]} to ${range[1]}`;
 
   return <section className="space-y-4">
+    {advert && <div className="flex items-center gap-2.5">
+      <Button size="sm" variant="soft" onClick={onBack}><ArrowLeft size={14} />All adverts</Button>
+      <p className="min-w-0 truncate text-[13px] text-muted-foreground">Only this advert: <span className="font-semibold text-foreground">{advert.name}</span></p>
+    </div>}
     <div className="space-y-2.5">
       <div className="flex items-center gap-2">
-        <div className="min-w-0 flex-1"><Segmented<Period> value={period} onChange={setPeriod} options={[{ value: "today", label: "Today" }, { value: "yesterday", label: "Yesterday" }, { value: "day", label: "Pick a day" }, { value: "range", label: "Date range" }, { value: "all", label: "All time" }]} /></div>
+        <div className="min-w-0 flex-1"><Segmented<Period> value={period} onChange={setPeriod} options={[...(advert ? [{ value: "all" as const, label: "All time" }] : []), { value: "today", label: "Today" }, { value: "yesterday", label: "Yesterday" }, { value: "day", label: "Pick a day" }, { value: "range", label: "Date range" }, ...(advert ? [] : [{ value: "all" as const, label: "All time" }])]} /></div>
         <Button size="icon" variant="quiet" aria-label="Refresh tracking" title="Refresh" disabled={busy} onClick={() => void load()}><RefreshCw size={15} className={busy ? "animate-spin" : ""} /></Button>
       </div>
       {period === "day" && <Field label="Day · Ghana time"><input className={inputCls} type="date" value={day} max={ghanaDate()} onChange={(e) => e.target.value && setDay(e.target.value)} /></Field>}
@@ -101,12 +109,12 @@ export default function PromoTracking() {
 
     {failed ? <p role="alert" className="text-sm text-danger">Couldn’t load the tracking. Check the dates and refresh.</p> : !t || !report ? <p className="text-sm text-muted-foreground">Loading tracking…</p> : <>
       <StatGrid cols={4}>
-        <Stat label="Visitors from the link" value={t.landed} note={`${t.sessions} visits · ${periodText}`} icon={Users} loading={busy} />
+        <Stat label={advert ? "Visitors from this advert" : "Visitors from the link"} value={t.landed} note={`${t.sessions} visits · ${periodText}`} icon={Users} loading={busy} />
         <Stat label="Tried to buy" value={t.entered_number} note={`${pct(t.entered_number, t.landed)} of visitors`} loading={busy} />
         <Stat label="Paying customers" value={t.buyers} note={`${pct(t.buyers, t.landed)} of visitors · ${t.existing_buyers} already customers`} tone="good" loading={busy} />
-        <Stat label="Paid orders" value={t.orders_paid} note={`${t.delivered} delivered · ${t.refunded} refunded`} loading={busy} />
-        <Stat label="Sales" value={formatGHS(Number(t.sales))} note={`${t.promo_orders} at promo price · ${formatGHS(Number(t.discount))} discount given`} loading={busy} />
-        <Stat label="Profit on those sales" value={formatGHS(Number(t.profit))} note="Sales minus bundle cost, before payment fees" tone={Number(t.profit) > 0 ? "good" : "default"} loading={busy} />
+        <Stat label="Paid orders" value={Number(t.orders_paid) + num(t.service_orders)} note={`${t.delivered} delivered · ${t.refunded} refunded${num(t.service_orders) > 0 ? ` · ${num(t.service_orders)} checker or AFA` : ""}`} loading={busy} />
+        <Stat label="Sales" value={formatGHS(Number(t.sales) + num(t.service_sales))} note={`${t.promo_orders} at promo price · ${formatGHS(Number(t.discount))} discount given${num(t.service_sales) > 0 ? ` · ${formatGHS(num(t.service_sales))} checkers and AFA` : ""}`} loading={busy} />
+        <Stat label="Profit on those sales" value={formatGHS(Number(t.profit) + num(t.service_profit))} note="Sales minus what they cost us, before payment fees" tone={Number(t.profit) + num(t.service_profit) > 0 ? "good" : "default"} loading={busy} />
         <Stat label="Wallet top-ups" value={formatGHS(Number(t.topup_amount))} note={`${t.topups_paid} paid by ${t.topup_payers} people · ${t.topup_started} started`} icon={Wallet} loading={busy} />
         <Stat label="New accounts" value={t.accounts} note={`${t.signup_started} started signing up · ${t.repeat_buyers} bought more than once`} loading={busy} />
       </StatGrid>
@@ -142,15 +150,16 @@ export default function PromoTracking() {
         <Rows empty="Nobody came through the link in this period.">{report.visitors.map((v) => <Row key={v.id} onClick={() => setOpenVisitor(v)}
           primary={<>{platformName(v.platform)} · {countryName(v.country)}{v.city ? `, ${v.city}` : ""}</>}
           secondary={`${when(v.last_at)} · ${v.furthest}${v.device !== "Unknown" ? ` · ${v.device}${v.browser ? `, ${v.browser}` : ""}` : ""}`}
-          right={Number(v.sales) > 0 ? formatGHS(Number(v.sales)) : Number(v.topup_amount) > 0 ? formatGHS(Number(v.topup_amount)) : undefined}
-          rightNote={Number(v.orders_paid) > 0 ? `${v.orders_paid} order${Number(v.orders_paid) === 1 ? "" : "s"}` : Number(v.topup_amount) > 0 ? "top-up" : v.has_account ? "has account" : undefined}
-          tone={Number(v.sales) > 0 ? "good" : "default"} />)}</Rows>
+          right={Number(v.sales) + num(v.service_sales) > 0 ? formatGHS(Number(v.sales) + num(v.service_sales)) : Number(v.topup_amount) > 0 ? formatGHS(Number(v.topup_amount)) : undefined}
+          rightNote={Number(v.orders_paid) + num(v.service_orders) > 0 ? `${Number(v.orders_paid) + num(v.service_orders)} order${Number(v.orders_paid) + num(v.service_orders) === 1 ? "" : "s"}` : Number(v.topup_amount) > 0 ? "top-up" : v.has_account ? "has account" : undefined}
+          tone={Number(v.sales) + num(v.service_sales) > 0 ? "good" : "default"} />)}</Rows>
         {report.visitor_count > report.visitors.length && <p className="pt-2 text-[11px] text-faint-foreground">Showing the latest {report.visitors.length} of {report.visitor_count}. Pick a shorter period to see the rest.</p>}
       </Panel>
 
       <div className="space-y-1.5 text-[11.5px] leading-5 text-muted-foreground">
         <p>Only people who arrived on a link containing <span className="text-foreground">promo=1</span> are counted. Figures show what happened inside the chosen day(s), Ghana time.</p>
-        <p>Orders, payments, deliveries and top-ups come from the real records, including guest orders and every later order by the same account or number, with no time limit. Steps before payment are reported by the visitor’s browser.</p>
+        <p>Orders, payments, deliveries and top-ups come from the real records, including guest orders and every later order by the same account or number, with no time limit. Result checker and AFA orders are counted too. Steps before payment are reported by the visitor’s browser.</p>
+        <p>A person counts for the first advert that brought them. Each advert has its own page under Promotions → Adverts.</p>
         <p>Meta and TikTok are recognised from the tag they add to clicks and from their in-app browsers. A person who clicks on one phone and buys on another cannot be joined up.</p>
         <p>{report.detail_since ? `Step-by-step detail began ${when(report.detail_since)}. Visitors before that show only that they landed.` : "Step-by-step detail starts with the next visitor. Earlier visitors show only that they landed."}</p>
       </div>
@@ -166,7 +175,7 @@ function Table({ head, rows, empty }: { head: string[]; rows: (string | number)[
 }
 function GroupTable({ first, rows }: { first: string; rows: (Omit<PromoTrackingGroup, "label"> & { label: string })[] }) {
   return <Table head={[first, "Visitors", "Tried to buy", "Started payment", "Buyers", "Buyer rate", "Orders", "Sales", "Profit", "Top-ups"]} empty="Nothing in this period."
-    rows={rows.map((g) => [g.label, g.visitors, g.entered_number, g.started_payment, g.buyers, `${conversionRate(Number(g.buyers), Number(g.visitors)).toFixed(1)}%`, g.orders_paid, formatGHS(Number(g.sales)), formatGHS(Number(g.profit)), formatGHS(Number(g.topup_amount))])} />;
+    rows={rows.map((g) => [g.label, g.visitors, g.entered_number, g.started_payment, g.buyers, `${conversionRate(Number(g.buyers), Number(g.visitors)).toFixed(1)}%`, Number(g.orders_paid) + num(g.service_orders), formatGHS(Number(g.sales) + num(g.service_sales)), formatGHS(Number(g.profit) + num(g.service_profit)), formatGHS(Number(g.topup_amount))])} />;
 }
 
 /** One visitor’s full story: arrival, every step, and the real orders and top-ups. */
@@ -190,6 +199,12 @@ function VisitorSheet({ visitor, onClose }: { visitor: PromoTrackingVisitor | nu
       if (o.delivered_at) items.push({ at: o.delivered_at, text: `Data delivered · order ${o.reference}`, tone: "good" });
       if (o.payment === "refunded") items.push({ at: o.paid_at ?? o.created_at, text: `Later refunded · order ${o.reference}`, tone: "bad" });
     }
+    for (const s of detail.services ?? []) {
+      const what = `${Number(s.quantity) > 1 ? `${s.quantity} × ` : ""}${s.name}`;
+      if (s.paid_at) items.push({ at: s.paid_at, text: `PAID ${formatGHS(Number(s.amount))} for ${what}${s.method === "wallet" ? " from wallet" : ""} · order ${s.reference}`, tone: "good" });
+      if (s.delivered_at) items.push({ at: s.delivered_at, text: `${what} delivered · order ${s.reference}`, tone: "good" });
+      if (s.refunded_at) items.push({ at: s.refunded_at, text: `Refunded · order ${s.reference}`, tone: "bad" });
+    }
     for (const d of detail.topups) if (d.done_at) items.push({ at: d.done_at, text: `WALLET TOP-UP PAID ${formatGHS(Number(d.amount))}`, tone: "good" });
     if (v?.account_created_at) items.push({ at: String(v.account_created_at), text: "Account created", tone: "good" });
     return items.sort((a, b) => a.at.localeCompare(b.at));
@@ -206,9 +221,9 @@ function VisitorSheet({ visitor, onClose }: { visitor: PromoTrackingVisitor | nu
       </div>
       {failed ? <p role="alert" className="mt-4 text-sm text-danger">Couldn’t load this visitor.</p> : !detail || !v ? <p className="mt-4 text-sm text-muted-foreground">Loading…</p> : <>
         <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-[12px]">
-          {([["Came from", `${platformName(text(v.platform) || visitor?.platform)}${v.click_id ? " · tagged ad click" : ""}`], ["Campaign", text(v.campaign) === "unlabelled" ? "No campaign name" : text(v.campaign)], ["Referring site", text(v.referrer) || text(v.source)],
+          {([["Advert", text(v.advert) || "No advert (plain or unnamed link)"], ["Came from", `${platformName(text(v.platform) || visitor?.platform)}${v.click_id ? " · tagged ad click" : ""}`], ["Campaign", text(v.campaign) === "unlabelled" ? "No campaign name" : text(v.campaign)], ["Referring site", text(v.referrer) || text(v.source)],
             ["Location", [text(v.city), text(v.region), countryName(text(v.country))].filter(Boolean).join(", ")], ["Device", [text(v.device), text(v.os), text(v.browser)].filter(Boolean).join(" · ") || "Unknown"], ["Visits", text(v.sessions)],
-            ["Account", v.has_account ? (text(v.account_email) || "Signed in") : "Guest"], ["Landing page", text(v.landing_path) || "/shop"]] as const).map(([k, val]) => <div key={k} className="min-w-0"><dt className="text-faint-foreground">{k}</dt><dd className="break-words text-foreground">{val || "Unknown"}</dd></div>)}
+            ["Account", v.has_account ? (text(v.account_email) || "Signed in") : "Guest"]] as const).map(([k, val]) => <div key={k} className="min-w-0"><dt className="text-faint-foreground">{k}</dt><dd className="break-words text-foreground">{val || "Unknown"}</dd></div>)}
         </dl>
         {(detail.orders.length > 0 || detail.topups.length > 0) && <div className="mt-3 flex flex-wrap gap-1.5">
           <Pill tone="good">{detail.orders.filter((o) => o.paid_at).length} paid order{detail.orders.filter((o) => o.paid_at).length === 1 ? "" : "s"} · {formatGHS(detail.orders.filter((o) => o.payment === "succeeded").reduce((a, o) => a + Number(o.amount), 0))}</Pill>

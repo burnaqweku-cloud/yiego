@@ -69,6 +69,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
   ] },
   { id: "promotions", label: "Promotions", icon: BadgePercent, pages: [
     { id: "promotions", label: "Overview & conversions", to: "/admin/promotions", icon: TrendingUp, keywords: ["promotions", "tiktok", "first purchase", "conversion", "buyers", "signups"] },
+    { id: "promotion-adverts", label: "Adverts", to: "/admin/promotions/adverts", icon: Megaphone, keywords: ["advert", "adverts", "ads", "telegram", "meta", "facebook", "channel", "link", "which advert", "results", "cost", "paid"] },
     { id: "promotion-tracking", label: "Full tracking", to: "/admin/promotions/tracking", icon: Route, keywords: ["promotion", "tracking", "ads", "meta", "facebook", "tiktok", "visitors", "funnel", "promo link", "analytics"] },
     { id: "promotion-pricing", label: "Bundle prices", to: "/admin/promotions/pricing", icon: Tags, keywords: ["promotion", "offers", "discount", "bundle", "price"] },
     { id: "promotion-settings", label: "Settings", to: "/admin/promotions/settings", icon: Settings2, keywords: ["promotion", "active", "title", "message"] },

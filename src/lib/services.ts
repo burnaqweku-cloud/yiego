@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { appDeviceId } from "@/lib/appInstall";
+import { trackPromoEvent } from "@/lib/promotionAnalytics";
 
 /* DY Services: result checkers today, more services later. Prices, stock and who gets which PIN are
    decided in the database; this file only asks. */
@@ -53,9 +54,15 @@ export async function servicesSendSms(): Promise<boolean> {
   const { data } = await phase1().rpc<{ sms?: boolean }>("service_info");
   return Boolean(data?.sms);
 }
+/** Tells promo tracking which service order a visitor from an advert just placed, so checker and AFA sales count for that advert.
+    Nothing happens for other visitors, in an agent's store, or for an agent buying for themselves. */
+const reportServiceOrder = (reference: string | undefined, product: string, amount: number | undefined, context: ServiceContext) =>
+  reference && !context.store && !context.asAgent ? trackPromoEvent("service_order", { service_reference: reference, product, amount }, 1500) : Promise.resolve(false);
+
 export async function buyServiceWithWallet(productCode: string, quantity: number, phone: string, details?: AfaDetails, context: ServiceContext = {}): Promise<{ order: ServiceOrder | null; error: string | null }> {
   const { data, error } = await phase1().rpc<ServiceOrder>("service_buy_wallet", { p_product: productCode, p_qty: quantity, p_phone: phone, p_device: appDeviceId(), ...(details ? { p_details: details } : {}),
     ...(context.store ? { p_store: context.store } : {}), ...(context.asAgent ? { p_as_agent: true } : {}) });
+  if (data) void reportServiceOrder(data.reference, productCode, data.amount, context);
   return { order: data ?? null, error: error ? serviceError(error.message) : data ? null : serviceError(null) };
 }
 async function call<T>(body: Record<string, unknown>): Promise<{ data: T | null; error: string | null }> {
@@ -66,8 +73,12 @@ async function call<T>(body: Record<string, unknown>): Promise<{ data: T | null;
   return { data: null, error: serviceError(message) };
 }
 /** Opens a mobile money / card payment for a service order. The buyer comes back to /services/order/<token>. */
-export const startServiceCheckout = (input: { productCode: string; quantity: number; phone: string; email?: string; details?: AfaDetails; store?: string }) =>
-  call<{ authorizationUrl: string; token: string; reference: string; total: number }>({ action: "start", ...input, deviceId: appDeviceId() });
+export async function startServiceCheckout(input: { productCode: string; quantity: number; phone: string; email?: string; details?: AfaDetails; store?: string }) {
+  const r = await call<{ authorizationUrl: string; token: string; reference: string; total: number }>({ action: "start", ...input, deviceId: appDeviceId() });
+  // Reported before the buyer leaves for the payment page (held for 1.5 seconds at most, and only for advert visitors).
+  if (r.data) await reportServiceOrder(r.data.reference, input.productCode, r.data.total, { store: input.store });
+  return r;
+}
 /** On return from the payment page: checks the payment and gives back the order (with its PINs once delivered). */
 export const confirmServiceOrder = (token: string) => call<ServiceOrder>({ action: "confirm", token });
 export async function myServiceOrders(): Promise<ServiceOrder[]> {

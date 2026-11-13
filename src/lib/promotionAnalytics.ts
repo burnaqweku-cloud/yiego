@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { PromoAdvert, UnnamedLink } from "@/lib/promoAdverts";
 
 export interface PromotionMetrics {
   visitors: number; visits: number; signup_starts: number; accounts: number; confirmed_accounts: number;
@@ -60,7 +61,7 @@ export async function trackPromotion(kind: "visit" | "signup_started" | "checkou
  * never taken from the browser, the report reads those from the real records. */
 export type PromoEventKind = "landing" | "page_view" | "flow_opened" | "network_selected" | "bundle_selected" | "mtn_check" | "checkout_clicked"
   | "promo_applied" | "promo_declined" | "order_created" | "review_shown" | "pay_tapped" | "payment_started" | "unpaid_order_shown" | "order_cancelled"
-  | "signup_started" | "signed_in" | "topup_opened" | "topup_started" | "topup_payment_started";
+  | "signup_started" | "signed_in" | "topup_opened" | "topup_started" | "topup_payment_started" | "service_order";
 
 /** Where an arrival came from. Ad platforms tag their clicks (fbclid, ttclid) and their in-app browsers name themselves. */
 export function detectPlatform(search: string, referrer: string, userAgent: string): { platform: string; click_id: string | null } {
@@ -117,31 +118,37 @@ export interface PromoTrackingTotals {
   buyers: number; got_delivery: number; signup_started: number; accounts: number; mtn_checked: number; mtn_approved: number; mtn_not_approved: number; mtn_waiting: number;
   topup_started: number; topup_payers: number; topups_paid: number; topup_amount: number; orders_paid: number; delivered: number; refunded: number; promo_orders: number;
   sales: number; profit: number; discount: number; repeat_buyers: number; existing_buyers: number;
+  /** Checker and AFA orders, counted next to data since 13 Nov 2026. */
+  service_orders?: number; service_sales?: number; service_profit?: number;
 }
-export interface PromoTrackingGroup { label: string | null; visitors: number; entered_number: number; started_payment: number; buyers: number; orders_paid: number; sales: number; profit: number; topup_amount: number }
+export interface PromoTrackingGroup { label: string | null; visitors: number; entered_number: number; started_payment: number; buyers: number; orders_paid: number; sales: number; profit: number; topup_amount: number; service_orders?: number; service_sales?: number; service_profit?: number }
 export interface PromoTrackingVisitor {
   id: string; created_at: string; last_at: string; landed: boolean; platform: string; source: string; campaign: string; click_id: string | null; country: string; region: string | null; city: string | null;
   device: string; os: string | null; browser: string | null; sessions: number; has_account: boolean; account_created: boolean | null; existing_customer: boolean; mtn_status: string | null;
-  orders_paid: number; delivered: number; sales: number; profit: number; topup_amount: number; furthest: string;
+  orders_paid: number; delivered: number; sales: number; profit: number; topup_amount: number; furthest: string; service_orders?: number; service_sales?: number;
 }
 export interface PromoTrackingReport {
   from: string | null; to: string | null; started_at: string | null; detail_since: string | null; totals: PromoTrackingTotals;
   platforms: PromoTrackingGroup[]; campaigns: PromoTrackingGroup[]; countries: PromoTrackingGroup[]; devices: PromoTrackingGroup[];
   days: (Omit<PromoTrackingGroup, "label"> & { day: string })[]; bundles: { label: string; picked: number; paid_orders: number; sales: number }[];
   visitor_count: number; visitors: PromoTrackingVisitor[];
+  /** Every advert with its own figures, tagged links nobody has named yet, and (when one advert was asked for) that advert. */
+  adverts?: PromoAdvert[]; unnamed?: UnnamedLink[]; advert?: { id: string; name: string } | null;
 }
 export interface PromoVisitorDetail {
   visit: (Record<string, string | number | boolean | null> & { id: string; created_at: string }) | null;
   events: { at: string; kind: PromoEventKind; data: Record<string, unknown>; phone: string | null; order_reference: string | null }[];
   orders: { reference: string; bundle: string | null; phone: string; amount: number; profit: number; status: string; payment: string; provider: string | null; created_at: string; paid_at: string | null; delivered_at: string | null; via: string; promo_price: boolean }[];
   topups: { amount: number; status: string; provider: string; created_at: string; done_at: string | null }[];
+  services?: { reference: string; name: string; quantity: number; amount: number; status: string; method: string; created_at: string; paid_at: string | null; delivered_at: string | null; refunded_at: string | null; via: string }[];
 }
-export const loadPromoTracking = (from: string | null, to: string | null) => db().rpc<PromoTrackingReport>("admin_promo_tracking", { p_from: from, p_to: to });
+/** The whole report, or with `advert` the same report for the visitors that one advert brought. */
+export const loadPromoTracking = (from: string | null, to: string | null, advert?: string) => db().rpc<PromoTrackingReport>("admin_promo_tracking", { p_from: from, p_to: to, ...(advert ? { p_advert: advert } : {}) });
 export const loadPromoVisitor = (id: string) => db().rpc<PromoVisitorDetail>("admin_promo_visitor", { p_visit: id });
 export const loadPromotionReport = (from: string, to: string) => db().rpc<PromotionReport>("admin_promotion_report", { p_from: from, p_to: to });
 
 export function promotionReportCsv(report: PromotionReport) {
-  const quote = (value: unknown) => `"${String(value ?? "").replace(/^[=+@\-]/, "'$&").replace(/"/g, '""')}"`;
+  const quote = (value: unknown) => `"${String(value ?? "").replace(/^[=+@-]/, "'$&").replace(/"/g, '""')}"`;
   const rows: unknown[][] = [["From (Ghana)", report.from, "To (Ghana)", report.to], ["Group", "Label", "Visitors", "Signup starts", "Accounts created", "Confirmed accounts", "Checkouts", "Buyers", "Visit to buyer %", "Paid orders", "Delivered", "Pending", "Cancelled", "Refunded", "Sales GHS", "Discount GHS"]];
   for (const [group, list] of [["Total", [{ ...report.totals, label: "All" }]], ["Day", report.daily], ["Source/campaign", report.sources]] as const) {
     for (const row of list) rows.push([group,row.label,row.visitors,row.signup_starts,row.accounts,row.confirmed_accounts,row.checkouts,row.buyers,conversionRate(row.buyers,row.visitors),row.paid_orders,row.delivered,row.pending,row.cancelled,row.refunded,row.sales,row.discount]);

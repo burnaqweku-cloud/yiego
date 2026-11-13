@@ -196,6 +196,7 @@ export const MainSite = () => (
     <Route path="/auth" element={<Auth />} /><Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/admin/promotions" element={<RequireAdmin><AdminShell /></RequireAdmin>}>
       <Route index element={<AdminPromotions />} />
+      <Route path="adverts" element={<AdminPromotions key="adverts" />} />
       <Route path="tracking" element={<AdminPromotions key="tracking" />} />
       <Route path="pricing" element={<AdminPromotions key="pricing" />} />
       <Route path="settings" element={<AdminPromotions key="settings" />} />
