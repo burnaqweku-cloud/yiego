@@ -16,7 +16,7 @@ const data = {
 vi.mock("@/lib/services", async (original) => ({
   ...(await original<typeof import("@/lib/services")>()),
   loadAdminServices: vi.fn(async () => ({ data, error: null })),
-  loadSmsSenders: vi.fn(async () => ({ data: { services_enabled: false, services_sender: "Dyservice", agents_enabled: false, agents_sender: "Dyagents", agent_approved_text: "" }, error: null })),
+  loadSmsSenders: vi.fn(async () => ({ data: { services_enabled: false, services_sender: "Dyservice", agents_enabled: false, agents_sender: "Dyverify", agent_approved_text: "" }, error: null })),
 }));
 import AdminServices from "./AdminServices";
 

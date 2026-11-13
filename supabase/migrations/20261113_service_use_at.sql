@@ -15,3 +15,7 @@ create or replace function phase1.service_order_json(o phase1.service_orders) re
     'store', case when o.agent_id is not null and not o.agent_self then (select jsonb_build_object('name', a.store_name, 'site', phase1.service_store_site(a.id)) from phase1.agents a where a.id = o.agent_id) end,
     'use_at', p.use_at, 'pins', case when o.status = 'delivered' then coalesce((select jsonb_agg(jsonb_build_object('serial', s.serial, 'pin', s.pin) order by s.created_at, s.id) from phase1.service_pins s where s.order_id = o.id and s.status = 'sold'), '[]'::jsonb) else '[]'::jsonb end)
   from phase1.service_products p where p.code = o.product_code $$;
+
+-- Same day (applied live): the agent-approval text is sent from "Dyverify" (the owner's rule: Dyverify is for
+-- MTN verification and agent approval; "Dyagents" was never approved by the SMS provider, so texts from it fail).
+update phase1.sms_settings set agents_sender = 'Dyverify' where id = true and agents_sender is distinct from 'Dyverify';
