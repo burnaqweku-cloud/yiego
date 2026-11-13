@@ -16,6 +16,8 @@ export interface ServiceOrder {
   reference: string; token: string; product: string; kind?: "checker" | "afa"; name: string; quantity: number; amount: number; fee: number; phone: string;
   status: "awaiting_payment" | "paid_waiting_stock" | "processing" | "delivered" | "refunded" | "cancelled" | "expired"; paid: boolean; method: "wallet" | "paystack";
   created_at: string; delivered_at: string | null; pins: ServicePin[]; afa?: { name: string; phone: string } | null; store?: { name: string; site: string } | null;
+  /** The website this checker is used on (the exam body's results site), e.g. "eresults.waecgh.org". */
+  use_at?: string | null;
 }
 /** Where a purchase is made: nothing = the main site; store = an agent's store (its prices); asAgent = the agent buying for themselves at the agent price. */
 export interface ServiceContext { store?: string; asAgent?: boolean }

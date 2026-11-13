@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { serviceTexts } from "./texts.ts";
 
 /* DY Services: paying for a service order with Paystack, and sending what was bought.
    The database owns every rule (stock, prices, who gets which PIN, and that a payment delivers once).
@@ -7,7 +8,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
      { action: "run" } + internal secret                                    send SMS/email for delivered orders; re-check unpaid ones; send queued texts
      { action: "refund", orderId, reason } + admin sign-in                  send the money back through Paystack
      (no action)                                                            OtessData's webhook: re-check open AFA registrations
-   This file is self-contained on purpose: it shares no code with the data checkout, so changing one can never break the other. */
+   This function is self-contained on purpose: it shares no code with the data checkout, so changing one can never break the other.
+   (texts.ts beside it holds only the wording of the texts.) */
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-yiego-internal-secret", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
@@ -26,7 +28,7 @@ const FRIENDLY: Record<string, string> = {
   afa_dob_invalid: "Check the date of birth. The person must be 16 or older.",
   afa_job_invalid: "Enter the person's occupation.",
   afa_region_invalid: "Choose a region.",
-  afa_address_invalid: "Enter the address: town and area or house number.",
+  afa_address_invalid: "Enter the town or area.",
 };
 const friendly = (message: string | undefined, fallback: string) => { for (const key of Object.keys(FRIENDLY)) if (message?.includes(key)) return FRIENDLY[key]; return fallback; };
 
@@ -49,7 +51,7 @@ async function checkPayment(db: any, reference: string): Promise<string> {
   return error ? "error" : String(data);
 }
 
-interface Delivered { id: string; reference: string; kind?: string; name: string; quantity: number; phone: string; email: string | null; token: string; pins: { serial: string; pin: string }[]; afa?: { name?: string; phone?: string } | null; store?: { name?: string; site?: string } | null }
+interface Delivered { id: string; reference: string; kind?: string; name: string; quantity: number; phone: string; email: string | null; token: string; pins: { serial: string; pin: string }[]; afa?: { name?: string; phone?: string } | null; store?: { name?: string; site?: string } | null; use_at?: string | null }
 const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 async function sendSms(to: string, message: string, sender: string): Promise<string> {
@@ -134,8 +136,10 @@ async function sendEmail(o: Delivered): Promise<string> {
   // Bought in an agent's store: the email carries that store's name and links back to that store, not to DataYego.
   const brand = o.store?.name?.trim() || "DataYego";
   const site = /^https:\/\/[a-z0-9.-]+$/i.test(o.store?.site ?? "") ? String(o.store?.site) : SITE;
+  // Where this checker is used (the exam body's results website), shown as plain words, not a link.
+  const useAt = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(o.use_at ?? "") ? String(o.use_at) : "";
   const rows = o.pins.map((p, i) => `<tr><td style="padding:10px 12px;border-top:1px solid #e3ebe6;font-size:13px;color:#5a6a64;">${o.pins.length > 1 ? `#${i + 1}` : "Your checker"}</td><td style="padding:10px 12px;border-top:1px solid #e3ebe6;font-size:14px;"><b>Serial:</b> ${esc(p.serial)}<br /><b>PIN:</b> ${esc(p.pin)}</td></tr>`).join("");
-  const html = `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;"><tr><td style="background:#0b1512;padding:18px 28px;"><span style="color:#7cf0b4;font-size:20px;font-weight:700;">${esc(brand)}</span></td></tr><tr><td style="padding:28px;"><h1 style="margin:0 0 8px;font-size:21px;">${esc(o.name)}</h1>${isAfa ? `<p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:#3c4a46;">Thank you. ${esc(o.afa?.phone ?? o.phone)} is now registered on MTN AFA${o.afa?.name ? `, in the name of ${esc(o.afa.name)}` : ""}. Order ${esc(o.reference)}.</p>` : `<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#3c4a46;">Thank you. Here ${o.pins.length > 1 ? "are your checkers" : "is your checker"} for order ${esc(o.reference)}. Keep this email safe: anyone with the serial and PIN can use it.</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e3ebe6;border-radius:12px;">${rows}</table>`}<a href="${site}/services/order/${o.token}" style="display:block;margin:20px 0 0;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">View your order</a></td></tr></table></td></tr></table></body></html>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#f2f7f4;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#101e1c;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:18px;overflow:hidden;"><tr><td style="background:#0b1512;padding:18px 28px;"><span style="color:#7cf0b4;font-size:20px;font-weight:700;">${esc(brand)}</span></td></tr><tr><td style="padding:28px;"><h1 style="margin:0 0 8px;font-size:21px;">${esc(o.name)}</h1>${isAfa ? `<p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:#3c4a46;">Thank you. ${esc(o.afa?.phone ?? o.phone)} is now registered on MTN AFA${o.afa?.name ? `, in the name of ${esc(o.afa.name)}` : ""}. Order ${esc(o.reference)}.</p>` : `<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#3c4a46;">Thank you. Here ${o.pins.length > 1 ? "are your checkers" : "is your checker"} for order ${esc(o.reference)}. Keep this email safe: anyone with the serial and PIN can use it.</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e3ebe6;border-radius:12px;">${rows}</table>${useAt ? `<p style="margin:14px 0 0;font-size:14px;line-height:1.6;color:#3c4a46;">Check your results at <b>${esc(useAt)}</b>.</p>` : ""}`}<a href="${site}/services/order/${o.token}" style="display:block;margin:20px 0 0;background:#22c387;color:#04120c;text-decoration:none;text-align:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;">View your order</a></td></tr></table></td></tr></table></body></html>`;
   try {
     const res = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", "Idempotency-Key": `service-${o.id}` },
       body: JSON.stringify({ from: o.store?.name ? `${brand.replace(/[<>"\r\n]/g, "").slice(0, 60)} <noreply@datayego.com>` : Deno.env.get("EMAIL_FROM") ?? "DataYego <noreply@datayego.com>", to: [o.email], reply_to: "support@yiego.shop", subject: isAfa ? `Your AFA registration is done: order ${o.reference}` : `Your ${o.name}: order ${o.reference}`, html }) });
@@ -161,11 +165,16 @@ Deno.serve(async (req) => {
       for (const reference of ((work?.check ?? []) as string[]).slice(0, 25)) { if ((await checkPayment(db, reference)) === "delivered") confirmed += 1; }
       // Anything the checks above just delivered is picked up on the next run (two minutes at most); the buyer already sees it on screen.
       for (const o of (work?.deliver ?? []) as Delivered[]) {
-        // A few checkers fit in a text; a big order points to the email instead. The network drops texts with links or the word "data", so neither appears here.
-        const list = o.pins.map((p, i) => `${o.pins.length > 1 ? `${i + 1}) ` : ""}Serial ${p.serial} PIN ${p.pin}`).join("; ");
-        const text = o.kind === "afa" ? `DY Services: ${o.afa?.phone ?? o.phone} is now registered on AFA. Order ${o.reference}.` : o.pins.length <= 3 ? `DY Services: your ${o.name}. ${list}. Order ${o.reference}.` : `DY Services: your ${o.pins.length} ${o.name}s are ready. ${o.email && !/@guest\.datayego\.com$/i.test(o.email) ? "Open the email we sent you" : `Track order ${o.reference} on our site`} to see every serial number and PIN.`;
-        // SMS for services has its own switch and sender ID (Admin → DY Services); off means on screen and by email only.
-        const sms = work?.sms?.enabled ? await sendSms(o.phone, text.slice(0, 640), String(work.sms.sender ?? "Dyservice")) : "off";
+        // Every PIN goes in the text, five to a text; a very large order gets one text saying where they are. The wording
+        // avoids the words the network drops (see texts.ts). SMS for services has its own switch and sender ID
+        // (Admin → DY Services → Text messages); off means on screen and by email only.
+        let sms = "off";
+        if (work?.sms?.enabled) {
+          let accepted = 0; let last = "skipped";
+          for (const text of serviceTexts(o)) { last = await sendSms(o.phone, text, String(work.sms.sender ?? "Dyservice")); if (last !== "sent") break; accepted += 1; }
+          // One accepted text counts as sent: the buyer has every PIN on screen and by email, and sending the lot again would repeat PINs.
+          sms = accepted > 0 ? "sent" : last;
+        }
         const email = await sendEmail(o);
         await db.rpc("service_outbox_done", { p_order: o.id, p_sms: sms, p_email: email });
         sent += 1;

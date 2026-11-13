@@ -16,12 +16,15 @@ export default function OrderResult({ order, sms = false }: { order: ServiceOrde
         <div className="min-w-0"><p className="text-[15px] font-semibold text-foreground">{title}</p><p className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">{text}</p><p className="mt-1 text-[12px] text-faint-foreground">{order.name} · order {order.reference}</p></div></div>
     );
   }
+  // Where the checker is used: the exam body's own results website, set per product.
+  const useAt = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(order.use_at ?? "") ? String(order.use_at) : null;
   if (order.status === "delivered") return (
     <div className="space-y-3">
       <div className="flex items-start gap-3"><CheckCircle2 size={22} className="mt-0.5 shrink-0 text-primary-glow" aria-hidden="true" />
         <div className="min-w-0"><p className="text-[15px] font-semibold text-foreground">{order.quantity > 1 ? `${order.quantity} × ` : ""}{order.name}</p>
           <p className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">Order {order.reference}. {sms ? `We've also sent ${order.quantity > 1 ? "them" : "it"} by SMS to ${order.phone}.` : "A copy is in your email, with a link back to this page."}</p></div></div>
       {order.pins.map((pin, i) => <PinCard key={pin.serial} pin={pin} index={i} total={order.pins.length} />)}
+      {useAt && <p className="text-[13.5px] leading-relaxed text-foreground">Check your results at <a href={`https://${useAt}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary-glow underline underline-offset-2">{useAt}</a>.</p>}
       <p className="text-[12.5px] leading-relaxed text-muted-foreground">Keep these safe. Anyone with the serial number and PIN can use the checker.</p>
     </div>
   );
