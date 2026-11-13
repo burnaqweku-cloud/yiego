@@ -94,3 +94,8 @@ begin
   if length(v_address) < 2 or length(v_address) > 200 then raise exception 'afa_address_invalid'; end if;
   return jsonb_build_object('full_name', v_name, 'afa_phone', v_phone, 'ghana_card', v_card, 'dob', to_char(v_dob, 'YYYY-MM-DD'), 'occupation', v_job, 'region', v_region, 'address', v_address);
 end $function$;
+
+-- 13 Nov 2026: Add stock also reads a supplier message written as "(SN: 123 , PIN: ABC) (SN: 124 , PIN: ABD) ...".
+-- Applied live by replacing only the pattern inside phase1.admin_service_add_stock:
+--   old: serial\s*(?:number|no\.?)?\s*[:#=-]*\s*([A-Za-z0-9]{4,})\s+pin
+--   new: (?:serial\s*(?:number|no\.?)?|\ms/?n\M)\s*[:#=-]*\s*([A-Za-z0-9]{4,})[\s,;|]+pin

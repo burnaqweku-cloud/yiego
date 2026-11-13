@@ -56,7 +56,8 @@ export default function AdminServices() {
   }, []);
   useEffect(() => { void load(); }, [load]);
 
-  const pairs = lines.match(/serial\s*(?:number|no\.?)?\s*[:#=-]*\s*[A-Za-z0-9]{4,}\s+pin\s*(?:code|number|no\.?)?\s*[:#=-]*\s*[A-Za-z0-9]{4,}/gi)?.length ?? 0;
+  // The same pattern phase1.admin_service_add_stock uses: "Serial Number: X ... PIN: Y" or a supplier's "(SN: X , PIN: Y)".
+  const pairs = lines.match(/(?:serial\s*(?:number|no\.?)?|\bs\/?n\b)\s*[:#=-]*\s*[A-Za-z0-9]{4,}[\s,;|]+pin\s*(?:code|number|no\.?)?\s*[:#=-]*\s*[A-Za-z0-9]{4,}/gi)?.length ?? 0;
   const count = pairs > 0 ? pairs : lines.split(/\r?\n/).filter((l) => l.trim()).length;
   const openAdd = (p: AdminServiceProduct) => { setAdding(p); setLines(""); setCost(""); setNote(""); setResult(null); setFrom("bank"); };
   const add = async () => {
@@ -176,7 +177,7 @@ export default function AdminServices() {
       <Modal open={adding !== null} onClose={() => setAdding(null)} label="Add stock">
         {adding && <div className="w-[min(94vw,540px)] space-y-2.5 p-5">
           <h2 className="text-[16px] font-semibold text-foreground">Add {adding.name} PINs</h2>
-          <Field label="Checkers" hint="Paste the whole voucher page as it is: every “Serial Number … PIN …” pair is picked out for you. Or type one per line: serial number, then PIN.">
+          <Field label="Checkers" hint="Paste the supplier's message or the whole voucher page as it is: every serial number and PIN pair is picked out for you (“Serial Number … PIN …” or “SN: … PIN: …”). Or type one per line: serial number, then PIN.">
             <textarea className={`${inputCls} h-40 py-2 font-mono text-[12.5px] leading-5`} placeholder={"Paste here. For example:\nSerial Number: WGR240012345\nPIN: 123456789012"} value={lines} onChange={(e) => setLines(e.target.value)} autoCapitalize="off" autoCorrect="off" spellCheck={false} />
           </Field>
           <div className="grid gap-2.5 sm:grid-cols-2">
