@@ -67,6 +67,7 @@ describe("the Adverts page", () => {
     expect(calls.saved[0]).toMatchObject({ name: "Telegram: Second Channel", place: "telegram", cost: 0 });
     expect(screen.getByText(/datayego\.com\/shop\?promo=1.*utm_campaign=telegram-second-channel/)).toBeInTheDocument();
     expect(screen.getByText(/datayego\.com\/services\?promo=1.*utm_campaign=telegram-second-channel/)).toBeInTheDocument();
+    expect(screen.getByText("https://datayego.com/go/telegram-second-channel")).toBeInTheDocument();
   });
 
   it("opening an advert asks for that advert's report alone", async () => {

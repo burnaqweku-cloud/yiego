@@ -7,7 +7,7 @@ import { Field, inputCls, InlineAction, Panel, Pill, Row, Rows, Segmented, Stat,
 import PromoTracking from "@/components/admin/PromoTracking";
 import { formatGHS } from "@/lib/format";
 import { loadPromoTracking, type PromoTrackingReport } from "@/lib/promotionAnalytics";
-import { ADVERT_PLACES, advertError, advertFigures, advertLink, endAdvert, placeLabel, saveAdvert, splitUnnamed, type AdvertPlace, type PromoAdvert, type UnnamedLink } from "@/lib/promoAdverts";
+import { ADVERT_PLACES, advertError, advertFigures, advertLink, advertShortLink, endAdvert, placeLabel, saveAdvert, splitUnnamed, type AdvertPlace, type PromoAdvert, type UnnamedLink } from "@/lib/promoAdverts";
 
 /* Every advert on its own: its own link, its own visitors, buyers, sales and profit, and what was paid for it.
    Dates are Ghana days. A person counts for the first advert that brought them. */
@@ -162,6 +162,7 @@ function AdvertEditor({ editor, onClose, onSaved }: { editor: Editor | null; onC
         <p className="text-[11.5px] leading-5 text-muted-foreground">Give one of these to whoever runs the advert. Everyone who taps it is counted under this advert only.</p>
         <LinkLine label="To the data bundles" link={advertLink(saved, "shop")} />
         <LinkLine label="To result checkers and AFA" link={advertLink(saved, "services")} />
+        {advertShortLink(saved) && <LinkLine label="Short link, for WhatsApp and anywhere the link shows" link={advertShortLink(saved)!} />}
         {justAdded ? <Button className="w-full" variant="soft" onClick={onClose}>Done</Button>
           : <Button className="w-full" variant="quiet" disabled={busy} onClick={() => void toggleEnded()}>{saved.ended_at ? "Mark as running again" : "Mark this advert as ended"}</Button>}
       </div>}

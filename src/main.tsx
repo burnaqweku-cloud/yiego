@@ -8,6 +8,7 @@ import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import "@fontsource/ibm-plex-mono/600.css";
 import "./index.css";
+import { openShortLink } from "@/lib/advertShortLink";
 import { capturePartnerCode } from "@/lib/partners";
 import { isStoreHost } from "@/lib/storeHost";
 import "./styles/site.css"; // after index.css: the public-site rules must win ties with the app rules
@@ -54,6 +55,8 @@ void (async () => {
 // Public pages arrive pre-rendered (see vite.config.ts → prerenderRoutes): hydrate that markup instead of replacing
 // it, so the first paint is instant and crawlers and humans see the same page. Anything else starts from the empty div.
 const rootEl = document.getElementById("root")!;
+// A short advert link (datayego.com/go/<tag>) becomes its long form before anything reads the address.
+openShortLink();
 capturePartnerCode();
 const tree = <AppErrorBoundary><App /></AppErrorBoundary>;
 // The host serves index.html (the pre-rendered home page) for any address it has no file for. Only reuse markup that

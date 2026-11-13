@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { shortLinkTag } from "@/lib/advertShortLink";
 
 /* Adverts: every paid advert has its own link and its own results (Admin → Promotions → Adverts).
    The database decides which visitor belongs to which advert (phase1.promotion_advert_of: the campaign tag on the
@@ -36,6 +37,13 @@ export function advertLink(advert: Pick<PromoAdvert, "place" | "source" | "campa
   url.searchParams.set("utm_medium", "paid");
   url.searchParams.set("utm_campaign", advert.campaign ?? "advert");
   return url.toString();
+}
+
+/** The short, plain address for the same advert (datayego.com/go/<tag>), for WhatsApp and anywhere a long link cannot be
+    hidden under a word. Null for an advert known only by its source, or a tag that cannot stand as an address. */
+export function advertShortLink(advert: Pick<PromoAdvert, "campaign">): string | null {
+  const tag = shortLinkTag(advert.campaign);
+  return tag ? `https://datayego.com/go/${tag}` : null;
 }
 
 const money = (n: number) => Math.round(n * 100) / 100;
