@@ -49,7 +49,7 @@ export default function SmsSendersPanel() {
       {data.can_edit && <div className="mt-2 flex justify-end"><Button size="sm" onClick={() => void save()} disabled={saving}>{saving ? "Saving…" : "Save SMS settings"}</Button></div>}
       {data.texts && data.texts.length > 0 ? <div className="mt-3">
         <p className="text-[13px] font-semibold text-foreground">What happened to each text</p>
-        <p className="mt-0.5 text-[11.5px] leading-5 text-faint-foreground">“Sent” means Vynfy took the text. “Delivered” means the network says it reached the phone; that report comes a little later.{data.texts_today ? ` Today: ${data.texts_today.delivered} delivered, ${data.texts_today.not_delivered} not delivered, ${data.texts_today.waiting} waiting for a report${data.texts_today.refused ? `, ${data.texts_today.refused} not sent` : ""}.` : ""}</p>
+        <p className="mt-0.5 text-[11.5px] leading-5 text-faint-foreground">“Sent” means Vynfy took the text. “Delivered” means the network says it reached the phone, which normally takes seconds.{data.texts_today ? ` Today: ${data.texts_today.delivered} delivered, ${data.texts_today.not_delivered + data.texts_today.waiting} sent but not delivered${data.texts_today.refused ? `, ${data.texts_today.refused} not sent` : ""}.` : ""}</p>
         <ul className="mt-2 divide-y divide-white/[0.06] rounded-xl border border-white/[0.08]">
           {data.texts.map((t) => { const st = textStatus(t); return (
             <li key={t.id} className="flex items-start justify-between gap-3 px-3 py-2">

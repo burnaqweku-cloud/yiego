@@ -39,7 +39,7 @@ describe("how the admin sees one text", () => {
   });
   it("tells sent-and-waiting from sent-and-not-delivered", () => {
     expect(textStatus(base, now)).toMatchObject({ label: "Sent, waiting for the report", tone: "muted" });
-    expect(textStatus({ ...base, sent_at: "2026-11-13T08:40:00Z" }, now)).toMatchObject({ label: "Sent, not delivered yet", tone: "warn" });
+    expect(textStatus({ ...base, sent_at: "2026-11-13T08:57:30Z" }, now)).toMatchObject({ label: "Sent, not delivered", tone: "bad" });
     expect(textStatus({ ...base, delivery: "not_delivered" }, now)).toMatchObject({ label: "Sent, not delivered", tone: "bad" });
     expect(textStatus({ ...base, delivery: "failed", delivery_reason: "Absent subscriber" }, now)).toMatchObject({ label: "Sent, not delivered", note: "Absent subscriber" });
   });
