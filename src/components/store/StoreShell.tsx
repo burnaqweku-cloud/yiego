@@ -10,6 +10,8 @@ import StoreSplash from "@/components/store/StoreSplash";
 import { forgetStoreBrand, saveStoreBrand } from "@/lib/storeBrand";
 import StoreSupport from "@/components/store/StoreSupport";
 import StorePopup from "@/components/store/StorePopup";
+import ServicesPopup from "@/components/services/ServicesPopup";
+import { scopeOf, useServicesNew } from "@/lib/servicesNews";
 import { openCookieSettings } from "@/components/tracking/TikTokConsent";
 import { supabase } from "@/integrations/supabase/client";
 import "./templates.css";
@@ -103,6 +105,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
   }, [slug, hostSlug]);
   // Services are on in every active store unless the agent switched them all off; the link follows what is on sale.
   const [hasServices, setHasServices] = useState(false);
+  const servicesNew = useServicesNew(scopeOf(slug));
   useEffect(() => {
     if (!slug) return;
     let alive = true;
@@ -147,7 +150,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
   const NAV = [
     { to: `${storeBase(store.slug)}` || "/", label: "Home", icon: Store, end: true },
     { to: `${storeBase(store.slug)}/bundles`, label: "Bundles", icon: Package },
-    ...(hasServices ? [{ to: `${storeBase(store.slug)}/services`, label: "Services", icon: LayoutGrid }] : []),
+    ...(hasServices ? [{ to: `${storeBase(store.slug)}/services`, label: "Services", icon: LayoutGrid, tag: servicesNew ? "New" : undefined }] : []),
     { to: `${storeBase(store.slug)}/track`, label: "Track order", icon: Search },
     { to: `${storeBase(store.slug)}/check-mtn`, label: "Check MTN number", icon: PhoneForwarded },
     { to: `${storeBase(store.slug)}/about`, label: "About", icon: Info },
@@ -156,12 +159,12 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
     ...(store.network ? [{ to: `${storeBase(store.slug)}/join`, label: "Become an agent", icon: Users }] : []),
     { to: `${storeBase(store.slug)}/${isAuthenticated ? "account" : "sign-in"}`, label: isAuthenticated ? "Your account" : "Sign in / Create account", icon: UserRound },
     ...(isAgent ? [{ to: dashboardHref(), label: "Your dashboard", icon: LayoutDashboard, external: dashboardHref().startsWith("http") }] : []),
-  ] as Array<{ to: string; label: string; icon: typeof Package; end?: boolean; external?: boolean }>;
+  ] as Array<{ to: string; label: string; icon: typeof Package; end?: boolean; external?: boolean; tag?: string }>;
   const isHome = location.pathname.replace(/\/$/, "") === (storeBase(store.slug) || "");
   const tabs: TabItem[] = [
     { label: "Home", to: storeBase(store.slug) || "/", end: true, icon: Store },
     { label: "Buy data", to: `${storeBase(store.slug)}/bundles`, icon: Wifi },
-    ...(hasServices ? [{ label: "Services", to: `${storeBase(store.slug)}/services`, icon: LayoutGrid }] : []),
+    ...(hasServices ? [{ label: "Services", to: `${storeBase(store.slug)}/services`, icon: LayoutGrid, tag: servicesNew ? "New" : undefined }] : []),
     { label: "Track", to: `${storeBase(store.slug)}/track`, icon: Search },
     { label: "More", icon: Menu, onClick: () => setMenu(true), active: menu, badge: unread || undefined },
   ];
@@ -220,7 +223,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
                   const active = !n.external && (n.end ? location.pathname === n.to : location.pathname.startsWith(n.to));
                   const cls = `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] ${active ? "bg-primary/15 text-primary-glow" : "text-foreground hover:bg-white/[0.04]"}`;
                   if (n.external) return <a key={n.to} href={n.to} className={cls}><n.icon size={17} />{n.label}</a>;
-                  return <Link key={n.to} to={n.to} onClick={() => setMenu(false)} className={cls}><n.icon size={17} />{n.label}</Link>;
+                  return <Link key={n.to} to={n.to} onClick={() => setMenu(false)} className={cls}><n.icon size={17} />{n.label}{n.tag && <span className="yg-new-tag ml-auto">{n.tag}</span>}</Link>;
                 })}
               </nav>
               {wa && <a href={wa} target="_blank" rel="noreferrer" className="mt-3 flex items-center justify-center gap-2 rounded-full bg-[#25D366] px-4 py-2.5 text-[13.5px] font-semibold text-[#062b16]"><MessageCircle size={16} />WhatsApp {store.store_name}</a>}
@@ -231,6 +234,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
         <main className={studio && isHome ? "w-full flex-1" : "mx-auto w-full max-w-2xl flex-1 px-4 pb-24 pt-5"}>{children ?? <Outlet />}</main>
         <StoreSupport />
         <StorePopup />
+        {hasServices && <ServicesPopup store={{ slug: store.slug, name: store.store_name }} />}
         {studio ? (
         <footer className="st-foot px-5 py-12 sm:px-8">
           <div className="mx-auto grid max-w-5xl gap-10 sm:grid-cols-[1.4fr_1fr_1fr_1fr]">

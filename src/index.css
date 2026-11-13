@@ -2545,6 +2545,31 @@
     color: #fff;
     background: hsl(var(--danger, 0 72% 51%));
   }
+  /* A word on a tab ("New"): something here the person has not opened yet. */
+  .yg-tab-tag {
+    position: absolute;
+    right: -7px;
+    top: -6px;
+    border-radius: 999px;
+    padding: 1px 5px;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: hsl(var(--primary-foreground));
+    background: hsl(var(--primary));
+  }
+  /* The same word beside a menu link. */
+  .yg-new-tag {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.5;
+    vertical-align: middle;
+    color: hsl(var(--primary-foreground));
+    background: hsl(var(--primary));
+  }
   /* "Get the app" strip at the top of the site on phones. */
   .yg-appbar {
     display: flex;

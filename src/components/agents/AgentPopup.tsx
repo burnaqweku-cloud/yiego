@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Banknote, Lock, Store, Wallet, X } from "lucide-react";
 import { agentsStatus, myAgentStatus, planQuote, previewRequested, rememberPreview, type PlanQuote } from "@/lib/agents";
 import { loadPhase1Networks, loadPhase1Products } from "@/lib/phase1-api";
+import { notePopupShown, popupThisVisit, servicesPopupOwed } from "@/lib/servicesNews";
 import { useFlows } from "@/store/flows";
 
 /** Small strip for signed-in agents who still need to pay: shown wherever the popup is mounted. */
@@ -36,6 +37,7 @@ export function AgentNudgeLine() {
    - Never for anyone who is already an agent (paid or not) or has an application waiting.
    - Once per visit: it shows once, and closing it only hides it for the rest of that visit.
      A new visit (site opened again, or back after 30 minutes away) shows it again.
+   - Never in the same visit as the Services pop-up, and it waits while that one is still owed (lib/servicesNews).
    - Every number is live: public vs agent price from data_products, plans from agent_plan_quote. */
 
 const SHOWN_KEY = "yg-agent-popup-shown";
@@ -88,6 +90,8 @@ export default function AgentPopup() {
     const arm = async () => {
       if (timer) { clearTimeout(timer); timer = null; }
       if (shownThisVisit()) return;
+      // One pop-up a visit: the Services one goes first while it is still owed on this page.
+      if (servicesPopupOwed("main", window.location.pathname, window.location.search) || popupThisVisit("main") === "services") return;
       const { launched, plan } = await agentsStatus();
       if (!mounted || !(launched || previewRequested())) return;
       const me = await myAgentStatus();
@@ -97,7 +101,7 @@ export default function AgentPopup() {
       setRows(r);
       setQuote(q);
       if (plan?.payout_minimum) setPayoutMin(Number(plan.payout_minimum));
-      timer = setTimeout(() => { if (mounted && !shownThisVisit()) { markShown(true); setClosed(false); setDue(true); } }, Math.max(1, plan?.popup_delay_seconds ?? 5) * 1000);
+      timer = setTimeout(() => { if (mounted && !shownThisVisit() && popupThisVisit("main") !== "services") { markShown(true); notePopupShown("main", "other"); setClosed(false); setDue(true); } }, Math.max(1, plan?.popup_delay_seconds ?? 5) * 1000);
     };
     const onVisibility = () => {
       if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }

@@ -12,6 +12,7 @@ import { useFlows } from "@/store/flows";
 import { formatGHS } from "@/lib/format";
 import { metaFor } from "@/lib/site";
 import { loadServices, myServiceOrders, servicesSendSms, type ServiceOrder, type ServiceProduct } from "@/lib/services";
+import { markServicesVisited, scopeOf } from "@/lib/servicesNews";
 import { cn } from "@/lib/utils";
 
 /* DY Services: things DataYego sells besides data. The first screen is one card per service; tapping a card
@@ -46,6 +47,8 @@ function MyCheckers({ orders, sms, title }: { orders: ServiceOrder[]; sms: boole
 export interface ServicesStore { slug: string; name: string; base: string }
 
 export default function Services({ store }: { store?: ServicesStore } = {}) {
+  // Once someone has opened Services here, the "New" tag on its button has done its job.
+  useEffect(() => { markServicesVisited(scopeOf(store?.slug)); }, [store?.slug]);
   const { isAuthenticated } = useAuth();
   const { balance } = useWallet();
   const { openAddMoney } = useFlows();

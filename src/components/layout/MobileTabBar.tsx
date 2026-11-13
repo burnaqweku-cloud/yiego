@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils";
 /* The app-style bar along the bottom of a phone screen: the handful of places people go most,
    one thumb away. A tab is either a page (`to`) or an action (`onClick`, e.g. "More").
    Pass the breakpoint class that hides it on wide screens, where the normal navigation shows. */
-export interface TabItem { label: string; icon: LucideIcon; to?: string; end?: boolean; onClick?: () => void; active?: boolean; badge?: number }
+/** `badge` is a count (unread news); `tag` is a word, e.g. "New", for a tab people have not opened yet. */
+export interface TabItem { label: string; icon: LucideIcon; to?: string; end?: boolean; onClick?: () => void; active?: boolean; badge?: number; tag?: string }
 
 export default function MobileTabBar({ items, className, label = "Main" }: { items: TabItem[]; className?: string; label?: string }) {
   return (
@@ -16,6 +17,7 @@ export default function MobileTabBar({ items, className, label = "Main" }: { ite
             <span className="yg-tab-ico">
               <item.icon size={20} aria-hidden="true" />
               {item.badge ? <span className="yg-tab-badge">{item.badge > 99 ? "99+" : item.badge}</span> : null}
+              {item.tag && !item.badge ? <span className="yg-tab-tag">{item.tag}</span> : null}
             </span>
             <span className="truncate">{item.label}</span>
           </>

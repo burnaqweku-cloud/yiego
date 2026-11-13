@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/components/store/StoreShell";
+import { notePopupShown, popupThisVisit, scopeOf, servicesPopupOwed } from "@/lib/servicesNews";
 import { storeBase } from "@/lib/storeHost";
 import { useAuth } from "@/store/auth-context";
 
@@ -13,7 +14,8 @@ import { useAuth } from "@/store/auth-context";
    - Never on sign-in, sign-up, account, tracking or payment pages, nor on the page its own button leads to.
    - After someone taps the button, it doesn't come back during that visit.
    - A pop-up that leads to sign-up / sign-in is not shown to customers who are already signed in.
-   - A button that points to this store opens in the same tab; other websites open in a new tab. */
+   - A button that points to this store opens in the same tab; other websites open in a new tab.
+   - Never in the same visit as the Services pop-up, and they wait while that one is still owed (lib/servicesNews). */
 const QUIET = ["/sign-in", "/sign-up", "/account", "/track", "/success"];
 const seenThisVisit = (id: string) => { try { return sessionStorage.getItem(`yg-popup-seen:${id}`) === "1"; } catch { return false; } };
 const markSeen = (id: string) => { try { sessionStorage.setItem(`yg-popup-seen:${id}`, "1"); } catch { /* ignore */ } };
@@ -48,6 +50,8 @@ export default function StorePopup() {
     let alive = true;
     let t: ReturnType<typeof setTimeout> | null = null;
     if (quiet) { setP(null); return; }
+    const scope = scopeOf(store.slug);
+    if (servicesPopupOwed(scope, rest) || popupThisVisit(scope) === "services") { setP(null); return; }
     // Every live pop-up for this page, newest first; the first one this device hasn't used up (per its frequency) shows.
     void p1().rpc("store_popups_for", { p_slug: store.slug, p_page: page }).then(async (r: { data: Popup[] | null }) => {
       const list = (r.data ?? []) as Popup[]; if (!list.length || !alive) return;
@@ -67,8 +71,8 @@ export default function StorePopup() {
         }
         if (!alive) return;
         t = setTimeout(() => {
-          if (!alive) return;
-          setP(pop); markSeen(pop.id); localStorage.setItem(key, String(Date.now()));
+          if (!alive || popupThisVisit(scope) === "services") return;
+          setP(pop); markSeen(pop.id); notePopupShown(scope, "other"); localStorage.setItem(key, String(Date.now()));
           void p1().rpc("store_popup_hit", { p_id: pop.id, p_kind: "show" }).then(() => undefined);
         }, Math.max(0, Number(pop.delay_seconds ?? 2)) * 1000);
         return;

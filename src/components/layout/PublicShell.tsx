@@ -1,4 +1,5 @@
 import AgentPopup from "@/components/agents/AgentPopup";
+import ServicesPopup from "@/components/services/ServicesPopup";
 import { AnnouncementStrip } from "@/components/notifications/NotificationBell";
 import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
@@ -38,6 +39,8 @@ export default function PublicShell() {
         <TabBarSpace className="lg:hidden" />
       </div>
       <FloatingSupport />
+      {/* Out here, not inside the page column: that column is its own layer, and the floating help button would sit on top of the pop-up's button. */}
+      <ServicesPopup />
     </div>
   );
 }

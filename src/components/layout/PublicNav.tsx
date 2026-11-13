@@ -10,6 +10,7 @@ import { agentsStatus, myAgentStatus, previewRequested } from "@/lib/agents";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import MobileTabBar, { type TabItem } from "@/components/layout/MobileTabBar";
 import { runningAsApp } from "@/lib/appInstall";
+import { useServicesNew } from "@/lib/servicesNews";
 import { cn } from "@/lib/utils";
 
 /**
@@ -58,6 +59,7 @@ export default function PublicNav() {
   const { isAdmin } = useAdminAccess();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const servicesNew = useServicesNew("main");
   const [stuck, setStuck] = useState(false);
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -192,7 +194,7 @@ export default function PublicNav() {
     ? [
         { label: "Home", to: "/", end: true, icon: Home },
         { label: "Buy data", to: "/shop", icon: Wifi },
-        { label: "Services", to: "/services", icon: LayoutGrid },
+        { label: "Services", to: "/services", icon: LayoutGrid, tag: servicesNew ? "New" : undefined },
         { label: "Orders", to: "/orders", icon: ListOrdered },
         // An agent's way back to their dashboard takes the Wallet slot; their wallet moves under the profile circle.
         agentLink?.to === "/agent" ? { label: "Agent", to: "/agent", icon: Store } : { label: "Wallet", to: "/wallet", icon: Wallet },
@@ -200,7 +202,7 @@ export default function PublicNav() {
     : [
         { label: "Home", to: "/", end: true, icon: Home },
         { label: "Buy data", to: "/shop", icon: Wifi },
-        { label: "Services", to: "/services", icon: LayoutGrid },
+        { label: "Services", to: "/services", icon: LayoutGrid, tag: servicesNew ? "New" : undefined },
         { label: "Track", to: "/track-order", icon: Search },
         { label: "More", icon: Menu, onClick: () => setOpen(true), active: open },
       ];
@@ -222,6 +224,7 @@ export default function PublicNav() {
                 className={({ isActive }) => cn("mk-navlink", isActive && "is-active")}
               >
                 {l.label}
+                {l.to === "/services" && servicesNew && <span className="yg-new-tag ml-1.5">New</span>}
               </NavLink>
             ))}
           </nav>
@@ -353,6 +356,7 @@ export default function PublicNav() {
                   className={({ isActive }) => cn("mk-menu-item", isActive && "text-primary-glow")}
                 >
                   {l.label}
+                  {l.to === "/services" && servicesNew && <span className="yg-new-tag ml-2">New</span>}
                   <ArrowRight size={17} className="ml-auto opacity-40" />
                 </NavLink>
               ))}
