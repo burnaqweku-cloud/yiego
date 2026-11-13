@@ -17,6 +17,7 @@ import { longDate, subscriptionOf, type SubInfo } from "@/components/agent/subsc
 import { X } from "lucide-react";
 import { visibleInterval } from "@/lib/requestCache";
 import MobileTabBar, { type TabItem } from "@/components/layout/MobileTabBar";
+import AgentAppBar from "@/components/agent/AgentAppBar";
 import PushPrompt from "@/components/layout/PushPrompt";
 
 /* The agent app. Its own header, its own navigation (bottom bar on phones,
@@ -148,6 +149,8 @@ export default function AgentShell() {
             </div>
           </aside>
           <div className="min-w-0 flex-1">
+            {/* "Get the app", for main agents on phones; it can be closed for the day */}
+            {role === "owner" && !isSub && <AgentAppBar />}
             {/* Mobile header */}
             <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[0.06] touch-solid bg-background/85 px-4 py-3 backdrop-blur sm:hidden">
               <div className="flex min-w-0 items-center gap-3"><div className="min-w-0"><p className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-glow">{eyebrow}</p><p className="truncate text-[15px] font-semibold text-foreground">{agent.store_name}</p></div></div>

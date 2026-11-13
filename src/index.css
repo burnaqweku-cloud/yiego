@@ -2594,6 +2594,23 @@
     background: linear-gradient(180deg, #7cf0b4 0%, #22c387 100%);
     box-shadow: 0 8px 20px -10px rgba(34, 195, 135, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.45);
   }
+  /* The same strip in the agent dashboard, where it can be closed: the X sits first, as on a phone's own app banners. */
+  .yg-appbar-closable {
+    gap: 6px;
+    padding-left: 6px;
+  }
+  .yg-appbar-x {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 999px;
+    color: hsl(var(--muted-foreground));
+  }
+  .yg-appbar-x:active {
+    background: rgb(var(--w) / 0.08);
+  }
   .yg-tabbar-space {
     height: calc(62px + env(safe-area-inset-bottom));
   }
