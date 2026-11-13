@@ -63,8 +63,12 @@ async function sendSms(to: string, message: string, sender: string): Promise<str
     const res = await fetch("https://sms.vynfy.com/api/v1/send", { method: "POST", headers: { "X-API-Key": key, "Content-Type": "application/json" }, signal: AbortSignal.timeout(15000),
       body: JSON.stringify({ sender: sender.slice(0, 11), recipients: [msisdn], message }) });
     const body = await res.json().catch(() => ({}));
-    return res.ok && body?.success !== false ? "sent" : "failed";
-  } catch { return "failed"; }
+    if (res.ok && body?.success !== false) return "sent";
+    // Why the provider said no goes in this function's log (its reason only, never the text or the number).
+    const why = body?.message ?? body?.error ?? body?.errors ?? null;
+    console.log("sms not accepted", res.status, (typeof why === "string" ? why : JSON.stringify(why) ?? "").slice(0, 200));
+    return "failed";
+  } catch (e) { console.log("sms not sent", e instanceof Error ? e.message : String(e)); return "failed"; }
 }
 /* MTN AFA registration through OtessData. One request per order; the order reference is the Idempotency-Key, so a repeat can't be charged twice.
    The reply decides what happens: registered (with what was charged), refused (nothing charged), wallet short, or unclear (a person checks). */
