@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { GraduationCap, MailCheck, Handshake, Route, BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText, Send, History } from "lucide-react";
+import { GraduationCap, PackagePlus, UserPlus, MailCheck, Handshake, Route, BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText, Send, History } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
 export interface AdminPage {
@@ -40,6 +40,14 @@ export const ADMIN_GROUPS: AdminGroup[] = [
   { id: "catalog", label: "Catalog", icon: Package, pages: [
     { id: "pricing", label: "Data pricing", to: "/admin/sales/pricing", icon: Tags, keywords: ["price", "bundle", "product", "gb"] },
   ] },
+  // DY Services: everything sold besides data. Its own group, one page per job.
+  { id: "dy-services", label: "DY Services", icon: GraduationCap, pages: [
+    { id: "services", label: "Overview", to: "/admin/services", icon: GraduationCap, end: true, keywords: ["dy services", "services", "sales today", "stock", "prices", "show for sale"] },
+    { id: "service-checkers", label: "Result checkers", to: "/admin/services/checkers", icon: PackagePlus, keywords: ["checker", "wassce", "bece", "pin", "stock", "add stock", "result", "voucher"] },
+    { id: "service-afa", label: "AFA registrations", to: "/admin/services/afa", icon: UserPlus, keywords: ["afa", "mtn afa", "registration", "ghana card", "otessdata", "register"] },
+    { id: "service-orders", label: "Orders & refunds", to: "/admin/services/orders", icon: ClipboardList, keywords: ["service order", "sv-", "checker order", "refund", "services refund"] },
+    { id: "service-sms", label: "Text messages", to: "/admin/services/sms", icon: MessageSquareText, keywords: ["services sms", "dyservice", "sender", "text", "pin by sms"] },
+  ] },
   { id: "users", label: "Users", icon: Users, pages: [
     { id: "users", label: "All users", to: "/admin/users", icon: Users, keywords: ["customer", "account", "admin", "email"] },
   ] },
@@ -71,7 +79,6 @@ export const ADMIN_GROUPS: AdminGroup[] = [
   ] },
   { id: "announcements", label: "Announcements", icon: Megaphone, pages: [
     { id: "announcements", label: "Announcements", to: "/admin/announcements", icon: Megaphone, keywords: ["notification", "announce", "update", "notice", "bell", "broadcast"] },
-    { id: "services", label: "DY Services", to: "/admin/services", icon: GraduationCap, keywords: ["checker", "wassce", "bece", "pin", "stock", "result", "afa", "services"] },
     { id: "follow-ups", label: "Follow-ups", to: "/admin/follow-ups", icon: MailCheck, keywords: ["campaign", "reminder", "email", "never bought", "win back", "inactive", "nudge", "automatic"] },
     { id: "giveaways", label: "Giveaways", to: "/admin/giveaways", icon: Gift, keywords: ["giveaway", "campaign", "promo", "free", "discount"] },
     { id: "help", label: "Help Center", to: "/admin/help", icon: LifeBuoy, keywords: ["help", "article", "faq", "docs", "guide", "agents"] },
@@ -105,6 +112,9 @@ export const ADMIN_PAGES: AdminPage[] = ADMIN_GROUPS.flatMap((g) => g.pages);
 
 export function pageForPath(pathname: string): AdminPage | undefined {
   if (pathname === "/admin" || pathname === "/admin/") return ADMIN_PAGES[0];
+  // A group's first page (marked `end`) is that exact address; its other pages are found by the longest match.
+  const exact = ADMIN_PAGES.find((p) => p.end && pathname.replace(/\/$/, "") === p.to);
+  if (exact) return exact;
   return ADMIN_PAGES.filter((p) => !p.end).sort((a, b) => b.to.length - a.to.length).find((p) => pathname.startsWith(p.to));
 }
 

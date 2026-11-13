@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { GraduationCap, PackagePlus, RefreshCw, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -12,7 +13,18 @@ import { formatGHS } from "@/lib/format";
 import { addServiceStock, loadAdminServices, markRegistrationDone, recordServiceRefund, retryRegistration, refundServiceToWallet, refundServiceViaPaystack, setServiceProduct, type AddStockResult, type AdminServiceOrder, type AdminRegistration, type AdminServiceProduct, type AdminServices as Data } from "@/lib/services";
 
 /* DY Services in admin: the stock of result-checker PINs, prices, sales and refunds.
-   PINs are never shown here after they are added; a PIN is only ever revealed to the person who bought it. */
+   PINs are never shown here after they are added; a PIN is only ever revealed to the person who bought it.
+   One page per job, under the "DY Services" group in the menu: Overview (/admin/services), Result checkers
+   (/checkers), AFA registrations (/afa), Orders & refunds (/orders), Text messages (/sms). */
+
+const SECTIONS = {
+  overview: ["DY Services", "Result checkers sold from your own stock of PINs, and MTN AFA registrations. Each PIN is sold once, and only the buyer ever sees it."],
+  checkers: ["Result checkers", "Your stock of WASSCE and BECE PINs: add stock, set prices, and see every batch you added. Each PIN is sold once, and only the buyer ever sees it."],
+  afa: ["AFA registrations", "MTN AFA: the price, the on/off switch, and every registration with where it has reached. Tap one to mark it registered or send it again."],
+  orders: ["Orders & refunds", "Every paid DY Services order, newest first. Tap one to refund it."],
+  sms: ["Text messages", "Whether buyers get their PIN or AFA result by text as well as on screen and by email, and the sender name used."],
+} as const;
+type Section = keyof typeof SECTIONS;
 
 const PAID_FROM = [["bank", "Bank"], ["outside_funding", "My own money (adds to capital)"], ["kora_held", "Kora balance"]] as const;
 const STATUS: Record<string, [string, "good" | "warn" | "bad" | "muted"]> = {
@@ -24,6 +36,10 @@ const STEP: Record<AdminRegistration["step"], [string, "good" | "warn" | "bad" |
 const copyText = (text: string) => { void navigator.clipboard.writeText(text).then(() => toast.success("Copied."), () => toast.error("Couldn't copy.")); };
 
 export default function AdminServices() {
+  const params = useParams();
+  const section: Section = params.section && params.section in SECTIONS ? params.section as Section : "overview";
+  const [title, description] = SECTIONS[section];
+  const navigate = useNavigate();
   const [data, setData] = useState<Data | null>(null);
   const [busy, setBusy] = useState(true); const [failed, setFailed] = useState(false);
   const [adding, setAdding] = useState<AdminServiceProduct | null>(null);
@@ -97,19 +113,19 @@ export default function AdminServices() {
   const stockValue = (data?.products ?? []).reduce((s, p) => s + Number(p.stock_value), 0);
   return (
     <div className="space-y-5">
-      <AdminPageHeader title="DY Services" description="Result checkers sold from your own stock of PINs, and MTN AFA registrations. Each PIN is sold once, and only the buyer ever sees it."
+      <AdminPageHeader title={title} description={description}
         action={<Button variant="ghost" size="sm" onClick={() => void load()} disabled={busy} aria-label="Refresh" title="Refresh"><RefreshCw size={14} className={busy ? "animate-spin" : ""} /></Button>} />
       {failed ? <p role="alert" className="text-[13px] text-danger">Couldn’t load DY Services. Tap refresh.</p> : <>
-        <StatGrid cols={4}>
+        {section === "overview" && <StatGrid cols={4}>
           <Stat loading={busy} label="Sales today" value={formatGHS(Number(t?.sales_today ?? 0))} tone="good" />
           <Stat loading={busy} label="Profit today" value={formatGHS(Number(t?.profit_today ?? 0))} note="after PIN cost and agent margins" />
           <Stat loading={busy} label="Stock you own" value={formatGHS(stockValue)} note="unsold PINs, at what you paid" />
           <Stat loading={busy} label="Paid, waiting for stock" value={data?.waiting ?? 0} tone={(data?.waiting ?? 0) > 0 ? "bad" : "default"} note={(data?.waiting ?? 0) > 0 ? "add stock and they deliver by themselves" : "none"} />
-        </StatGrid>
+        </StatGrid>}
 
-        <Panel title="Stock and prices" icon={GraduationCap}>
+        {section !== "orders" && section !== "sms" && <Panel title={section === "afa" ? "Price and switch" : "Stock and prices"} icon={GraduationCap}>
           <Rows empty="No services yet.">
-            {(data?.products ?? []).map((p) => p.kind === "afa" ? <Row key={p.code}
+            {(data?.products ?? []).filter((p) => section === "overview" || (section === "afa") === (p.kind === "afa")).map((p) => p.kind === "afa" ? <Row key={p.code}
               primary={<>{p.name} {!p.is_active && <Pill tone="muted">hidden</Pill>}</>}
               secondary={<>no stock needed · {p.sold_today} registered today · customers {formatGHS(Number(p.customer_price))} · agents {formatGHS(Number(p.agent_price))}</>}
               right={data?.can_edit ? <Button size="sm" variant="ghost" onClick={() => setEdit({ ...p })}>Edit</Button> : undefined} />
@@ -118,9 +134,18 @@ export default function AdminServices() {
               secondary={<>{p.left} left{p.held > 0 ? ` · ${p.held} held for buyers paying now` : ""} · {p.sold_today} sold today · customers {formatGHS(Number(p.customer_price))} · agents {formatGHS(Number(p.agent_price))}</>}
               right={data?.can_edit ? <span className="flex gap-1.5"><Button size="sm" onClick={() => openAdd(p)}><PackagePlus size={14} />Add stock</Button><Button size="sm" variant="ghost" onClick={() => setEdit({ ...p })}>Edit</Button></span> : `${p.left}`} />)}
           </Rows>
-        </Panel>
+        </Panel>}
 
-        {(data?.registrations?.length ?? 0) > 0 && <Panel title="AFA registrations" icon={UserPlus} note={(data?.registering ?? 0) > 0 ? `${data?.registering} waiting` : "all done"}>
+        {section === "overview" && <Panel title="Go to">
+          <Rows empty="">
+            <Row onClick={() => navigate("/admin/services/checkers")} primary="Result checkers" secondary="Add PINs, set prices, see the batches you added" right="Open" />
+            <Row onClick={() => navigate("/admin/services/afa")} primary="AFA registrations" secondary={(data?.registering ?? 0) > 0 ? `${data?.registering} waiting to finish` : "Nothing waiting"} right="Open" />
+            <Row onClick={() => navigate("/admin/services/orders")} primary="Orders & refunds" secondary="Every paid order; tap one to refund" right="Open" />
+            <Row onClick={() => navigate("/admin/services/sms")} primary="Text messages" secondary="The switch and the sender name" right="Open" />
+          </Rows>
+        </Panel>}
+
+        {section === "afa" && <Panel title="Registrations" icon={UserPlus} note={(data?.registering ?? 0) > 0 ? `${data?.registering} waiting` : "all done"}>
           <Rows empty="No AFA orders yet.">
             {(data?.registrations ?? []).map((r) => { const [label, tone] = r.status === "refunded" ? STEP.cancelled : STEP[r.step] ?? [r.step, "muted"]; return <Row key={r.id} onClick={() => openReg(r)}
               primary={<>{r.details.full_name ?? "AFA"} · {r.details.afa_phone ?? r.phone} <Pill tone={tone}>{label}</Pill></>}
@@ -129,23 +154,23 @@ export default function AdminServices() {
           </Rows>
         </Panel>}
 
-        <Panel title="Orders" note="paid orders, newest first">
+        {section === "orders" && <Panel title="Orders" note="paid orders, newest first">
           <Rows empty="No sales yet.">
             {(data?.orders ?? []).map((o) => { const [label, tone] = STATUS[o.status] ?? [o.status, "muted"]; return <Row key={o.id} onClick={data?.can_edit && o.status !== "refunded" ? () => { setOrder(o); setReason(""); setRef(""); } : undefined}
               primary={<>{o.quantity > 1 ? `${o.quantity} × ` : ""}{o.name} <Pill tone={tone}>{label}</Pill></>}
               secondary={`${o.reference} · ${o.phone} · ${o.payment_method === "wallet" ? "wallet" : "MoMo/card"}${o.agent_id ? " · agent store" : ""} · ${formatAdminDate(o.paid_at ?? o.created_at)}${o.sent ? ` · SMS/email ${o.sent}` : ""}`}
               right={formatGHS(Number(o.amount))} rightNote={o.cost_amount != null ? `profit ${formatGHS(Number(o.amount) - Number(o.cost_amount) - Number(o.agent_margin ?? 0))}` : undefined} />; })}
           </Rows>
-        </Panel>
+        </Panel>}
 
-        <SmsSendersPanel />
+        {section === "sms" && <SmsSendersPanel />}
 
-        <Panel title="Stock added" note="each batch, with what you paid">
+        {section === "checkers" && <Panel title="Stock added" note="each batch, with what you paid">
           <Rows empty="Nothing added yet.">
             {(data?.batches ?? []).map((b) => <Row key={b.id} primary={`${b.quantity} × ${b.name}`} secondary={`${formatAdminDate(b.created_at)} · paid from ${PAID_FROM.find(([k]) => k === b.paid_from)?.[1] ?? b.paid_from}${b.note ? ` · ${b.note}` : ""}`}
               right={formatGHS(Number(b.total_cost))} rightNote={`${formatGHS(Number(b.total_cost) / b.quantity)} each`} />)}
           </Rows>
-        </Panel>
+        </Panel>}
       </>}
 
       <Modal open={adding !== null} onClose={() => setAdding(null)} label="Add stock">
