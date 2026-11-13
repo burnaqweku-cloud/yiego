@@ -1,12 +1,19 @@
 import { supabase } from "@/integrations/supabase/client";
 import { promoTouch } from "@/lib/promotionAnalytics";
 
-/* Proof for a stranger who arrived from an advert: how many orders we have delivered and the last few that went out.
-   Every figure comes from the real records (phase1.public_proof); nothing here is typed in by hand. A number is shown
-   with its middle hidden, the way a receipt shows it. */
+/* Proof for a stranger who arrived from an advert: the orders that have just gone out. Every row comes from the real
+   records (phase1.public_proof); nothing here is typed in by hand, and a number is shown with its middle hidden, the
+   way a MoMo message shows it.
+   No totals on purpose (owner, 13 Nov 2026): a young shop's count reads as "new, small" to someone used to bigger
+   names, and we do not show a figure that is not true. Orders leaving right now say "busy and real" without a total. */
 
 export interface ProofDelivery { network: string; gb: number; phone: string; minutes: number }
-export interface Proof { delivered: number; today: number; week: number; since: string; recent: ProofDelivery[] }
+
+/** Older than this and a delivery no longer says "right now". */
+export const FRESH_MINUTES = 60;
+/** One delivery on its own looks like a quiet shop: show the board from two. */
+export const MIN_ROWS = 2;
+export const MAX_ROWS = 8;
 
 interface RpcClient { rpc<T>(name: string, args?: Record<string, unknown>): PromiseLike<{ data: T | null; error: { message: string } | null }> }
 const db = () => (supabase as unknown as { schema(name: string): RpcClient }).schema("phase1");
@@ -17,50 +24,34 @@ export function cameFromAdvert(search: string): boolean {
   return promoTouch() !== null;
 }
 
-const count = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0; };
-
-/** Only a reading we can stand behind is shown: no count, no block. */
-export function readProof(raw: unknown): Proof | null {
-  if (!raw || typeof raw !== "object") return null;
-  const r = raw as Record<string, unknown>;
-  const delivered = count(r.delivered);
-  if (delivered < 1) return null;
-  const recent = (Array.isArray(r.recent) ? r.recent : []).flatMap((row): ProofDelivery[] => {
+/** Only rows we can stand behind, newest first; too few and there is no board at all. */
+export function readProof(raw: unknown): ProofDelivery[] | null {
+  const list = raw && typeof raw === "object" && Array.isArray((raw as { recent?: unknown }).recent) ? (raw as { recent: unknown[] }).recent : [];
+  const rows = list.flatMap((row): ProofDelivery[] => {
     if (!row || typeof row !== "object") return [];
     const d = row as Record<string, unknown>;
     const network = typeof d.network === "string" ? d.network.trim() : ""; const phone = typeof d.phone === "string" ? d.phone.trim() : "";
     const gb = Number(d.gb); const minutes = Number(d.minutes);
-    return network && phone && Number.isFinite(gb) && gb > 0 && Number.isFinite(minutes) && minutes >= 0 ? [{ network, gb, phone, minutes: Math.round(minutes) }] : [];
-  }).slice(0, 8);
-  return { delivered, today: count(r.today), week: count(r.week), since: typeof r.since === "string" ? r.since : "", recent };
+    return network && phone && Number.isFinite(gb) && gb > 0 && Number.isFinite(minutes) && minutes >= 0 && minutes <= FRESH_MINUTES ? [{ network, gb, phone, minutes: Math.round(minutes) }] : [];
+  }).sort((a, b) => a.minutes - b.minutes).slice(0, MAX_ROWS);
+  return rows.length >= MIN_ROWS ? rows : null;
 }
 
-export async function loadProof(): Promise<Proof | null> {
+export async function loadProof(): Promise<ProofDelivery[] | null> {
   try { const { data, error } = await db().rpc<unknown>("public_proof"); return error ? null : readProof(data); } catch { return null; }
 }
 
-export const proofCount = (n: number) => n.toLocaleString("en-GH");
-
-/** "since August", with the year once it is no longer this year. */
-export function sinceLabel(since: string, now = new Date()): string {
-  const d = new Date(since);
-  if (!since || Number.isNaN(d.getTime())) return "";
-  const month = d.toLocaleString("en-GB", { month: "long", timeZone: "UTC" });
-  return d.getUTCFullYear() === now.getUTCFullYear() ? `since ${month}` : `since ${month} ${d.getUTCFullYear()}`;
-}
-
-/** Today's count once the day has enough to mean something; before that, the week's. */
-export function recentCount(p: Pick<Proof, "today" | "week">): { n: number; label: string; when: string } | null {
-  if (p.today >= 20) return { n: p.today, label: "delivered", when: "Today" };
-  if (p.week >= 20) return { n: p.week, label: "delivered", when: "This week" };
-  return null;
+/** The rows on show this turn: a window that walks down the list and starts again, so the board keeps moving. */
+export function boardRows(rows: ProofDelivery[], turn: number, size = 3): ProofDelivery[] {
+  if (rows.length <= size) return rows;
+  const start = ((turn % rows.length) + rows.length) % rows.length;
+  return Array.from({ length: size }, (_, i) => rows[(start + i) % rows.length]);
 }
 
 export function agoLabel(minutes: number): string {
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes} min ago`;
-  const h = Math.round(minutes / 60);
-  return `${h} hr${h === 1 ? "" : "s"} ago`;
+  return "1 hr ago";
 }
 
 /** The short mark on a delivery row: people know their network by its colour before its name. */

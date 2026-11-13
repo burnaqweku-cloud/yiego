@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { agoLabel, cameFromAdvert, networkMark, proofCount, readProof, recentCount, sinceLabel } from "./advertProof";
+import { agoLabel, boardRows, cameFromAdvert, networkMark, readProof, type ProofDelivery } from "./advertProof";
 
 describe("who is shown the proof card", () => {
   afterEach(() => localStorage.clear());
@@ -16,43 +16,40 @@ describe("who is shown the proof card", () => {
   });
 });
 
+const d = (minutes: number, phone = `024*****${String(minutes).padStart(2, "0")}`): ProofDelivery => ({ network: "MTN", gb: 2, phone, minutes });
+
 describe("a reading from the records", () => {
-  const raw = { delivered: 6767, today: 122, week: 1091, since: "2026-08-13", recent: [{ network: "MTN", gb: 5, phone: "055*****47", minutes: 3.4 }, { network: "", gb: 1, phone: "x", minutes: 1 }, { network: "MTN", gb: 0, phone: "024*****20", minutes: 2 }, "junk"] };
-  it("keeps the real figures and drops rows it cannot stand behind", () => {
-    expect(readProof(raw)).toEqual({ delivered: 6767, today: 122, week: 1091, since: "2026-08-13", recent: [{ network: "MTN", gb: 5, phone: "055*****47", minutes: 3 }] });
+  it("keeps real, fresh deliveries, newest first, and drops what it cannot stand behind", () => {
+    const raw = { delivered: 6767, recent: [d(9), { network: "MTN", gb: 5, phone: "055*****47", minutes: 3.4 }, { network: "", gb: 1, phone: "x", minutes: 1 }, { network: "MTN", gb: 0, phone: "024*****20", minutes: 2 }, d(75), "junk"] };
+    expect(readProof(raw)).toEqual([{ network: "MTN", gb: 5, phone: "055*****47", minutes: 3 }, d(9)]);
   });
-  it("shows nothing at all without a count", () => {
+  it("shows no board when too little has gone out lately, or nothing can be read", () => {
+    expect(readProof({ recent: [d(4)] })).toBeNull();
+    expect(readProof({ recent: [d(90), d(120)] })).toBeNull();
+    expect(readProof({ recent: [] })).toBeNull();
     expect(readProof(null)).toBeNull();
-    expect(readProof({ delivered: 0 })).toBeNull();
-    expect(readProof({ delivered: "many" })).toBeNull();
-    expect(readProof([])).toBeNull();
+    expect(readProof("nope")).toBeNull();
   });
-  it("never shows more than eight deliveries", () => {
-    const many = { delivered: 10, recent: Array.from({ length: 20 }, (_, i) => ({ network: "MTN", gb: 1, phone: "024*****00", minutes: i })) };
-    expect(readProof(many)?.recent).toHaveLength(8);
+  it("never keeps more than eight", () => {
+    expect(readProof({ recent: Array.from({ length: 20 }, (_, i) => d(i)) })).toHaveLength(8);
   });
 });
 
-describe("the words on the card", () => {
-  it("writes the count the way people read money", () => {
-    expect(proofCount(6767)).toBe("6,767");
+describe("the board", () => {
+  const rows = [d(1), d(2), d(3), d(4), d(5)];
+  it("shows three at a time and walks down the list, then starts again", () => {
+    expect(boardRows(rows, 0).map((r) => r.minutes)).toEqual([1, 2, 3]);
+    expect(boardRows(rows, 1).map((r) => r.minutes)).toEqual([2, 3, 4]);
+    expect(boardRows(rows, 4).map((r) => r.minutes)).toEqual([5, 1, 2]);
+    expect(boardRows(rows, 5).map((r) => r.minutes)).toEqual([1, 2, 3]);
   });
-  it("says since which month, adding the year once it has passed", () => {
-    expect(sinceLabel("2026-08-13", new Date("2026-11-13T12:00:00Z"))).toBe("since August");
-    expect(sinceLabel("2026-08-13", new Date("2027-01-02T12:00:00Z"))).toBe("since August 2026");
-    expect(sinceLabel("")).toBe("");
-    expect(sinceLabel("not a date")).toBe("");
-  });
-  it("shows today's count once the day has enough, the week's before that, and nothing when both are thin", () => {
-    expect(recentCount({ today: 122, week: 1091 })).toMatchObject({ n: 122, when: "Today" });
-    expect(recentCount({ today: 4, week: 1091 })).toMatchObject({ n: 1091, when: "This week" });
-    expect(recentCount({ today: 0, week: 3 })).toBeNull();
+  it("stands still when everything already fits", () => {
+    expect(boardRows(rows.slice(0, 2), 7)).toEqual(rows.slice(0, 2));
   });
   it("says how long ago in plain words", () => {
     expect(agoLabel(0)).toBe("just now");
     expect(agoLabel(3)).toBe("3 min ago");
-    expect(agoLabel(61)).toBe("1 hr ago");
-    expect(agoLabel(150)).toBe("3 hrs ago");
+    expect(agoLabel(60)).toBe("1 hr ago");
   });
   it("marks each network in its own colour", () => {
     expect(networkMark("MTN")).toEqual({ text: "MTN", tone: "mtn" });
