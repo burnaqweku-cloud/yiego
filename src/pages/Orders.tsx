@@ -1,3 +1,5 @@
+import { networkMark } from "@/lib/latestDelivery";
+import "@/components/shop/latest-delivery.css";
 import { useEffect, useMemo, useState } from "react";
 import Seo from "@/components/seo/Seo";
 import DeliveryProgress from "@/components/shop/DeliveryProgress";
@@ -129,13 +131,13 @@ export default function Orders() {
 
       <TrackOrder embedded />
 
-      <section className="onyx-panel rounded-[24px] p-4 sm:p-5">
+      <section>
         <div className="hidden">
           <label className="relative block"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-faint-foreground" size={17} /><input className="onyx-field w-full pl-11" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search order ID, recipient, network or bundle" /></label>
           <Button variant="soft" onClick={() => navigate("/track-order")}><Search size={16} /> Track reference</Button>
         </div>
-        <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-          {FILTERS.map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-semibold transition ${filter === item ? "border-primary-glow/30 bg-primary/[0.12] text-primary-glow" : "border-white/[0.08] bg-white/[0.025] text-muted-foreground"}`}>{label(item)}</button>)}
+        <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:px-0">
+          {FILTERS.map((item) => <button key={item} type="button" onClick={() => setFilter(item)} aria-pressed={filter === item} className="yg-chip">{label(item)}</button>)}
         </div>
       </section>
 
@@ -143,14 +145,18 @@ export default function Orders() {
         <section className="grid min-w-0 grid-cols-1 gap-3 xl:grid-cols-2">
           {visible.map((order) => {
             const status = customerStatus(order);
-            return <button type="button" key={order.id} onClick={() => setOpenRef(order.order_reference)} className="onyx-panel block w-full rounded-[22px] p-5 text-left transition hover:border-primary-glow/25">
-              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-display text-[16px] font-semibold text-white">{order.data_products?.name ?? "Data bundle"}</p><p className="mt-1 font-mono text-xs text-faint-foreground">{order.order_reference}</p></div><Badge variant={status === "delivered" ? "success" : "amber"}>{label(status)}</Badge></div>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm"><div><p className="text-[11px] uppercase tracking-[0.12em] text-faint-foreground">Network</p><p className="mt-1 font-semibold text-foreground">{order.networks?.name ?? "—"}</p></div><div><p className="text-[11px] uppercase tracking-[0.12em] text-faint-foreground">Recipient</p><p className="mt-1 font-semibold text-foreground">{maskPhone(order.recipient_phone)}</p></div></div>
-              <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/[0.06] pt-4"><span className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString("en-GH")}</span><span className="font-display font-semibold text-white">{formatGHS(Number(order.amount))}</span></div>
+            const mark = networkMark(order.networks?.name ?? "");
+            return <button type="button" key={order.id} onClick={() => setOpenRef(order.order_reference)} className="yg-order">
+              <span className="yg-latest__net" data-tone={mark.tone} aria-hidden="true">{mark.text}</span>
+              <span className="yg-order__main">
+                <b>{(order.data_products?.name ?? "Data bundle").replace(/^.*?—\s*/, "")}<span className="sr-only"> {order.networks?.name}</span></b><em>to {maskPhone(order.recipient_phone)}</em>
+                <small>{new Date(order.created_at).toLocaleString("en-GH", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })} · {order.order_reference}</small>
+              </span>
+              <span className="yg-order__side"><span className="yg-status" data-state={status === "delivered" ? "done" : status === "refunded" || status === "cancelled" ? "closed" : "open"}>{label(status)}</span><strong>{formatGHS(Number(order.amount))}</strong></span>
             </button>;
           })}
         </section>
-        <div className="flex flex-col gap-3 rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">Showing {from}–{to} of {filtered.length} orders</p><div className="flex items-center gap-2"><Button size="sm" variant="ghost" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft size={16} /> Previous</Button><span className="min-w-16 text-center text-xs font-semibold text-foreground">{safePage} / {totalPages}</span><Button size="sm" variant="ghost" disabled={safePage >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>Next <ChevronRight size={16} /></Button></div></div>
+        <div className="yg-box flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">Showing {from}–{to} of {filtered.length} orders</p><div className="flex items-center gap-2"><Button size="sm" variant="ghost" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft size={16} /> Previous</Button><span className="min-w-16 text-center text-xs font-semibold text-foreground">{safePage} / {totalPages}</span><Button size="sm" variant="ghost" disabled={safePage >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>Next <ChevronRight size={16} /></Button></div></div>
       </>}
       <Modal open={Boolean(openRef)} onClose={() => setOpenRef(null)} label="Order details">
         <FlowHeader title="Order details" subtitle={openRef ?? ""} onClose={() => setOpenRef(null)} />

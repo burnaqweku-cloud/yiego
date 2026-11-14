@@ -1,3 +1,4 @@
+import Band from "@/components/layout/Band";
 import { useEffect, useMemo, useState } from "react";
 import { pendingInvite } from "@/lib/referrals";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -91,56 +92,46 @@ export default function Auth() {
   };
 
   return (
-    <div className="onyx-canvas min-h-dvh px-5 py-8">
-      <div className="onyx-aurora" aria-hidden="true"><span className="onyx-aurora-a" /><span className="onyx-aurora-b" /><span className="onyx-grain" /></div>
-      <main className="relative z-10 mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[1100px] items-center">
-        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[1fr_430px] lg:items-center">
-          <section className="hidden lg:block">
-            <Link to="/" className="inline-flex items-center" aria-label="DataYego — home"><Wordmark variant="full" className="h-[62px]" /></Link>
-            <h1 className="mt-10 max-w-xl font-display text-5xl font-semibold tracking-tight text-white">One account for your wallet, orders and receipts.</h1>
-            <p className="mt-4 max-w-lg leading-7 text-muted-foreground">Sign in to fund your wallet, buy data, track orders and keep receipts. Guests can still buy data with Paystack.</p>
-          </section>
-
-          <Card><CardContent className="p-6 sm:p-7">
-            <Link to="/" className="mb-7 flex items-center lg:hidden" aria-label="DataYego — home"><Wordmark className="h-[26px]" /></Link>
-
+    <div className="site yg-auth">
+      <main className="yg-auth__main">
+        <Band
+          className="yg-band--auth"
+          kicker={<Link to="/" className="inline-flex items-center" aria-label="DataYego — home"><Wordmark className="h-[26px]" /></Link>}
+          title={mode === "check-email" ? "Check your email" : mode === "forgot" ? "Reset your password" : mode === "login" ? "Sign in" : "Join DataYego"}
+          sub={mode === "check-email" ? "We sent you a link. Open it to continue." : mode === "forgot" ? "Enter your email and we'll send you a secure reset link." : mode === "login" ? "Your wallet, orders and receipts in one account." : "Create an account to open your wallet and keep your orders."}
+        />
+        <div className="yg-auth__card">
+          <Card><CardContent className="p-5 sm:p-7">
             {mode === "check-email" ? (
               <div className="py-3 text-center">
                 <CheckCircle2 className="mx-auto text-primary-glow" size={34} />
-                <h2 className="mt-4 font-display text-2xl font-semibold text-white">Check your email</h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">We sent instructions to <span className="font-semibold text-foreground">{email}</span>. Open the link in that email to continue.</p>
+                <p className="mt-4 text-sm leading-6 text-muted-foreground">We sent instructions to <span className="font-semibold text-foreground">{email}</span>. Open the link in that email to continue.</p>
                 <Button variant="soft" className="mt-6" onClick={() => setMode("login")}>Back to sign in</Button>
               </div>
             ) : mode === "forgot" ? (
               <>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">Account recovery</p>
-                <h2 className="mt-1 font-display text-2xl font-semibold text-white">Reset your password</h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your email and we'll send you a secure reset link.</p>
-                <form className="mt-7 space-y-4" onSubmit={sendReset}>
-                  <AuthField icon={Mail} label="Email"><input className="h-12 min-w-0 flex-1 bg-transparent text-sm text-white outline-none" value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" placeholder="you@example.com" required /></AuthField>
+                <form className="space-y-4" onSubmit={sendReset}>
+                  <AuthField icon={Mail} label="Email"><input className="h-[52px] min-w-0 flex-1 bg-transparent text-[16px] font-semibold text-white outline-none" value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" placeholder="you@example.com" required /></AuthField>
                   <Button type="submit" className="w-full" disabled={submitting}>{submitting && <Loader2 className="animate-spin" size={16} />} Send reset link</Button>
                 </form>
                 <button type="button" className="mt-5 w-full text-center text-sm font-semibold text-primary-glow" onClick={() => setMode("login")}>Back to sign in</button>
               </>
             ) : (
               <>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">{mode === "login" ? "Welcome back" : "Create account"}</p>
-                <h2 className="mt-1 font-display text-2xl font-semibold text-white">{mode === "login" ? "Sign in" : "Join DataYego"}</h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{mode === "login" ? "Use your email and password to continue." : "Create an account to activate your wallet and order history."}</p>
-                <form className="mt-7 space-y-4" onSubmit={submit}>
+                <form className="space-y-4" onSubmit={submit}>
                   {mode === "signup" && pendingInvite() && <div className="rounded-xl border border-primary-glow/25 bg-primary/[0.08] px-3.5 py-2.5 text-[12.5px] leading-5 text-foreground"><b>You've been invited.</b> Sign up and get a special invite price on your first order.</div>}
                   {mode === "signup" && <>
-                    <AuthField icon={UserRound} label="Full name"><input className="h-12 min-w-0 flex-1 bg-transparent text-sm text-white outline-none" value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Your name" autoComplete="name" required /></AuthField>
-                    <AuthField icon={Phone} label="Ghana phone number"><input className="h-12 min-w-0 flex-1 bg-transparent text-sm text-white outline-none" value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="0244001122" inputMode="tel" autoComplete="tel" required /></AuthField>
+                    <AuthField icon={UserRound} label="Full name"><input className="h-[52px] min-w-0 flex-1 bg-transparent text-[16px] font-semibold text-white outline-none" value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Your name" autoComplete="name" required /></AuthField>
+                    <AuthField icon={Phone} label="Ghana phone number"><input className="h-[52px] min-w-0 flex-1 bg-transparent text-[16px] font-semibold text-white outline-none" value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="0244001122" inputMode="tel" autoComplete="tel" required /></AuthField>
                     {phone && !phoneValid && <p className="-mt-2 text-xs text-danger">Enter a valid 10-digit Ghana number beginning with 0.</p>}
                   </>}
-                  <AuthField icon={Mail} label="Email"><input className="h-12 min-w-0 flex-1 bg-transparent text-sm text-white outline-none" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" type="email" autoComplete="email" required /></AuthField>
-                  <AuthField icon={Lock} label="Password" trailing={<button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>}><input className="h-12 min-w-0 flex-1 bg-transparent text-sm text-white outline-none" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" type={showPassword ? "text" : "password"} autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "signup" ? 8 : 6} required /></AuthField>
+                  <AuthField icon={Mail} label="Email"><input className="h-[52px] min-w-0 flex-1 bg-transparent text-[16px] font-semibold text-white outline-none" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" type="email" autoComplete="email" required /></AuthField>
+                  <AuthField icon={Lock} label="Password" trailing={<button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>}><input className="h-[52px] min-w-0 flex-1 bg-transparent text-[16px] font-semibold text-white outline-none" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" type={showPassword ? "text" : "password"} autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "signup" ? 8 : 6} required /></AuthField>
                   {mode === "signup" && <p className="-mt-2 text-xs leading-5 text-faint-foreground">Use at least 8 characters with uppercase, lowercase and a number.</p>}
                   {mode === "login" && <button type="button" className="block w-full text-right text-xs font-semibold text-primary-glow" onClick={() => setMode("forgot")}>Forgot password?</button>}
                   <Button type="submit" className="w-full" disabled={submitting || (mode === "signup" && (!phoneValid || !passwordValid))}>{submitting && <Loader2 className="animate-spin" size={16} />}{mode === "login" ? "Sign in" : "Create account"}</Button>
                 </form>
-                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-muted-foreground">{mode === "login" ? "No account yet?" : "Already have an account?"} <button type="button" className="font-semibold text-primary-glow" onClick={() => setMode(mode === "login" ? "signup" : "login")}>{mode === "login" ? "Create one" : "Sign in"}</button></div>
+                <div className="yg-soft mt-5 p-4 text-center text-sm font-medium text-muted-foreground">{mode === "login" ? "No account yet?" : "Already have an account?"} <button type="button" className="font-semibold text-primary-glow" onClick={() => setMode(mode === "login" ? "signup" : "login")}>{mode === "login" ? "Create one" : "Sign in"}</button></div>
               </>
             )}
           </CardContent></Card>
@@ -151,5 +142,5 @@ export default function Auth() {
 }
 
 function AuthField({ icon: Icon, label, children, trailing }: { icon: typeof Mail; label: string; children: React.ReactNode; trailing?: React.ReactNode }) {
-  return <label className="block"><span className="mb-1.5 block text-xs font-semibold text-muted-foreground">{label}</span><div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4"><Icon size={17} className="text-faint-foreground" />{children}{trailing}</div></label>;
+  return <label className="block"><span className="mb-1.5 block text-[13px] font-bold text-foreground">{label}</span><div className="yg-field flex items-center gap-2 px-4"><Icon size={17} className="text-faint-foreground" />{children}{trailing}</div></label>;
 }

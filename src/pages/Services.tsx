@@ -108,8 +108,8 @@ export default function Services({ store }: { store?: ServicesStore } = {}) {
       {view === "home" && <ul className="grid grid-cols-2 gap-3">
         {cards.map(({ key, icon: Icon, title, text, to }) => {
           const inner = <>
-            <span className={cn("grid h-11 w-11 place-items-center rounded-2xl", to ? "bg-primary/[0.12] text-primary-glow" : "bg-white/[0.06] text-muted-foreground")}><Icon size={21} aria-hidden="true" /></span>
-            <span className="mt-3 block font-display text-[16.5px] font-semibold leading-snug tracking-tight text-foreground">{title}</span>
+            <span className={cn("yg-svc-ico grid h-11 w-11 place-items-center rounded-2xl", to ? "bg-primary/[0.12] text-primary-glow" : "bg-white/[0.06] text-muted-foreground")} data-off={to ? undefined : ""}><Icon size={21} aria-hidden="true" /></span>
+            <span className="yg-svc-title mt-3 block font-display text-[16.5px] font-semibold leading-snug tracking-tight text-foreground">{title}</span>
             <span className="mt-1 block text-[12.5px] leading-relaxed text-muted-foreground">{text}</span>
             <span className={cn("mt-3 inline-flex items-center gap-1.5 text-[13.5px] font-semibold", to ? "text-primary-glow" : "text-muted-foreground")}>{to ? <>Open<ArrowRight size={15} aria-hidden="true" /></> : "Coming soon"}</span>
           </>;
@@ -123,7 +123,7 @@ export default function Services({ store }: { store?: ServicesStore } = {}) {
         {products === null ? <p className="text-[13.5px] text-muted-foreground">Loading…</p> : checkers.length === 0 ? <p className="text-[13.5px] text-muted-foreground">Result checkers aren't available right now. Please check back soon.</p> : (
           <ul className="space-y-2.5">
             {checkers.map((p) => (
-              <li key={p.code} className="rounded-2xl border border-white/[0.09] p-4">
+              <li key={p.code} className="yg-row rounded-2xl border border-white/[0.09] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0"><p className="text-[15px] font-semibold text-foreground">{p.name}</p><p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground">{p.blurb}</p></div>
                 </div>

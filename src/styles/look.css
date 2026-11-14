@@ -253,3 +253,48 @@ html.yg-look .onyx-flowhead .text-white { color: #fff; }
 /* the greeting is a line of its own size, so a name fits beside the panel */
 .yg-band--shop .yg-band__kicker + .yg-band__title { font-size: 27px; max-width: 82%; }
 @media (min-width: 640px) { .yg-band--shop .yg-band__kicker + .yg-band__title { font-size: 34px; } }
+
+/* ── Sign in and sign up: the band carries the logo and the page's name, the form sits on a board ─────────── */
+.yg-auth { min-height: 100dvh; }
+.yg-auth__main { max-width: 480px; margin-inline: auto; padding: 0 20px 40px; }
+.yg-auth .yg-band { margin: 0 -20px; padding-top: 22px; padding-bottom: 46px; }
+.yg-auth .yg-band .brand-light { display: none; }
+.yg-auth .yg-band .brand-dark { display: block; }
+.yg-auth .yg-band__kicker { margin-bottom: 30px; }
+.yg-auth .yg-band__title { font-size: 34px; }
+.yg-auth__card { position: relative; margin-top: -26px; }
+.yg-field { border-radius: 16px; border: 1.5px solid #cad6cf; background: #fff; transition: border-color 0.15s, box-shadow 0.15s; }
+.yg-field:focus-within { border-color: var(--leaf); box-shadow: 0 0 0 4px rgba(1, 138, 87, 0.14); }
+.yg-soft { border-radius: 16px; background: #f2f6f3; }
+@media (min-width: 640px) { .yg-auth__main { padding-top: 32px; } .yg-auth .yg-band { margin: 0; } }
+@media (min-width: 1024px) {
+  .yg-auth__main { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 24px; align-items: stretch; align-content: center; max-width: 1040px; min-height: 100dvh; padding: 40px 32px; }
+  .yg-auth .yg-band { display: flex; flex-direction: column; min-height: 520px; padding: 40px 44px; }
+  .yg-auth .yg-band__kicker { margin-bottom: auto; }
+  .yg-auth .yg-band__title { font-size: 56px; max-width: 12ch; }
+  .yg-auth .yg-band__sub { max-width: 30ch; font-size: 17px; }
+  .yg-auth .yg-band__panel { right: -10%; width: 44%; height: 620px; top: -80px; }
+  .yg-auth__card { margin-top: 0; align-self: center; }
+}
+
+/* ── Orders: one row per order, the network's own colour first ─────────────────────────────────────────────── */
+.yg-chip { flex: none; height: 38px; padding: 0 16px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 13px; font-weight: 700; color: var(--ink-2); white-space: nowrap; }
+.yg-chip[aria-pressed="true"] { background: var(--pitch); border-color: var(--pitch); color: #fff; font-weight: 800; }
+.yg-order { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 14px 14px 12px; border-radius: 20px; background: #fff; border: 1px solid var(--line); box-shadow: var(--lift); text-align: left; }
+.yg-order:active { transform: scale(0.99); }
+.yg-order .yg-latest__net { width: 40px; height: 36px; border-radius: 11px; font-size: 11px; }
+.yg-order__main { min-width: 0; flex: 1; }
+.yg-order__main b { font-family: var(--font-display); font-weight: 800; font-size: 18px; letter-spacing: -0.03em; color: var(--ink); }
+.yg-order__main em { margin-left: 7px; font-style: normal; font-size: 13px; font-weight: 600; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.yg-order__main small { display: block; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; font-weight: 600; color: #6c7b72; }
+.yg-order__side { flex: none; display: grid; justify-items: end; gap: 6px; }
+.yg-order__side strong { font-family: var(--font-display); font-weight: 800; font-size: 15.5px; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.yg-status { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 11.5px; font-weight: 800; background: #fff1cf; color: #7a5200; white-space: nowrap; }
+.yg-status[data-state="done"] { background: #dff3e8; color: #06402c; }
+.yg-status[data-state="closed"] { background: #e9eeeb; color: var(--ink-2); }
+
+/* ── Services ──────────────────────────────────────────────────────────────────────────────────────────────── */
+.light .site .yg-svc-ico { border-radius: 13px; background: #e3f3ea; color: var(--pitch); }
+.light .site .yg-svc-ico[data-off] { background: #edf1ee; color: #7f8b83; }
+.light .site .yg-svc-title { font-weight: 800; font-size: 17.5px; letter-spacing: -0.03em; }
+.light .site .yg-row { border-color: transparent; background: #f2f6f3; }
