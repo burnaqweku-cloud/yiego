@@ -7,7 +7,7 @@ vi.mock("@/lib/phase1-api", () => ({ loadPhase1Networks: () => Promise.resolve({
 const state = vi.hoisted(() => ({ raw: {} as unknown, signedIn: false, wallet: { balance: 24.5, isRealWallet: true, hasWallet: true, loading: false }, opened: 0 }));
 vi.mock("@/lib/latestDelivery", async (real) => {
   const actual = await real<typeof import("@/lib/latestDelivery")>();
-  return { ...actual, loadLatest: () => Promise.resolve(actual.readLatest(state.raw)) };
+  return { ...actual, loadLatest: () => Promise.resolve(actual.readFeed(state.raw)) };
 });
 vi.mock("@/store/auth-context", () => ({ useAuth: () => ({ isAuthenticated: state.signedIn }) }));
 vi.mock("@/store/profile", () => ({ useProfile: () => ({ profile: { firstName: "Ama" } }) }));

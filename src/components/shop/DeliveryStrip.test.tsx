@@ -7,7 +7,7 @@ vi.mock("@/lib/phase1-api", () => ({ loadPhase1Networks: () => Promise.resolve({
 const state = vi.hoisted(() => ({ raw: {} as unknown }));
 vi.mock("@/lib/latestDelivery", async (real) => {
   const actual = await real<typeof import("@/lib/latestDelivery")>();
-  return { ...actual, loadLatest: () => Promise.resolve(actual.readLatest(state.raw)) };
+  return { ...actual, loadLatest: () => Promise.resolve(actual.readFeed(state.raw)) };
 });
 import type { NetworkSpeed } from "@/hooks/useDeliverySpeed";
 import { DeliveryStrip } from "./LatestDelivery";

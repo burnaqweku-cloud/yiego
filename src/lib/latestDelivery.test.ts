@@ -4,7 +4,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 vi.mock("@/lib/bootstrap", () => ({ bootstrapOnce: () => Promise.resolve() }));
 vi.mock("@/lib/phase1-api", () => ({ loadPhase1Networks: () => Promise.resolve({ data: [] }) }));
 import type { NetworkSpeed } from "@/hooks/useDeliverySpeed";
-import { clockParts, dayLabel, deliveryToShow, FRESH_HOURS, MAX_MINUTES, networkMark, readLatest, rightNow, tookLabel } from "./latestDelivery";
+import { clockParts, dayLabel, deliveryToShow, FRESH_HOURS, MAX_MINUTES, networkMark, readFeed, readLatest, rightNow, tookLabel } from "./latestDelivery";
 
 const at = (iso: string) => Date.parse(iso);
 const row = (over: Record<string, unknown> = {}) => ({ gb: 1, phone: "055*****15", paid_at: "2026-11-14T13:03:15.9+00:00", delivered_at: "2026-11-14T13:20:07.4+00:00", age_seconds: 381, ...over });
@@ -63,6 +63,29 @@ describe("whether the delivery is shown", () => {
 
   it("shows nothing for a network with no delivery", () => {
     expect(deliveryToShow(all, "Telecel", quiet)).toBeNull();
+  });
+});
+
+describe("the owner's switch (Admin → Status)", () => {
+  const slow = readLatest({ MTN: row({ paid_at: "2026-11-14T12:00:00+00:00" }) });
+  it("is off unless the server plainly says it is on", () => {
+    expect(readFeed({ MTN: row() }).always).toBe(false);
+    expect(readFeed({ MTN: row(), _rule: { always: "true" } }).always).toBe(false);
+    expect(readFeed(null).always).toBe(false);
+    const on = readFeed({ MTN: row(), _rule: { always: true } });
+    expect(on.always).toBe(true);
+    expect(Object.keys(on.all)).toEqual(["MTN"]);                                      // the setting is never read as a network
+  });
+  it("on: shows a slow delivery, and shows it while the network is slow", () => {
+    expect(deliveryToShow(slow, "MTN", quick)).toBeNull();
+    expect(deliveryToShow(slow, "MTN", quick, true)?.phone).toBe("055*****15");
+    expect(deliveryToShow(slow, "MTN", { ...quick, median_minutes: 95, at_least: true }, true)).not.toBeNull();
+  });
+  it("on: still needs a recent delivery, a known speed and an open network", () => {
+    expect(deliveryToShow(readLatest({ MTN: row({ age_seconds: FRESH_HOURS * 3600 + 1 }) }), "MTN", quick, true)).toBeNull();
+    expect(deliveryToShow(slow, "MTN", undefined, true)).toBeNull();
+    expect(deliveryToShow(slow, "MTN", { ...quiet, paused: true }, true)).toBeNull();
+    expect(deliveryToShow(slow, "Telecel", quiet, true)).toBeNull();
   });
 });
 
