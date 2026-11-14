@@ -114,6 +114,8 @@ export default function AgentShell() {
   }, [role, agent, location.pathname, navigate]);
   useEffect(() => { if (!agent) return; const tick = () => { void p1().rpc("agent_inbox_unread", {}).then(({ data }) => setUnread(Number(data ?? 0))); if (!agent.parent_agent_id) void p1().rpc("my_network_pending_count", {}).then(({ data }) => setPendingApps(Number(data ?? 0))); }; tick(); return visibleInterval(tick, 60_000); }, [agent]);
 
+  // The buy and top-up sheets open outside the dashboard's own element; this flag lets the look reach them (styles/look.css).
+  useEffect(() => { document.documentElement.classList.add("yg-look"); return () => document.documentElement.classList.remove("yg-look"); }, []);
   const legacy = LEGACY_REDIRECTS[location.pathname.replace(/\/$/, "")];
   useEffect(() => { if (legacy) navigate(legacy, { replace: true }); }, [legacy, navigate]);
   if (agent === undefined) return <div className="min-h-dvh bg-background" />;
@@ -136,7 +138,7 @@ export default function AgentShell() {
 
   return (
     <AgentContext.Provider value={{ role, networkOpen, unread, floors, isSub, agent, orders, payouts, products, prices, setPrices, plan, quote, storeUrl, reload, sub, openRenew: () => setRenew(true) }}>
-      <div className="onyx-canvas min-h-dvh">
+      <div className="onyx-canvas yg-agent min-h-dvh">
         <div className="mx-auto flex max-w-5xl">
           {/* Desktop sidebar */}
           <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-white/[0.06] p-4 sm:flex">
@@ -199,7 +201,7 @@ export default function AgentShell() {
 function SubClosedScreen({ agent }: { agent: Agent }) {
   const parentName = agent.parent?.store_name ?? "your network";
   return (
-    <div className="onyx-canvas flex min-h-dvh items-center justify-center px-5 py-8">
+    <div className="onyx-canvas yg-agent flex min-h-dvh items-center justify-center px-5 py-8">
       <div className="onyx-panel w-full max-w-md rounded-3xl p-6 text-center">
         <CreditCard size={28} className="mx-auto text-primary-glow" />
         <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-glow">{agent.status === "suspended" ? "Suspended" : "Closed"}</p>
@@ -230,7 +232,7 @@ function PayScreen({ agent, quote, onPaid }: { agent: Agent; quote: PlanQuote | 
   const suspended = agent.status === "suspended";
   const cheaperLine = useMtnSavingLine();
   return (
-    <div className="onyx-canvas flex min-h-dvh items-center justify-center px-5 py-8">
+    <div className="onyx-canvas yg-agent flex min-h-dvh items-center justify-center px-5 py-8">
       <div className="onyx-panel w-full max-w-md rounded-3xl p-6">
         <div className="text-center">
           <CreditCard size={28} className="mx-auto text-primary-glow" />

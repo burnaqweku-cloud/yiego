@@ -300,3 +300,78 @@ html.yg-look .onyx-flowhead .text-white { color: #fff; }
 .light .site .yg-svc-ico[data-off] { background: #edf1ee; color: #7f8b83; }
 .light .site .yg-svc-title { font-weight: 800; font-size: 17.5px; letter-spacing: -0.03em; }
 .light .site .yg-row { border-color: transparent; background: #f2f6f3; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   The agent dashboard (.yg-agent on AgentShell) wears the same look. Its pages are written with small utility
+   classes rather than named parts, so most of this reaches them by what they already carry: panels, buttons,
+   fields, the pill-shaped chips, the two "balance" cards. A sub-agent's dashboard gets it too; it carries no
+   DataYego wording, only the colours.
+   ════════════════════════════════════════════════════════════════════════ */
+.light .yg-agent {
+  --pitch: #06402c; --leaf: #018a57; --leaf-down: #017449; --leaf-bright: #12b377; --mint: #6df2b6; --edge: #f7a701;
+  --ink: #0a1912; --ink-2: #48584f; --line: rgba(10, 25, 18, 0.09);
+  --lift: 0 1px 2px rgba(10, 25, 18, 0.04), 0 18px 34px -26px rgba(6, 64, 44, 0.45);
+  --font-display: "Bricolage Grotesque Variable", var(--font-sans);
+  --background: 135 17% 95%; --border: 150 14% 86%;
+  --primary: 158 99% 27%; --primary-strong: 158 98% 23%; --primary-glow: 158 98% 24%;
+  background: #f1f5f2;
+}
+.light .yg-agent.onyx-canvas::before, .light .yg-agent.onyx-canvas::after { display: none; }
+.light .yg-agent h1 { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.035em; }
+.light .yg-agent h1.font-display { font-size: 27px; line-height: 1.05; }
+.light .yg-agent .uppercase { text-transform: none; letter-spacing: 0; font-size: 12.5px; }
+
+/* the bar across the top on phones, the app strip and the bottom bar */
+.light .yg-agent header.sticky {
+  background: #06402c !important; border-bottom-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none;
+  --w: 255 255 255; --foreground: 0 0% 100%; --muted-foreground: 150 30% 86%; --faint-foreground: 150 22% 76%; --primary-glow: 151 78% 71%; --primary: 151 78% 71%;
+  color: #fff;
+}
+.light .yg-agent header.sticky .rounded-full { background: rgba(255, 255, 255, 0.14); border-color: transparent; color: #fff; font-weight: 800; }
+.light .yg-agent .yg-appbar { background: #fff; border-bottom-color: var(--line); }
+.light .yg-agent .yg-appbar-cta { background: var(--pitch); color: #fff; font-weight: 800; box-shadow: none; }
+.light .yg-agent .yg-tabbar { background: #fff; border-top: 1px solid var(--line); box-shadow: 0 -14px 30px -24px rgba(6, 64, 44, 0.5); }
+.light .yg-agent .yg-tab { color: var(--ink-2); font-weight: 600; }
+.light .yg-agent .yg-tab.is-active { color: var(--pitch); font-weight: 800; }
+.light .yg-agent .yg-tab.is-active .yg-tab-ico { background: var(--pitch); color: #fff; }
+
+/* boards, buttons, fields */
+.light .yg-agent .onyx-panel { background: #fff; border: 1px solid var(--line); box-shadow: var(--lift); }
+.light .yg-agent .onyx-btn-primary, .light .yg-agent .ui-btn[data-variant="primary"] {
+  border-radius: 14px; background: var(--leaf); color: #fff; font-weight: 800; filter: none; transform: none;
+  box-shadow: 0 14px 24px -16px rgba(1, 138, 87, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+.light .yg-agent .onyx-btn-primary:hover, .light .yg-agent .ui-btn[data-variant="primary"]:hover { background: var(--leaf-down); transform: none; filter: none; }
+.light .yg-agent .onyx-btn-primary:disabled, .light .yg-agent .ui-btn[data-variant="primary"]:disabled { background: #dfe7e2; color: #76857c; box-shadow: none; opacity: 1; }
+.light .yg-agent .onyx-btn-ghost, .light .yg-agent .ui-btn[data-variant="ghost"] { border-radius: 14px; background: #fff; color: var(--ink); border: 1.5px solid rgba(10, 25, 18, 0.16); font-weight: 800; box-shadow: none; transform: none; }
+.light .yg-agent .ui-btn[data-variant="soft"] { background: #e3f3ea; border-color: transparent; color: var(--pitch); font-weight: 800; }
+.light .yg-agent .onyx-field { border-radius: 14px; border: 1.5px solid #cad6cf; background: #fff; color: var(--ink); font-weight: 600; box-shadow: none; }
+.light .yg-agent .onyx-field::placeholder { color: #98a59d; font-weight: 500; }
+.light .yg-agent .onyx-field:focus { border-color: var(--leaf); box-shadow: 0 0 0 4px rgba(1, 138, 87, 0.14); outline: none; }
+
+/* pill chips: the chosen one, and the small "Buy" tags, are solid green */
+.light .yg-agent button.rounded-full { font-weight: 700; }
+.light .yg-agent button.rounded-full.border { background: #fff; border-color: var(--line); color: var(--ink-2); }
+.light .yg-agent main button.rounded-full[class*="bg-primary/"], .light .yg-agent main span.rounded-full[class*="bg-primary/1"] { background: var(--pitch); color: #fff; font-weight: 800; }
+
+/* the two balance cards (Home, Earnings): the green field with the slanted panel, figures in white */
+.light .yg-agent main .rounded-3xl.bg-gradient-to-br {
+  position: relative; isolation: isolate; overflow: hidden;
+  border: 0; background: #06402c; box-shadow: 0 26px 44px -34px rgba(6, 64, 44, 0.9);
+  --w: 255 255 255; --foreground: 0 0% 100%; --muted-foreground: 150 30% 86%; --faint-foreground: 150 22% 78%; --primary-glow: 151 78% 71%; --amber: 42 96% 62%;
+  color: #fff;
+}
+.light .yg-agent main .rounded-3xl.bg-gradient-to-br::before {
+  content: ""; position: absolute; z-index: -1; right: -26%; top: -46px; width: 50%; height: 270px; transform: skewX(-18deg);
+  background: linear-gradient(90deg, #f7a701 0 8px, #06402c 8px 17px, transparent 17px), radial-gradient(60% 55% at 46% 30%, #12b377 0%, #019b62 70%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 66%); mask-image: linear-gradient(to bottom, #000 30%, transparent 66%);
+}
+.light .yg-agent main .rounded-3xl.bg-gradient-to-br [class*="text-[34px]"] { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.04em; }
+.light .yg-agent main .rounded-3xl.bg-gradient-to-br [class*="bg-background/"] {
+  background: #fff; border-color: transparent; box-shadow: 0 14px 24px -16px rgba(0, 0, 0, 0.65);
+  --w: 8 26 18; --foreground: 152 45% 7%; --muted-foreground: 152 12% 34%; --faint-foreground: 150 8% 47%; --primary-glow: 158 98% 24%; --amber: 33 95% 35%;
+  color: var(--ink);
+}
+.light .yg-agent main .rounded-3xl.bg-gradient-to-br .onyx-btn-primary { background: #fff; color: #06402c; box-shadow: 0 14px 24px -14px rgba(0, 0, 0, 0.7); }
+.light .yg-agent main .rounded-3xl.bg-gradient-to-br button.rounded-full.border { background: transparent; border-color: rgba(255, 255, 255, 0.42); color: #fff; }
+.light .yg-agent main .rounded-3xl.bg-gradient-to-br [class*="bg-amber/"] { background: rgba(247, 167, 1, 0.16); }
