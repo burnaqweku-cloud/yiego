@@ -3,7 +3,7 @@ import Seo from "@/components/seo/Seo";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowDownToLine, ArrowUpRight, CheckCircle2, Clock, Loader2, RefreshCcw } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
-import BalanceCard from "@/components/dashboard/BalanceCard";
+import Purse from "@/components/shop/Purse";
 import TransactionDetailSheet from "@/components/sheets/TransactionDetailSheet";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/store/wallet";
@@ -54,12 +54,9 @@ export default function Wallet() {
   return (
     <div className="space-y-6 lg:space-y-8">
       <Seo title="Your Wallet — DataYego" description="Your DataYego wallet balance and statement." path="/wallet" noindex />
-      <PageHeader
-        eyebrow="Wallet"
-        title="Your wallet"
-        subtitle="View your balance, add money and review recent activity."
-        action={<Button variant="soft" onClick={refresh} disabled={loading}><RefreshCcw className={loading ? "animate-spin" : ""} size={16} /> Refresh</Button>}
-      />
+      <PageHeader band title="Your wallet" subtitle="Add money and see every top-up, purchase and refund.">
+        <Purse />
+      </PageHeader>
 
       {(confirming || confirmation) && (
         <div className={cn("rounded-[22px] border p-5 text-sm", confirmation === "failed" ? "border-danger/25 bg-danger/[0.08]" : "border-primary-glow/20 bg-primary/[0.06]")}>
@@ -74,12 +71,11 @@ export default function Wallet() {
 
       {error && <div className="rounded-[22px] border border-danger/25 bg-danger/[0.08] p-4 text-sm text-ink-rose">{error}</div>}
 
-      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] lg:items-start">
-        <BalanceCard />
+      <div className="min-w-0">
         <section className="onyx-panel min-w-0 overflow-hidden rounded-[24px] p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
-            <div><h2 className="font-display text-lg font-semibold text-white">Transactions</h2><p className="mt-1 text-xs text-faint-foreground">Deposits, data purchases and refunds</p></div>
-            <span className="text-xs text-faint-foreground">{transactions.length} entries</span>
+            <div><h2 className="yg-h2">Transactions</h2><p className="mt-1 text-[12.5px] font-semibold text-muted-foreground">Top-ups, data purchases and refunds</p></div>
+            <Button variant="soft" size="sm" onClick={refresh} disabled={loading}><RefreshCcw className={loading ? "animate-spin" : ""} size={15} /> Refresh</Button>
           </div>
           {transactions.length === 0 ? <p className="py-10 text-center text-sm text-muted-foreground">No wallet activity yet.</p> : (
             <div className="mt-4 divide-y divide-white/5">{transactions.map((transaction) => {

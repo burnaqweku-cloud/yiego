@@ -1,3 +1,4 @@
+import Band from "@/components/layout/Band";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ChevronDown, GraduationCap, PhoneCall, Plus, UserPlus, Wallet } from "lucide-react";
@@ -80,12 +81,22 @@ export default function Services({ store }: { store?: ServicesStore } = {}) {
   return (
     <div className="mx-auto w-full max-w-[560px] space-y-4">
       {!store && <Seo {...metaFor("/services")} />}
-      <header className="px-1 pt-1">
-        {view !== "home" && <Link to={base} className="mb-2 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-primary-glow"><ArrowLeft size={15} aria-hidden="true" />All services</Link>}
-        <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-foreground">{view === "checkers" ? "Result checkers" : view === "afa" && afa ? afa.name : store ? "Services" : "DY Services"}</h1>
-        <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{view === "checkers" ? "Serial number and PIN, shown the moment you pay." : view === "afa" && afa ? afa.blurb : store ? `More from ${store.name}. Pick a service.` : "More from DataYego, with the same account and wallet. Pick a service."}</p>
-        {view === "afa" && afa && <p className="mt-3 flex items-baseline gap-2"><span className="font-display text-[26px] font-semibold leading-none tracking-tight tabular-nums text-foreground">{formatGHS(afa.price)}</span><span className="text-[13px] text-muted-foreground">to register one number</span></p>}
-      </header>
+      {store ? (
+        <header className="px-1 pt-1">
+          {view !== "home" && <Link to={base} className="mb-2 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-primary-glow"><ArrowLeft size={15} aria-hidden="true" />All services</Link>}
+          <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-foreground">{view === "checkers" ? "Result checkers" : view === "afa" && afa ? afa.name : store ? "Services" : "DY Services"}</h1>
+          <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{view === "checkers" ? "Serial number and PIN, shown the moment you pay." : view === "afa" && afa ? afa.blurb : store ? `More from ${store.name}. Pick a service.` : "More from DataYego, with the same account and wallet. Pick a service."}</p>
+          {view === "afa" && afa && <p className="mt-3 flex items-baseline gap-2"><span className="font-display text-[26px] font-semibold leading-none tracking-tight tabular-nums text-foreground">{formatGHS(afa.price)}</span><span className="text-[13px] text-muted-foreground">to register one number</span></p>}
+        </header>
+      ) : (
+        <Band
+          kicker={view !== "home" ? <Link to={base} className="inline-flex items-center gap-1.5"><ArrowLeft size={15} aria-hidden="true" />All services</Link> : undefined}
+          title={view === "checkers" ? "Result checkers" : view === "afa" && afa ? afa.name : "DY Services"}
+          sub={view === "checkers" ? "Serial number and PIN, shown the moment you pay." : view === "afa" && afa ? afa.blurb : "More from DataYego, with the same account and wallet. Pick a service."}
+        >
+          {view === "afa" && afa && <p className="mt-3 flex items-baseline gap-2"><span className="font-display text-[28px] font-extrabold leading-none tracking-tight tabular-nums">{formatGHS(afa.price)}</span><span className="text-[13px] font-semibold text-white/80">to register one number</span></p>}
+        </Band>
+      )}
 
       {isAuthenticated && <Card className="flex items-center justify-between gap-3 p-4">
         <span className="flex min-w-0 items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/[0.12] text-primary-glow"><Wallet size={18} aria-hidden="true" /></span>

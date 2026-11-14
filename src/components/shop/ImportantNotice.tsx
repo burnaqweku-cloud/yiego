@@ -34,15 +34,15 @@ export default function ImportantNotice({
     <aside
       aria-label={notice.title}
       className={cn(
-        "rounded-2xl border border-amber/20 bg-amber/[0.06]",
-        compact ? "px-3.5 py-3" : "px-4 py-4 sm:px-5",
+        "yg-notice",
+        compact ? "py-3 pl-5 pr-3.5" : "py-4 pl-6 pr-4 sm:pr-5",
         className,
       )}
     >
       <p
         className={cn(
-          "flex items-center gap-2 font-semibold text-amber",
-          compact ? "text-[12px]" : "text-[12.5px] uppercase tracking-[0.12em]",
+          "yg-notice__title",
+          compact ? "text-[13px]" : "text-[14.5px]",
         )}
       >
         <AlertTriangle size={compact ? 13 : 14} aria-hidden="true" />
@@ -50,8 +50,8 @@ export default function ImportantNotice({
       </p>
       <ul
         className={cn(
-          "list-disc space-y-1 pl-5 text-muted-foreground",
-          compact ? "mt-1.5 text-[12px] leading-5" : "mt-2.5 text-[13px] leading-6",
+          "list-disc space-y-1 pl-5",
+          compact ? "mt-1.5 text-[12.5px] leading-5" : "mt-2.5 text-[13.5px] leading-6",
         )}
       >
         {notice.points.map((point) => (

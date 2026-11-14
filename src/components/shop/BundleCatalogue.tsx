@@ -15,7 +15,6 @@ import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
 import { useAuth } from "@/store/auth-context";
 import { usePromoPrices } from "@/lib/promotions";
-import LatestDelivery from "@/components/shop/LatestDelivery";
 
 /**
  * The shop floor: every live bundle, on the page itself.
@@ -101,31 +100,21 @@ function BundleCard({ row, onBuy }: { row: Row; onBuy: () => void }) {
     >
       <span
         className={cn(
-          "block break-words font-display font-semibold leading-[1.04] tracking-[-0.035em] text-foreground",
-          row.size.length > 9 ? "text-[19px] sm:text-[21px]" : "text-[26px] sm:text-[30px]",
+          "yg-size block break-words leading-[1.02]",
+          row.size.length > 9 ? "text-[19px] sm:text-[21px]" : "text-[28px] sm:text-[32px]",
         )}
       >
         {row.size}
       </span>
       {(off || validity) && (
-        <span className="mt-1.5 block text-[11.5px] leading-4 text-faint-foreground sm:text-[12.5px]">
+        <span className="mt-1.5 block text-[12px] font-semibold leading-4 text-muted-foreground sm:text-[12.5px]">
           {off ?? validity}
         </span>
       )}
 
-      <span className="mt-auto flex items-center justify-between gap-2 border-t border-white/[0.07] pt-3.5 sm:pt-4">
-        <span className="tnum font-display text-[15px] font-semibold text-foreground sm:text-[17px]">
-          {formatGHS(row.price)}
-        </span>
-        {off ? (
-          <span className="inline-flex items-center rounded-full bg-white/[0.06] px-3 py-1 text-[12px] font-semibold text-muted-foreground">
-            Unavailable
-          </span>
-        ) : (
-          <span className="inline-flex items-center rounded-full bg-primary/[0.14] px-3 py-1 text-[12.5px] font-semibold text-primary-glow">
-            Buy
-          </span>
-        )}
+      <span className="mt-auto flex items-center justify-between gap-2 pt-4">
+        <span className="yg-price text-[16.5px] sm:text-[18px]">{formatGHS(row.price)}</span>
+        {off ? <span className="yg-buy" data-off="">Unavailable</span> : <span className="yg-buy">Buy</span>}
       </span>
     </button>
   );
@@ -170,7 +159,7 @@ function SkeletonGrid() {
 
 /* ── Section ─────────────────────────────────────────────────────── */
 
-export default function BundleCatalogue({ latestCard = true, onNetwork }: { latestCard?: boolean; onNetwork?: (network: string) => void } = {}) {
+export default function BundleCatalogue({ onNetwork }: { onNetwork?: (network: string) => void } = {}) {
   const speeds = useDeliverySpeed();
   const { isAdmin } = useAdminAccess(); // the error detail is for the team, not customers
   const [checkInfoOpen, setCheckInfoOpen] = useState(false);
@@ -256,12 +245,9 @@ export default function BundleCatalogue({ latestCard = true, onNetwork }: { late
 
   return (
     <section aria-labelledby="catalogue-title" className="scroll-mt-24" id="bundles">
-      {/* The newest order that arrived on the network in view (MTN while "All" is open): proof before prices.
-          Someone signed in sees it inside their wallet card at the top of the page instead. */}
-      {latestCard && <LatestDelivery network={latestFor} speed={speeds[latestFor]} />}
       {/* Network tabs first: the first thing on the page is the thing to choose. Search is the small tool beside them. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-        <div className="grid grid-cols-4 gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] p-1 sm:inline-grid sm:w-auto" role="tablist" aria-label="Network">
+        <div className="yg-seg" role="tablist" aria-label="Network">
           {filters.map((f) => (
             <button
               key={f.id}
@@ -270,10 +256,6 @@ export default function BundleCatalogue({ latestCard = true, onNetwork }: { late
               aria-selected={filter === f.id}
               onClick={() => setFilter(f.id)}
               title={`${counts.get(f.id) ?? 0} bundles`}
-              className={cn(
-                "rounded-full px-2 py-2 text-center text-[13px] font-semibold leading-none transition-colors sm:px-4",
-                filter === f.id ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground",
-              )}
             >
               {f.label}
             </button>
@@ -371,8 +353,8 @@ export default function BundleCatalogue({ latestCard = true, onNetwork }: { late
                           {group.network.name.toUpperCase()}
                         </span>
                         {group.network.name === "MTN" && speedPill(speeds.MTN) ? (
-                          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12.5px] font-semibold ${speedPill(speeds.MTN)!.paused ? "border-white/[0.12] bg-white/[0.05] text-muted-foreground" : "border-primary-glow/20 bg-primary/[0.08] text-primary-glow"}`} title="Typical time from payment to delivery right now, counting orders still in progress">
-                            <span className={`h-1.5 w-1.5 rounded-full ${speedPill(speeds.MTN)!.paused ? "bg-faint-foreground" : "bg-primary-glow"}`} />{speedPill(speeds.MTN)!.text}
+                          <span className="yg-speed" data-paused={speedPill(speeds.MTN)!.paused ? "" : undefined} title="Typical time from payment to delivery right now, counting orders still in progress">
+                            <i aria-hidden="true" />{speedPill(speeds.MTN)!.text}
                           </span>
                         ) : (<>
                           <span className="font-display text-[15px] font-semibold tracking-tight text-foreground">
@@ -385,7 +367,7 @@ export default function BundleCatalogue({ latestCard = true, onNetwork }: { late
                       </h3>
                     </div>
                     {group.network.name === "MTN" && (
-                      <div className="mb-5 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
+                      <div className="yg-box mb-5 p-4">
                         <div className="mb-2 flex items-center gap-1.5"><p className="text-[13px] font-semibold text-foreground">First time buying for this MTN number? Check it first</p><button type="button" onClick={() => setCheckInfoOpen(true)} aria-label="About the MTN number check" className="text-faint-foreground hover:text-primary-glow"><Info size={15} /></button></div>
                         <MtnCheckField source="shop" />
                         <MtnCheckInfoSheet open={checkInfoOpen} onClose={() => setCheckInfoOpen(false)} />

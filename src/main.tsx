@@ -12,6 +12,7 @@ import { openShortLink } from "@/lib/advertShortLink";
 import { capturePartnerCode } from "@/lib/partners";
 import { isStoreHost } from "@/lib/storeHost";
 import "./styles/site.css"; // after index.css: the public-site rules must win ties with the app rules
+import "./styles/look.css"; // last: the look of 14 Nov 2026 wins ties with both
 
 // A page left open across a publish asks for code files that no longer exist,
 // which shows up as blank sheets or pages. Reload once to pick up the live build.

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Band from "@/components/layout/Band";
 
 /**
  * Consistent header at the top of every page: small eyebrow, display title,
@@ -9,12 +10,19 @@ export default function PageHeader({
   title,
   subtitle,
   action,
+  band = false,
+  children,
 }: {
   eyebrow?: string;
   title: string;
   subtitle?: string;
   action?: ReactNode;
+  /** The customer app's pages open with the green band (styles/look.css); the admin keeps the plain header. */
+  band?: boolean;
+  /** Only with `band`: what sits inside it under the title. */
+  children?: ReactNode;
 }) {
+  if (band) return <Band title={title} sub={subtitle}>{children}{action && <div className="yg-band__action">{action}</div>}</Band>;
   return (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>

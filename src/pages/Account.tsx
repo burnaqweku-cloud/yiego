@@ -20,7 +20,7 @@ export default function Account() {
   return (
     <div className="space-y-6 lg:space-y-8">
       <Seo title="Your Account — DataYego" description="Manage your DataYego account details." path="/account" noindex />
-      <PageHeader eyebrow="Account" title="Your account" subtitle="Manage your personal details and preferences." />
+      <PageHeader band title="Your account" subtitle="Your personal details and preferences." />
       <PartnerEntry />
 
       <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">

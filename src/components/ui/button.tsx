@@ -46,7 +46,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <Comp
         ref={ref}
         {...(asChild ? {} : { type })}
-        className={cn(buttonVariants({ variant, size }), className)}
+        data-variant={variant ?? "primary"}
+        className={cn("ui-btn", buttonVariants({ variant, size }), className)}
         {...props}
       />
     );

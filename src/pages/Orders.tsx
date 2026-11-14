@@ -123,7 +123,7 @@ export default function Orders() {
   return (
     <div className="space-y-6 lg:space-y-8">
       <Seo title="Your Orders — DataYego" description="Your DataYego order history." path="/orders" noindex />
-      <PageHeader eyebrow="Data orders" title="Your orders" subtitle="Search your purchase history and follow every delivery." action={<Button variant="soft" onClick={() => void load()} disabled={loading}><RefreshCcw className={loading ? "animate-spin" : ""} size={16} /> Refresh</Button>} />
+      <PageHeader band title="Your orders" subtitle="Every order you have placed, and where each one is." action={<Button variant="soft" onClick={() => void load()} disabled={loading}><RefreshCcw className={loading ? "animate-spin" : ""} size={16} /> Refresh</Button>} />
 
       <DeliveryProgress />
 

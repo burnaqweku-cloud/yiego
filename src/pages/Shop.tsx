@@ -1,19 +1,18 @@
 import { useState } from "react";
-import { ArrowRight, CreditCard, Gift } from "lucide-react";
+import { CreditCard, Gift } from "lucide-react";
 import InviteSheet from "@/components/referrals/InviteSheet";
 import Seo from "@/components/seo/Seo";
 import AgentShopCard from "@/components/agents/AgentShopCard";
 import { metaFor } from "@/lib/site";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import BundleCatalogue from "@/components/shop/BundleCatalogue";
-import WalletCard from "@/components/shop/WalletCard";
+import ShopBand from "@/components/shop/ShopBand";
 import ImportantNotice from "@/components/shop/ImportantNotice";
 import { TRUST_POINTS } from "@/data/marketing";
 import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 import { useReveal } from "@/hooks/useReveal";
 import { useAuth } from "@/store/auth-context";
 import { useFlows } from "@/store/flows";
-import { useProfile } from "@/store/profile";
 import { useWallet } from "@/store/wallet";
 
 /**
@@ -26,26 +25,12 @@ import { useWallet } from "@/store/wallet";
  * the shared observer only sweeps for targets once.
  */
 
-const dateFmt = new Intl.DateTimeFormat("en-GH", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-});
-
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
-}
-
 export default function Shop() {
   const [inviteOpen, setInviteOpen] = useState(false);
   // The network tab open in the catalogue, so the wallet card shows that network's latest delivery.
   const [network, setNetwork] = useState("MTN");
   const speeds = useDeliverySpeed();
   const ref = useReveal<HTMLDivElement>();
-  const { profile } = useProfile();
   const { isAuthenticated } = useAuth();
   const { transactions } = useWallet();
   const { openBuyData } = useFlows();
@@ -53,59 +38,29 @@ export default function Shop() {
   return (
     <div ref={ref} className="space-y-6 lg:space-y-10">
       <Seo {...metaFor("/shop")} />
-      {isAuthenticated ? (
+      {/* ── One band: the wallet when signed in, the page's name when not, the latest delivery either way ── */}
+      <ShopBand network={network} speed={speeds[network]} />
+
+      {isAuthenticated && (
         <>
-          {/* Signed in: a slim greeting, then the wallet as the hero — the
-              first thing a returning customer sees, the way a bank app leads
-              with your balance rather than burying it under copy. */}
-          <header data-reveal>
-            <p className="text-[13.5px] font-semibold text-muted-foreground">
-              {dateFmt.format(new Date())}
-            </p>
-            <h1 className="mt-1.5 font-display text-[24px] font-semibold tracking-tight text-foreground sm:text-[30px]">
-              {greeting()}, {profile.firstName}
-            </h1>
-          </header>
-
-          {/* ── Wallet, at the forefront, with the latest delivery inside the same card ── */}
-          <WalletCard network={network} speed={speeds[network]} />
-
-          {/* Secondary action: settle an Order ID someone shared with you. */}
-          <button
-            type="button"
-            onClick={() => openBuyData({ kind: "payOrder" })}
-            className="group inline-flex items-center gap-2 text-[13.5px] font-semibold text-primary-glow"
-          >
-            <CreditCard size={15} aria-hidden="true" />
-            Pay for someone&rsquo;s order
-            <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setInviteOpen(true)}
-            className="group inline-flex items-center gap-2 text-[13.5px] font-semibold text-primary-glow"
-          >
-            <Gift size={15} aria-hidden="true" />
-            Invite &amp; earn GHS 6.00 in data
-            <ArrowRight size={15} className="mk-arrow" aria-hidden="true" />
-          </button>
+          <div className="yg-quick">
+            <button type="button" onClick={() => openBuyData({ kind: "payOrder" })}>
+              <CreditCard aria-hidden="true" />
+              <span>Pay for an order<small>Someone shared an Order ID</small></span>
+            </button>
+            <button type="button" onClick={() => setInviteOpen(true)}>
+              <Gift aria-hidden="true" />
+              <span>Invite &amp; earn<small>GHS 6.00 in data</small></span>
+            </button>
+          </div>
           <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />
 
           <AgentShopCard />
         </>
-      ) : (
-        <header data-reveal>
-          <h1 className="font-display text-[26px] font-semibold tracking-tight text-foreground sm:text-[32px]">
-            Buy Ghana data online
-          </h1>
-          <p className="mt-1.5 max-w-[62ch] text-[14px] leading-6 text-muted-foreground">
-            Tap a bundle, enter the number, pay with MoMo or card.
-          </p>
-        </header>
       )}
 
       {/* ── The catalogue ───────────────────────────────────────── */}
-      <BundleCatalogue latestCard={!isAuthenticated} onNetwork={setNetwork} />
+      <BundleCatalogue onNetwork={setNetwork} />
 
       {/* ── The house rules, before anyone pays ───────────────── */}
       <ImportantNotice />

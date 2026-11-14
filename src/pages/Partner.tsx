@@ -18,7 +18,7 @@ export default function Partner() {
   if (!d) return (
     <div className="space-y-6">
       <Seo title="Partners — DataYego" description="DataYego partner programme." path="/partner" noindex />
-      <PageHeader eyebrow="Partners" title="Partner dashboard" subtitle="This account isn't a DataYego partner yet." />
+      <PageHeader band title="Partner dashboard" subtitle="This account isn't a DataYego partner yet." />
       <section className="onyx-panel rounded-[24px] p-6 text-sm text-muted-foreground">Run a channel or community in Ghana? Message our team to join and earn on every bundle your audience buys.
         <div className="mt-4"><Button asChild><a href={SUPPORT}>Contact the team</a></Button></div></section>
     </div>
@@ -30,7 +30,7 @@ export default function Partner() {
   return (
     <div className="space-y-6">
       <Seo title="Partner dashboard — DataYego" description="Your DataYego partner earnings." path="/partner" noindex />
-      <PageHeader eyebrow="Partners" title={`Hi, ${d.name}`} subtitle={`${PARTNER_PACKAGES[d.package].name} package${d.status !== "active" ? " · paused" : ""}`} />
+      <PageHeader band title={`Hi, ${d.name}`} subtitle={`${PARTNER_PACKAGES[d.package].name} package${d.status !== "active" ? " · paused" : ""}`} />
 
       <section className="onyx-panel rounded-[24px] p-5">
         <p className="text-xs text-muted-foreground">Your link</p>

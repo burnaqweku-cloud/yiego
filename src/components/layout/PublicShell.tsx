@@ -23,6 +23,8 @@ function ScrollToTop() {
 
 /** Shell for the public site (datayego.com): marketing nav, page, full footer. `.site` scopes its own design. */
 export default function PublicShell() {
+  // The buy and top-up sheets open outside `.site`; this flag lets the look reach them (styles/look.css).
+  useEffect(() => { document.documentElement.classList.add("yg-look"); return () => document.documentElement.classList.remove("yg-look"); }, []);
   return (
     <div className="site onyx-canvas flex min-h-dvh flex-col">
       <ScrollToTop />

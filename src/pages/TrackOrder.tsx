@@ -1,3 +1,4 @@
+import Band from "@/components/layout/Band";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, Clock, CreditCard, Loader2, Search, ShieldCheck } from "lucide-react";
@@ -188,11 +189,12 @@ export default function TrackOrder({ embedded = false, fixedReference }: { embed
   return (
     <div className={embedded ? "w-full" : "mx-auto w-full max-w-[760px]"}>
       {!embedded && <Seo {...metaFor("/track-order")} />}
+      {!embedded && !fixedReference && <Band title="Track your order" sub="Enter your Order ID (it starts with YG- or AG-) or the phone number the data was sent to." className="mb-5" />}
       {!embedded && <DeliveryProgress className="mb-4" />}
       <Card className={fixedReference ? "w-full border-0 bg-transparent shadow-none" : "w-full"}>
         <CardContent className={fixedReference ? "p-0" : "p-6 sm:p-7"}>
-            {!fixedReference && <div><p className="text-[13px] font-semibold text-[var(--gold)]">Order lookup</p><h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white">Track your data order</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your order reference (the <span className="font-mono text-foreground">YG-</span> or <span className="font-mono text-foreground">AG-</span> code from your receipt) or the phone number the data was sent to.</p></div>}
-            {!fixedReference && <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto]">
+            {!fixedReference && embedded && <div><h2 className="yg-h2">Find an order</h2><p className="mt-1.5 text-sm font-medium leading-6 text-muted-foreground">Enter the Order ID (it starts with <span className="font-mono text-foreground">YG-</span> or <span className="font-mono text-foreground">AG-</span>) or the phone number the data was sent to.</p></div>}
+            {!fixedReference && <div className={embedded ? "mt-5 grid gap-3 sm:grid-cols-[1fr_auto]" : "grid gap-3 sm:grid-cols-[1fr_auto]"}>
               <input className="onyx-field" value={reference} onChange={(event) => setReference(event.target.value.toUpperCase())} onKeyDown={(event) => { if (event.key === "Enter") lookup(); }} placeholder="Order ID or phone number" aria-label="Order reference or phone number" />
               <Button onClick={() => lookup()} disabled={loading || !reference.trim()}>{loading ? <Loader2 className="animate-spin" /> : <Search />}Track</Button>
             </div>}

@@ -1,0 +1,255 @@
+/* ════════════════════════════════════════════════════════════════════════
+   The DataYego look (14 Nov 2026), for the public site and the customer app.
+
+   It grew out of the advert banner and the latest-delivery card the owner chose: a deep green field, the logo's
+   slanted dash grown into a panel with an amber edge, white boards for anything you read or tap, heavy Bricolage
+   type, solid buttons. Every page opens with the same green band; what you act on sits on white.
+
+   Loaded last, so it wins ties with index.css and site.css. Pages are styled through `.light .site`; the sheets
+   that open over them live outside `.site`, so they are reached through `html.yg-look` (set by PublicShell).
+   The agent dashboard, the admin and agent stores are not touched here.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.light .site,
+html.yg-look .onyx-modal-dock {
+  --pitch: #06402c;          /* the green field: header, bands, selected states */
+  --leaf: #018a57;           /* the action colour: one solid button per screen */
+  --leaf-down: #017449;
+  --leaf-bright: #12b377;    /* the slanted panel */
+  --mint: #6df2b6;           /* small lights on the green field */
+  --edge: #f7a701;           /* the amber edge: used thinly */
+  --ink: #0a1912;
+  --ink-2: #48584f;
+  --line: rgba(10, 25, 18, 0.09);
+  --lift: 0 1px 2px rgba(10, 25, 18, 0.04), 0 18px 34px -26px rgba(6, 64, 44, 0.45);
+  --font-display: "Bricolage Grotesque Variable", var(--font-sans);
+}
+.light .site {
+  --page: #f1f5f2;
+  --background: 135 17% 95%;
+  --border: 150 14% 86%;
+  --primary: 158 99% 27%;
+  --primary-strong: 158 98% 23%;
+  --primary-glow: 158 98% 24%;
+  --foot: #06402c;
+  --panel: #06402c;
+  --leafbtn: #018a57;
+}
+
+/* ── The header: part of the green field ─────────────────────────────────── */
+.light .site .mk-nav,
+.light .site .mk-nav[data-stuck="true"] {
+  background: var(--pitch);
+  border-bottom-color: transparent;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  --text: #fff; --veil: 255 255 255; --gold: #f7a701;
+  --foreground: 0 0% 100%; --muted-foreground: 150 30% 86%; --faint-foreground: 150 22% 76%;
+  color: #fff;
+}
+.light .site .mk-nav .brand-light { display: none; }
+.light .site .mk-nav .brand-dark { display: block; }
+.light .site .mk-nav .mk-navlink { color: rgba(255, 255, 255, 0.78); font-weight: 600; }
+.light .site .mk-nav .mk-navlink.is-active, .light .site .mk-nav .mk-navlink:hover { color: #fff; }
+.light .site .mk-nav .mk-navlink::after { background: var(--edge); }
+.light .site .mk-nav .onyx-userchip { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.16); box-shadow: none; color: #fff; }
+.light .site .mk-nav .onyx-iconbtn { background: rgba(255, 255, 255, 0.1); border-color: transparent; color: #fff; }
+.light .site .mk-nav .mk-btn-primary { background: #fff; color: var(--pitch); box-shadow: none; }
+.light .site .mk-nav .mk-btn-primary:hover { background: #eafaf2; }
+/* the account menu that drops from the header is a white board again */
+.light .site .mk-nav .onyx-panel {
+  --text: #0a1912; --veil: 11 26 18; --foreground: 152 45% 7%; --muted-foreground: 152 12% 34%; --faint-foreground: 150 8% 47%;
+  color: var(--text);
+}
+.light .site :focus-visible { outline-color: var(--edge); }
+
+/* ── "Get the app" strip and the bottom bar ───────────────────────────────── */
+.light .site .yg-appbar { background: #fff; border-bottom-color: var(--line); }
+.light .site .yg-appbar-cta { background: var(--pitch); color: #fff; font-weight: 800; box-shadow: none; }
+.light .site .yg-tabbar { background: #fff; border-top: 1px solid var(--line); box-shadow: 0 -14px 30px -24px rgba(6, 64, 44, 0.5); }
+.light .site .yg-tab { color: var(--ink-2); font-weight: 600; }
+.light .site .yg-tab.is-active { color: var(--pitch); font-weight: 800; }
+.light .site .yg-tab.is-active .yg-tab-ico { background: var(--pitch); color: #fff; }
+
+/* ── The band: how every page opens ───────────────────────────────────────── */
+.yg-band {
+  position: relative; isolation: isolate; overflow: hidden;
+  margin: -32px -20px 0; padding: 20px 20px 22px;
+  border-radius: 0 0 28px 28px;
+  background: #06402c; color: #fff;
+  box-shadow: 0 26px 44px -34px rgba(6, 64, 44, 0.9);
+}
+.yg-band__panel {
+  position: absolute; z-index: -1; right: -31%; top: -46px; width: 50%; height: 270px;
+  transform: skewX(-18deg);
+  background:
+    linear-gradient(90deg, #f7a701 0 8px, #06402c 8px 17px, transparent 17px),
+    radial-gradient(60% 55% at 46% 30%, #12b377 0%, #019b62 70%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 36%, transparent 74%); mask-image: linear-gradient(to bottom, #000 36%, transparent 74%);
+}
+.yg-band__kicker { font-size: 13.5px; font-weight: 700; line-height: 1.2; color: rgba(255, 255, 255, 0.8); }
+.yg-band__title { max-width: 76%; font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1.02; letter-spacing: -0.035em; text-wrap: balance; }
+.yg-band__kicker + .yg-band__title { margin-top: 5px; }
+.yg-band__sub { max-width: 34ch; margin-top: 9px; font-size: 14px; font-weight: 600; line-height: 1.4; color: rgba(255, 255, 255, 0.82); }
+.yg-band > .yg-latest__board { margin-top: 18px; }
+.yg-band > .yg-latest__now { margin: 16px -20px -22px; padding: 13px 20px 15px; }
+.yg-band__kicker a { color: #fff; font-weight: 800; }
+.yg-band__action { margin-top: 14px; }
+/* from a tablet up the band is a rounded block in the page column, not an edge-to-edge strip */
+@media (min-width: 640px) {
+  .yg-band { margin: 0; padding: 28px 32px 30px; border-radius: 28px; }
+  .yg-band__title { font-size: 36px; }
+  .yg-band > .yg-latest__now { margin: 18px -32px -30px; padding-inline: 32px; }
+}
+@media (min-width: 1024px) {
+  .yg-band { padding: 32px 36px; }
+  .yg-band__panel { right: -8%; width: 38%; height: 330px; top: -60px; }
+  .yg-band__title { font-size: 42px; }
+  .yg-band > .yg-latest__now { margin: 20px -36px -32px; padding-inline: 36px; }
+}
+.yg-h2 { font-family: var(--font-display); font-weight: 800; font-size: 20px; line-height: 1.1; letter-spacing: -0.03em; color: var(--ink); }
+
+/* ── Buttons: solid, heavy, one colour for the action ─────────────────────── */
+.light .site .mk-btn-primary,
+.light .site .onyx-btn-primary,
+html.yg-look .onyx-modal-panel .onyx-btn-primary {
+  min-height: 54px; border-radius: 16px;
+  background: var(--leaf); color: #fff;
+  font-size: 15.5px; font-weight: 800; letter-spacing: -0.01em;
+  box-shadow: 0 16px 28px -16px rgba(1, 138, 87, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  filter: none; transform: none;
+}
+.light .site .mk-btn-primary:hover, .light .site .onyx-btn-primary:hover, html.yg-look .onyx-modal-panel .onyx-btn-primary:hover { background: var(--leaf-down); transform: none; filter: none; box-shadow: 0 16px 28px -16px rgba(1, 138, 87, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.16); }
+.light .site .mk-btn-primary:active, .light .site .onyx-btn-primary:active, html.yg-look .onyx-modal-panel .onyx-btn-primary:active { background: #016843; transform: translateY(1px); }
+.light .site .mk-btn-primary:disabled, .light .site .onyx-btn-primary:disabled, html.yg-look .onyx-modal-panel .onyx-btn-primary:disabled,
+.light .site .onyx-btn-primary[aria-disabled="true"], html.yg-look .onyx-modal-panel .onyx-btn-primary[aria-disabled="true"] {
+  background: #dfe7e2; color: #76857c; box-shadow: none; opacity: 1; cursor: not-allowed;
+}
+.light .site .mk-btn-ghost,
+.light .site .onyx-btn-ghost,
+html.yg-look .onyx-modal-panel .onyx-btn-ghost {
+  min-height: 54px; border-radius: 16px;
+  background: #fff; color: var(--ink); border: 1.5px solid rgba(10, 25, 18, 0.16);
+  font-size: 15.5px; font-weight: 800; box-shadow: none; transform: none;
+}
+.light .site .mk-btn-ghost:hover, .light .site .onyx-btn-ghost:hover, html.yg-look .onyx-modal-panel .onyx-btn-ghost:hover { background: #f4f8f5; border-color: rgba(10, 25, 18, 0.32); transform: none; }
+
+/* the shared Button component (ui/button) follows the same rules */
+.light .site .ui-btn, html.yg-look .onyx-modal-panel .ui-btn { border-radius: 14px; font-weight: 800; }
+.light .site .ui-btn:hover, html.yg-look .onyx-modal-panel .ui-btn:hover { transform: none; filter: none; }
+.light .site .ui-btn[data-variant="primary"], html.yg-look .onyx-modal-panel .ui-btn[data-variant="primary"] { background: var(--leaf); color: #fff; box-shadow: 0 14px 24px -16px rgba(1, 138, 87, 0.9); }
+.light .site .ui-btn[data-variant="primary"]:hover, html.yg-look .onyx-modal-panel .ui-btn[data-variant="primary"]:hover { background: var(--leaf-down); }
+.light .site .ui-btn[data-variant="primary"]:disabled, html.yg-look .onyx-modal-panel .ui-btn[data-variant="primary"]:disabled { background: #dfe7e2; color: #76857c; box-shadow: none; opacity: 1; }
+.light .site .ui-btn[data-variant="soft"], html.yg-look .onyx-modal-panel .ui-btn[data-variant="soft"] { background: #e3f3ea; border-color: transparent; color: var(--pitch); }
+.light .site .ui-btn[data-variant="ghost"], html.yg-look .onyx-modal-panel .ui-btn[data-variant="ghost"] { background: #fff; border: 1.5px solid rgba(10, 25, 18, 0.16); color: var(--ink); box-shadow: none; }
+/* on the green field the action is white */
+.light .site .yg-band .ui-btn[data-variant="primary"], .light .site .yg-band .onyx-btn-primary, .light .site .yg-band .mk-btn-primary { background: #fff; color: #06402c; box-shadow: 0 14px 24px -14px rgba(0, 0, 0, 0.7); }
+.light .site .yg-band .ui-btn[data-variant="soft"] { background: rgba(255, 255, 255, 0.14); border-color: transparent; color: #fff; }
+
+/* ── Fields ───────────────────────────────────────────────────────────────── */
+.light .site .onyx-field,
+html.yg-look .onyx-modal-panel .onyx-field,
+.light .site .onyx-search {
+  border-radius: 16px; border: 1.5px solid #cad6cf; background: #fff;
+  color: var(--ink); font-weight: 600; box-shadow: none;
+}
+.light .site .onyx-field, html.yg-look .onyx-modal-panel .onyx-field { padding: 15px 16px; }
+.light .site .onyx-field::placeholder, html.yg-look .onyx-modal-panel .onyx-field::placeholder { color: #98a59d; font-weight: 500; }
+.light .site .onyx-field:focus, html.yg-look .onyx-modal-panel .onyx-field:focus, .light .site .onyx-search:focus-within {
+  border-color: var(--leaf); box-shadow: 0 0 0 4px rgba(1, 138, 87, 0.14); outline: none;
+}
+
+/* ── Boards: anything you read or tap sits on white ───────────────────────── */
+.light .site .mk-card, .light .site .onyx-panel, .light .site .mk-quote, .light .site .mk-cat, .light .site .board {
+  background: #fff; border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--lift);
+}
+.light .site .mk-bundle { background: #fff; border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--lift); transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; }
+.light .site .mk-bundle:hover { transform: none; border-color: rgba(1, 138, 87, 0.45); box-shadow: var(--lift); }
+.light .site .mk-bundle:active { transform: scale(0.985); }
+.yg-size { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.04em; color: var(--ink); }
+.yg-price { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.yg-buy { display: inline-flex; align-items: center; height: 30px; padding: 0 15px; border-radius: 999px; background: var(--pitch); color: #fff; font-size: 12.5px; font-weight: 800; }
+.yg-buy[data-off] { background: #e6ece8; color: #76857c; }
+
+/* the network switch: a white track, the choice in green */
+.yg-seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 5px; border-radius: 999px; background: #fff; border: 1px solid var(--line); box-shadow: var(--lift); }
+.yg-seg > button { height: 40px; border-radius: 999px; font-size: 13.5px; font-weight: 700; line-height: 1; color: var(--ink-2); transition: background 0.15s, color 0.15s; }
+.yg-seg > button[aria-selected="true"] { background: var(--pitch); color: #fff; font-weight: 800; }
+@media (min-width: 640px) { .yg-seg { display: inline-grid; } .yg-seg > button { padding: 0 20px; } }
+.yg-speed { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 13px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.yg-speed i { width: 7px; height: 7px; border-radius: 50%; background: var(--leaf); }
+.yg-speed[data-paused] { color: var(--ink-2); } .yg-speed[data-paused] i { background: #9aa69f; }
+.yg-box { border-radius: 20px; background: #fff; border: 1px solid var(--line); box-shadow: var(--lift); }
+
+/* the notice: a white board with the amber edge down its side */
+.yg-notice { position: relative; overflow: hidden; border-radius: 18px; background: #fff; border: 1px solid var(--line); }
+.yg-notice::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--edge); }
+.yg-notice__title { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--ink); }
+.yg-notice__title svg { color: #b97700; }
+.yg-notice ul { color: var(--ink-2); }
+.yg-notice li::marker { color: #b97700; }
+
+/* quick links under the band */
+.yg-quick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.yg-quick > * { display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 10px 12px; border-radius: 18px; background: #fff; border: 1px solid var(--line); box-shadow: var(--lift); text-align: left; font-size: 13px; font-weight: 800; line-height: 1.2; color: var(--ink); }
+.yg-quick svg { flex: none; width: 34px; height: 34px; padding: 8px; border-radius: 11px; background: #e3f3ea; color: var(--pitch); }
+.yg-quick small { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 600; color: var(--ink-2); }
+
+/* ── The footer joins the field ───────────────────────────────────────────── */
+.light .site .mk-footer, .light .site .agents-panel, .light .site .mk-cta { background: var(--pitch); border-color: var(--pitch); }
+
+/* ── Sheets (buy data, add money): a green head, a white body ─────────────── */
+html.yg-look .onyx-modal-panel { border: 0; border-radius: 28px 28px 0 0; background: #fff; box-shadow: 0 -30px 70px -34px rgba(6, 64, 44, 0.75); }
+@media (min-width: 640px) { html.yg-look .onyx-modal-panel { border-radius: 28px; } }
+html.yg-look .onyx-sheet-handle { background: rgba(255, 255, 255, 0.4); }
+html.yg-look .onyx-flowhead { overflow: hidden; isolation: isolate; padding: 22px 14px 16px; background: #06402c; border-bottom: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+html.yg-look .onyx-flowhead::before {
+  content: ""; position: absolute; z-index: -1; right: -14%; top: -30px; width: 34%; height: 150px; transform: skewX(-18deg);
+  background: linear-gradient(90deg, #f7a701 0 6px, #06402c 6px 13px, transparent 13px), radial-gradient(60% 55% at 46% 30%, #12b377 0%, #019b62 70%);
+  opacity: 0.9;
+}
+html.yg-look .onyx-flowhead .font-display { font-size: 18px; font-weight: 800; letter-spacing: -0.025em; color: #fff; }
+html.yg-look .onyx-flowhead .text-faint-foreground { margin-top: 1px; font-size: 12.5px; font-weight: 600; color: rgba(255, 255, 255, 0.8); }
+html.yg-look .onyx-flowhead .onyx-iconbtn { border-radius: 999px; border-color: transparent; background: rgba(255, 255, 255, 0.14); color: #fff; }
+html.yg-look .onyx-flowhead .onyx-iconbtn:hover { transform: none; background: rgba(255, 255, 255, 0.22); color: #fff; }
+html.yg-look .onyx-flow-footer { background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #fff 34%); }
+html.yg-look .onyx-modal-panel label, html.yg-look .onyx-modal-panel .onyx-label { color: var(--ink); font-weight: 700; }
+html.yg-look .onyx-modal-panel .onyx-select { border-radius: 18px; border: 1.5px solid #dbe4de; background: #fff; }
+html.yg-look .onyx-modal-panel .onyx-select:hover { border-color: var(--leaf); transform: none; }
+html.yg-look .onyx-modal-panel .onyx-tile-icon { border: 0; border-radius: 12px; background: #e3f3ea; color: var(--pitch); }
+html.yg-look .onyx-modal-panel .onyx-success-badge { background: var(--leaf); color: #fff; box-shadow: 0 0 0 10px rgba(1, 138, 87, 0.12); }
+html.yg-look .onyx-modal-panel .rounded-2xl.border:not(.yg-notice), html.yg-look .onyx-modal-panel .rounded-xl.border:not(.yg-notice):not(.onyx-field) { border-color: transparent; background-color: #f2f6f3; }
+html.yg-look .onyx-modal-panel .font-display { font-weight: 800; letter-spacing: -0.02em; }
+html.yg-look .onyx-modal-panel .text-white { color: var(--ink); }
+html.yg-look .onyx-flowhead .text-white { color: #fff; }
+
+/* ── The home page opens on the same field: headline and actions on green, the price board on white ───────── */
+.light .site .mk-hero {
+  position: relative; isolation: isolate; overflow: hidden;
+  background: #06402c; border-radius: 0 0 28px 28px;
+  --text: #fff; --veil: 255 255 255; --gold: #f7a701;
+  --foreground: 0 0% 100%; --muted-foreground: 150 30% 88%; --faint-foreground: 150 22% 78%; --primary-glow: 151 78% 71%;
+  color: #fff;
+}
+.light .site .mk-hero::before {
+  content: ""; position: absolute; z-index: -1; right: -31%; top: -46px; width: 50%; height: 300px; transform: skewX(-18deg);
+  background: linear-gradient(90deg, #f7a701 0 8px, #06402c 8px 17px, transparent 17px), radial-gradient(60% 55% at 46% 30%, #12b377 0%, #019b62 70%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 36%, transparent 74%); mask-image: linear-gradient(to bottom, #000 36%, transparent 74%);
+}
+@media (min-width: 1024px) { .light .site .mk-hero::before { right: -6%; width: 30%; height: 420px; top: -70px; } }
+.light .site .mk-hero .mk-hero-title { color: #fff; }
+.light .site .mk-hero .mk-btn-primary { background: #fff; color: #06402c; box-shadow: 0 16px 28px -16px rgba(0, 0, 0, 0.7); }
+.light .site .mk-hero .mk-btn-primary:hover { background: #eafaf2; }
+.light .site .mk-hero .mk-btn-ghost { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.42); }
+.light .site .mk-hero .mk-btn-ghost:hover { background: rgba(255, 255, 255, 0.08); border-color: #fff; }
+/* the board inside it is white paper again */
+.light .site .mk-hero .board {
+  --text: #0a1912; --veil: 11 26 18; --gold: #0a1912;
+  --foreground: 152 45% 7%; --muted-foreground: 152 12% 34%; --faint-foreground: 150 8% 47%; --primary-glow: 158 98% 24%;
+  color: var(--text); border: 0; box-shadow: 0 26px 44px -26px rgba(0, 0, 0, 0.75);
+}
+.light .site .board-size, .light .site .board-price { font-weight: 800; }
+.light .site .board-tab[aria-selected="true"] { background: #fff; }
+
+/* the greeting is a line of its own size, so a name fits beside the panel */
+.yg-band--shop .yg-band__kicker + .yg-band__title { font-size: 27px; max-width: 82%; }
+@media (min-width: 640px) { .yg-band--shop .yg-band__kicker + .yg-band__title { font-size: 34px; } }
