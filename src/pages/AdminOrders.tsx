@@ -66,7 +66,7 @@ function supplierNote(order: AdminOrderRow, events: AdminOrderEventRow[]) {
 function supportMessage(order: AdminOrderRow, processingDelay = false) {
   const reference = order.order_reference;
   const status = displayedStatus(order);
-  if (status === AWAITING_VERIFICATION) return `Hello, your DataYego order ${reference} has not failed. MTN verifies numbers receiving a bundle for the first time, which usually takes a few days. Your data will be delivered automatically once MTN completes the check, and future orders to this number will go through normally.`;
+  if (status === AWAITING_VERIFICATION) return `Hello, your DataYego order ${reference} has not failed. MTN verifies numbers receiving a bundle for the first time, which can take a few weeks. Your data will be delivered automatically once MTN completes the check, and future orders to this number will go through normally.`;
   if (order.admin_resolution_reason) return `Hello, your DataYego order ${reference} is currently ${readableStatus(status).toLowerCase()}. ${order.admin_resolution_reason}`;
   if (order.payment_status === "failed") return `Hello, payment for your DataYego order ${reference} was not completed. No successful payment has been confirmed.`;
   if (["created", "pending"].includes(order.payment_status) || status === "awaiting_payment") return `Hello, your DataYego order ${reference} is awaiting payment. You can continue the payment before the order expires.`;

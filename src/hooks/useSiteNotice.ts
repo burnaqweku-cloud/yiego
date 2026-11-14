@@ -21,7 +21,7 @@ export const DEFAULT_NOTICE: SiteNotice = {
     "No refunds for orders sent to a wrong number — double-check before paying.",
   ],
   mtn_note:
-    "MTN: a number ordering MTN data through us for the first time may show \u201CAwaiting Verification\u201D for a quick one-time check before it delivers. Future orders to that same number go through normally.",
+    "MTN: a number ordering MTN data through us for the first time may show \u201CAwaiting Verification\u201D while MTN does a one-time check before it delivers. This can take a few weeks. Future orders to that same number go through normally.",
   is_published: true,
 };
 

@@ -5,7 +5,7 @@
    DataBundlesHub's channel, MTN holds it for verification.
    DBH reacts by refunding the order to our float — silently:
    status "refunded" and errorCode null. That is not a failure.
-   MTN clears the number in a few days, after which the same
+   MTN clears the number in a few weeks, after which the same
    bundle goes through on the DBH portal and every later order
    is normal.
 
@@ -24,13 +24,13 @@ type SupabaseAdminClient = any;
 export const AWAITING_VERIFICATION = "awaiting_verification";
 
 export const AWAITING_VERIFICATION_REASON =
-  "MTN is verifying this number before its first bundle. This usually takes a few days. " +
+  "MTN is verifying this number before its first bundle. This can take a few weeks. " +
   "The order has not failed and will be delivered automatically once verification is complete.";
 
 /** Customer-facing copy, shared by track-order and the support message. */
 export const AWAITING_VERIFICATION_CUSTOMER_MESSAGE =
   "Your order has not failed. MTN verifies numbers that are receiving a bundle for the first time, " +
-  "and this usually takes a few days. Your data will be delivered automatically once MTN completes " +
+  "and this can take a few weeks. Your data will be delivered automatically once MTN completes " +
   "the check — you don't need to do anything. Future orders to this number will go through normally.";
 
 interface VerificationOrder {

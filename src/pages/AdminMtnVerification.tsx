@@ -79,7 +79,7 @@ export default function AdminMtnVerification() {
         <Stat label="On hold" value={queue ? queue.length : "—"} icon={Clock} note="orders waiting for MTN" loading={!queue} />
         <Stat label="Ready to send" value={queue ? ready.length : "—"} tone={ready.length ? "good" : "muted"} icon={CheckCircle2} note="approved, not yet sent" loading={!queue} />
         <Stat label="Last check" value={lastCheck ? formatAdminDate(lastCheck.run_at).replace(/, /, " ") : "never"} note={lastCheck ? `${lastCheck.numbers} numbers · ${lastCheck.approved} approved${lastCheck.run_by ? ` · ${lastCheck.run_by}` : ""}` : "press Check all"} icon={ShieldCheck} loading={!queue} />
-        <Stat label="Oldest wait" value={queue?.length ? `${Math.max(...queue.map((o) => o.days_waiting))} days` : "—"} tone={queue?.some((o) => o.days_waiting >= 7) ? "warn" : "default"} note="MTN usually takes a few days" loading={!queue} />
+        <Stat label="Oldest wait" value={queue?.length ? `${Math.max(...queue.map((o) => o.days_waiting))} days` : "—"} tone={queue?.some((o) => o.days_waiting >= 7) ? "warn" : "default"} note="MTN can take a few weeks" loading={!queue} />
       </StatGrid>
 
       <Panel title="Step 1 · Check with DataBundlesHub" icon={ShieldCheck} note="batches of 100 numbers, sends nothing">

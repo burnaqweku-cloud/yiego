@@ -259,7 +259,7 @@ export const BLOG_POSTS: BlogPost[] = [
       { type: "h2", text: "The four states a number can be in" },
       { type: "table", head: ["What the check says", "What it means", "What to do"], rows: [
         ["Approved", "MTN accepts bundles to this number straight away.", "Buy as normal."],
-        ["Not yet approved", "The number has not been verified by MTN yet.", "You can still buy. MTN verifies the number first, which can take a few days, and the order delivers once it is approved. Or submit the number for verification before you buy."],
+        ["Not yet approved", "The number has not been verified by MTN yet.", "You can still buy. MTN verifies the number first, which can take a few weeks, and the order delivers once it is approved. Or submit the number for verification before you buy."],
         ["Verification pending with MTN", "The number has already been submitted and MTN is working on it.", "Wait. You can still buy; the order delivers once MTN approves."],
         ["Blocked", "Our supplier cannot send bundles to this number.", "Buy for this number through MTN's own channels (*138#) instead."],
       ] },

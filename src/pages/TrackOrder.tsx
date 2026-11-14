@@ -247,7 +247,7 @@ export default function TrackOrder({ embedded = false, fixedReference }: { embed
               ) : order.orderStatus === "awaiting_verification" ? (
                 <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-3">
                   <div className="flex items-center gap-2"><Clock size={13} className="text-primary-glow" /><p className="text-[12px] font-semibold text-primary-glow">MTN number verification</p></div>
-                  <p className="mt-1.5 text-[13px] leading-5 text-foreground">Not failed, just on hold: MTN checks numbers receiving a bundle for the first time, usually a few days. Your data is delivered automatically once cleared, and future orders to this number go through normally.</p>
+                  <p className="mt-1.5 text-[13px] leading-5 text-foreground">Not failed, just on hold: MTN checks numbers receiving a bundle for the first time, and this can take a few weeks. Your data is delivered automatically once cleared, and future orders to this number go through normally.</p>
                 </div>
               ) : order.statusMessage && <div className="mt-3 rounded-xl border border-primary-glow/15 bg-primary/[0.06] px-3.5 py-3"><p className="text-[12px] font-semibold text-primary-glow">Latest update</p><p className="mt-1 text-sm leading-6 text-foreground">{order.statusMessage}</p></div>}
               {order.deliveryStatus === "waiting_for_payment" && <UnpaidOrderActions key={order.reference} reference={order.reference} onCancelled={() => { setOrder({ ...order, orderStatus: "cancelled", deliveryStatus: "cancelled", statusMessage: "Order cancelled. You can place a new order for this number." }); }} />}
