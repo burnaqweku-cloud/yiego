@@ -72,9 +72,12 @@ export default function AdminAgents() {
       db().from("agent_subscription_grants").select("*").order("created_at", { ascending: false }).limit(300),
     ]);
     setPayouts(po.data ?? []); setSubs(sp.data ?? []); setGrants(gr.data ?? []);
-    const { data: ao } = await db().from("orders").select("agent_id, amount, agent_margin, status, user_id").not("agent_id", "is", null).eq("payment_status", "succeeded").limit(5000);
-    const st: Record<string, AgentStats> = {}; const owner = new Map<string, string>((g.data ?? []).map((x: Agent) => [x.id, x.user_id]));
-    for (const o of ao ?? []) { const k = o.agent_id as string; const self = o.user_id === owner.get(k) && Number(o.agent_margin ?? 0) === 0; st[k] ??= { orders: 0, sales: 0, salesCount: 0, own: 0, ownCount: 0, earned: 0 }; st[k].orders += 1; if (self) { st[k].own += Number(o.amount); st[k].ownCount += 1; } else { st[k].salesCount += 1; st[k].sales += Number(o.amount); if (o.status === "delivered") st[k].earned += Number(o.agent_margin ?? 0); } }
+    // Added up by the database: a read returns at most 1,000 rows, and counting rows here left newer orders out.
+    const { data: ao } = await db().rpc("admin_agent_order_stats", {});
+    const st: Record<string, AgentStats> = {};
+    for (const [k, v] of Object.entries((ao ?? {}) as Record<string, Record<string, unknown>>)) {
+      st[k] = { orders: Number(v.orders ?? 0), sales: Number(v.sales ?? 0), salesCount: Number(v.sales_count ?? 0), own: Number(v.own ?? 0), ownCount: Number(v.own_count ?? 0), earned: Number(v.earned ?? 0) };
+    }
     setAgentStats(st);
     setApps(a.data ?? []); setAgents(g.data ?? []); setPromos(p.data ?? []);
     for (const row of s.data ?? []) { if (row.key === "agents_launched") setLaunched(Boolean(row.value)); if (row.key === "agent_plan") { setPlan(row.value); setPlanDraft(row.value); } }
