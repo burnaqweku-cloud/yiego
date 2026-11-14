@@ -60,6 +60,13 @@ html.yg-look .onyx-modal-dock {
   --text: #0a1912; --veil: 11 26 18; --foreground: 152 45% 7%; --muted-foreground: 152 12% 34%; --faint-foreground: 150 8% 47%;
   color: var(--text);
 }
+/* so is the notification list (NotificationBell): it is a plain box, not an onyx-panel, and without this its words
+   stay white on a pale box */
+.light .site .mk-nav .yg-bell-panel {
+  background: #fff; border-color: var(--line); box-shadow: 0 26px 44px -24px rgba(6, 64, 44, 0.6);
+  --text: #0a1912; --veil: 11 26 18; --foreground: 152 45% 7%; --muted-foreground: 152 12% 34%; --faint-foreground: 150 8% 47%;
+  color: var(--text);
+}
 .light .site :focus-visible { outline-color: var(--edge); }
 
 /* ── "Get the app" strip and the bottom bar ───────────────────────────────── */

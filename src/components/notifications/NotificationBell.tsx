@@ -36,7 +36,7 @@ export default function NotificationBell({ className = "" }: { className?: strin
         {unread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-[#04120c]">{unread > 9 ? "9+" : unread}</span>}
       </button>
       {open && (
-        <div style={{ width: pos.width, right: pos.right }} className="absolute z-50 mt-2 overflow-hidden rounded-2xl border border-white/[0.1] bg-background shadow-2xl">
+        <div style={{ width: pos.width, right: pos.right }} className="yg-bell-panel absolute z-50 mt-2 overflow-hidden rounded-2xl border border-white/[0.1] bg-background shadow-2xl">
           {selected ? (
             <div>
               <button type="button" onClick={() => setSelected(null)} className="flex w-full items-center gap-2 border-b border-white/[0.06] px-3 py-2.5 text-[13px] font-semibold text-foreground"><ArrowLeft size={15} />Notifications</button>
