@@ -60,6 +60,13 @@ html.yg-look .onyx-modal-dock {
   --text: #0a1912; --veil: 11 26 18; --foreground: 152 45% 7%; --muted-foreground: 152 12% 34%; --faint-foreground: 150 8% 47%;
   color: var(--text);
 }
+/* so is the notification list (NotificationBell): it is a plain box, not an onyx-panel, and without this its words
+   stay white on a pale box */
+.light .site .mk-nav .yg-bell-panel {
+  background: #fff; border-color: var(--line); box-shadow: 0 26px 44px -24px rgba(6, 64, 44, 0.6);
+  --text: #0a1912; --veil: 11 26 18; --foreground: 152 45% 7%; --muted-foreground: 152 12% 34%; --faint-foreground: 150 8% 47%;
+  color: var(--text);
+}
 .light .site :focus-visible { outline-color: var(--edge); }
 
 /* ── "Get the app" strip and the bottom bar ───────────────────────────────── */
@@ -327,7 +334,7 @@ html.yg-look .onyx-flowhead .text-white { color: #fff; }
   --w: 255 255 255; --foreground: 0 0% 100%; --muted-foreground: 150 30% 86%; --faint-foreground: 150 22% 76%; --primary-glow: 151 78% 71%; --primary: 151 78% 71%;
   color: #fff;
 }
-.light .yg-agent header.sticky .rounded-full { background: rgba(255, 255, 255, 0.14); border-color: transparent; color: #fff; font-weight: 800; }
+.light .yg-agent header.sticky > div > .rounded-full, .light .yg-agent header.sticky > div > .relative > button.rounded-full { background: rgba(255, 255, 255, 0.14); border-color: transparent; color: #fff; font-weight: 800; }
 .light .yg-agent .yg-appbar { background: #fff; border-bottom-color: var(--line); }
 .light .yg-agent .yg-appbar-cta { background: var(--pitch); color: #fff; font-weight: 800; box-shadow: none; }
 .light .yg-agent .yg-tabbar { background: #fff; border-top: 1px solid var(--line); box-shadow: 0 -14px 30px -24px rgba(6, 64, 44, 0.5); }
@@ -375,3 +382,27 @@ html.yg-look .onyx-flowhead .text-white { color: #fff; }
 .light .yg-agent main .rounded-3xl.bg-gradient-to-br .onyx-btn-primary { background: #fff; color: #06402c; box-shadow: 0 14px 24px -14px rgba(0, 0, 0, 0.7); }
 .light .yg-agent main .rounded-3xl.bg-gradient-to-br button.rounded-full.border { background: transparent; border-color: rgba(255, 255, 255, 0.42); color: #fff; }
 .light .yg-agent main .rounded-3xl.bg-gradient-to-br [class*="bg-amber/"] { background: rgba(247, 167, 1, 0.16); }
+
+/* the menu: the sidebar on a computer and the "More" drawer on a phone are the green field, like the bar on phones */
+.light .yg-agent aside {
+  background: #06402c; border-color: transparent; color: #fff;
+  --w: 255 255 255; --foreground: 0 0% 100%; --muted-foreground: 150 30% 86%; --faint-foreground: 150 22% 76%; --primary-glow: 151 78% 71%; --primary: 151 78% 71%; --danger: 6 100% 82%;
+}
+.light .yg-agent aside.sticky::before { content: ""; position: absolute; top: 0; bottom: 0; right: 100%; width: 50vw; background: #06402c; }
+.light .yg-agent aside nav a { font-weight: 600; }
+.light .yg-agent aside nav a[aria-current="page"] { background: rgba(255, 255, 255, 0.14); color: #fff; font-weight: 800; }
+.light .yg-agent aside button.rounded-full.border { background: rgba(255, 255, 255, 0.12); border-color: transparent; color: #fff; }
+
+/* the notification list opens out of the green bar or the green menu: a white board, with the page's ink back */
+.light .yg-agent .yg-bell-panel {
+  background: #fff; border-color: var(--line); box-shadow: 0 26px 44px -24px rgba(6, 64, 44, 0.6);
+  --w: 8 26 18; --foreground: 152 45% 7%; --muted-foreground: 152 12% 34%; --faint-foreground: 150 8% 47%; --primary-glow: 158 98% 24%; --primary: 158 99% 27%; --danger: 4 74% 44%;
+  color: var(--ink);
+}
+
+/* switches, ticks and the chosen plan are green, not the old amber or the browser's blue */
+.light .yg-agent button[role="switch"] { background: #cdd8d1; }
+.light .yg-agent button[role="switch"][data-state="checked"] { background: var(--leaf); }
+.light .yg-agent button[role="switch"] > span { background: #fff; box-shadow: 0 1px 3px rgba(10, 25, 18, 0.3); }
+.light .yg-agent input[type="checkbox"], .light .yg-agent input[type="radio"] { accent-color: var(--leaf); }
+.light .yg-agent button.border-primary { border-color: var(--leaf); background: #eaf7f0; box-shadow: 0 0 0 1px var(--leaf); }

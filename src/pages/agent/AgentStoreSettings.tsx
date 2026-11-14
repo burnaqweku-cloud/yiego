@@ -7,10 +7,11 @@ import { p1, useAgent } from "@/components/agent/AgentShell";
 import StoreBrandingEditor from "@/components/agent/StoreBrandingEditor";
 import StoreLinkEditor from "@/components/agent/StoreLinkEditor";
 import Section from "@/components/agent/Section";
+import { longDate } from "@/components/agent/subscription";
 import { Store, Wallet, Mail } from "lucide-react";
 
 export default function AgentStoreSettings() {
-  const { agent, quote, storeUrl, reload } = useAgent();
+  const { agent, quote, storeUrl, reload, sub } = useAgent();
   const { view } = useParams();
   const [f, setF] = useState({ store_name: agent.store_name, header_name: agent.header_name ?? "", tagline: agent.tagline ?? "", whatsapp: agent.whatsapp ?? "", momo_number: agent.momo_number ?? "", momo_name: agent.momo_name ?? "" });
   const headLen = f.header_name.trim().length;
@@ -36,7 +37,7 @@ export default function AgentStoreSettings() {
         </div>
         <p className="mt-1.5 text-[11.5px] text-faint-foreground">{agent.custom_domain && agent.custom_domain_status === "active" ? "Your own domain is the main address; the free one keeps working too." : "This is your store's address. Share it anywhere; previews on WhatsApp show your store's name and logo."}</p>
         <StoreLinkEditor />
-        <p className="mt-2 flex items-center gap-1 text-[12px] text-muted-foreground"><BadgeCheck size={13} className="text-primary-glow" />Plan active until {agent.paid_until}{quote ? ` · next month ${formatGHS(quote.pay_now)}` : ""}</p>
+        <p className="mt-2 flex items-center gap-1 text-[12px] text-muted-foreground"><BadgeCheck size={13} className="text-primary-glow" />Plan active until {longDate(sub.paidUntil)}{quote ? ` · next month ${formatGHS(quote.pay_now)}` : ""}</p>
       </div>}
       <Section page="store" id="details" title="Store details" icon={<Store size={15} />} subtitle={`${agent.store_name}${agent.tagline ? " · " + agent.tagline : ""}`} defaultOpen>
         <div className="space-y-3">
