@@ -1,0 +1,85 @@
+/* The latest-delivery card every visitor sees above the bundles: how long the newest order took, then that order's
+   own journey from payment to phone. It wears the advert banner's look (deep green field, the logo's slanted dash
+   grown into a panel with its amber edge, a white board) so the shop is plainly the same business as its adverts.
+   Sizes are fixed in px on purpose: it is one composed picture. */
+.yg-latest {
+  position: relative; isolation: isolate; overflow: hidden;
+  border-radius: 24px; padding: 18px 18px 0; margin-bottom: 24px;
+  background: #06402c; color: #fff;
+  box-shadow: 0 22px 44px -28px rgba(6, 64, 44, 0.7);
+  /* it arrives after the page (its figures are read live), so it opens rather than snapping the bundles down */
+  animation: yg-latest-open 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+/* the logo's slanted dash, grown; its amber edge is painted inside it so the fade below carries the edge too */
+.yg-latest__panel {
+  position: absolute; z-index: -1; right: -19%; top: -40px; width: 50%; height: 250px;
+  transform: skewX(-18deg);
+  background:
+    linear-gradient(90deg, #f7a701 0 8px, #06402c 8px 17px, transparent 17px),
+    radial-gradient(60% 55% at 46% 30%, #12b377 0%, #019b62 70%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 34%, transparent 70%); mask-image: linear-gradient(to bottom, #000 34%, transparent 70%);
+}
+
+.yg-latest__head { display: grid; gap: 5px; }
+.yg-latest__label { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; line-height: 1.2; color: rgba(255, 255, 255, 0.86); }
+.yg-latest__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #6df2b6; box-shadow: 0 0 0 4px rgba(109, 242, 182, 0.18); }
+.yg-latest__took { font-family: var(--font-display); font-weight: 800; font-size: 34px; line-height: 1; letter-spacing: -0.04em; }
+
+.yg-latest__board { margin-top: 15px; border-radius: 17px; background: #fff; color: #0a1912; box-shadow: 0 18px 30px -18px rgba(0, 0, 0, 0.65); }
+.yg-latest__order { display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 14px 0 9px; box-shadow: inset 0 -1px 0 rgba(10, 25, 18, 0.07); }
+.yg-latest__net { flex: none; display: grid; place-items: center; width: 34px; height: 30px; border-radius: 9px; font-size: 10px; font-weight: 800; letter-spacing: 0.02em; background: #e3f3ea; color: #06402c; }
+.yg-latest__net[data-tone="mtn"] { background: #ffcb05; color: #1a1500; }
+.yg-latest__net[data-tone="telecel"] { background: #e6253a; color: #fff; }
+.yg-latest__net[data-tone="at"] { background: #1f6fc4; color: #fff; }
+.yg-latest__what { min-width: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.yg-latest__what b { font-family: var(--font-display); font-weight: 800; font-size: 16px; letter-spacing: -0.02em; }
+.yg-latest__what em { margin-left: 7px; font-style: normal; font-size: 13px; font-weight: 600; color: #48584f; font-variant-numeric: tabular-nums; }
+.yg-latest__day { flex: none; font-size: 12.5px; font-weight: 700; color: #48584f; }
+
+/* the journey: paid on the left, on the phone on the right, one line between them */
+.yg-latest__trip { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; column-gap: 12px; padding: 13px 14px 15px; }
+.yg-latest__stop { display: grid; gap: 3px; }
+.yg-latest__stop[data-end] { text-align: right; }
+.yg-latest__stop span { font-size: 11.5px; font-weight: 700; line-height: 1; color: #48584f; }
+.yg-latest__stop time { font-family: var(--font-display); font-weight: 800; font-size: 23px; line-height: 1; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.yg-latest__stop small { margin-left: 3px; font-family: var(--font-sans); font-size: 11px; font-weight: 800; letter-spacing: 0; color: #48584f; }
+.yg-latest__track { position: relative; height: 20px; margin-bottom: 1px; }
+.yg-latest__track::before { content: ""; position: absolute; left: 0; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%; background: #f7a701; }
+.yg-latest__track i { position: absolute; left: 13px; right: 24px; top: 50%; height: 3px; margin-top: -1.5px; border-radius: 3px; background: linear-gradient(90deg, #f7a701, #019b62); transform-origin: left center; animation: yg-latest-line 0.9s cubic-bezier(0.3, 0.6, 0.2, 1) 0.3s both; }
+.yg-latest__track b { position: absolute; right: 0; top: 0; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #019b62; color: #fff; animation: yg-latest-land 0.35s cubic-bezier(0.2, 0.7, 0.2, 1.4) 1.1s both; }
+
+.yg-latest__now { display: flex; align-items: center; gap: 8px; margin: 15px -18px 0; padding: 13px 18px 14px; border-top: 1px solid rgba(255, 255, 255, 0.14); font-size: 12.5px; font-weight: 600; line-height: 1.25; color: rgba(255, 255, 255, 0.86); }
+.yg-latest__now svg { flex: none; color: #7cf0b4; }
+.yg-latest__now b { margin-left: auto; font-weight: 800; color: #fff; text-align: right; }
+
+@keyframes yg-latest-open { from { max-height: 0; margin-bottom: 0; opacity: 0; } to { max-height: 300px; opacity: 1; } }
+@keyframes yg-latest-line { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes yg-latest-land { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .yg-latest, .yg-latest__track i, .yg-latest__track b { animation: none; } }
+/* between a phone and a computer the stacked card stops growing: a journey line half a metre long says nothing more */
+@media (min-width: 640px) { .yg-latest { max-width: 560px; } }
+/* on a computer the card lies down: the claim on the left, the order's journey on the right, over the slanted panel */
+@media (min-width: 900px) {
+  .yg-latest { max-width: none; display: grid; grid-template-columns: minmax(0, 1fr) 430px; grid-template-areas: "head board" "now board"; column-gap: 96px; padding: 22px 22px 22px 28px; margin-bottom: 28px; }
+  .yg-latest__panel { right: -60px; left: calc(100% - 430px - 22px - 78px); width: auto; top: -50px; height: 290px; }
+  .yg-latest__head { grid-area: head; align-self: start; padding-top: 4px; gap: 7px; }
+  .yg-latest__took { font-size: 40px; }
+  .yg-latest__board { grid-area: board; margin-top: 0; }
+  .yg-latest__now { grid-area: now; align-self: end; margin: 0; padding: 0 0 4px; border-top: 0; font-size: 13px; }
+  .yg-latest__now b { margin-left: 2px; }
+}
+@media (max-width: 379px) {
+  .yg-latest__took { font-size: 31px; }
+  .yg-latest__stop time { font-size: 21px; }
+  .yg-latest__what em { margin-left: 5px; font-size: 12.5px; }
+}
+/* the narrowest phones: the panel moves aside for the longest network name, and the journey keeps a line to draw */
+@media (max-width: 339px) {
+  .yg-latest__panel { right: -27%; }
+  .yg-latest__took { font-size: 29px; }
+  .yg-latest__trip { column-gap: 8px; padding-left: 12px; padding-right: 12px; }
+  .yg-latest__stop time { font-size: 19px; }
+  .yg-latest__stop small { margin-left: 2px; font-size: 10px; }
+  .yg-latest__now { font-size: 12px; white-space: nowrap; }
+  .yg-latest__now svg { display: none; }
+}

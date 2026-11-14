@@ -15,6 +15,7 @@ import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
 import { useAuth } from "@/store/auth-context";
 import { usePromoPrices } from "@/lib/promotions";
+import LatestDelivery from "@/components/shop/LatestDelivery";
 
 /**
  * The shop floor: every live bundle, on the page itself.
@@ -247,11 +248,15 @@ export default function BundleCatalogue() {
     ...NETWORKS.map((n) => ({ id: n.id as Filter, label: n.name })),
   ];
 
+  const latestFor = filter === "all" ? "MTN" : NETWORKS.find((n) => n.id === filter)?.name ?? "MTN";
+
   const buy = (row: Row) =>
     row.unavailable ? undefined : openBuyData({ kind: "bundle", networkId: row.network.id, productCode: row.code });
 
   return (
     <section aria-labelledby="catalogue-title" className="scroll-mt-24" id="bundles">
+      {/* The newest order that arrived on the network in view (MTN while "All" is open): proof before prices. */}
+      <LatestDelivery network={latestFor} speed={speeds[latestFor]} />
       {/* Network tabs first: the first thing on the page is the thing to choose. Search is the small tool beside them. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div className="grid grid-cols-4 gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] p-1 sm:inline-grid sm:w-auto" role="tablist" aria-label="Network">

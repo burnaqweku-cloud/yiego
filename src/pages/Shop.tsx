@@ -6,7 +6,6 @@ import AgentShopCard from "@/components/agents/AgentShopCard";
 import { metaFor } from "@/lib/site";
 import BalanceCard from "@/components/dashboard/BalanceCard";
 import RecentActivity from "@/components/dashboard/RecentActivity";
-import AdvertProof from "@/components/shop/AdvertProof";
 import BundleCatalogue from "@/components/shop/BundleCatalogue";
 import ImportantNotice from "@/components/shop/ImportantNotice";
 import { TRUST_POINTS } from "@/data/marketing";
@@ -100,9 +99,6 @@ export default function Shop() {
           </p>
         </header>
       )}
-
-      {/* ── For someone an advert just sent: proof before prices ── */}
-      {!isAuthenticated && <AdvertProof />}
 
       {/* ── The catalogue ───────────────────────────────────────── */}
       <BundleCatalogue />
