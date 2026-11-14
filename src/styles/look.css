@@ -437,10 +437,10 @@ html.yg-look .onyx-flowhead .text-white { color: #fff; }
 .light .yg-admin .yg-admin-side .onyx-iconbtn { background: rgba(255, 255, 255, 0.12); border-color: transparent; color: #fff; box-shadow: none; }
 .light .yg-admin .yg-admin-side a[aria-current="page"]:not([aria-label]) { background: rgba(255, 255, 255, 0.14); color: #fff; font-weight: 800; }
 .light .yg-admin .yg-admin-side :focus-visible { outline-color: var(--edge); }
-.light .yg-admin .yg-admin-bar { background: #fff; border-bottom-color: var(--line); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.light .yg-admin .yg-admin-bar { background: #fff !important; border-bottom-color: var(--line); -webkit-backdrop-filter: none; backdrop-filter: none; }
 @media (max-width: 1023px) {
   .light .yg-admin .yg-admin-bar {
-    background: #06402c; border-bottom-color: transparent; color: #fff;
+    background: #06402c !important; /* !important: phones paint .touch-solid bars pale with !important (index.css) */ border-bottom-color: transparent; color: #fff;
     --w: 255 255 255; --foreground: 0 0% 100%; --muted-foreground: 150 30% 86%; --faint-foreground: 150 22% 76%;
   }
   .light .yg-admin .yg-admin-bar .brand-light { display: none; }
