@@ -35,7 +35,7 @@ export function Stat({ label, value, note, tone = "default", icon: Icon, to, onC
       {note && <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">{note}</p>}
     </>
   );
-  const cls = "block min-w-0 rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 text-left";
+  const cls = "yg-a-stat block min-w-0 rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 text-left";
   if (to) return <Link to={to} className={cn(cls, "hover:bg-white/[0.04]")}>{body}</Link>;
   if (onClick) return <button type="button" onClick={onClick} className={cn(cls, "w-full hover:bg-white/[0.04]")}>{body}</button>;
   return <div className={cls}>{body}</div>;
@@ -48,7 +48,7 @@ export function StatGrid({ children, cols = 2 }: { children: ReactNode; cols?: 2
 /** A titled section. Title 15px semibold with an optional icon; action on the right. */
 export function Panel({ title, icon: Icon, action, children, className, note }: { title: string; icon?: LucideIcon; action?: ReactNode; children: ReactNode; className?: string; note?: string }) {
   return (
-    <section className={cn("rounded-xl border border-white/[0.07] bg-white/[0.02] p-3", className)}>
+    <section className={cn("yg-a-panel min-w-0 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3", className)}>
       <header className="mb-2 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           {Icon && <Icon size={14} className="shrink-0 text-primary-glow" />}
@@ -89,7 +89,7 @@ export function Row({ primary, secondary, right, rightNote, onClick, tone = "def
 /** Segmented control (date presets, filters). */
 export function Segmented<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { value: T; label: string }[] }) {
   return (
-    <div className="flex w-full gap-0.5 overflow-x-auto rounded-full border border-white/[0.07] bg-white/[0.02] p-0.5" role="tablist">
+    <div className="yg-a-seg flex w-full gap-0.5 overflow-x-auto rounded-full border border-white/[0.07] bg-white/[0.02] p-0.5" role="tablist">
       {options.map((o) => (
         <button key={o.value} role="tab" aria-selected={value === o.value} type="button" onClick={() => onChange(o.value)} className={cn("flex-1 whitespace-nowrap rounded-full px-2.5 py-1 text-[11.5px] font-medium", value === o.value ? "bg-white/[0.08] text-foreground" : "text-muted-foreground hover:text-foreground")}>{o.label}</button>
       ))}

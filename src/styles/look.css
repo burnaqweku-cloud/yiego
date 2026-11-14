@@ -406,3 +406,68 @@ html.yg-look .onyx-flowhead .text-white { color: #fff; }
 .light .yg-agent button[role="switch"] > span { background: #fff; box-shadow: 0 1px 3px rgba(10, 25, 18, 0.3); }
 .light .yg-agent input[type="checkbox"], .light .yg-agent input[type="radio"] { accent-color: var(--leaf); }
 .light .yg-agent button.border-primary { border-color: var(--leaf); background: #eaf7f0; box-shadow: 0 0 0 1px var(--leaf); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   The admin panel (.yg-admin on AdminShell). A working tool, so it stays dense (admin-dense): the look comes in as
+   colour and type, not size. The menu is the green field (the sidebar on a computer, the drawer on a phone, and the
+   top bar on a phone); pages are white boards on the pale green ground. Shared parts carry names the rules reach:
+   yg-a-panel (Panel), yg-a-stat (Stat), yg-a-seg (Segmented), yg-a-title (AdminPageHeader).
+   ════════════════════════════════════════════════════════════════════════ */
+.light .yg-admin {
+  --pitch: #06402c; --leaf: #018a57; --leaf-down: #017449; --edge: #f7a701;
+  --ink: #0a1912; --ink-2: #48584f; --line: rgba(10, 25, 18, 0.09);
+  --lift: 0 1px 2px rgba(10, 25, 18, 0.04), 0 14px 28px -24px rgba(6, 64, 44, 0.45);
+  --font-display: "Bricolage Grotesque Variable", var(--font-sans);
+  --background: 135 17% 95%; --border: 150 14% 86%;
+  --primary: 158 99% 27%; --primary-strong: 158 98% 23%; --primary-glow: 158 98% 24%;
+  background: #f1f5f2;
+}
+.light .yg-admin.onyx-canvas::before, .light .yg-admin.onyx-canvas::after, .light .yg-admin .onyx-aurora { display: none; }
+
+/* the green field: the menu everywhere, and the top bar on a phone */
+.light .yg-admin .yg-admin-side {
+  background: #06402c; border-color: transparent; color: #fff; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none;
+  --w: 255 255 255; --foreground: 0 0% 100%; --muted-foreground: 150 30% 86%; --faint-foreground: 150 22% 72%; --primary-glow: 151 78% 71%; --primary: 151 78% 71%; --danger: 6 100% 82%;
+}
+.light .yg-admin .yg-admin-side .brand-light { display: none; }
+.light .yg-admin .yg-admin-side .brand-dark { display: block; }
+.light .yg-admin .yg-admin-side input { background: rgba(255, 255, 255, 0.1); border-color: transparent; color: #fff; }
+.light .yg-admin .yg-admin-side input:focus { border-color: rgba(255, 255, 255, 0.4); }
+.light .yg-admin .yg-admin-side .onyx-avatar { background: #fff; color: #06402c; box-shadow: none; }
+.light .yg-admin .yg-admin-side .onyx-iconbtn { background: rgba(255, 255, 255, 0.12); border-color: transparent; color: #fff; box-shadow: none; }
+.light .yg-admin .yg-admin-side a[aria-current="page"]:not([aria-label]) { background: rgba(255, 255, 255, 0.14); color: #fff; font-weight: 800; }
+.light .yg-admin .yg-admin-side :focus-visible { outline-color: var(--edge); }
+.light .yg-admin .yg-admin-bar { background: #fff; border-bottom-color: var(--line); -webkit-backdrop-filter: none; backdrop-filter: none; }
+@media (max-width: 1023px) {
+  .light .yg-admin .yg-admin-bar {
+    background: #06402c; border-bottom-color: transparent; color: #fff;
+    --w: 255 255 255; --foreground: 0 0% 100%; --muted-foreground: 150 30% 86%; --faint-foreground: 150 22% 76%;
+  }
+  .light .yg-admin .yg-admin-bar .brand-light { display: none; }
+  .light .yg-admin .yg-admin-bar .brand-dark { display: block; }
+  .light .yg-admin .yg-admin-bar .onyx-iconbtn { background: rgba(255, 255, 255, 0.12); border-color: transparent; color: #fff; box-shadow: none; }
+}
+
+/* the page: a heavier title, white boards, the chosen tab solid green */
+.light .yg-admin .yg-a-title { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; font-size: 22px; line-height: 1.1; }
+@media (min-width: 640px) { .light .yg-admin .yg-a-title { font-size: 25px; } }
+.light .yg-admin .yg-a-panel, .light .yg-admin .onyx-panel:not(.yg-admin-side) { background: #fff; border: 1px solid var(--line); box-shadow: var(--lift); border-radius: 16px; }
+.light .yg-admin .yg-a-panel h2 { font-weight: 700; }
+.light .yg-admin .yg-a-stat { background: #fff; border-color: var(--line); box-shadow: var(--lift); border-radius: 14px; }
+.light .yg-admin .yg-a-stat > p:nth-of-type(2) { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; font-size: 18px; }
+.light .yg-admin a.yg-a-stat:hover, .light .yg-admin button.yg-a-stat:hover { background: #f6faf7; }
+.light .yg-admin .yg-a-panel .yg-a-stat { box-shadow: none; background: #f6faf7; border-color: transparent; }
+.light .yg-admin .yg-a-seg { background: #fff; border-color: var(--line); }
+.light .yg-admin .yg-a-seg [aria-selected="true"] { background: var(--pitch); color: #fff; font-weight: 700; }
+
+/* buttons, fields, switches: the same as the rest of the site */
+.light .yg-admin .onyx-btn-primary, .light .yg-admin .ui-btn[data-variant="primary"] { background: var(--leaf); color: #fff; font-weight: 800; filter: none; transform: none; box-shadow: 0 10px 20px -14px rgba(1, 138, 87, 0.9); }
+.light .yg-admin .onyx-btn-primary:hover, .light .yg-admin .ui-btn[data-variant="primary"]:hover { background: var(--leaf-down); transform: none; filter: none; }
+.light .yg-admin .onyx-btn-primary:disabled, .light .yg-admin .ui-btn[data-variant="primary"]:disabled { background: #dfe7e2; color: #76857c; box-shadow: none; opacity: 1; }
+.light .yg-admin .onyx-btn-ghost, .light .yg-admin .ui-btn[data-variant="ghost"] { background: #fff; color: var(--ink); border: 1.5px solid rgba(10, 25, 18, 0.16); font-weight: 700; box-shadow: none; transform: none; }
+.light .yg-admin main input:not([type="checkbox"]):not([type="radio"]), .light .yg-admin main select, .light .yg-admin main textarea, .light .yg-admin .onyx-field { background-color: #fff; border-color: #cad6cf; color: var(--ink); }
+.light .yg-admin main input:focus, .light .yg-admin main select:focus, .light .yg-admin main textarea:focus { border-color: var(--leaf); outline: none; box-shadow: 0 0 0 3px rgba(1, 138, 87, 0.14); }
+.light .yg-admin button[role="switch"] { background: #cdd8d1; }
+.light .yg-admin button[role="switch"][aria-checked="true"], .light .yg-admin button[role="switch"][data-state="checked"] { background: var(--leaf); }
+.light .yg-admin input[type="checkbox"], .light .yg-admin input[type="radio"] { accent-color: var(--leaf); }
+.light .yg-admin button[role="switch"] > span { background: #fff; box-shadow: 0 1px 3px rgba(10, 25, 18, 0.3); }
