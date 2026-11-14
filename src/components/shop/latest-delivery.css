@@ -52,10 +52,29 @@
 .yg-latest__now svg { flex: none; color: #7cf0b4; }
 .yg-latest__now b { margin-left: auto; font-weight: 800; color: #fff; text-align: right; }
 
+/* ── Signed in: the same card carries the wallet, and the delivery sits inside it ─────────────────────────────── */
+.yg-latest--wallet { animation: none; margin-bottom: 0; }
+.yg-latest--bare { padding-bottom: 18px; }
+.yg-latest__purse { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; row-gap: 3px; }
+.yg-latest__state { font-weight: 600; color: rgba(255, 255, 255, 0.62); }
+.yg-latest__eye { display: grid; place-items: center; width: 30px; height: 30px; margin: -7px 0 -7px -4px; border-radius: 50%; color: rgba(255, 255, 255, 0.78); }
+.yg-latest__eye:focus-visible, .yg-latest__add:focus-visible { outline: 2px solid #f7a701; outline-offset: 2px; }
+.yg-latest__add { display: inline-flex; align-items: center; gap: 5px; height: 38px; padding: 0 15px 0 11px; border-radius: 999px; background: #fff; color: #06402c; font-size: 13.5px; font-weight: 800; white-space: nowrap; box-shadow: 0 12px 22px -12px rgba(0, 0, 0, 0.7); }
+.yg-latest__add:active { transform: translateY(1px); }
+.yg-latest__add:disabled { opacity: 0.6; }
+.yg-latest__money { grid-column: 1 / -1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.yg-latest__money small { margin-right: 7px; font-family: var(--font-sans); font-size: 14px; font-weight: 800; letter-spacing: 0.02em; color: rgba(255, 255, 255, 0.72); }
+.yg-latest__money[data-long] { font-size: 28px; }
+/* the delivery arrives after the wallet (it is read live), so it opens instead of snapping the page down */
+.yg-latest__more { animation: yg-latest-open 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.yg-latest__lead { display: flex; align-items: center; gap: 9px; height: 40px; padding: 0 14px 0 15px; box-shadow: inset 0 -1px 0 rgba(10, 25, 18, 0.07); font-size: 12.5px; font-weight: 700; color: #48584f; }
+.yg-latest__lead .yg-latest__dot { width: 7px; height: 7px; background: #019b62; box-shadow: 0 0 0 4px rgba(1, 155, 98, 0.14); }
+.yg-latest__lead b { margin-left: auto; font-family: var(--font-display); font-weight: 800; font-size: 16px; letter-spacing: -0.02em; color: #018a57; }
+
 @keyframes yg-latest-open { from { max-height: 0; margin-bottom: 0; opacity: 0; } to { max-height: 300px; opacity: 1; } }
 @keyframes yg-latest-line { from { transform: scaleX(0); } to { transform: none; } }
 @keyframes yg-latest-land { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .yg-latest, .yg-latest__track i, .yg-latest__track b { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .yg-latest, .yg-latest__more, .yg-latest__track i, .yg-latest__track b { animation: none; } }
 /* between a phone and a computer the stacked card stops growing: a journey line half a metre long says nothing more */
 @media (min-width: 640px) { .yg-latest { max-width: 560px; } }
 /* on a computer the card lies down: the claim on the left, the order's journey on the right, over the slanted panel */
@@ -67,6 +86,11 @@
   .yg-latest__board { grid-area: board; margin-top: 0; }
   .yg-latest__now { grid-area: now; align-self: end; margin: 0; padding: 0 0 4px; border-top: 0; font-size: 13px; }
   .yg-latest__now b { margin-left: 2px; }
+  .yg-latest--wallet { margin-bottom: 0; }
+  .yg-latest--bare { display: block; padding-bottom: 22px; }
+  .yg-latest__purse { grid-area: head; align-self: start; padding-top: 2px; row-gap: 6px; max-width: 420px; }
+  .yg-latest__more { display: contents; }
+  .yg-latest__money[data-long] { font-size: 34px; }
 }
 @media (max-width: 379px) {
   .yg-latest__took { font-size: 31px; }

@@ -170,7 +170,7 @@ function SkeletonGrid() {
 
 /* ── Section ─────────────────────────────────────────────────────── */
 
-export default function BundleCatalogue() {
+export default function BundleCatalogue({ latestCard = true, onNetwork }: { latestCard?: boolean; onNetwork?: (network: string) => void } = {}) {
   const speeds = useDeliverySpeed();
   const { isAdmin } = useAdminAccess(); // the error detail is for the team, not customers
   const [checkInfoOpen, setCheckInfoOpen] = useState(false);
@@ -249,14 +249,16 @@ export default function BundleCatalogue() {
   ];
 
   const latestFor = filter === "all" ? "MTN" : NETWORKS.find((n) => n.id === filter)?.name ?? "MTN";
+  useEffect(() => { onNetwork?.(latestFor); }, [latestFor, onNetwork]);
 
   const buy = (row: Row) =>
     row.unavailable ? undefined : openBuyData({ kind: "bundle", networkId: row.network.id, productCode: row.code });
 
   return (
     <section aria-labelledby="catalogue-title" className="scroll-mt-24" id="bundles">
-      {/* The newest order that arrived on the network in view (MTN while "All" is open): proof before prices. */}
-      <LatestDelivery network={latestFor} speed={speeds[latestFor]} />
+      {/* The newest order that arrived on the network in view (MTN while "All" is open): proof before prices.
+          Someone signed in sees it inside their wallet card at the top of the page instead. */}
+      {latestCard && <LatestDelivery network={latestFor} speed={speeds[latestFor]} />}
       {/* Network tabs first: the first thing on the page is the thing to choose. Search is the small tool beside them. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div className="grid grid-cols-4 gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] p-1 sm:inline-grid sm:w-auto" role="tablist" aria-label="Network">

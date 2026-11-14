@@ -52,6 +52,9 @@ export function deliveryToShow(all: Record<string, LatestDelivery>, network: str
   return d;
 }
 
+/** One key per order: give it to the board, so the journey line draws again when a newer delivery takes its place. */
+export const boardKey = (d: Pick<LatestDelivery, "network" | "deliveredAt">) => `${d.network}-${d.deliveredAt}`;
+
 /** "17 minutes", the way a person says it. Under half a minute of rounding never becomes "0 minutes". */
 export function tookLabel(d: Pick<LatestDelivery, "paidAt" | "deliveredAt">): string {
   const minutes = Math.round((d.deliveredAt - d.paidAt) / 60_000);

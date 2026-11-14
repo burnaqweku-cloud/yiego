@@ -4,11 +4,12 @@ import InviteSheet from "@/components/referrals/InviteSheet";
 import Seo from "@/components/seo/Seo";
 import AgentShopCard from "@/components/agents/AgentShopCard";
 import { metaFor } from "@/lib/site";
-import BalanceCard from "@/components/dashboard/BalanceCard";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import BundleCatalogue from "@/components/shop/BundleCatalogue";
+import WalletCard from "@/components/shop/WalletCard";
 import ImportantNotice from "@/components/shop/ImportantNotice";
 import { TRUST_POINTS } from "@/data/marketing";
+import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 import { useReveal } from "@/hooks/useReveal";
 import { useAuth } from "@/store/auth-context";
 import { useFlows } from "@/store/flows";
@@ -40,6 +41,9 @@ function greeting(): string {
 
 export default function Shop() {
   const [inviteOpen, setInviteOpen] = useState(false);
+  // The network tab open in the catalogue, so the wallet card shows that network's latest delivery.
+  const [network, setNetwork] = useState("MTN");
+  const speeds = useDeliverySpeed();
   const ref = useReveal<HTMLDivElement>();
   const { profile } = useProfile();
   const { isAuthenticated } = useAuth();
@@ -63,8 +67,8 @@ export default function Shop() {
             </h1>
           </header>
 
-          {/* ── Wallet, at the forefront ──────────────────────────── */}
-          <BalanceCard />
+          {/* ── Wallet, at the forefront, with the latest delivery inside the same card ── */}
+          <WalletCard network={network} speed={speeds[network]} />
 
           {/* Secondary action: settle an Order ID someone shared with you. */}
           <button
@@ -101,7 +105,7 @@ export default function Shop() {
       )}
 
       {/* ── The catalogue ───────────────────────────────────────── */}
-      <BundleCatalogue />
+      <BundleCatalogue latestCard={!isAuthenticated} onNetwork={setNetwork} />
 
       {/* ── The house rules, before anyone pays ───────────────── */}
       <ImportantNotice />
