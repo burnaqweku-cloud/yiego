@@ -235,6 +235,8 @@ html.yg-look .onyx-flowhead .text-white { color: #fff; }
   background: linear-gradient(90deg, #f7a701 0 8px, #06402c 8px 17px, transparent 17px), radial-gradient(60% 55% at 46% 30%, #12b377 0%, #019b62 70%);
   -webkit-mask-image: linear-gradient(to bottom, #000 36%, transparent 74%); mask-image: linear-gradient(to bottom, #000 36%, transparent 74%);
 }
+/* on a phone the headline is long: it is set a little smaller and the panel stands clear of it */
+@media (max-width: 639px) { .light .site .mk-hero::before { right: -37%; } .light .site .mk-hero .mk-hero-title { font-size: 37px; } }
 @media (min-width: 1024px) { .light .site .mk-hero::before { right: -6%; width: 30%; height: 420px; top: -70px; } }
 .light .site .mk-hero .mk-hero-title { color: #fff; }
 .light .site .mk-hero .mk-btn-primary { background: #fff; color: #06402c; box-shadow: 0 16px 28px -16px rgba(0, 0, 0, 0.7); }

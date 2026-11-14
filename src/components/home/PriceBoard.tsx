@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { NETWORKS, type NetworkId } from "@/data/bundles";
 import { useLiveBundles, type LiveBundle } from "@/hooks/useLiveBundles";
@@ -22,11 +22,13 @@ const NETWORK_CLASS: Record<NetworkId, string> = { mtn: "net-mtn", telecel: "net
 
 const byCapacity = (a: LiveBundle, b: LiveBundle) => a.capacityGb - b.capacityGb || a.price - b.price;
 
-export default function PriceBoard() {
+export default function PriceBoard({ onNetwork }: { onNetwork?: (network: string) => void } = {}) {
   const { byNetwork } = useLiveBundles();
   const { openBuyData } = useFlows();
   const [networkId, setNetworkId] = useState<NetworkId>("mtn");
   const network = NETWORKS.find((n) => n.id === networkId) ?? NETWORKS[0];
+  // The network in view, for whoever shows something about it beside the board (the latest delivery on the home page).
+  useEffect(() => { onNetwork?.(network.name); }, [network.name, onNetwork]);
   const all = [...(byNetwork[networkId] ?? [])].sort(byCapacity);
   const rows = all;
 

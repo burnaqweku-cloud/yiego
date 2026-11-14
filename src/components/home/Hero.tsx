@@ -4,6 +4,8 @@ import { Gift } from "lucide-react";
 import InviteSheet from "@/components/referrals/InviteSheet";
 import { AgentNudgeLine } from "@/components/agents/AgentPopup";
 import PriceBoard from "@/components/home/PriceBoard";
+import { DeliveryStrip } from "@/components/shop/LatestDelivery";
+import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 
 /**
  * The first screen: the promise on the left, the proof on the right. The
@@ -46,6 +48,9 @@ function Notes({ onInvite }: { onInvite: () => void }) {
 
 export default function Hero() {
   const [inviteOpen, setInviteOpen] = useState(false);
+  // The latest delivery on the network the price board is showing.
+  const [network, setNetwork] = useState("MTN");
+  const speeds = useDeliverySpeed();
 
   return (
     <section className="mk-hero !pt-0" aria-labelledby="hero-h">
@@ -74,10 +79,11 @@ export default function Hero() {
               <Buttons />
               <Notes onInvite={() => setInviteOpen(true)} />
             </div>
+            <DeliveryStrip network={network} speed={speeds[network]} className="mt-5 lg:mt-9" />
           </div>
 
           <div className="lg:col-span-6">
-            <PriceBoard />
+            <PriceBoard onNetwork={setNetwork} />
           </div>
 
           <p className="-mt-2 text-[12.5px] text-faint-foreground lg:hidden">No account needed. Buy as a guest and still track the order.</p>

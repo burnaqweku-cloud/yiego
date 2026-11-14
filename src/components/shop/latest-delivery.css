@@ -46,11 +46,28 @@
 .yg-latest__now svg { flex: none; color: #7cf0b4; }
 .yg-latest__now b { margin-left: auto; font-weight: 800; color: #fff; text-align: right; }
 
+/* ── the same delivery at half the size (the home page) ─────────────────────────────────────────────────────── */
+.yg-strip { max-width: 440px; padding: 11px 13px 12px 10px; border-radius: 18px; background: #fff; color: #0a1912; box-shadow: 0 20px 32px -20px rgba(0, 0, 0, 0.7); overflow: hidden; animation: yg-latest-open 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.yg-strip__top { display: flex; align-items: center; gap: 10px; }
+.yg-strip__what { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.yg-strip__what span { font-size: 11.5px; font-weight: 700; line-height: 1.2; color: #48584f; }
+.yg-strip__what b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-weight: 800; font-size: 15.5px; line-height: 1.15; letter-spacing: -0.02em; }
+.yg-strip__what em { margin-left: 6px; font-family: var(--font-sans); font-style: normal; font-size: 12.5px; font-weight: 600; letter-spacing: 0; color: #48584f; font-variant-numeric: tabular-nums; }
+.yg-strip__took { flex: none; display: grid; justify-items: end; gap: 2px; }
+.yg-strip__took b { font-family: var(--font-display); font-weight: 800; font-size: 18px; line-height: 1.1; letter-spacing: -0.03em; color: #018a57; }
+.yg-strip__took span { font-size: 11px; font-weight: 700; line-height: 1.2; color: #48584f; }
+.yg-strip__trip { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(10, 25, 18, 0.07); }
+.yg-strip__trip time { font-family: var(--font-display); font-weight: 800; font-size: 15px; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.yg-strip__trip small { margin-left: 2px; font-family: var(--font-sans); font-size: 10px; font-weight: 800; letter-spacing: 0; color: #48584f; }
+.yg-strip .yg-latest__track { height: 18px; margin: 0; }
+.yg-strip .yg-latest__track b { width: 18px; height: 18px; }
+.yg-strip .yg-latest__track i { right: 22px; }
+
 /* the board arrives after the page (it is read live), so it opens rather than snapping the bundles down */
 @keyframes yg-latest-open { from { max-height: 0; margin-top: 0; opacity: 0; } to { max-height: 220px; opacity: 1; } }
 @keyframes yg-latest-line { from { transform: scaleX(0); } to { transform: none; } }
 @keyframes yg-latest-land { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .yg-latest__board, .yg-latest__track i, .yg-latest__track b { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .yg-latest__board, .yg-strip, .yg-latest__track i, .yg-latest__track b { animation: none; } }
 
 /* on a computer the band lies down: words and wallet on the left, the delivery board on the right */
 @media (min-width: 1024px) {
