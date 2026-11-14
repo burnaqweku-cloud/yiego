@@ -6,7 +6,10 @@ import { speedPhrase, speedPill, type NetworkSpeed } from "@/hooks/useDeliverySp
    number's middle hidden the way a MoMo message shows it. Nothing here is typed in by hand.
    It is shown only while it is good news that is also true of right now: the order arrived within MAX_MINUTES, not
    long ago, and the network is not running slow at this moment. When deliveries are slow the card steps aside and the
-   speed line in the catalogue, which is always on, says how long orders are taking. */
+   speed line in the catalogue, which is always on, says how long orders are taking.
+   The owner can switch that last part off (Admin → Operations → Status, "Latest delivery card": `always`): then the
+   latest real delivery is shown however long it took. It still needs a delivery in the last FRESH_HOURS and a network
+   that is not paused, since there is nothing true to show without one and nobody can buy while it is paused. */
 
 export interface LatestDelivery { network: string; gb: number; phone: string; paidAt: number; deliveredAt: number; ageSeconds: number }
 
@@ -18,12 +21,12 @@ export const FRESH_HOURS = 6;
 interface RpcClient { rpc<T>(name: string, args?: Record<string, unknown>): PromiseLike<{ data: T | null; error: { message: string } | null }> }
 const db = () => (supabase as unknown as { schema(name: string): RpcClient }).schema("phase1");
 
-/** Only rows we can stand behind, by network name. */
+/** Only rows we can stand behind, by network name. Keys starting with "_" are settings, never a network. */
 export function readLatest(raw: unknown): Record<string, LatestDelivery> {
   const out: Record<string, LatestDelivery> = {};
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
   for (const [network, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (!value || typeof value !== "object") continue;
+    if (network.startsWith("_") || !value || typeof value !== "object") continue;
     const d = value as Record<string, unknown>;
     const phone = typeof d.phone === "string" ? d.phone.trim() : "";
     const gb = Number(d.gb); const ageSeconds = Number(d.age_seconds);
@@ -37,18 +40,27 @@ export function readLatest(raw: unknown): Record<string, LatestDelivery> {
   return out;
 }
 
-export async function loadLatest(): Promise<Record<string, LatestDelivery>> {
-  try { const { data, error } = await db().rpc<unknown>("public_latest_delivery"); return error ? {} : readLatest(data); } catch { return {}; }
+/** What the server sends: the deliveries, and the owner's switch. Anything unclear means the switch is off. */
+export interface LatestFeed { all: Record<string, LatestDelivery>; always: boolean }
+export function readFeed(raw: unknown): LatestFeed {
+  const rule = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>)._rule : null;
+  return { all: readLatest(raw), always: !!rule && typeof rule === "object" && (rule as Record<string, unknown>).always === true };
+}
+
+export async function loadLatest(): Promise<LatestFeed> {
+  try { const { data, error } = await db().rpc<unknown>("public_latest_delivery"); return error ? readFeed(null) : readFeed(data); } catch { return readFeed(null); }
 }
 
 /** The delivery to show for a network right now, or none. `speed` is that network's live reading; until it has
-    arrived nothing is shown, so the card never appears and then takes itself back. */
-export function deliveryToShow(all: Record<string, LatestDelivery>, network: string, speed: NetworkSpeed | undefined): LatestDelivery | null {
+    arrived nothing is shown, so the card never appears and then takes itself back. `always` is the owner's switch:
+    on, a slow delivery or a slow network no longer hides it. */
+export function deliveryToShow(all: Record<string, LatestDelivery>, network: string, speed: NetworkSpeed | undefined, always = false): LatestDelivery | null {
   const d = all[network];
   const pill = speedPill(speed, network);
-  if (!d || !pill || pill.paused || pill.slow) return null;
+  if (!d || !pill || pill.paused) return null;
   if (d.ageSeconds > FRESH_HOURS * 3600) return null;
-  if (d.deliveredAt - d.paidAt > MAX_MINUTES * 60_000) return null;
+  if (always) return d;
+  if (pill.slow || d.deliveredAt - d.paidAt > MAX_MINUTES * 60_000) return null;
   return d;
 }
 

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Activity, AlertTriangle, Clipboard, RefreshCw } from "lucide-react";
+import { Activity, AlertTriangle, Clipboard, RefreshCw, Timer } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Panel, Pill } from "@/components/admin/ui";
 import { formatAdminDate } from "@/lib/admin-data";
-import { loadClientErrors, loadOpsStatus, PROCESSING_DELAY_NOTE, setProcessingDelay, type ClientError, type OpsStatus } from "@/lib/ops-status";
+import { loadClientErrors, loadLatestDeliveryRule, loadOpsStatus, PROCESSING_DELAY_NOTE, setLatestDeliveryRule, setProcessingDelay, type ClientError, type LatestDeliveryRule, type OpsStatus } from "@/lib/ops-status";
 
 /* Team-wide switches that change what we tell customers. Today: the processing-delay apology. */
 const BASE = "Hello, payment for your DataYego order YG-XXXXXXXXXX has been confirmed and your data order is still being processed.";
@@ -14,7 +14,18 @@ export default function AdminStatus() {
   const [busy, setBusy] = useState(false);
   const [errs, setErrs] = useState<ClientError[] | null>(null);
   const [hours, setHours] = useState(48);
-  useEffect(() => { void loadOpsStatus().then(setS); }, []);
+  const [rule, setRule] = useState<LatestDeliveryRule | null>(null);
+  const [ruleBusy, setRuleBusy] = useState(false);
+  useEffect(() => { void loadOpsStatus().then(setS); void loadLatestDeliveryRule().then(setRule); }, []);
+  const chooseRule = async (always: boolean) => {
+    if (!rule || ruleBusy || rule.always === always) return;
+    setRuleBusy(true);
+    const err = await setLatestDeliveryRule(always);
+    setRuleBusy(false);
+    if (err) return toast.error(err.includes("admin_required") ? "Only the master admin can change this." : "Couldn't change it. Try again.");
+    setRule(await loadLatestDeliveryRule());
+    toast.success(always ? "The card now always shows the latest delivery." : "The card now shows only fast deliveries.");
+  };
   useEffect(() => { setErrs(null); void loadClientErrors(hours).then(setErrs); }, [hours]);
 
   const toggle = async () => {
@@ -54,6 +65,28 @@ export default function AdminStatus() {
           <p className="mb-1.5 flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground"><Clipboard size={13} />What the copied message looks like now</p>
           <p className="text-[13px] leading-relaxed text-foreground">{BASE}{on ? <> <span className="text-amber">{PROCESSING_DELAY_NOTE}</span></> : null}</p>
         </div>
+      </Panel>
+
+      <Panel title="Latest delivery card" icon={Timer} action={rule ? <Pill tone={rule.always ? "warn" : "muted"}>{rule.always ? "Always show" : "Only when fast"}</Pill> : null}>
+        <p className="max-w-[62ch] text-[13px] leading-relaxed text-muted-foreground">
+          The card on the buy data page and the small board on the home page that show the latest order delivered on each network. Customers see the change within a minute.
+        </p>
+        <div role="radiogroup" aria-label="Latest delivery card" className="mt-4 grid gap-2 sm:grid-cols-2">
+          {([
+            [false, "Only when fast", "Shows only when that order took 30 minutes or less and the network is not slow. Otherwise the card steps aside."],
+            [true, "Always show", "Shows the latest delivery however long it took, even 45 minutes or 2 hours. Customers will see slow ones too."],
+          ] as const).map(([value, title, text]) => {
+            const chosen = rule?.always === value;
+            return (
+              <button key={title} type="button" role="radio" aria-checked={chosen} disabled={!rule || ruleBusy} onClick={() => void chooseRule(value)}
+                className={`rounded-xl border p-3.5 text-left transition disabled:opacity-60 ${chosen ? "border-primary bg-primary/10" : "border-white/[0.1] hover:border-white/[0.2]"}`}>
+                <span className="flex items-center gap-2 text-[14px] font-semibold text-foreground"><span className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 ${chosen ? "border-primary bg-primary" : "border-white/[0.3]"}`} />{title}</span>
+                <span className="mt-1 block text-[12.5px] leading-relaxed text-muted-foreground">{text}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-3 text-[12px] text-faint-foreground">Either way the card is hidden when that network has had no delivery in the last 6 hours, or is paused.{rule?.updated_at ? ` Last changed ${formatAdminDate(rule.updated_at)}${rule.updated_by ? ` by ${rule.updated_by}` : ""}.` : ""}</p>
       </Panel>
 
       <Panel title="Front-end failures" icon={AlertTriangle} action={<div className="flex items-center gap-2">
