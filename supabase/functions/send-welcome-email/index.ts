@@ -24,9 +24,12 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, welcome_email_sent_at")
+      .select("full_name, welcome_email_sent_at, home_store_id")
       .eq("id", auth.user.id)
       .maybeSingle();
+
+    // Someone who signed up in an agent's store belongs to that store: our name is never sent to them (16 Nov 2026).
+    if (profile?.home_store_id) return jsonResponse({ status: "skipped", reason: "store_customer" });
 
     if (profile?.welcome_email_sent_at) {
       return jsonResponse({ status: "skipped", reason: "already_sent" });

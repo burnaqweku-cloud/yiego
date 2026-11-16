@@ -43,7 +43,8 @@ Deno.serve(async (req) => {
     if (!queued) {
       const { data: subs } = await db.from("agents").select("user_id").not("parent_agent_id", "is", null);
       const subIds = new Set((subs ?? []).map((r: { user_id: string }) => r.user_id));
-      const { data: people, error } = await db.from("profiles").select("id,email").not("email", "is", null).limit(20000);
+      // People who signed up in an agent's store belong to that store: they never get mail in our name (16 Nov 2026).
+      const { data: people, error } = await db.from("profiles").select("id,email").not("email", "is", null).is("home_store_id", null).limit(20000);
       if (error) throw new Error("Could not load recipients");
       const emails = [...new Set((people ?? []).filter((p: { id: string }) => !subIds.has(p.id)).map((p: { email: string }) => String(p.email).trim().toLowerCase()).filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))];
       for (let i = 0; i < emails.length; i += 500) {

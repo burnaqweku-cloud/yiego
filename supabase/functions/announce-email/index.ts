@@ -35,7 +35,8 @@ Deno.serve(async (req) => {
       const ids = (data ?? []).map((r: { user_id: string }) => r.user_id);
       if (ids.length) { const { data: p } = await supabase.from("profiles").select("email").in("id", ids); emails = (p ?? []).map((r: { email: string }) => r.email).filter(Boolean); }
     } else if (a.audience === "customers" || a.audience === "everyone") {
-      const { data: p } = await supabase.from("profiles").select("email").not("email", "is", null).limit(5000);
+      // People who signed up in an agent's store belong to that store: they never get mail in our name (16 Nov 2026).
+      const { data: p } = await supabase.from("profiles").select("email").not("email", "is", null).is("home_store_id", null).limit(5000);
       emails = (p ?? []).map((r: { email: string }) => r.email).filter(Boolean);
       { // Sub-agents only know their parent's store, so DataYego never emails them.
         const { data: subs } = await supabase.from("agents").select("user_id").not("parent_agent_id", "is", null);

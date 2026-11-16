@@ -199,7 +199,9 @@ Deno.serve(async (req) => {
         // avoids the words the network drops (see texts.ts). SMS for services has its own switch and sender ID
         // (Admin → DY Services → Text messages); off means on screen and by email only.
         let sms = "off";
-        if (work?.sms?.enabled) {
+        // An order from an agent's store gets no text: our sender ID and "DY Services" would show the buyer our name.
+        // They have every PIN on screen and in the email, which carries the store's name (16 Nov 2026).
+        if (work?.sms?.enabled && !o.store?.name) {
           let accepted = 0; let last = "skipped";
           const texts = serviceTexts(o); const sender = String(work.sms.sender ?? "Dyservice");
           for (let i = 0; i < texts.length; i++) {
