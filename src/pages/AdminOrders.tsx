@@ -119,6 +119,7 @@ export default function AdminOrders() {
   const [pageSize, setPageSize] = useState(10);
   const [lookup, setLookup] = useState("");
   const [lookedUp, setLookedUp] = useState<AdminOrderRow | null>(null);
+  const [lookedUpDelivered, setLookedUpDelivered] = useState<string | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [referenceMatch, setReferenceMatch] = useState<AdminOrderRow | null>(null);
   type Summary = { all: number; pending: number; delivered: number; failed: number; wrong_network: number; payment_failed: number; verification: number };
@@ -263,7 +264,7 @@ export default function AdminOrders() {
     catch { setLookedUp(null); setMessage(""); setRefundNote(""); toast.error("Could not search orders. Please try again."); return; }
     finally { setLookupLoading(false); }
     if (!match) { setLookedUp(null); setMessage(""); setRefundNote(""); return toast.error("No matching order was found."); }
-    setLookedUp(match);
+    setLookedUp(match); setLookedUpDelivered(null);
     setSupplierText(""); setSupplierCopied(false);
     const ops = await loadOpsStatus().catch(() => null);
     setMessage(supportMessage(match, Boolean(ops?.processing_delay)));
@@ -272,7 +273,10 @@ export default function AdminOrders() {
     setRefundNoteCopied(false);
     if (match.status === "delivered") {
       const { data } = await adminDatabase().from<AdminOrderEventRow>("order_events").select("id, event_type, from_status, to_status, message, created_at").eq("order_id", match.id);
-      setSupplierText(supplierNote(match, (data ?? []) as AdminOrderEventRow[]));
+      const evs = (data ?? []) as AdminOrderEventRow[];
+      setSupplierText(supplierNote(match, evs));
+      // When it landed: the latest move to "delivered" (the same moment the latest-delivery card uses).
+      setLookedUpDelivered(evs.filter((e) => e.to_status === "delivered").map((e) => e.created_at).sort().pop() ?? null);
     }
   };
 
@@ -373,7 +377,7 @@ export default function AdminOrders() {
     <Card><CardContent>
       <div className="flex items-start justify-between gap-4"><div><h2 className="font-display text-lg font-semibold text-white">Track and assist with an order</h2><p className="mt-1 text-sm text-muted-foreground">Search by DataYego reference, recipient phone or supplier reference.</p></div><Badge variant="mint">AI-ready fallback</Badge></div>
       <div className="mt-4 flex gap-2"><label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-white/10 bg-black/10 px-4 py-3"><Search size={17} className="text-faint-foreground" /><input value={lookup} onChange={(event) => setLookup(event.target.value)} onKeyDown={(event) => event.key === "Enter" && void findOrder()} placeholder="YG-..., phone or supplier reference" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-faint-foreground" /></label><Button disabled={lookupLoading} onClick={() => void findOrder()}>{lookupLoading ? <Loader2 className="animate-spin" /> : <Search />}Check</Button></div>
-      {lookedUp && <div className="mt-5 grid gap-4 lg:grid-cols-2"><div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-semibold text-white">{lookedUp.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{lookedUp.recipient_phone} · {lookedUp.networks?.name ?? "Network"}</p></div><div className="flex shrink-0 items-center gap-2">{canRetry(lookedUp) && <Button size="sm" variant="ghost" disabled={retryingRef === lookedUp.order_reference} onClick={() => void retryOrder(lookedUp)}><RotateCcw />{retryingRef === lookedUp.order_reference ? "Sending…" : "Retry"}</Button>}<AdminDetailsButton label={`View ${lookedUp.order_reference}`} onClick={() => openDetails(lookedUp)} /></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><p className="text-faint-foreground">Order</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.status)}</p></div><div><p className="text-faint-foreground">Payment</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.payment_status)}</p></div><div><p className="text-faint-foreground">Supplier</p><p className="mt-1 font-semibold text-foreground">{readableStatus(normalizedSupplierStatus(lookedUp))}</p></div><div><p className="text-faint-foreground">Customer sees</p><p className="mt-1 font-semibold text-foreground">{readableStatus(displayedStatus(lookedUp))}</p></div></div></div><div className="rounded-2xl border border-primary-glow/15 bg-primary/[0.045] p-4"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-glow">Suggested customer response</p><Button variant="ghost" size="sm" onClick={copyMessage} disabled={!message}>{copied ? <ClipboardCheck /> : <Clipboard />}{copied ? "Copied" : "Copy"}</Button></div><textarea value={message} onChange={(event) => { setMessage(event.target.value); setCopied(false); }} className="onyx-field mt-4 min-h-36 resize-y text-sm leading-6" />
+      {lookedUp && <div className="mt-5 grid gap-4 lg:grid-cols-2"><div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-semibold text-white">{lookedUp.order_reference}</p><p className="mt-1 text-xs text-muted-foreground">{lookedUp.recipient_phone} · {lookedUp.networks?.name ?? "Network"}</p></div><div className="flex shrink-0 items-center gap-2">{canRetry(lookedUp) && <Button size="sm" variant="ghost" disabled={retryingRef === lookedUp.order_reference} onClick={() => void retryOrder(lookedUp)}><RotateCcw />{retryingRef === lookedUp.order_reference ? "Sending…" : "Retry"}</Button>}<AdminDetailsButton label={`View ${lookedUp.order_reference}`} onClick={() => openDetails(lookedUp)} /></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><p className="text-faint-foreground">Order</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.status)}</p></div><div><p className="text-faint-foreground">Payment</p><p className="mt-1 font-semibold text-foreground">{readableStatus(lookedUp.payment_status)}</p></div><div><p className="text-faint-foreground">Supplier</p><p className="mt-1 font-semibold text-foreground">{readableStatus(normalizedSupplierStatus(lookedUp))}</p></div><div><p className="text-faint-foreground">Customer sees</p><p className="mt-1 font-semibold text-foreground">{readableStatus(displayedStatus(lookedUp))}</p></div></div><OrderTiming paidAt={lookedUp.paid_at ?? lookedUp.created_at} paid={Boolean(lookedUp.paid_at)} deliveredAt={lookedUp.status === "delivered" ? lookedUpDelivered : null} delivered={lookedUp.status === "delivered"} /></div><div className="rounded-2xl border border-primary-glow/15 bg-primary/[0.045] p-4"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-glow">Suggested customer response</p><Button variant="ghost" size="sm" onClick={copyMessage} disabled={!message}>{copied ? <ClipboardCheck /> : <Clipboard />}{copied ? "Copied" : "Copy"}</Button></div><textarea value={message} onChange={(event) => { setMessage(event.target.value); setCopied(false); }} className="onyx-field mt-4 min-h-36 resize-y text-sm leading-6" />
         <SupplierCreditControl key={lookedUp.id} order={lookedUp} credit={credits[lookedUp.id]} onSaved={refreshCredits} />
         {lookedUp.payment_status === "succeeded" && (["paid", "failed_needs_review"].includes(lookedUp.status) || lookedUp.admin_resolution_status === AWAITING_VERIFICATION) && <div className="mt-4 border-t border-border pt-3"><p className="text-xs leading-5 text-muted-foreground">{lookedUp.admin_resolution_status === AWAITING_VERIFICATION ? "Wait for MTN verification and delivery, or review the refund quote." : "A full refund can be reviewed after confirming any supplier cost was credited back."}</p><Button variant="ghost" size="sm" className="mt-2" onClick={() => setRefundTarget({ reference: lookedUp.order_reference, manual: false })}><RotateCcw />Review refund</Button></div>}
         {lookedUp.status === "delivered" && supplierText && <div className="mt-4 border-t border-white/[0.08] pt-4"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber">Customer says no data? Send this to {lookedUp.suppliers?.name ?? "the supplier"}</p><p className="mt-0.5 text-[11px] text-faint-foreground">Their refs and times, ready to paste to their support.</p></div><Button variant="ghost" size="sm" onClick={copySupplierText}>{supplierCopied ? <ClipboardCheck /> : <Clipboard />}{supplierCopied ? "Copied" : "Copy"}</Button></div><textarea value={supplierText} onChange={(event) => { setSupplierText(event.target.value); setSupplierCopied(false); }} className="onyx-field mt-3 min-h-24 resize-y text-sm leading-6" /></div>}
@@ -427,4 +431,30 @@ export default function AdminOrders() {
       </>}
     />); })()}
   </div>;
+}
+
+/** "2 h 05 min", "14 min", "under a minute": how long an order took, or has been going. */
+function spanLabel(ms: number): string {
+  const min = Math.max(0, Math.floor(ms / 60_000));
+  if (min < 1) return "under a minute";
+  const d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60), m = min % 60;
+  if (d > 0) return `${d} day${d === 1 ? "" : "s"}${h ? ` ${h} h` : ""}`;
+  if (h > 0) return `${h} h ${String(m).padStart(2, "0")} min`;
+  return `${m} min`;
+}
+
+/* Under the order search result (owner, 16 Nov 2026): when it was placed, when it landed, and how long that took,
+   or how long it has been going if it has not landed yet. */
+function OrderTiming({ paidAt, paid, deliveredAt, delivered }: { paidAt: string; paid: boolean; deliveredAt: string | null; delivered: boolean }) {
+  const start = Date.parse(paidAt);
+  const end = deliveredAt ? Date.parse(deliveredAt) : NaN;
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-white/[0.08] pt-3 text-xs">
+      <div><p className="text-faint-foreground">{paid ? "Paid" : "Placed"}</p><p className="mt-1 font-semibold text-foreground">{formatAdminDate(paidAt)}</p></div>
+      {delivered
+        ? <div><p className="text-faint-foreground">Delivered</p><p className="mt-1 font-semibold text-foreground">{deliveredAt ? formatAdminDate(deliveredAt) : "Yes"}</p></div>
+        : <div><p className="text-faint-foreground">Going for</p><p className="mt-1 font-semibold text-foreground">{Number.isFinite(start) ? spanLabel(Date.now() - start) : "-"}</p></div>}
+      {delivered && Number.isFinite(start) && Number.isFinite(end) && <div className="col-span-2"><p className="text-faint-foreground">Took</p><p className="mt-1 font-semibold text-foreground">{spanLabel(end - start)}</p></div>}
+    </div>
+  );
 }
