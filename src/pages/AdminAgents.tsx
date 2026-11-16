@@ -38,6 +38,7 @@ export default function AdminAgents() {
   const [subs, setSubs] = useState<SubPayment[]>([]);
   const [grants, setGrants] = useState<Grant[]>([]);
   const [agentStats, setAgentStats] = useState<Record<string, AgentStats>>({});
+  const [firstPaid, setFirstPaid] = useState<Record<string, string>>({}); // agent id → when they first paid (or got free months)
   const [making, setMaking] = useState(false); const [makeEmail, setMakeEmail] = useState(""); const [makeMonths, setMakeMonths] = useState("1"); const [makeNote, setMakeNote] = useState("");
   const [granting, setGranting] = useState<Agent | null>(null); const [grantMonths, setGrantMonths] = useState("1"); const [grantNote, setGrantNote] = useState("");
   const [apps, setApps] = useState<Application[]>([]);
@@ -79,6 +80,9 @@ export default function AdminAgents() {
       st[k] = { orders: Number(v.orders ?? 0), sales: Number(v.sales ?? 0), salesCount: Number(v.sales_count ?? 0), own: Number(v.own ?? 0), ownCount: Number(v.own_count ?? 0), earned: Number(v.earned ?? 0) };
     }
     setAgentStats(st);
+    // "Newest" goes by when someone first became a paying agent, not by when the application was approved.
+    const { data: fp } = await db().rpc("admin_agent_first_paid", {});
+    setFirstPaid((fp ?? {}) as Record<string, string>);
     setApps(a.data ?? []); setAgents(g.data ?? []); setPromos(p.data ?? []);
     for (const row of s.data ?? []) { if (row.key === "agents_launched") setLaunched(Boolean(row.value)); if (row.key === "agent_plan") { setPlan(row.value); setPlanDraft(row.value); } }
     setIsMaster(r.data === "master");
@@ -107,7 +111,7 @@ export default function AdminAgents() {
     }
   };
   const counts = { subscribed: agents.filter((g) => g.status === "active").length, sold: agents.filter((g) => (agentStats[g.id]?.orders ?? 0) > 0).length, lapsed: agents.filter((g) => g.status !== "active" && (agentStats[g.id]?.orders ?? 0) > 0).length, unpaid: agents.filter((g) => g.status === "awaiting_payment").length, expiring: agents.filter((g) => { const d = daysLeft(g); return g.status === "active" && d != null && d >= 0 && d <= 7; }).length, expired: agents.filter((g) => { const d = daysLeft(g); return d != null && d < 0; }).length, all: agents.length };
-  const visibleAgents = useMemo(() => agents.filter((g) => matchesFilter(g) && (!q || g.store_name.toLowerCase().includes(q) || g.slug.includes(q) || (emails.get(g.user_id) ?? "").toLowerCase().includes(q))).sort((a, b) => agentSort === "sales" ? ((agentStats[b.id]?.sales ?? 0) + (agentStats[b.id]?.own ?? 0)) - ((agentStats[a.id]?.sales ?? 0) + (agentStats[a.id]?.own ?? 0)) : agentSort === "balance" ? Number(b.earnings_balance) - Number(a.earnings_balance) : b.created_at.localeCompare(a.created_at)), [agents, q, emails, agentFilter, agentSort, agentStats]); // eslint-disable-line react-hooks/exhaustive-deps
+  const visibleAgents = useMemo(() => agents.filter((g) => matchesFilter(g) && (!q || g.store_name.toLowerCase().includes(q) || g.slug.includes(q) || (emails.get(g.user_id) ?? "").toLowerCase().includes(q))).sort((a, b) => agentSort === "sales" ? ((agentStats[b.id]?.sales ?? 0) + (agentStats[b.id]?.own ?? 0)) - ((agentStats[a.id]?.sales ?? 0) + (agentStats[a.id]?.own ?? 0)) : agentSort === "balance" ? Number(b.earnings_balance) - Number(a.earnings_balance) : +new Date(firstPaid[b.id] ?? b.created_at) - +new Date(firstPaid[a.id] ?? a.created_at)), [agents, q, emails, agentFilter, agentSort, agentStats, firstPaid]); // eslint-disable-line react-hooks/exhaustive-deps
   const pending = apps.filter((a) => a.status === "pending").length;
   const payoutsWaiting = payouts.filter((p) => p.status === "requested" || p.status === "approved").length;
   const agentName = (id: string) => agents.find((g) => g.id === id)?.store_name ?? "—";
@@ -223,7 +227,7 @@ export default function AdminAgents() {
                 <div className="flex items-center gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[12.5px] font-semibold text-foreground">{g.store_name} <span className="font-normal text-faint-foreground">· {emails.get(g.user_id) ?? "—"}</span></p>
-                    <p className="truncate text-[11px] text-faint-foreground">{g.status === "active" ? (dl != null ? (dl < 0 ? `${-dl}d overdue` : dl === 0 ? "ends today" : `${dl}d left`) : "active") : g.status === "awaiting_payment" ? "approved, not paid" : g.status}{grants.some((x) => x.agent_id === g.id) ? " · free months" : ""} · joined {formatAdminDate(g.created_at)}</p>
+                    <p className="truncate text-[11px] text-faint-foreground">{g.status === "active" ? (dl != null ? (dl < 0 ? `${-dl}d overdue` : dl === 0 ? "ends today" : `${dl}d left`) : "active") : g.status === "awaiting_payment" ? "approved, not paid" : g.status}{grants.some((x) => x.agent_id === g.id) ? " · free months" : ""}{firstPaid[g.id] ? <> · joined {formatAdminDate(firstPaid[g.id])}{new Date(firstPaid[g.id]).toDateString() !== new Date(g.created_at).toDateString() ? ` · approved ${formatAdminDate(g.created_at)}` : ""}</> : <> · approved {formatAdminDate(g.created_at)}</>}</p>
                   </div>
                   <Pill tone={g.status === "active" ? (dl != null && dl <= 7 ? "warn" : "good") : g.status === "awaiting_payment" ? "warn" : "muted"}>{g.status === "active" ? "on plan" : g.status === "awaiting_payment" ? "unpaid" : g.status}</Pill>
                 </div>
