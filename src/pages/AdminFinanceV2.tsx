@@ -112,6 +112,8 @@ export default function AdminFinanceV2() {
           const notCounted = [all.verification ? `${all.verification} waiting on verification` : "", all.review ? `${all.review} under review` : "", all.wrongNetwork ? `${all.wrongNetwork} wrong network` : ""].filter(Boolean);
           return <>
             <span className="block">after {formatGHS(view.capital)} capital</span>
+            {/* Each figure with its after-fees figure right under it (owner, 16 Nov 2026), the notes last. */}
+            <span className="block break-words">Estimated profit after pending fees: <span className="font-medium tabular-nums text-foreground">{formatGHS(estimateProfitAfterPendingFees(view.profit, ps.held.notYetScheduled).profit)}</span></span>
             {!inFlightReady ? <span className="mt-1 block">Delivery-ahead figure unavailable</span> : <>
             {all.counted > 0
               ? <span className="mt-1 block break-words">If all {all.counted} in-progress order{all.counted === 1 ? "" : "s"} deliver: <span className="font-medium tabular-nums text-foreground">{formatGHS(all.profit)}</span></span>
@@ -122,8 +124,7 @@ export default function AdminFinanceV2() {
             {all.missingCost > 0 && <span className="block text-faint-foreground">{all.missingCost} without recorded cost not counted</span>}
             {notCounted.length > 0 && <span className="block text-faint-foreground">{notCounted.join(" · ")} not counted</span>}
             </>}
-            <span className="mt-1 block break-words">Estimated profit after pending fees: <span className="font-medium tabular-nums text-foreground">{formatGHS(estimateProfitAfterPendingFees(view.profit, ps.held.notYetScheduled).profit)}</span></span>
-            <span className="block text-faint-foreground">2% of not-yet-scheduled money</span>
+            <span className="mt-1 block text-faint-foreground">Pending fees are 2% of not-yet-scheduled money</span>
           </>;
         })()} />
       </StatGrid>
