@@ -120,8 +120,11 @@ export default function AgentShell() {
   useEffect(() => { if (legacy) navigate(legacy, { replace: true }); }, [legacy, navigate]);
   if (agent === undefined) return <div className="min-h-dvh bg-background" />;
   if (agent === null) return <div className="mk-wrap py-16 text-center"><p className="text-[16px] font-semibold text-foreground">You're not an agent yet</p><Link to={isStoreHost() ? "/join" : "/agents"} className="mt-4 inline-block text-[13px] text-primary-glow">Apply to be an agent</Link></div>;
-  // The store's best address: their own domain once live, otherwise the free subdomain.
-  const storeUrl = agent.custom_domain && agent.custom_domain_status === "active" ? `https://${agent.custom_domain}` : `https://${agent.slug}.datayego.com`;
+  // The store's best address: their own domain once live; a sub-agent whose parent has a live domain lives on the
+  // parent's domain (parent.com/s/slug, owner 16 Nov 2026) so our name stays out of it; otherwise the free subdomain.
+  const parentDomain = agent.parent_agent_id && agent.parent?.custom_domain && agent.parent.custom_domain_status === "active" ? agent.parent.custom_domain : null;
+  const storeUrl = agent.custom_domain && agent.custom_domain_status === "active" ? `https://${agent.custom_domain}`
+    : parentDomain ? `https://${parentDomain}/s/${agent.slug}` : `https://${agent.slug}.datayego.com`;
 
   const sub = subscriptionOf(agent, quote?.grace_days ?? 1);
   const isSub = !!agent.parent_agent_id;

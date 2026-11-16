@@ -25,7 +25,8 @@ export default function AgentStoreSettings() {
     }
     toast.success("Saved."); void reload();
   };
-  const addresses = [...(agent.custom_domain && agent.custom_domain_status === "active" ? [`https://${agent.custom_domain}`] : []), `https://${agent.slug}.datayego.com`];
+  // storeUrl comes first: it is the parent's domain for a sub-agent whose parent has one (AgentShell).
+  const addresses = [...new Set([storeUrl, ...(agent.custom_domain && agent.custom_domain_status === "active" ? [`https://${agent.custom_domain}`] : []), `https://${agent.slug}.datayego.com`])];
   const field = (k: keyof typeof f, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => <label className="block"><span className="mb-1 block text-[12px] text-muted-foreground">{label}</span><input value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} className="onyx-field w-full" {...props} /></label>;
   return (
     <div className="space-y-3">
