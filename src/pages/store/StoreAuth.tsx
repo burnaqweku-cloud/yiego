@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { storeBase } from "@/lib/storeHost";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useStore } from "@/components/store/StoreShell";
 import StorePage from "@/components/store/StorePage";
@@ -15,6 +15,20 @@ export default function StoreAuth({ mode }: { mode: "sign-in" | "sign-up" }) {
   const { isAuthenticated, signIn, signUp } = useAuth();
   const [f, setF] = useState({ fullName: "", email: "", phone: "", password: "" });
   const [busy, setBusy] = useState(false);
+  // "Forgot password?": the reset email comes from this store, in its name (store-password-reset), never from us.
+  const [params] = useSearchParams();
+  const [forgot, setForgot] = useState(mode === "sign-in" && params.get("forgot") === "1");
+  const [resetSent, setResetSent] = useState(false);
+  const sendReset = async () => {
+    const email = f.email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("Enter the email you signed up with."); return; }
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke<{ status?: string; error?: string }>("store-password-reset", { body: { email, store: store.slug } });
+      if (error || data?.status !== "sent") { toast.error(data?.error ?? "We couldn't send the link. Please try again in a minute."); return; }
+      setResetSent(true);
+    } finally { setBusy(false); }
+  };
   // An agent (including an agent selling under this store) signs in here and lands on their dashboard; customers on My account.
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -45,6 +59,19 @@ export default function StoreAuth({ mode }: { mode: "sign-in" | "sign-up" }) {
     } catch (e) { toast.error(e instanceof Error ? e.message : "Something went wrong."); } finally { setBusy(false); }
   };
   return (
+    forgot ? (
+    <StorePage narrow title="Reset your password" lead={`Enter the email you use with ${store.store_name}. We'll send you a link to choose a new password.`}>
+    <section className="onyx-panel rounded-[22px] p-5">
+      {resetSent
+        ? <p className="text-center text-[13.5px] leading-relaxed text-foreground">If there's an account for <b>{f.email.trim()}</b>, a reset link is on its way. Check your inbox and your spam folder.</p>
+        : <div className="space-y-3">
+            <input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} type="email" placeholder="Email" autoComplete="email" autoCapitalize="none" className="onyx-field w-full" />
+            <button type="button" disabled={busy} onClick={() => void sendReset()} className="onyx-btn-primary w-full py-3 text-[14px] disabled:opacity-60">{busy ? "Sending…" : "Send reset link"}</button>
+          </div>}
+      <p className="mt-4 text-center text-[12.5px] text-muted-foreground"><button type="button" onClick={() => { setForgot(false); setResetSent(false); }} className="font-semibold text-primary-glow">Back to sign in</button></p>
+    </section>
+    </StorePage>
+    ) : (
     <StorePage narrow title={mode === "sign-up" ? "Create your account" : "Welcome back"} lead={mode === "sign-up" ? `An account with ${store.store_name} saves your number, keeps your orders in one place and lets you pay from a wallet.` : `Sign in to see your orders with ${store.store_name} and your wallet.`}>
     <section className="onyx-panel rounded-[22px] p-5">
       <div className="space-y-3">
@@ -53,10 +80,12 @@ export default function StoreAuth({ mode }: { mode: "sign-in" | "sign-up" }) {
         {mode === "sign-up" && <input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="tel" placeholder="Phone number (0XXXXXXXXX)" autoComplete="tel" className="onyx-field w-full" />}
         <input value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} type="password" placeholder="Password" autoComplete={mode === "sign-up" ? "new-password" : "current-password"} className="onyx-field w-full" />
         {mode === "sign-up" && <p className="text-[11.5px] text-faint-foreground">At least 8 characters with upper and lower case and a number.</p>}
+        {mode === "sign-in" && <button type="button" onClick={() => setForgot(true)} className="block w-full text-right text-[12px] font-semibold text-primary-glow">Forgot password?</button>}
         <button type="button" disabled={busy} onClick={() => void submit()} className="onyx-btn-primary w-full py-3 text-[14px] disabled:opacity-60">{busy ? "Please wait…" : mode === "sign-up" ? "Create account" : "Sign in"}</button>
       </div>
       <p className="mt-4 text-center text-[12.5px] text-muted-foreground">{mode === "sign-up" ? <>Already have an account? <Link to={`${storeBase(slug)}/sign-in`} className="font-semibold text-primary-glow">Sign in</Link></> : <>New here? <Link to={`${storeBase(slug)}/sign-up`} className="font-semibold text-primary-glow">Create an account</Link></>}</p>
     </section>
     </StorePage>
+    )
   );
 }

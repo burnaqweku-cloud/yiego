@@ -78,7 +78,7 @@ export default function StoreOrder() {
           <p className="mt-0.5 text-[13px] text-muted-foreground">{phoneResult.network} · {phoneResult.product?.replace(/^.*?—\s*/, "")}{phoneResult.store ? ` · via ${phoneResult.store}` : ""}</p>
           <div className="mt-4 border-t border-white/[0.06] pt-3">
             <p className="text-[12.5px] font-semibold text-foreground">Did you pay for this order?</p>
-            {phoneResult.identity === "account" ? <p className="mt-1 text-[12.5px] text-muted-foreground">Sign in on datayego.com with the account you ordered with to see the full details.</p> : (<>
+            {phoneResult.identity === "account" ? <p className="mt-1 text-[12.5px] text-muted-foreground">Sign in here with the account you ordered with to see the full details.</p> : (<>
               <p className="mt-1 text-[12.5px] text-muted-foreground">Enter the email you used at checkout{phoneResult.email_hint ? ` (${phoneResult.email_hint})` : ""} to see the order ID and details.</p>
               <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (ownerEmail.trim()) void lookupPhone(phoneQueried, ownerEmail.trim()); }}><input value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} type="email" autoCapitalize="none" placeholder="Email you paid with" className="onyx-field flex-1" /><button type="submit" className="onyx-btn-primary px-4 py-2 text-[13px]">Show</button></form>
             </>)}
