@@ -38,4 +38,17 @@ describe("admin historical lookup", () => {
     await findAdminOrder(db, "0559167397");
     expect(calls[0]).toContain('recipient_phone.eq."+233559167397"');
   });
+  it("finds a phone typed with the letter O or copied with invisible marks", async () => {
+    const { db, calls } = database([]);
+    await findAdminOrder(db, "o549159815");
+    await findAdminOrder(db, "\u202a0549159815\u202c");
+    await findAdminOrder(db, "+233 54 915 9815");
+    for (const c of calls) expect(c).toContain('recipient_phone.eq."0549159815"');
+  });
+  it("does not treat references or words as phones", async () => {
+    const { searchPhone } = await import("./admin-order-search");
+    expect(searchPhone("YG-64232EB29A")).toBeNull();
+    expect(searchPhone("oooo")).toBeNull();
+    expect(searchPhone("549159815")).toBe("0549159815");
+  });
 });
