@@ -7,7 +7,6 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Money, Panel, Pill, Segmented, Stat, StatGrid, inputCls } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import CopyRef from "@/components/admin/CopyRef";
-import RefundDialog from "@/components/admin/RefundDialog";
 import SupplierBadge, { useFallbackOrigins } from "@/components/admin/SupplierBadge";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
@@ -60,7 +59,6 @@ export default function AdminOrdersReceived() {
 
   const [tick, setTick] = useState(0);
   const [retrying, setRetrying] = useState<string | null>(null);
-  const [refundReference, setRefundReference] = useState<string | null>(null);
   // "Try another supplier" on a row: every active supplier that sells that order's bundle, other than the current one.
   const [supplierOptions, setSupplierOptions] = useState<{ code: string; name: string; product_ids: Set<string> }[]>([]);
   useEffect(() => {
@@ -80,8 +78,11 @@ export default function AdminOrdersReceived() {
     if (r.data?.result?.status === "delivered") window.__lovableEvents?.track?.("project.data_bundle_delivered", { network: o.networks?.name ?? "Unknown", source: "supplier_fulfillment" });
     toast.success(`${o.order_reference} sent to ${name}.`); setTick((t) => t + 1);
   };
-  // Same retry as the order page: re-sends a failed paid order to the supplier.
+  // Same retry as the order page: re-sends a failed paid order to the supplier. Asks first (17 Nov 2026, owner: "not
+  // every order needs to be retried"); the server still refuses if a supplier already took money for the order.
   const retry = async (o: Row) => {
+    const bundle = [o.networks?.name, o.data_products?.capacity_gb ? `${o.data_products.capacity_gb}GB` : o.data_products?.name].filter(Boolean).join(" ");
+    if (!window.confirm(`Send ${o.order_reference} (${bundle} to ${o.recipient_phone}) to ${o.suppliers?.name ?? "the supplier"} again?\n\nOnly retry an order the supplier refused and took no money for.`)) return;
     setRetrying(o.id);
     const r = await supabase.functions.invoke<{ error?: string; result?: { status?: string; reason?: string } }>("admin-order-action", { body: { action: "retry", orderReference: o.order_reference } });
     setRetrying(null);
@@ -156,16 +157,16 @@ export default function AdminOrdersReceived() {
               <div className="flex max-w-[55%] flex-col items-end gap-1.5 text-right">
                 <p className="text-[12.5px] font-semibold tabular-nums">{formatGHS(Number(o.amount))}</p>
                 <Pill tone={o.status === "delivered" ? "good" : o.status === "refunded" ? "bad" : "warn"}>{o.status === "delivered" ? "delivered" : o.status === "refunded" ? "refunded" : o.admin_resolution_status === "awaiting_verification" ? "verification" : o.admin_resolution_status === "wrong_network" ? "wrong network" : o.status.startsWith("failed") ? "review" : awaitingRefund(o) ? "awaiting refund" : "in progress"}</Pill>
-                {canTryElsewhere(o) && (() => { const others = supplierOptions.filter((x) => x.code !== o.suppliers?.code && x.product_ids.has(o.product_id ?? "")); return others.length ? <select value="" disabled={retrying !== null || refundReference !== null} onChange={(e) => { const x = others.find((y) => y.code === e.target.value); if (x) void trySupplier(o, x.code, x.name); }} className="max-w-full rounded-full border border-border bg-transparent px-2 py-1 text-[11.5px] text-foreground disabled:opacity-50" aria-label={`Try another supplier for ${o.order_reference}`}><option value="">{retrying === o.id ? "Sending…" : "Try another supplier…"}</option>{others.map((x) => <option key={x.code} value={x.code}>{x.name}</option>)}</select> : null; })()}
+                {canTryElsewhere(o) && (() => { const others = supplierOptions.filter((x) => x.code !== o.suppliers?.code && x.product_ids.has(o.product_id ?? "")); return others.length ? <select value="" disabled={retrying !== null} onChange={(e) => { const x = others.find((y) => y.code === e.target.value); if (x) void trySupplier(o, x.code, x.name); }} className="max-w-full rounded-full border border-border bg-transparent px-2 py-1 text-[11.5px] text-foreground disabled:opacity-50" aria-label={`Try another supplier for ${o.order_reference}`}><option value="">{retrying === o.id ? "Sending…" : "Try another supplier…"}</option>{others.map((x) => <option key={x.code} value={x.code}>{x.name}</option>)}</select> : null; })()}
                 <div className="flex flex-wrap justify-end gap-1.5">
-                  {stageOf(o) === "no_float" && <Button size="sm" variant="ghost" disabled={retrying !== null || refundReference !== null} onClick={() => void retry(o)}><RotateCcw size={11} />{retrying === o.id ? "Sending…" : "Retry"}</Button>}
-                  {!["delivered", "refunded", "cancelled", "canceled"].includes(o.status) && <Button size="sm" variant="ghost" aria-label={`Refund ${o.order_reference}`} disabled={retrying !== null || refundReference !== null} onClick={() => setRefundReference(o.order_reference)}><RotateCcw size={11} />Refund</Button>}
+                  {/* 17 Nov 2026: no Refund button in this list (it was for a payment problem that is over; refunds are on the
+                      order page). Retry only where the supplier refused the order: Needs review and Supplier no money. */}
+                  {(stageOf(o) === "review" || stageOf(o) === "no_float") && <Button size="sm" variant="ghost" aria-label={`Retry ${o.order_reference}`} disabled={retrying !== null} onClick={() => void retry(o)}><RotateCcw size={11} />{retrying === o.id ? "Sending…" : "Retry"}</Button>}
                 </div>
               </div>
             </li>))}
         </ul>
       </Panel>
-      {refundReference && <RefundDialog key={refundReference} reference={refundReference} fullOnly initialReason={`Administrator requested a full refund for undelivered order ${refundReference}.`} onClose={() => setRefundReference(null)} onDone={() => setTick((t) => t + 1)} />}
     </div>
   );
 }
