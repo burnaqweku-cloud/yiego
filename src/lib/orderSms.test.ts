@@ -33,5 +33,13 @@ describe("Order SMS rules", () => {
     expect(eligibleSms({ ...order, created_at: "2026-09-01T00:00:00Z", status: "delivered" }, "verified")).toBe(true);
   });
   it("uses the real purchase date and time in Accra, not Lagos", () => { expect(buildOrderSms(fixed, "purchase")).toContain("19 Oct 23:30"); });
-  it("uses the matching delivered or on-way verification variant", () => { expect(buildOrderSms(fixed, "verified")).toContain("2G from 19th October is on its way"); expect(buildOrderSms({ ...fixed, status: "delivered" }, "verified")).toContain("2G from 19th October is already delivered"); });
+  it("uses the matching delivered or on-way verification variant", () => { expect(buildOrderSms(fixed, "verified")).toContain("2G from 19th October is on its way"); expect(buildOrderSms({ ...fixed, status: "delivered" }, "verified")).toContain("2G from 19th October has been delivered"); });
+  it("sends the owner's one-SMS verified text, with the store's own address for store orders", () => {
+    const done = { ...fixed, status: "delivered", created_at: "2026-10-23T10:00:00Z", capacity_gb: 1 };
+    expect(buildOrderSms(done, "verified")).toBe("Your number is now verified. Your 1G from 23rd October has been delivered, and every order from now on goes through instantly. Thank you! datayego.com");
+    const shop = buildOrderSms({ ...done, agent_slug: "big", store_name: "Big Gabi's Data Store" }, "verified");
+    expect(shop.endsWith(" big.datayego.com")).toBe(true); expect(shop).not.toMatch(/data store|DTYEGO/i); expect(shop.length).toBeLessThanOrEqual(160);
+    const long = buildOrderSms({ ...done, created_at: "2026-11-06T10:00:00Z", agent_slug: "fawaz-wuniche", store_name: "x" }, "verified");
+    expect(long).toBe("Your number is now verified. Your 1G from 6th November has been delivered, and every order from now on goes through instantly. fawaz-wuniche.datayego.com");
+  });
 });

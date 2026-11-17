@@ -33,7 +33,8 @@ export function eligibleSms(o: OrderSmsRecord, kind: OrderSmsKind, onWayMaxHours
 export const DEFAULT_SMS_TEMPLATES: SmsTemplates = {
   purchase: "Thank you for your order on {brand}. Order ID: {ref}, {datetime}. Your {size} is being processed and will reach you shortly. {link}",
   delivered: "Your {size} order on {brand} is delivered. Order ID: {ref}, placed {datetime}. Thank you for choosing us. {link}",
-  verified_delivered: "Congratulations, your number is verified on {brand}. Every order you purchase from now on goes through instantly. Your {size} from {date} is already delivered. We're looking forward to see more orders from you. {link}",
+  // 17 Nov 2026: shortened by the owner to fit one SMS. No brand name (store names often say "Data"); the address ends it.
+  verified_delivered: "Your number is now verified. Your {size} from {date} has been delivered, and every order from now on goes through instantly. Thank you! {link}",
   verified_on_way: "Congratulations, your number is verified on {brand}. Every order you purchase from now on goes through instantly. Your {size} from {date} is on its way. We're looking forward to see more orders from you. {link}",
 };
 
@@ -101,6 +102,8 @@ export function buildOrderSms(o: OrderSmsRecord, kind: OrderSmsKind, templates: 
   // Routine texts aim for one segment; drop the courtesy sentence first if a long store name pushes them over.
   if (kind === "purchase" && message.length > ONE_SEGMENT) message = message.replace(" and will reach you shortly", "");
   if (kind === "delivered" && message.length > ONE_SEGMENT) message = message.replace(" Thank you for choosing us.", "");
+  // A long store address can push the verified text past one SMS: drop the thanks first.
+  if (kind === "verified" && message.length > ONE_SEGMENT) message = message.replace(" Thank you!", "");
   if (message.length > TWO_SEGMENTS || /[^\x20-\x7e]/.test(message)) throw new Error("SMS too long for two segments");
   return message;
 }
