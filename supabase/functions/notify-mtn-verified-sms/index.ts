@@ -43,9 +43,14 @@ Deno.serve(async req => {
       verifiedDelivered: buildOrderSms(sample, "verified", templates), verifiedOnWay: buildOrderSms({ ...sample, status: "processing" }, "verified", templates),
     } });
     if (!control.enabled) return jsonResponse({ enabled: false, sent: 0 });
+    // 17 Nov 2026: texts leave slowly and in the day. A burst gets most of them dropped by the network (twelve approval
+    // texts in 20 seconds: three delivered), so at most 3 per run (the job runs every 5 minutes), 30 seconds apart,
+    // and only 8:00-20:00 Ghana time. Nothing is lost outside those hours: the rows wait for the morning.
+    const hour = new Date().getUTCHours(); // Ghana is on UTC all year
+    if (hour < 8 || hour >= 20) return jsonResponse({ enabled: true, sent: 0, waiting: "outside 8:00-20:00 Ghana time" });
     const seeded = await db.rpc("seed_verified_order_sms");
     if (seeded.error) throw new Error("Cannot queue verification messages");
-    const { data: jobs, error: claimError } = await db.rpc("claim_order_sms", { batch_size: 20 });
+    const { data: jobs, error: claimError } = await db.rpc("claim_order_sms", { batch_size: 3 });
     if (claimError) throw new Error("Cannot claim SMS queue");
     const callbackUrl = await smsCallbackUrl(db);
     let sent = 0, skipped = 0, failed = 0;
@@ -74,6 +79,7 @@ Deno.serve(async req => {
         if (verified) { await finish("skipped", "delivery_already_in_verification_sms"); skipped++; continue; }
       }
       try { message = buildOrderSms(record, job.kind as OrderSmsKind, templates); } catch { await finish("skipped", "invalid_order_details"); skipped++; continue; }
+      if (sent > 0) await new Promise((r) => setTimeout(r, 30_000));
       const result = await sendSms({ to: record.recipient_phone, message, sender: settings.senderId, metadata: { notification_id: job.id, purpose: job.kind }, callbackUrl });
       if (result.ok) {
         await recordSmsCredits(db, result.remaining);
