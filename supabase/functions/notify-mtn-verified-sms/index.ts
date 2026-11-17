@@ -44,13 +44,14 @@ Deno.serve(async req => {
     } });
     if (!control.enabled) return jsonResponse({ enabled: false, sent: 0 });
     // 17 Nov 2026: texts leave slowly and in the day. A burst gets most of them dropped by the network (twelve approval
-    // texts in 20 seconds: three delivered), so at most 3 per run (the job runs every 5 minutes), 30 seconds apart,
-    // and only 8:00-20:00 Ghana time. Nothing is lost outside those hours: the rows wait for the morning.
+    // texts in 20 seconds: three delivered), so one per run and the job runs every minute (first 3 per 5 minutes;
+    // the owner moved it to one a minute the same afternoon once one a minute had delivered well for the number-only
+    // texts), and only 8:00-20:00 Ghana time. Nothing is lost outside those hours: the rows wait for the morning.
     const hour = new Date().getUTCHours(); // Ghana is on UTC all year
     if (hour < 8 || hour >= 20) return jsonResponse({ enabled: true, sent: 0, waiting: "outside 8:00-20:00 Ghana time" });
     const seeded = await db.rpc("seed_verified_order_sms");
     if (seeded.error) throw new Error("Cannot queue verification messages");
-    const { data: jobs, error: claimError } = await db.rpc("claim_order_sms", { batch_size: 3 });
+    const { data: jobs, error: claimError } = await db.rpc("claim_order_sms", { batch_size: 1 });
     if (claimError) throw new Error("Cannot claim SMS queue");
     const callbackUrl = await smsCallbackUrl(db);
     let sent = 0, skipped = 0, failed = 0;
