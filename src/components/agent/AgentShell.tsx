@@ -8,6 +8,7 @@ import { loadPhase1Networks, loadPhase1Products, type Phase1Product } from "@/li
 import { planQuote, type PlanQuote } from "@/lib/agents";
 import { AGENT_GROUPS, STAFF_GROUPS as STAFF_NAV, groupForPath, LEGACY_REDIRECTS } from "@/lib/agent-nav";
 import { isStoreHost } from "@/lib/storeHost";
+import { setCheckStore } from "@/lib/mtnCheck";
 import AskDataYegoLauncher from "@/components/agent/AskDataYego";
 import { ChevronDown } from "lucide-react";
 import { useAuth } from "@/store/auth-context";
@@ -116,6 +117,8 @@ export default function AgentShell() {
 
   // The buy and top-up sheets open outside the dashboard's own element; this flag lets the look reach them (styles/look.css).
   useEffect(() => { document.documentElement.classList.add("yg-look"); return () => document.documentElement.classList.remove("yg-look"); }, []);
+  // A number checked in the dashboard is one of this store's customers: record it under the store (lib/mtnCheck).
+  useEffect(() => { setCheckStore(agent?.slug ?? null); return () => setCheckStore(null); }, [agent?.slug]);
   const legacy = LEGACY_REDIRECTS[location.pathname.replace(/\/$/, "")];
   useEffect(() => { if (legacy) navigate(legacy, { replace: true }); }, [legacy, navigate]);
   if (agent === undefined) return <div className="min-h-dvh bg-background" />;

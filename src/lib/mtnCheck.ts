@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getHostSlug, isStoreHost } from "@/lib/storeHost";
 
 /* MTN number check against our supplier's approved list. Public, no login, no limits. */
 export type CheckStatus = "approved" | "not_approved" | "unapproved" | "blocked" | "not_enforced" | "invalid" | "not_mtn";
@@ -15,8 +16,19 @@ export async function checkNumbers(numbers: string[]): Promise<CheckResult[]> {
   if (error || !data) throw new Error(error?.message ?? "check_failed");
   return data.results;
 }
+/* Which store a submitted number came from (17 Nov 2026), so a later "your number is verified" text can carry that
+   store's own address instead of ours: a store page (/s/<slug>, or a store's own address), or an agent's dashboard
+   (the agent's store, set by AgentShell). null = our own site. */
+let dashboardStore: string | null = null;
+export const setCheckStore = (slug: string | null) => { dashboardStore = slug; };
+export function currentCheckStore(path = typeof window === "undefined" ? "/" : window.location.pathname, storeHost = isStoreHost()): string | null {
+  const m = path.match(/^\/s\/([a-z0-9]+(?:-[a-z0-9]+)*)/i);
+  if (m) return m[1].toLowerCase();
+  if (path === "/agent" || path.startsWith("/agent/")) return dashboardStore;
+  return storeHost ? getHostSlug() : null;
+}
 export async function submitNumbers(numbers: string[], source: "shop" | "checker" | "checker_bulk" | "checkout"): Promise<SubmitOutcome[]> {
-  const { data, error } = await supabase.functions.invoke<{ outcomes: SubmitOutcome[] }>("check-mtn-number", { body: { action: "submit", numbers, source } });
+  const { data, error } = await supabase.functions.invoke<{ outcomes: SubmitOutcome[] }>("check-mtn-number", { body: { action: "submit", numbers, source, store: currentCheckStore() } });
   if (error || !data) throw new Error(error?.message ?? "submit_failed");
   return data.outcomes;
 }

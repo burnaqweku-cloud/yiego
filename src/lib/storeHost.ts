@@ -10,5 +10,6 @@ export function isStoreHost(host = typeof window === "undefined" ? "datayego.com
 /* Path prefix for store links: "" on a store host, "/s/slug" on the main site. */
 let hostSlug: string | null = null;
 export const setHostSlug = (s: string | null) => { hostSlug = s; };
+export const getHostSlug = () => hostSlug;
 /* On a store host, the host's own store lives at the root; any other store (e.g. a sub-agent on the parent's domain) at /s/slug. */
 export const storeBase = (slug: string) => (isStoreHost() && (hostSlug === null || hostSlug === slug) ? "" : `/s/${slug}`);

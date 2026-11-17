@@ -13,6 +13,7 @@ import * as hub from "../_shared/databundleshub.ts";
      1,000 overall). Admins are not limited. The saved answers are only refreshed for numbers inside that allowance. */
 
 const MTN = ["024", "025", "053", "054", "055", "059"];
+const MAIN_HOSTS = ["datayego.com", "www.datayego.com", "yiego.shop", "www.yiego.shop", "localhost", "127.0.0.1"];
 const normalize = (v: string) => { const d = String(v ?? "").replace(/\D/g, ""); return d.startsWith("233") ? `0${d.slice(3)}` : d; };
 const isMtn = (n: string) => n.length === 10 && n.startsWith("0") && MTN.includes(n.slice(0, 3));
 type Status = "approved" | "not_approved" | "unapproved" | "blocked" | "not_enforced";
@@ -80,6 +81,23 @@ Deno.serve(async (req) => {
       const source = ["shop", "checker", "checker_bulk", "checkout"].includes(String(body.source)) ? String(body.source) : "shop";
       const numbers = [...new Set(raw.slice(0, 100).map((v) => normalize(String(v))))].filter(isMtn);
       if (numbers.length === 0) return jsonResponse({ error: "No valid MTN numbers" }, { status: 400 });
+      // Which store the number came from (17 Nov 2026), so a later text can carry that store's address and never ours.
+      // The page says (body.store: a store page or an agent's dashboard); it must be a real store. The site it was
+      // sent from is kept too, and names the store when the page did not (a store's own address).
+      let origin: string | null = null;
+      try { origin = new URL(req.headers.get("origin") ?? "").hostname.toLowerCase() || null; } catch { origin = null; }
+      let store: string | null = null;
+      const asked = typeof body.store === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(body.store) ? body.store : null;
+      if (asked) { const { data: a } = await supabase.from("agents").select("slug").eq("slug", asked).maybeSingle(); store = a?.slug ?? null; }
+      if (!store && origin && !MAIN_HOSTS.includes(origin)) {
+        const sub = origin.endsWith(".datayego.com") ? origin.slice(0, -".datayego.com".length) : null;
+        const { data: a } = sub && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(sub)
+          ? await supabase.from("agents").select("slug").eq("slug", sub).maybeSingle()
+          : await supabase.from("agents").select("slug").eq("custom_domain", origin).maybeSingle();
+        store = a?.slug ?? null;
+      }
+      // A number seen before keeps its store when this request names none.
+      const from: Record<string, string | null> = store ? { store_slug: store, origin_host: origin } : { origin_host: origin };
       const { data: existing } = await supabase.from("submitted_numbers").select("msisdn, submitted_at, status, submit_count").in("msisdn", numbers);
       const prevOf = (n: string) => (existing ?? []).find((x: { msisdn: string }) => x.msisdn === n) as { submitted_at: string; submit_count: number | null } | undefined;
       const dayAgo = Date.now() - 24 * 3_600_000;
@@ -90,7 +108,7 @@ Deno.serve(async (req) => {
         if (st === "approved" || st === "not_enforced") { outcomes.push({ msisdn: n, outcome: "already_approved" }); return true; }
         if (st === "blocked") { outcomes.push({ msisdn: n, outcome: "blocked" }); return true; }
         if (st === "unapproved" || (prev && new Date(prev.submitted_at).getTime() > dayAgo)) {
-          if (!prev) await supabase.from("submitted_numbers").insert({ msisdn: n, source, status: "pending", dbh_message: r?.message ?? null, last_checked_at: new Date().toISOString() });
+          if (!prev) await supabase.from("submitted_numbers").insert({ msisdn: n, source, ...from, status: "pending", dbh_message: r?.message ?? null, last_checked_at: new Date().toISOString() });
           outcomes.push({ msisdn: n, outcome: "already_submitted" }); return true;
         }
         // No answer from the supplier: we do not know this number is unapproved, so no purchase request is made.
@@ -126,10 +144,10 @@ Deno.serve(async (req) => {
           const msg = r.payload?.message ?? r.payload?.error ?? null;
           const d = r.payload?.data as { requestId?: number; purchaseId?: number } | undefined;
           const accepted = r.ok && (d?.requestId != null || d?.purchaseId != null);
-          await supabase.from("supplier_api_logs").insert({ supplier_id: dbh?.id ?? null, action: "submit_for_verification", endpoint: "/api/developer/purchase", request_payload: { phoneNumber: n, capacity: "1", purpose: "submit_for_verification", source }, response_payload: r.payload ?? {}, http_status: r.status, call_status: accepted ? "success" : "error", error_message: accepted ? "UNEXPECTED: purchase accepted during verification submit" : msg, duration_ms: r.durationMs });
+          await supabase.from("supplier_api_logs").insert({ supplier_id: dbh?.id ?? null, action: "submit_for_verification", endpoint: "/api/developer/purchase", request_payload: { phoneNumber: n, capacity: "1", purpose: "submit_for_verification", source, store }, response_payload: r.payload ?? {}, http_status: r.status, call_status: accepted ? "success" : "error", error_message: accepted ? "UNEXPECTED: purchase accepted during verification submit" : msg, duration_ms: r.durationMs });
           if (accepted) { outcomes.push({ msisdn: n, outcome: "already_approved", message: "Number was approved; a 1GB bundle was sent to it." }); continue; }
           const onList = /not approved|saved for approval|beneficiary/i.test(String(msg ?? "")) || r.status === 422;
-          await supabase.from("submitted_numbers").upsert({ msisdn: n, source, status: "pending", dbh_message: msg, last_checked_at: new Date().toISOString(), submitted_at: new Date().toISOString(), submit_count: (prev?.submit_count ?? 0) + 1 }, { onConflict: "msisdn" });
+          await supabase.from("submitted_numbers").upsert({ msisdn: n, source, ...from, status: "pending", dbh_message: msg, last_checked_at: new Date().toISOString(), submitted_at: new Date().toISOString(), submit_count: (prev?.submit_count ?? 0) + 1 }, { onConflict: "msisdn" });
           outcomes.push({ msisdn: n, outcome: onList ? "submitted" : "submitted_unconfirmed", message: msg });
         }
       }
