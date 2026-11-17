@@ -9,6 +9,9 @@ import { formatAdminDate } from "@/lib/admin-data";
 import { CHECK_LABEL, checkAll, isApproved, loadChecks, loadDbhWallet, loadQueue, sendOrders, type CheckRun, type DbhWallet, type QueueOrder, type SendResult } from "@/lib/mtn-verification-admin";
 
 const ghs = (n: number) => `GH₵${n.toFixed(2)}`;
+/* Orders per request. Each takes about 7 seconds at DBH and one request is cut off after about 2½ minutes, so a big
+   batch could be cut off halfway through buying an order (17 Nov 2026). 10 is about 70 seconds. */
+const SEND_BATCH = 10;
 // DBH cost of a set of orders; `exact` is false when any bundle has no DBH price on file (then it's a floor, not a total).
 const costOf = (orders: QueueOrder[]) => ({ total: orders.reduce((s, o) => s + Number(o.dbh_cost ?? 0), 0), exact: orders.every((o) => o.dbh_cost != null) });
 
@@ -23,6 +26,7 @@ export default function AdminMtnVerification() {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<SendResult[] | null>(null);
   const [wallet, setWallet] = useState<DbhWallet | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   const load = async () => {
     try { const [q, c, w] = await Promise.all([loadQueue(), loadChecks(1), loadDbhWallet().catch(() => null)]); setQueue(q); setLastCheck(c[0] ?? null); setWallet(w); setSelected((s) => new Set([...s].filter((id) => q.some((o) => o.id === id && isApproved(o.check_status) && (!o.send || o.send.outcome === "refused" || o.send.outcome === "failed"))))); }
@@ -54,13 +58,28 @@ export default function AdminMtnVerification() {
   const walletShort = wallet?.balance != null && selectedCost.total > wallet.balance;
 
   const send = async () => {
-    const ids = [...selected]; if (!ids.length || sending || walletShort) return;
-    const orders = selectedOrders;
-    if (!window.confirm(`Send ${orders.length} order${orders.length === 1 ? "" : "s"} to DataBundlesHub now? DBH will charge about ${ghs(selectedCost.total)}${selectedCost.exact ? "" : " (some bundles have no DBH price on file)"}. Each is sent once and cannot be sent from here again.`)) return;
-    setSending(true);
-    try { const r = await sendOrders(ids); setResults(r.results); const ok = r.results.filter((x) => x.outcome === "sent" || x.outcome === "adopted").length; toast[ok === r.results.length ? "success" : "message"](`${ok} of ${r.results.length} sent. ${r.results.length - ok ? "See the results below for the rest." : ""}`); setSelected(new Set()); await load(); }
-    catch (e) { toast.error((e as Error).message); }
-    finally { setSending(false); }
+    const orders = selectedOrders; if (!orders.length || sending || walletShort) return;
+    if (!window.confirm(`Send ${orders.length} order${orders.length === 1 ? "" : "s"} to DataBundlesHub now? DBH will charge about ${ghs(selectedCost.total)}${selectedCost.exact ? "" : " (some bundles have no DBH price on file)"}. They go ${SEND_BATCH} at a time and it stops at the first problem; keep this page open until it says done. Each is sent once and cannot be sent from here again.`)) return;
+    setSending(true); setResults(null);
+    const all: SendResult[] = []; let stopped: string | null = null;
+    try {
+      // One batch after another, never two at once. A failed request or a failed order stops the run: nothing after it is sent.
+      for (let i = 0; i < orders.length; i += SEND_BATCH) {
+        setProgress({ done: i, total: orders.length });
+        let r: { results: SendResult[] };
+        try { r = await sendOrders(orders.slice(i, i + SEND_BATCH).map((o) => o.id)); }
+        catch (e) { stopped = `Stopped: ${(e as Error).message}. The orders before this batch are done. Refresh to see which of this batch went, and don't send or retry them until they've been checked.`; break; }
+        all.push(...r.results); setResults([...all]);
+        const failed = r.results.filter((x) => x.outcome === "failed");
+        if (failed.length) { stopped = `Stopped: ${failed.length} order${failed.length === 1 ? "" : "s"} failed (${failed[0].detail}). Nothing after this batch was sent.`; break; }
+      }
+    } finally {
+      setProgress(null); setSelected(new Set()); setSending(false);
+      const ok = all.filter((x) => x.outcome === "sent" || x.outcome === "adopted").length;
+      if (stopped) toast.error(`${ok} sent. ${stopped}`, { duration: 20000 });
+      else toast[ok === all.length ? "success" : "message"](`Done: ${ok} of ${all.length} sent. ${all.length - ok ? "See the results below for the rest." : ""}`);
+      await load();
+    }
   };
 
   const toggle = (id: string) => setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -114,10 +133,10 @@ export default function AdminMtnVerification() {
         {ready.length > 0 && (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-3">
             <p className="text-[12px] text-muted-foreground">{selected.size} selected · customers paid {ghs(selectedOrders.reduce((s, o) => s + Number(o.amount), 0))} · DBH charges {ghs(selectedCost.total)}{selectedCost.exact ? "" : "+"}</p>
-            <button type="button" disabled={!selected.size || sending || walletShort} onClick={() => void send()} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-[12.5px] font-semibold text-[#04120c] disabled:opacity-50"><Send size={14} />{sending ? "Sending…" : walletShort ? "Wallet too low" : selected.size ? `Send ${selected.size} order${selected.size === 1 ? "" : "s"} · ${ghs(selectedCost.total)}` : "Select orders to send"}</button>
+            <button type="button" disabled={!selected.size || sending || walletShort} onClick={() => void send()} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-[12.5px] font-semibold text-[#04120c] disabled:opacity-50"><Send size={14} />{sending ? (progress ? `Sending ${Math.min(progress.done + SEND_BATCH, progress.total)} of ${progress.total}…` : "Sending…") : walletShort ? "Wallet too low" : selected.size ? `Send ${selected.size} order${selected.size === 1 ? "" : "s"} · ${ghs(selectedCost.total)}` : "Select orders to send"}</button>
           </div>
         )}
-        <p className="mt-2 text-[11px] text-faint-foreground">Each order is locked before anything goes to DBH, so a double press, a second admin or a refresh can't send it twice. If DBH already holds the order, it's adopted instead of bought again. A number that got a bundle in the last 10 minutes is refused.</p>
+        <p className="mt-2 text-[11px] text-faint-foreground">Orders go {SEND_BATCH} at a time and the run stops at the first problem. Each order is locked before anything goes to DBH, so a double press, a second admin or a refresh can't send it twice. If DBH already holds the order, it's adopted instead of bought again. A number that got a bundle in the last 10 minutes is refused.</p>
       </Panel>
 
       {results && (
