@@ -11,14 +11,20 @@ import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { useAuth } from "@/store/auth-context";
 
 /* Announcements: what customers, agents and visitors see in their bell /
-   strip, and (optionally) get by email. */
-interface Ann { id: string; title: string; body: string; audience: "everyone" | "customers" | "agents" | "guests"; kind: "update" | "price" | "notice" | "warning"; link_url: string | null; link_label: string | null; is_urgent?: boolean; starts_at: string; ends_at: string | null; is_pinned: boolean; is_active: boolean; emailed_at: string | null; created_at: string }
+   strip, and (optionally) get by email. "Where it shows" can also put one on
+   agents' dashboards as a card (components/agent/DashboardMessages). */
+interface Ann { id: string; title: string; body: string; audience: "everyone" | "customers" | "agents" | "guests"; kind: "update" | "price" | "notice" | "warning"; link_url: string | null; link_label: string | null; is_urgent?: boolean; placement?: Placement; only_without_domain?: boolean; starts_at: string; ends_at: string | null; is_pinned: boolean; is_active: boolean; emailed_at: string | null; created_at: string }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> };
 const AUD: Record<Ann["audience"], string> = { everyone: "Everyone", customers: "Customers", agents: "Agents", guests: "Visitors (not signed in)" };
 const KIND: Record<Ann["kind"], string> = { update: "Update", price: "Price change", notice: "Notice", warning: "Important" };
+/* Where it shows (18 Nov 2026): the bell (with the phone notification), a card on agents' dashboards, or both.
+   Dashboard-only never goes in the bell and never sends a phone notification. */
+type Placement = "bell" | "dashboard" | "both";
+const PLACE: Record<Placement, string> = { bell: "Bell (and phone notification)", dashboard: "Agents' dashboard only", both: "Bell and agents' dashboard" };
+const onDashboard = (a: Partial<Ann>) => (a.placement ?? "bell") !== "bell";
 const toLocal = (iso: string | null) => iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "";
-const blank = (): Partial<Ann> => ({ title: "", body: "", audience: "everyone", kind: "update", link_url: "", link_label: "", is_pinned: false, is_urgent: false, is_active: true, starts_at: new Date().toISOString(), ends_at: null });
+const blank = (): Partial<Ann> => ({ title: "", body: "", audience: "everyone", kind: "update", link_url: "", link_label: "", is_pinned: false, is_urgent: false, is_active: true, starts_at: new Date().toISOString(), ends_at: null, placement: "bell", only_without_domain: false });
 
 export default function AdminAnnouncements() {
   const { user } = useAuth(); const actor = user?.id ?? "";
@@ -36,8 +42,8 @@ export default function AdminAnnouncements() {
   const save = async () => {
     if (!edit?.title?.trim() || !edit.body?.trim()) return toast.error("Title and message are needed.");
     setBusy(true);
-    const { error } = await db().rpc("admin_save_announcement", { p_actor: actor, p_id: edit.id ?? null, p_title: edit.title, p_body: edit.body, p_audience: edit.audience, p_kind: edit.kind, p_link_url: edit.link_url ?? null, p_link_label: edit.link_label ?? null, p_starts_at: edit.starts_at ?? null, p_ends_at: edit.ends_at ?? null, p_pinned: edit.is_pinned ?? false, p_active: edit.is_active ?? true, p_urgent: edit.is_urgent ?? false });
-    setBusy(false); if (error) return toast.error(error.message); toast.success("Saved. It's live for its audience now."); setEdit(null); void load();
+    const { error } = await db().rpc("admin_save_announcement", { p_actor: actor, p_id: edit.id ?? null, p_title: edit.title, p_body: edit.body, p_audience: edit.audience, p_kind: edit.kind, p_link_url: edit.link_url ?? null, p_link_label: edit.link_label ?? null, p_starts_at: edit.starts_at ?? null, p_ends_at: edit.ends_at ?? null, p_pinned: edit.is_pinned ?? false, p_active: edit.is_active ?? true, p_urgent: edit.is_urgent ?? false, p_placement: edit.placement ?? "bell", p_only_without_domain: onDashboard(edit) && (edit.only_without_domain ?? false) });
+    setBusy(false); if (error) return toast.error(error.message.includes("dashboard_is_for_agents") ? "Dashboard messages are for agents: set Who sees it to Agents." : error.message); toast.success("Saved. It's live for its audience now."); setEdit(null); void load();
   };
   const sendEmail = async (a: Ann) => {
     if (!window.confirm(`Email this to ${AUD[a.audience].toLowerCase()}? ${a.emailed_at ? "It was already emailed once." : ""}`)) return;
@@ -48,11 +54,11 @@ export default function AdminAnnouncements() {
 
   return (
     <div className="space-y-5">
-      <AdminPageHeader title="Announcements" description="What people see in their notifications bell — updates, price changes, notices. Agents, customers or everyone." action={<Button size="sm" onClick={() => setEdit(blank())}><Megaphone size={14} />New announcement</Button>} />
+      <AdminPageHeader title="Announcements" description="What people see in their notifications bell — updates, price changes, notices — and messages that sit on agents' dashboards." action={<Button size="sm" onClick={() => setEdit(blank())}><Megaphone size={14} />New announcement</Button>} />
       <Segmented<"live" | "all"> value={filter} onChange={setFilter} options={[{ value: "live", label: "Live now" }, { value: "all", label: "All" }]} />
       <Panel title="Announcements" note={`${shown.length} shown`}>
         <Rows empty="Nothing yet. Post your first announcement.">
-          {shown.map((a) => <Row key={a.id} onClick={() => setEdit({ ...a })} primary={<>{a.title} <Pill tone={a.kind === "warning" ? "bad" : a.kind === "price" ? "warn" : "good"}>{KIND[a.kind]}</Pill>{a.is_pinned && <Pill tone="muted">pinned</Pill>}{!live(a) && <Pill tone="muted">{a.is_active ? "scheduled / ended" : "off"}</Pill>}</>} secondary={`${AUD[a.audience]} · from ${formatAdminDate(a.starts_at)}${a.ends_at ? ` to ${formatAdminDate(a.ends_at)}` : ""}${a.emailed_at ? ` · emailed ${formatAdminDate(a.emailed_at)}` : ""}`} right={`${stats[a.id]?.reads ?? 0}`} rightNote="read" />)}
+          {shown.map((a) => <Row key={a.id} onClick={() => setEdit({ ...a })} primary={<>{a.title} <Pill tone={a.kind === "warning" ? "bad" : a.kind === "price" ? "warn" : "good"}>{KIND[a.kind]}</Pill>{a.is_pinned && <Pill tone="muted">pinned</Pill>}{!live(a) && <Pill tone="muted">{a.is_active ? "scheduled / ended" : "off"}</Pill>}</>} secondary={`${AUD[a.audience]}${a.placement === "dashboard" ? " · dashboard only" : a.placement === "both" ? " · bell and dashboard" : ""}${onDashboard(a) && a.only_without_domain ? " · agents without a domain" : ""} · from ${formatAdminDate(a.starts_at)}${a.ends_at ? ` to ${formatAdminDate(a.ends_at)}` : ""}${a.emailed_at ? ` · emailed ${formatAdminDate(a.emailed_at)}` : ""}`} right={`${stats[a.id]?.reads ?? 0}`} rightNote="read" />)}
         </Rows>
       </Panel>
 
@@ -64,16 +70,17 @@ export default function AdminAnnouncements() {
           <Field label="Title"><input value={edit?.title ?? ""} onChange={(e) => setEdit({ ...edit, title: e.target.value })} placeholder="MTN prices reduced" className={inputCls} /></Field>
           <Field label="Message"><textarea value={edit?.body ?? ""} onChange={(e) => setEdit({ ...edit, body: e.target.value })} rows={4} placeholder="Short and clear. Line breaks are kept." className={`${inputCls} resize-y`} /></Field>
           <div className="grid gap-2 sm:grid-cols-2">
-            <Field label="Who sees it"><select value={edit?.audience ?? "everyone"} onChange={(e) => setEdit({ ...edit, audience: e.target.value as Ann["audience"] })} className={inputCls}>{(Object.keys(AUD) as Ann["audience"][]).map((k) => <option key={k} value={k}>{AUD[k]}</option>)}</select></Field>
+            <Field label="Who sees it"><select value={edit?.audience ?? "everyone"} onChange={(e) => setEdit({ ...edit, audience: e.target.value as Ann["audience"] })} className={inputCls}>{(Object.keys(AUD) as Ann["audience"][]).filter((k) => !onDashboard(edit ?? {}) || k === "agents" || k === "everyone").map((k) => <option key={k} value={k}>{AUD[k]}</option>)}</select></Field>
             <Field label="Type"><select value={edit?.kind ?? "update"} onChange={(e) => setEdit({ ...edit, kind: e.target.value as Ann["kind"] })} className={inputCls}>{(Object.keys(KIND) as Ann["kind"][]).map((k) => <option key={k} value={k}>{KIND[k]}</option>)}</select></Field>
-            <Field label="Link (optional)"><input value={edit?.link_url ?? ""} onChange={(e) => setEdit({ ...edit, link_url: e.target.value })} placeholder="https://…" className={inputCls} /></Field>
+            <Field label="Where it shows"><select value={edit?.placement ?? "bell"} onChange={(e) => { const placement = e.target.value as Placement; setEdit({ ...edit, placement, audience: placement !== "bell" && edit?.audience !== "everyone" ? "agents" : edit?.audience }); }} className={inputCls}>{(Object.keys(PLACE) as Placement[]).map((k) => <option key={k} value={k}>{PLACE[k]}</option>)}</select></Field>
+            <Field label="Link (optional)"><input value={edit?.link_url ?? ""} onChange={(e) => setEdit({ ...edit, link_url: e.target.value })} placeholder={onDashboard(edit ?? {}) ? "/agent/domain/buy or https://…" : "https://…"} className={inputCls} /></Field>
             <Field label="Link text"><input value={edit?.link_label ?? ""} onChange={(e) => setEdit({ ...edit, link_label: e.target.value })} placeholder="See prices" className={inputCls} /></Field>
             <Field label="Show from"><input type="datetime-local" value={toLocal(edit?.starts_at ?? null)} onChange={(e) => setEdit({ ...edit, starts_at: e.target.value ? new Date(e.target.value).toISOString() : undefined })} className={inputCls} /></Field>
             <Field label="Until (optional)"><input type="datetime-local" value={toLocal(edit?.ends_at ?? null)} onChange={(e) => setEdit({ ...edit, ends_at: e.target.value ? new Date(e.target.value).toISOString() : null })} className={inputCls} /></Field>
           </div>
-          <div className="flex flex-wrap gap-4 text-[12.5px]"><label className="flex items-center gap-2"><input type="checkbox" checked={edit?.is_pinned ?? false} onChange={(e) => setEdit({ ...edit, is_pinned: e.target.checked })} />Pin to top</label><label className="flex items-center gap-2" title="Shows a one-line strip at the top of every page until dismissed. Use for outages and urgent notices only."><input type="checkbox" checked={edit?.is_urgent ?? false} onChange={(e) => setEdit({ ...edit, is_urgent: e.target.checked })} />Urgent strip</label><label className="flex items-center gap-2"><input type="checkbox" checked={edit?.is_active ?? true} onChange={(e) => setEdit({ ...edit, is_active: e.target.checked })} />Live</label></div>
+          <div className="flex flex-wrap gap-4 text-[12.5px]"><label className="flex items-center gap-2"><input type="checkbox" checked={edit?.is_pinned ?? false} onChange={(e) => setEdit({ ...edit, is_pinned: e.target.checked })} />Pin to top</label>{edit?.placement !== "dashboard" && <label className="flex items-center gap-2" title="Shows a one-line strip at the top of every page until dismissed. Use for outages and urgent notices only."><input type="checkbox" checked={edit?.is_urgent ?? false} onChange={(e) => setEdit({ ...edit, is_urgent: e.target.checked })} />Urgent strip</label>}{onDashboard(edit ?? {}) && <label className="flex items-center gap-2" title="The dashboard card goes only to agents who have no domain of their own yet (none connected, none paid for)."><input type="checkbox" checked={edit?.only_without_domain ?? false} onChange={(e) => setEdit({ ...edit, only_without_domain: e.target.checked })} />Only agents without their own domain</label>}<label className="flex items-center gap-2"><input type="checkbox" checked={edit?.is_active ?? true} onChange={(e) => setEdit({ ...edit, is_active: e.target.checked })} />Live</label></div>
           <div className="mt-2 flex items-center justify-between gap-2">
-            {edit?.id ? <Button variant="quiet" size="sm" onClick={() => edit && void sendEmail(edit as Ann)}><Send size={13} />Email to {AUD[(edit.audience ?? "everyone") as Ann["audience"]].toLowerCase()}</Button> : <span />}
+            {edit?.id && edit.placement !== "dashboard" ? <Button variant="quiet" size="sm" onClick={() => edit && void sendEmail(edit as Ann)}><Send size={13} />Email to {AUD[(edit.audience ?? "everyone") as Ann["audience"]].toLowerCase()}</Button> : <span />}
             <div className="flex gap-2"><Button variant="quiet" onClick={() => setEdit(null)}>Cancel</Button><Button onClick={() => void save()} disabled={busy}>Save</Button></div>
           </div>
         </div>

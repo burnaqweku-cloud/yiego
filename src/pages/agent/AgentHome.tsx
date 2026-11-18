@@ -8,6 +8,7 @@ import { priceListImage } from "@/lib/priceListImage";
 import { fmt, p1, useAgent } from "@/components/agent/AgentShell";
 import { stageOf, toneClass } from "@/components/agent/orderStage";
 import { longDate } from "@/components/agent/subscription";
+import DashboardMessages from "@/components/agent/DashboardMessages";
 
 export default function AgentHome() {
   const { agent, orders, products, prices, storeUrl, plan, reload, sub, openRenew, isSub } = useAgent();
@@ -88,6 +89,7 @@ export default function AgentHome() {
         {pending > 0 && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber/12 px-2.5 py-1 text-[11.5px] text-amber"><span className="h-1.5 w-1.5 rounded-full bg-amber" />{formatGHS(pending)} pending on {pendingOrders.length} order{pendingOrders.length === 1 ? "" : "s"} · released when delivered<Link to="/agent/help?a=available-vs-pending" aria-label="What is pending?" className="ml-1 inline-flex"><HelpCircle size={13} /></Link></p>}
         <div className="mt-4 flex gap-2"><Link to="/agent/earnings" className="onyx-btn-primary px-5 py-2.5 text-center text-[13px]">Withdraw</Link><button type="button" onClick={() => void share()} className="flex items-center gap-1.5 rounded-full border border-white/[0.14] px-4 py-2.5 text-[13px] text-foreground"><Share2 size={14} />Share store</button></div>
       </div>
+      {!isSub && <DashboardMessages />}
       {sub.state === "lapsed"
         ? <Link to="/agent/buy" className="onyx-panel flex items-center gap-3 rounded-2xl p-4 opacity-80"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-muted-foreground"><Lock size={18} /></span><span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">Agent prices locked</span><span className="block text-[12px] text-muted-foreground">Renew your plan to buy at agent price again.</span></span><ArrowRight size={16} className="text-muted-foreground" /></Link>
         : <Link to="/agent/buy" className="onyx-panel flex items-center gap-3 rounded-2xl p-4 hover:border-primary/40"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-glow"><ShoppingBag size={20} /></span><span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">Buy data at your agent price</span><span className="block text-[12px] text-muted-foreground">For yourself or anyone. Pay from your wallet, MoMo or card.</span></span><ArrowRight size={16} className="text-primary-glow" /></Link>}
