@@ -7,6 +7,8 @@ import {
   saveAdvertisingConsent,
   TIKTOK_CONSENT_NOTICE_VERSION,
   TIKTOK_CONSENT_STORAGE_KEY,
+  storeNotice,
+  TIKTOK_CONSENT_NOTICE,
 } from "./tiktokConsent";
 
 describe("TikTok regional advertising consent", () => {
@@ -58,5 +60,13 @@ describe("TikTok regional advertising consent", () => {
     expect(withdrawn?.decisions).toHaveLength(2);
     expect(withdrawn?.decisions[0]).toMatchObject({ choice: "granted", noticeVersion: TIKTOK_CONSENT_NOTICE_VERSION });
     expect(JSON.parse(localStorage.getItem(TIKTOK_CONSENT_STORAGE_KEY) ?? "{}").decisions).toHaveLength(2);
+  });
+});
+
+describe("storeNotice", () => {
+  it("never names us inside an agent's store", () => {
+    const text = storeNotice(TIKTOK_CONSENT_NOTICE);
+    expect(text).not.toMatch(/data ?yego|yiego/i);
+    expect(text).toMatch(/TikTok and Facebook/);
   });
 });

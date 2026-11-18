@@ -3,13 +3,13 @@ import { Link2, ShieldCheck, X } from "lucide-react";
 import {
   applyTikTokConsent,
 } from "@/lib/tiktokPixel";
-import { applyMetaConsent, META_MIN_NOTICE_VERSION, trackMetaPageView } from "@/lib/metaPixel";
+import { applyMetaConsent, trackMetaPageView } from "@/lib/metaPixel";
 import { applyGoogleTag } from "@/lib/googleTag";
+import { isStoreHost } from "@/lib/storeHost";
 import {
   globalPrivacyControlEnabled,
-  readAdvertisingConsent,
-  requiresAdvertisingConsent,
   saveAdvertisingConsent,
+  storeNotice,
   TIKTOK_CONSENT_NOTICE,
   TIKTOK_CONSENT_NOTICE_VERSION,
   TIKTOK_CONSENT_STORAGE_KEY,
@@ -44,8 +44,10 @@ export default function TikTokConsent() {
       currentRegion = resolved;
       setRegion(resolved);
       apply();
-      const record = readAdvertisingConsent();
-      if (requiresAdvertisingConsent(resolved) && (!record || (record.choice === "granted" && record.noticeVersion < META_MIN_NOTICE_VERSION)) && !globalPrivacyControlEnabled()) setOpen(true);
+      // Never opens by itself (owner, 18 Nov 2026): customers in Ghana were asked again and again, because a slow or
+      // failed country check counts as "unknown" and each store address keeps its own answer. It opens only from
+      // "Cookie settings". Where the law needs consent (or the country is unknown), ad tracking simply stays off
+      // until someone opts in there; in Ghana it runs as before.
     });
 
     const openSettings = () => setOpen(true);
@@ -71,6 +73,7 @@ export default function TikTokConsent() {
   };
 
   if (!open) return null;
+  const inStore = isStoreHost() || /^\/s\//.test(window.location.pathname);
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-[80] p-3 sm:p-5" role="dialog" aria-modal="true" aria-labelledby="tiktok-consent-title" aria-describedby="tiktok-consent-copy">
@@ -79,14 +82,14 @@ export default function TikTokConsent() {
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary-glow"><ShieldCheck size={20} /></span>
           <div className="min-w-0 flex-1">
             <h2 id="tiktok-consent-title" className="font-display text-lg font-semibold">Advertising cookies</h2>
-            <p id="tiktok-consent-copy" className="mt-2 text-[13px] leading-5 text-muted-foreground">{TIKTOK_CONSENT_NOTICE}</p>
+            <p id="tiktok-consent-copy" className="mt-2 text-[13px] leading-5 text-muted-foreground">{inStore ? storeNotice(TIKTOK_CONSENT_NOTICE) : TIKTOK_CONSENT_NOTICE}</p>
             <p className="mt-2 text-xs leading-5 text-faint-foreground">Notice version {TIKTOK_CONSENT_NOTICE_VERSION}. Essential ordering, payment and security features work either way. You can change this later under Cookie settings.</p>
           </div>
           <button type="button" onClick={() => setOpen(false)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-muted-foreground" aria-label="Close cookie settings"><X size={17} /></button>
         </div>
         {gpc && <p className="mt-4 rounded-2xl bg-muted p-3 text-[13px] leading-5 text-foreground">Your browser's Global Privacy Control signal is on, so TikTok and Facebook tracking stay off even if you previously accepted.</p>}
         <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <a href="https://datayego.com/legal/privacy" target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-[13px] font-semibold text-primary-glow underline underline-offset-4"><Link2 size={14} />Privacy policy</a>
+          {inStore ? <span /> : <a href="https://datayego.com/legal/privacy" target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-[13px] font-semibold text-primary-glow underline underline-offset-4"><Link2 size={14} />Privacy policy</a>}
           <div className="grid grid-cols-2 gap-2 sm:min-w-[300px]">
             <button type="button" onClick={() => choose("denied")} className="min-h-11 rounded-xl bg-muted px-4 text-[13px] font-semibold text-foreground">Reject</button>
             {!gpc && <button type="button" onClick={() => choose("granted")} className="min-h-11 rounded-xl bg-primary px-4 text-[13px] font-semibold text-primary-foreground">Accept</button>}

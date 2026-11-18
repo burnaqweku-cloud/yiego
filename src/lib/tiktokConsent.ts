@@ -2,6 +2,9 @@ export const TIKTOK_CONSENT_STORAGE_KEY = "yiego_tiktok_ad_consent_v1";
 export const TIKTOK_CONSENT_NOTICE_VERSION = "2026-11-09b";
 export const TIKTOK_CONSENT_NOTICE = "TikTok and Facebook (Meta) may receive your IP address, device and browser information, cookie or ad-click identifiers, pages visited, and confirmed data-order events with a unique order event ID, bundle description and order value in GHS. They use this to measure DataYego advertising and successful payments. DataYego does not send them your email, phone number, Mobile Money PIN, card details, or advanced-matching identifiers.";
 
+/** In an agent's store the notice never names us (store customers never see our name). */
+export const storeNotice = (notice: string) => notice.replace(/DataYego advertising/g, "advertising").replace(/DataYego/g, "This site");
+
 export type AdvertisingChoice = "granted" | "denied";
 export interface ConsentDecision {
   choice: AdvertisingChoice;
