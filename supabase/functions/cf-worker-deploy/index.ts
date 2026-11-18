@@ -7,6 +7,9 @@ import { requireCronSecret } from "../_shared/internal.ts";
    link-preview tags so WhatsApp/Facebook/Telegram show the STORE's name, tagline and logo.
    Also rewrites datayego.com/s/<slug> pages the same way. A store with no logo gets no image at all
    (image meta and icon links removed, icon paths answer 404), never DataYego's banner or icon.
+   /manifest.webmanifest on a store host is the store's own (its name and logo, no DataYego app link), so
+   "Add to Home screen" installs the store, not DataYego (18 Nov 2026). store_og finds the store exactly as
+   store_by_host does, so a custom domain still getting its padlock is already the store's.
    NOTE: cf-domains' "setup" action still carries the old Worker text; this function is the one to run. */
 const ZONE = "datayego.com"; const WORKER = "datayego-stores";
 const WORKER_JS = `const SUPA = "https://nhxgebulvqhtiiotetoo.supabase.co"; const ANON = "sb_publishable_tAbh99C5tny6sMAiu6ZYrg_BWjkRIAX";
@@ -24,6 +27,15 @@ export default { async fetch(request) {
     const m = await og();
     if (m && m.image) { const img = await fetch(m.image); if (img.ok) { const h = new Headers(img.headers); h.set("cache-control", "public, max-age=3600"); return new Response(img.body, { status: 200, headers: h }); } }
     if (m && m.name) return new Response(null, { status: 404, headers: { "cache-control": "public, max-age=600" } });
+  }
+  // Home-screen app: a store installs under its own name and logo, never as DataYego or pointing at DataYego's Android app.
+  if (!apex && request.method === "GET" && url.pathname === "/manifest.webmanifest") {
+    const m = await og();
+    if (m && m.name) {
+      const icons = m.image ? [{ src: m.image, sizes: "192x192", purpose: "any" }, { src: m.image, sizes: "512x512", purpose: "any" }] : [];
+      const manifest = { name: m.name, short_name: m.name, description: m.description || "", start_url: "/", scope: "/", display: "standalone", orientation: "portrait", theme_color: "#ffffff", background_color: "#ffffff", icons };
+      return new Response(JSON.stringify(manifest), { status: 200, headers: { "content-type": "application/manifest+json; charset=utf-8", "cache-control": "public, max-age=600" } });
+    }
   }
   let res;
   if (apex) res = await fetch(request);
