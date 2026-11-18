@@ -32,7 +32,8 @@ export function useDeliverySpeed() {
 export function speedLabel(s: NetworkSpeed | undefined): string | null {
   if (!s) return null;
   const m = Math.round(s.median_minutes);
-  const core = m < 1 ? "under a minute" : m < 60 ? `${m} min` : `${Math.round(m / 60 * 10) / 10} hr`;
+  // An hour or more in hours and minutes ("6 hr 20 min"), never decimal hours (owner, 18 Nov 2026).
+  const core = m < 1 ? "under a minute" : m < 60 ? `${m} min` : m % 60 === 0 ? `${m / 60} hr` : `${Math.floor(m / 60)} hr ${m % 60} min`;
   return s.at_least ? `over ${core}` : m < 1 ? core : `~${core}`;
 }
 /** "about 20 minutes" / "over 5 hours" from a measurement, or null when nothing is measured. */

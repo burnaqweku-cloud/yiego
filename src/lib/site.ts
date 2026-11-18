@@ -149,6 +149,13 @@ const STATIC_ROUTES: PublicRoute[] = [
     description: "Check whether an MTN Ghana number is approved to receive data bundles before you buy. Free, instant, no account needed.",
   },
   {
+    path: "/delivery-times",
+    priority: 0.5,
+    changefreq: "monthly",
+    title: "Why Does My Data Sometimes Take Longer? Delivery Times Explained — DataYego",
+    description: "What happens after you pay for a data bundle, why delivery is quick one day and slow the next, and how to see the live delivery speed before you buy.",
+  },
+  {
     path: "/about",
     priority: 0.5,
     changefreq: "monthly",

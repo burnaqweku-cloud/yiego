@@ -67,11 +67,15 @@ export function deliveryToShow(all: Record<string, LatestDelivery>, network: str
 /** One key per order: give it to the board, so the journey line draws again when a newer delivery takes its place. */
 export const boardKey = (d: Pick<LatestDelivery, "network" | "deliveredAt">) => `${d.network}-${d.deliveredAt}`;
 
-/** "17 minutes", the way a person says it. Under half a minute of rounding never becomes "0 minutes". */
+/** "17 minutes", the way a person says it; an hour or more in hours and minutes ("9 hr 45 min", owner 18 Nov 2026:
+    "585 minutes" was hard to read). Under half a minute of rounding never becomes "0 minutes". */
 export function tookLabel(d: Pick<LatestDelivery, "paidAt" | "deliveredAt">): string {
   const minutes = Math.round((d.deliveredAt - d.paidAt) / 60_000);
   if (minutes < 1) return "Under a minute";
-  return minutes === 1 ? "1 minute" : `${minutes} minutes`;
+  if (minutes < 60) return minutes === 1 ? "1 minute" : `${minutes} minutes`;
+  const h = Math.floor(minutes / 60), m = minutes % 60;
+  if (m === 0) return h === 1 ? "1 hour" : `${h} hours`;
+  return `${h} hr ${m} min`;
 }
 
 const clock = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", hour12: true });

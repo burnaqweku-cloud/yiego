@@ -95,6 +95,11 @@ describe("the words on the card", () => {
     expect(tookLabel({ paidAt: 0, deliveredAt: 60_000 })).toBe("1 minute");
     expect(tookLabel({ paidAt: 0, deliveredAt: 35_000 })).toBe("1 minute");
     expect(tookLabel({ paidAt: 0, deliveredAt: 20_000 })).toBe("Under a minute");
+    expect(tookLabel({ paidAt: 0, deliveredAt: 59 * 60_000 })).toBe("59 minutes");
+    expect(tookLabel({ paidAt: 0, deliveredAt: 59.6 * 60_000 })).toBe("1 hour");
+    expect(tookLabel({ paidAt: 0, deliveredAt: 61 * 60_000 })).toBe("1 hr 1 min");
+    expect(tookLabel({ paidAt: 0, deliveredAt: 120 * 60_000 })).toBe("2 hours");
+    expect(tookLabel({ paidAt: 0, deliveredAt: 585 * 60_000 })).toBe("9 hr 45 min");
   });
 
   it("splits the clock time so the period can be set small", () => {

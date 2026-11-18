@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { storeBase } from "@/lib/storeHost";
-import { Info } from "lucide-react";
+import { CircleHelp, Info } from "lucide-react";
 import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
 import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { MessageCircle, Search, ShieldCheck, Zap } from "lucide-react";
 import Seo from "@/components/seo/Seo";
 import AddMoneyFlow from "@/components/flows/AddMoneyFlow";
@@ -55,6 +55,7 @@ export default function StoreHome() {
         {groups.map(({ n, items }) => (
           <section key={n.id}>
             <div className="mb-1.5 flex items-center gap-2 px-1"><h2 className={tpl === "classic" ? "text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground" : tpl === "studio" ? "text-[15px] font-bold text-foreground" : "st-net"}>{n.name}</h2>{n.id === "mtn" && speedPill(speeds.MTN) && <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${speedPill(speeds.MTN)!.paused ? "border-white/[0.12] bg-white/[0.05] text-muted-foreground" : "border-primary-glow/20 bg-primary/[0.08] text-primary-glow"}`}><span className={`h-1.5 w-1.5 rounded-full ${speedPill(speeds.MTN)!.paused ? "bg-faint-foreground" : "bg-primary-glow"}`} />{speedPill(speeds.MTN)!.text}</span>}</div>
+            {n.id === "mtn" && <p className="mb-2 px-1"><Link to={`${storeBase(store.slug)}/delivery-times`} className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-primary-glow underline-offset-2 hover:underline"><CircleHelp size={13} />Why does data sometimes take longer?</Link></p>}
             {n.id === "mtn" && (
               <div className="onyx-panel mb-3 rounded-2xl p-3.5">
                 <div className="mb-2 flex items-center gap-1.5"><p className="text-[12.5px] font-semibold text-foreground">Check if your MTN number is approved before you buy</p><button type="button" onClick={() => setCheckInfoOpen(true)} aria-label="About the MTN number check" className="text-faint-foreground hover:text-primary-glow"><Info size={14} /></button></div>

@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils";
 import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { reportClientError } from "@/lib/client-errors";
-import { Info } from "lucide-react";
+import { CircleHelp, Info } from "lucide-react";
+import { Link } from "react-router-dom";
 import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
 import { useAuth } from "@/store/auth-context";
@@ -366,6 +367,9 @@ export default function BundleCatalogue({ onNetwork }: { onNetwork?: (network: s
                         </>)}
                       </h3>
                     </div>
+                    {group.network.name === "MTN" && (
+                      <p className="-mt-2 mb-4"><Link to="/delivery-times" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary-glow underline-offset-2 hover:underline"><CircleHelp size={14} />Why does data sometimes take longer?</Link></p>
+                    )}
                     {group.network.name === "MTN" && (
                       <div className="yg-box mb-5 p-4">
                         <div className="mb-2 flex items-center gap-1.5"><p className="text-[13px] font-semibold text-foreground">First time buying for this MTN number? Check it first</p><button type="button" onClick={() => setCheckInfoOpen(true)} aria-label="About the MTN number check" className="text-faint-foreground hover:text-primary-glow"><Info size={15} /></button></div>
