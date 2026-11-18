@@ -42,8 +42,9 @@ export default function AdminDomains() {
     const second = await db().rpc("admin_domain_refresh", { p_id: r.id });
     setBusy(null);
     if (second.error) { if (!quiet) toast.error(errText(second.error.message)); return; }
-    const live = (second.data as { live?: boolean } | null)?.live;
-    if (!quiet) toast[live ? "success" : "message"](live ? `${r.domain} is live.` : "Not live yet. Check again after the records have had time to spread.");
+    const res = second.data as { live?: boolean; www_only?: boolean } | null;
+    const live = res?.live;
+    if (!quiet) toast[live ? "success" : "message"](live ? `${r.domain} is live.` : res?.www_only ? `www.${r.domain} works, but ${r.domain} on its own doesn't yet. Check the @ record.` : "Not live yet. Check again after the records have had time to spread.");
     void load();
   }, [load]);
   useEffect(() => { rows.filter((r) => r.status === "paid" && r.connected_at && r.agents?.custom_domain_status !== "active").forEach((r) => void check(r, true)); // eslint-disable-next-line react-hooks/exhaustive-deps
