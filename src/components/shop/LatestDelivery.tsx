@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useDeliveryNow } from "@/hooks/useLatestDelivery";
 import { cn } from "@/lib/utils";
@@ -34,22 +34,41 @@ export function DeliveryBoard({ d, head }: { d: Delivery; head?: ReactNode }) {
   );
 }
 
-/** The same board while deliveries are slow (owner, 19 Nov 2026): how long orders are taking, from the live figure up
-    to the longest real wait, in whole hours (lib/deliveryRange). No order, no number, no times of day. */
+/** "11 hr 18 min" with the numbers large and "hr"/"min" small, so a long time still fits one line (owner, 19 Nov 2026:
+    hours and minutes, never "11.3 hours"). */
+function Dur({ text }: { text: string }) {
+  // Numbers as plain text, not spans: the boards style their own label spans small.
+  return <>{text.split(" ").map((w, i) => (/^\d+$/.test(w) ? <Fragment key={i}>{i ? " " : ""}{w}</Fragment> : <small key={i}>{w}</small>))}</>;
+}
+/** "11 hr 18 min to 11 hr 36 min", or "about 6 hr 27 min" when both come to the same minute. */
+function RangeWords({ r }: { r: DeliveryRange }) {
+  return r.from === r.to ? <>about <Dur text={r.to} /></> : <><Dur text={r.from} /> <small className="yg-range__to">to</small> <Dur text={r.to} /></>;
+}
+
+/** The same board while deliveries are slow (owner, 19 Nov 2026): how long orders are taking, from the last delivered
+    order up to the longest real wait, in hours and minutes (lib/deliveryRange). No order, no number, no times of day. */
 export function DeliveryRangeBoard({ r }: { r: DeliveryRange }) {
   const mark = networkMark(r.network);
   return (
     <div className="yg-latest__board" data-slow="">
-      <p className="yg-latest__lead"><span className="yg-latest__dot" aria-hidden="true" /><span>{r.network} deliveries right now</span><b>{r.text}</b></p>
+      <p className="yg-latest__lead" aria-label={`${r.network} deliveries right now: ${r.text}`}><span className="yg-latest__dot" aria-hidden="true" /><span>{r.network} deliveries right now</span><b className="yg-range"><RangeWords r={r} /></b></p>
       <p className="yg-latest__order">
         <span className="yg-latest__net" data-tone={mark.tone} aria-hidden="true">{mark.text}</span>
         <span className="yg-latest__what"><b>Payment to delivery</b><em>time taken</em></span>
       </p>
-      <div className="yg-latest__trip">
-        <p className="yg-latest__stop"><span>From</span><strong>{r.from}</strong></p>
-        <span className="yg-latest__track" aria-hidden="true"><i /><b><Clock3 size={12} strokeWidth={3} /></b></span>
-        <p className="yg-latest__stop" data-end=""><span>Up to</span><strong>{r.to}</strong></p>
-      </div>
+      {r.from === r.to ? (
+        // One figure (both in the same hour, or only one known): "Takes about 11 hr 36 min", never "From X Up to X".
+        <div className="yg-latest__trip" data-one="">
+          <p className="yg-latest__stop"><span>Takes about</span><strong className="yg-range"><Dur text={r.to} /></strong></p>
+          <span className="yg-latest__track" aria-hidden="true"><i /><b><Clock3 size={12} strokeWidth={3} /></b></span>
+        </div>
+      ) : (
+        <div className="yg-latest__trip">
+          <p className="yg-latest__stop"><span>From</span><strong className="yg-range"><Dur text={r.from} /></strong></p>
+          <span className="yg-latest__track" aria-hidden="true"><i /><b><Clock3 size={12} strokeWidth={3} /></b></span>
+          <p className="yg-latest__stop" data-end=""><span>Up to</span><strong className="yg-range"><Dur text={r.to} /></strong></p>
+        </div>
+      )}
     </div>
   );
 }
@@ -83,13 +102,20 @@ function DeliveryRangeStrip({ r, className }: { r: DeliveryRange; className?: st
         <div className="yg-strip__top">
           <span className="yg-latest__net" data-tone={mark.tone} aria-hidden="true">{mark.text}</span>
           <p className="yg-strip__what"><span>{r.network} deliveries</span><b>right now</b></p>
-          <p className="yg-strip__took"><b>{r.text}</b></p>
+          <p className="yg-strip__took" aria-label={r.text}><b className="yg-range"><RangeWords r={r} /></b></p>
         </div>
-        <div className="yg-strip__trip">
-          <span className="yg-strip__end">From {r.from}</span>
-          <span className="yg-latest__track" aria-hidden="true"><i /><b><Clock3 size={11} strokeWidth={3} /></b></span>
-          <span className="yg-strip__end">Up to {r.to}</span>
-        </div>
+        {r.from === r.to ? (
+          <div className="yg-strip__trip" data-one="">
+            <span className="yg-strip__end yg-range">Takes about <Dur text={r.to} /></span>
+            <span className="yg-latest__track" aria-hidden="true"><i /><b><Clock3 size={11} strokeWidth={3} /></b></span>
+          </div>
+        ) : (
+          <div className="yg-strip__trip">
+            <span className="yg-strip__end yg-range">From <Dur text={r.from} /></span>
+            <span className="yg-latest__track" aria-hidden="true"><i /><b><Clock3 size={11} strokeWidth={3} /></b></span>
+            <span className="yg-strip__end yg-range">Up to <Dur text={r.to} /></span>
+          </div>
+        )}
       </section>
       <DelayHelpLink className="mt-2.5" />
     </div>

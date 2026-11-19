@@ -100,3 +100,14 @@
   .yg-latest__now { font-size: 12px; white-space: nowrap; }
   .yg-latest__now svg { display: none; }
 }
+
+/* Hours and minutes in the slow range (owner, 19 Nov 2026): numbers large, "hr"/"min" small, as the quick card's times.
+   The board's top line puts the range under its label, since "11 hr 18 min to 11 hr 36 min" no longer fits beside it. */
+.yg-range small { margin-left: 2px; font-family: var(--font-sans); font-size: 0.56em; font-weight: 800; letter-spacing: 0; }
+.yg-range small.yg-range__to { margin: 0 1px; font-size: 0.62em; font-weight: 700; }
+.yg-latest__stop strong.yg-range small, .yg-strip__end.yg-range small { color: #48584f; }
+.yg-latest__board[data-slow] .yg-latest__lead { flex-wrap: wrap; height: auto; padding-top: 11px; padding-bottom: 11px; row-gap: 3px; }
+.yg-latest__board[data-slow] .yg-latest__lead b { flex-basis: 100%; margin-left: 16px; white-space: nowrap; }
+.yg-strip[data-slow] .yg-strip__took b { white-space: nowrap; font-size: 17px; }
+.yg-latest__trip[data-one], .yg-strip__trip[data-one] { grid-template-columns: auto minmax(0, 1fr); }
+
