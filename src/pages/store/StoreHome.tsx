@@ -18,7 +18,7 @@ import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
 
 export default function StoreHome() {
   const speeds = useDeliverySpeed(); const [checkInfoOpen, setCheckInfoOpen] = useState(false);
-  // While MTN is slow: "MTN orders taking 4 to 6 hours" (lib/deliveryRange, owner 19 Nov 2026), names no one.
+  // While MTN is slow: "MTN orders taking 4.3 to 6.5 hours" (lib/deliveryRange, owner 19 Nov 2026), names no one.
   const latestFeed = useLatestFeed(); const mtnLine = speedLine("MTN", speeds.MTN, latestFeed.all.MTN);
   const store = useStore(); const navigate = useNavigate();
   const [products, setProducts] = useState<Phase1Product[]>([]);

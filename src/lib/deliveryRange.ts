@@ -5,8 +5,8 @@ import type { LatestDelivery } from "@/lib/latestDelivery";
    orders are taking as "From … Up to …": how long the last delivered order took (paid to delivered), and the longest
    wait since payment of an order still in progress (delivery_speed_by_network longest_minutes; a single stuck order
    far beyond the rest is left out there). The middle figure is not used. Smaller first: when deliveries restart the
-   oldest orders land first, so the last delivered can be the longer one. Whole hours, rounded ("4 to 6 hours");
-   under an hour in minutes, in fives. Slow means either figure is over 30 minutes; with neither, nothing is shown.
+   oldest orders land first, so the last delivered can be the longer one. Hours to one decimal ("4.3 to 6.5 hours",
+   owner 19 Nov 2026; never "4.33", no ".0"); under an hour in minutes. Slow means either figure is over 30 minutes; with neither, nothing is shown.
    No totals, no word about refunds or orders failing. */
 
 export interface DeliveryRange { network: string; from: string; to: string; text: string }
@@ -16,12 +16,12 @@ export const SLOW_MINUTES = 30;
 interface Part { n: number; unit: "min" | "hr" }
 function part(minutes: number): Part {
   const m = Math.max(0, minutes);
-  if (m < 57.5) return { n: Math.max(5, Math.round(m / 5) * 5), unit: "min" };
-  return { n: Math.max(1, Math.round(m / 60)), unit: "hr" };
+  if (m < 59.5) return { n: Math.max(1, Math.round(m)), unit: "min" };
+  return { n: Math.round(m / 6) / 10, unit: "hr" };
 }
 const say = (p: Part) => (p.unit === "min" ? `${p.n} min` : `${p.n} hour${p.n === 1 ? "" : "s"}`);
 
-/** "4 to 6 hours", "20 min to 6 hours", "about 6 hours" when both round the same. Order of a and b does not matter. */
+/** "4.3 to 6.5 hours", "20 min to 6.3 hours", "about 6.5 hours" when both round the same. Order of a and b does not matter. */
 export function rangeText(a: number, b: number): { from: string; to: string; text: string } {
   const lo = part(Math.min(a, b)), hi = part(Math.max(a, b));
   const from = say(lo), to = say(hi);
