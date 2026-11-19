@@ -11,7 +11,7 @@ import { longDate } from "@/components/agent/subscription";
 import { Store, Wallet, Mail } from "lucide-react";
 
 export default function AgentStoreSettings() {
-  const { agent, quote, storeUrl, reload, sub } = useAgent();
+  const { agent, quote, storeUrl, reload, sub, isSub } = useAgent();
   const { view } = useParams();
   const [f, setF] = useState({ store_name: agent.store_name, header_name: agent.header_name ?? "", tagline: agent.tagline ?? "", whatsapp: agent.whatsapp ?? "", momo_number: agent.momo_number ?? "", momo_name: agent.momo_name ?? "" });
   const headLen = f.header_name.trim().length;
@@ -38,9 +38,12 @@ export default function AgentStoreSettings() {
         <div className="mt-2 space-y-1.5">
           {addresses.map((u) => <div key={u} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2"><a href={u} target="_blank" rel="noreferrer" className="inline-flex min-w-0 items-center gap-1 truncate text-[12.5px] text-primary-glow">{u.replace(/^https?:\/\//, "")}<ExternalLink size={12} className="shrink-0" /></a><button type="button" onClick={() => { void navigator.clipboard.writeText(u); toast.success("Copied."); }} className="shrink-0 text-faint-foreground" aria-label="Copy link"><Copy size={13} /></button></div>)}
         </div>
-        <p className="mt-1.5 text-[11.5px] text-faint-foreground">{agent.custom_domain && agent.custom_domain_status === "active" ? "Your own domain is the main address; the free one keeps working too." : "This is your store's address. Share it anywhere; previews on WhatsApp show your store's name and logo."}</p>
+        <p className="mt-1.5 text-[11.5px] text-faint-foreground">{agent.custom_domain && agent.custom_domain_status === "active" ? "Your own domain is the main address; the free one keeps working too." : onParentDomain ? `This is your store's address, on ${agent.parent?.store_name ?? "your parent store"}'s domain. Share it anywhere.` : "This is your store's address. Share it anywhere; previews on WhatsApp show your store's name and logo."}</p>
         <StoreLinkEditor />
-        <p className="mt-2 flex items-center gap-1 text-[12px] text-muted-foreground"><BadgeCheck size={13} className="text-primary-glow" />Plan active until {longDate(sub.paidUntil)}{quote ? ` · next month ${formatGHS(quote.pay_now)}` : ""}</p>
+        {/* Sub-agents pay us no plan (their store is free, or any fee is the parent's): never show our plan price or date (19 Nov 2026). */}
+        {isSub
+          ? <p className="mt-2 flex items-center gap-1 text-[12px] text-muted-foreground"><BadgeCheck size={13} className="text-primary-glow" />Free store under {agent.parent?.store_name ?? "your parent store"} · nothing to pay</p>
+          : <p className="mt-2 flex items-center gap-1 text-[12px] text-muted-foreground"><BadgeCheck size={13} className="text-primary-glow" />Plan active until {longDate(sub.paidUntil)}{quote ? ` · next month ${formatGHS(quote.pay_now)}` : ""}</p>}
       </div>}
       <Section page="store" id="details" title="Store details" icon={<Store size={15} />} subtitle={`${agent.store_name}${agent.tagline ? " · " + agent.tagline : ""}`} defaultOpen>
         <div className="space-y-3">

@@ -12,8 +12,11 @@ import { Mail, Sparkles } from "lucide-react";
 /* The store's own address: a free subdomain, and optionally the agent's own domain. */
 interface Status { domain: string | null; status?: string; ssl?: string; live?: boolean; cname_target?: string; errors?: unknown; error?: string }
 export default function AgentDomain() {
-  const { agent, reload } = useAgent();
+  const { agent, reload, isSub, storeUrl } = useAgent();
   const sub = `${agent.slug}.datayego.com`;
+  // A sub-agent on its parent's live domain sees only that address (mbundle.shop/s/<slug>), never ours (19 Nov 2026, Mbundle).
+  const onParentDomain = isSub && storeUrl.includes("/s/");
+  const address = onParentDomain ? storeUrl.replace(/^https?:\/\//, "") : sub;
   const [domain, setDomain] = useState(""); const [st, setSt] = useState<Status | null>(null); const [busy, setBusy] = useState(false);
   const call = async (body: Record<string, unknown>) => { const { data, error } = await supabase.functions.invoke<Status>("cf-domains", { body }); if (error) return { error: error.message } as Status; return data as Status; };
   const refresh = async () => { if (!agent.custom_domain) { setSt(null); return; } setBusy(true); const r = await call({ action: "status" }); setBusy(false); setSt(r); };
@@ -36,12 +39,12 @@ export default function AgentDomain() {
   const pay = async () => { if (!quote) return; setBuying(true); const { data, error } = await supabase.functions.invoke<{ authorizationUrl?: string; error?: string }>("domain-purchase", { body: { action: "pay", domain: quote.domain } }); setBuying(false); if (error || data?.error || !data?.authorizationUrl) return toast.error(data?.error ?? error?.message ?? "Couldn't start payment."); window.location.assign(data.authorizationUrl); };
   return (
     <div className="space-y-6">
-      <div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Domain</p><h1 className="font-display text-[24px] font-semibold text-foreground">Your store's address</h1><p className="mt-1 text-[13px] text-muted-foreground">Your free address, and your own domain if you want one.</p></div>
-      <Section page="domain" id="free-address" title="Free address" icon={<Globe size={15} />} defaultOpen>
+      <div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-glow">Domain</p><h1 className="font-display text-[24px] font-semibold text-foreground">Your store's address</h1><p className="mt-1 text-[13px] text-muted-foreground">{isSub ? "Where your store lives. Share it anywhere." : "Your free address, and your own domain if you want one."}</p></div>
+      <Section page="domain" id="free-address" title={onParentDomain ? "Your store's address" : "Free address"} icon={<Globe size={15} />} defaultOpen>
         <div className="mt-3 space-y-2">
-          {[`https://${sub}`].map((u) => <div key={u} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2.5"><a href={u} target="_blank" rel="noreferrer" className="truncate text-[13.5px] text-foreground">{u.replace("https://", "")}</a><button type="button" onClick={() => copy(u)} className="shrink-0 text-faint-foreground" aria-label="Copy"><Copy size={14} /></button></div>)}
+          {[`https://${address}`].map((u) => <div key={u} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2.5"><a href={u} target="_blank" rel="noreferrer" className="truncate text-[13.5px] text-foreground">{u.replace("https://", "")}</a><button type="button" onClick={() => copy(u)} className="shrink-0 text-faint-foreground" aria-label="Copy"><Copy size={14} /></button></div>)}
         </div>
-        <p className="mt-2 text-[11.5px] text-faint-foreground">Free, no setup, and when it's shared on WhatsApp the preview shows your store's name and logo. Every page of your store lives on it: {sub}/track, /sign-in, and so on.</p>
+        <p className="mt-2 text-[11.5px] text-faint-foreground">{onParentDomain ? <>Your store is on {agent.parent?.store_name ?? "your parent store"}'s domain. Every page of your store lives on it: {address}/track, /sign-in, and so on.</> : <>Free, no setup, and when it's shared on WhatsApp the preview shows your store's name and logo. Every page of your store lives on it: {sub}/track, /sign-in, and so on.</>}</p>
         <div className="mt-2"><StoreLinkEditor /></div>
       </Section>
       <Section page="domain" id="your-own-domain" title="Your own domain">
