@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, BadgeCheck, CircleCheck, Clock, Radio, TriangleAlert, Users, Wrench } from "lucide-react";
 import { DELIVERY_TIMES as C, speedNetworks, type DeliveryReason } from "@/lib/deliveryTimes";
-import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { useLatestFeed } from "@/hooks/useLatestDelivery";
+import { speedLine } from "@/lib/deliveryRange";
 
 /* The body of "Why does my data sometimes take longer?", shared by the main site and every agent store.
    Only onyx-panel and plain utility classes, which both the main look and the store templates style, and never our
@@ -12,7 +14,8 @@ const REASON_ICON: Record<DeliveryReason["key"], typeof Users> = { busy: Users, 
 
 export default function DeliveryTimesBody({ links }: { links: DeliveryLinks }) {
   const speeds = useDeliverySpeed();
-  const live = speedNetworks(Object.keys(speeds)).map((n) => ({ name: n, pill: speedPill(speeds[n], n) })).filter((x) => x.pill);
+  const latestFeed = useLatestFeed();
+  const live = speedNetworks(Object.keys(speeds)).map((n) => ({ name: n, pill: speedLine(n, speeds[n], latestFeed.all[n]) })).filter((x) => x.pill);
   return (
     <div className="space-y-5">
       <section className="onyx-panel rounded-[22px] p-5 sm:p-6">

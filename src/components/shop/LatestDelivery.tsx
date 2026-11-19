@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Check, Clock3 } from "lucide-react";
 import type { NetworkSpeed } from "@/hooks/useDeliverySpeed";
 import { boardKey, clockParts, dayLabel, networkMark, rightNow, tookLabel, type LatestDelivery as Delivery } from "@/lib/latestDelivery";
+import type { DeliveryRange } from "@/lib/deliveryRange";
 import "./latest-delivery.css";
 
 /* The two pieces of the latest delivery that the shop band shows (ShopBand): the order's own board, and the line
@@ -27,6 +28,26 @@ export function DeliveryBoard({ d, head }: { d: Delivery; head?: ReactNode }) {
         <p className="yg-latest__stop"><span>Paid</span><time dateTime={new Date(d.paidAt).toISOString()}>{paid.time}<small>{paid.period}</small></time></p>
         <span className="yg-latest__track" aria-hidden="true"><i /><b><Check size={12} strokeWidth={3.6} /></b></span>
         <p className="yg-latest__stop" data-end=""><span>Delivered</span><time dateTime={new Date(d.deliveredAt).toISOString()}>{landed.time}<small>{landed.period}</small></time></p>
+      </div>
+    </div>
+  );
+}
+
+/** The same board while deliveries are slow (owner, 19 Nov 2026): how long orders are taking, from the live figure up
+    to the longest real wait, in whole hours (lib/deliveryRange). No order, no number, no times of day. */
+export function DeliveryRangeBoard({ r }: { r: DeliveryRange }) {
+  const mark = networkMark(r.network);
+  return (
+    <div className="yg-latest__board" data-slow="">
+      <p className="yg-latest__lead"><span className="yg-latest__dot" aria-hidden="true" /><span>{r.network} deliveries right now</span><b>{r.text}</b></p>
+      <p className="yg-latest__order">
+        <span className="yg-latest__net" data-tone={mark.tone} aria-hidden="true">{mark.text}</span>
+        <span className="yg-latest__what"><b>Payment to delivery</b><em>time taken</em></span>
+      </p>
+      <div className="yg-latest__trip">
+        <p className="yg-latest__stop"><span>From</span><strong>{r.from}</strong></p>
+        <span className="yg-latest__track" aria-hidden="true"><i /><b><Clock3 size={12} strokeWidth={3} /></b></span>
+        <p className="yg-latest__stop" data-end=""><span>Up to</span><strong>{r.to}</strong></p>
       </div>
     </div>
   );

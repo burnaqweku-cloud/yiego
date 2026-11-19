@@ -6,7 +6,9 @@ import { loadPhase1Networks } from "@/lib/phase1-api";
 
 /* Per-network delivery speed for the catalogue. Middle value of: orders still waiting (time waited so far)
    + orders delivered that were paid in the last hour (time taken). Nothing to measure -> "delivering fast" (the owner resets the figure when deliveries are quick). */
-export interface NetworkSpeed { window: "1h" | "none"; sample: number; median_minutes: number; at_least?: boolean; paused?: boolean }
+export interface NetworkSpeed { window: "1h" | "none"; sample: number; median_minutes: number; at_least?: boolean; paused?: boolean;
+  /** The longest wait since payment of an order still in progress (one far-off stuck order left out), for the slow range. */
+  longest_minutes?: number }
 const SPEED_SHARE_MS = 10_000;
 export function useDeliverySpeed() {
   const [speeds, setSpeeds] = useState<Record<string, NetworkSpeed>>({});

@@ -3,7 +3,9 @@ import { storeBase } from "@/lib/storeHost";
 import { CircleHelp, Info } from "lucide-react";
 import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
-import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { useLatestFeed } from "@/hooks/useLatestDelivery";
+import { speedLine } from "@/lib/deliveryRange";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { MessageCircle, Search, ShieldCheck, Zap } from "lucide-react";
 import Seo from "@/components/seo/Seo";
@@ -16,6 +18,8 @@ import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
 
 export default function StoreHome() {
   const speeds = useDeliverySpeed(); const [checkInfoOpen, setCheckInfoOpen] = useState(false);
+  // While MTN is slow: "MTN orders taking 4 to 6 hours" (lib/deliveryRange, owner 19 Nov 2026), names no one.
+  const latestFeed = useLatestFeed(); const mtnLine = speedLine("MTN", speeds.MTN, latestFeed.all.MTN);
   const store = useStore(); const navigate = useNavigate();
   const [products, setProducts] = useState<Phase1Product[]>([]);
   const [open, setOpen] = useState(false); const [addMoney, setAddMoney] = useState(false); const [preselect, setPreselect] = useState<BuyPreselect | null>(null);
@@ -35,7 +39,7 @@ export default function StoreHome() {
           <span className="st-sticker text-[12px]">MTN · Telecel · AirtelTigo</span>
           <h1 className="mt-3">{store.store_name}</h1>
           <p className="mt-2 text-[14px]">{store.tagline ?? "Data for any number. Pay with MoMo or card."}</p>
-          {speedPill(speeds.MTN) && <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[12px] font-semibold text-[#fff8ec]"><span className="h-1.5 w-1.5 rounded-full bg-[#ffd23f]" />{speedPill(speeds.MTN)!.text}</p>}
+          {mtnLine && <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[12px] font-semibold text-[#fff8ec]"><span className="h-1.5 w-1.5 rounded-full bg-[#ffd23f]" />{mtnLine!.text}</p>}
         </section>
       )}
       {tpl === "studio" && <section className="pb-2 pt-2"><h1 className="st-h2">All bundles</h1><p className="mt-1.5 text-[14.5px] text-[var(--st-slate)]">Pick a network, tap a bundle, enter the number. Prices include everything.</p></section>}
@@ -54,7 +58,7 @@ export default function StoreHome() {
       <div className="mt-3 space-y-4">
         {groups.map(({ n, items }) => (
           <section key={n.id}>
-            <div className="mb-1.5 flex items-center gap-2 px-1"><h2 className={tpl === "classic" ? "text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground" : tpl === "studio" ? "text-[15px] font-bold text-foreground" : "st-net"}>{n.name}</h2>{n.id === "mtn" && speedPill(speeds.MTN) && <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${speedPill(speeds.MTN)!.paused ? "border-white/[0.12] bg-white/[0.05] text-muted-foreground" : "border-primary-glow/20 bg-primary/[0.08] text-primary-glow"}`}><span className={`h-1.5 w-1.5 rounded-full ${speedPill(speeds.MTN)!.paused ? "bg-faint-foreground" : "bg-primary-glow"}`} />{speedPill(speeds.MTN)!.text}</span>}</div>
+            <div className="mb-1.5 flex items-center gap-2 px-1"><h2 className={tpl === "classic" ? "text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground" : tpl === "studio" ? "text-[15px] font-bold text-foreground" : "st-net"}>{n.name}</h2>{n.id === "mtn" && mtnLine && <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${mtnLine!.paused ? "border-white/[0.12] bg-white/[0.05] text-muted-foreground" : "border-primary-glow/20 bg-primary/[0.08] text-primary-glow"}`}><span className={`h-1.5 w-1.5 rounded-full ${mtnLine!.paused ? "bg-faint-foreground" : "bg-primary-glow"}`} />{mtnLine!.text}</span>}</div>
             {n.id === "mtn" && <p className="mb-2 px-1"><Link to={`${storeBase(store.slug)}/delivery-times`} className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-primary-glow underline-offset-2 hover:underline"><CircleHelp size={13} />Why does data sometimes take longer?</Link></p>}
             {n.id === "mtn" && (
               <div className="onyx-panel mb-3 rounded-2xl p-3.5">

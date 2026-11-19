@@ -42,6 +42,12 @@
 .yg-latest__track i { position: absolute; left: 13px; right: 24px; top: 50%; height: 3px; margin-top: -1.5px; border-radius: 3px; background: linear-gradient(90deg, #f7a701, #019b62); transform-origin: left center; animation: yg-latest-line 0.9s cubic-bezier(0.3, 0.6, 0.2, 1) 0.3s both; }
 .yg-latest__track b { position: absolute; right: 0; top: 0; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #019b62; color: #fff; animation: yg-latest-land 0.35s cubic-bezier(0.2, 0.7, 0.2, 1.4) 1.1s both; }
 
+/* The slow board (DeliveryRangeBoard): the same board in amber, the stops carry hours instead of clock times. */
+.yg-latest__stop strong { font-family: var(--font-display); font-weight: 800; font-size: 23px; line-height: 1; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.yg-latest__board[data-slow] .yg-latest__dot { background: #f7a701; box-shadow: 0 0 0 4px rgba(247, 167, 1, 0.18); }
+.yg-latest__board[data-slow] .yg-latest__lead b { color: #a86800; }
+.yg-latest__board[data-slow] .yg-latest__track i { background: #f7a701; }
+.yg-latest__board[data-slow] .yg-latest__track b { background: #f7a701; color: #1a1500; }
 .yg-latest__now { display: flex; align-items: center; gap: 8px; border-top: 1px solid rgba(255, 255, 255, 0.14); font-size: 12.5px; font-weight: 600; line-height: 1.25; color: rgba(255, 255, 255, 0.86); }
 .yg-latest__now svg { flex: none; color: #7cf0b4; }
 .yg-latest__now b { margin-left: auto; font-weight: 800; color: #fff; text-align: right; }

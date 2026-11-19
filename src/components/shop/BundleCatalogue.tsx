@@ -7,7 +7,9 @@ import snapshot from "@/data/catalog.snapshot.json";
 import { useFlows } from "@/store/flows";
 import { useReveal } from "@/hooks/useReveal";
 import { cn } from "@/lib/utils";
-import { speedPill, useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { useLatestFeed } from "@/hooks/useLatestDelivery";
+import { speedLine } from "@/lib/deliveryRange";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { reportClientError } from "@/lib/client-errors";
 import { CircleHelp, Info } from "lucide-react";
@@ -162,6 +164,9 @@ function SkeletonGrid() {
 
 export default function BundleCatalogue({ onNetwork }: { onNetwork?: (network: string) => void } = {}) {
   const speeds = useDeliverySpeed();
+  // While MTN is slow the line gives the same range as the shop band (lib/deliveryRange, owner 19 Nov 2026).
+  const latestFeed = useLatestFeed();
+  const mtnLine = speedLine("MTN", speeds.MTN, latestFeed.all.MTN);
   const { isAdmin } = useAdminAccess(); // the error detail is for the team, not customers
   const [checkInfoOpen, setCheckInfoOpen] = useState(false);
   const { openBuyData } = useFlows();
@@ -353,9 +358,9 @@ export default function BundleCatalogue({ onNetwork }: { onNetwork?: (network: s
                         >
                           {group.network.name.toUpperCase()}
                         </span>
-                        {group.network.name === "MTN" && speedPill(speeds.MTN) ? (
-                          <span className="yg-speed" data-paused={speedPill(speeds.MTN)!.paused ? "" : undefined} title="Typical time from payment to delivery right now, counting orders still in progress">
-                            <i aria-hidden="true" />{speedPill(speeds.MTN)!.text}
+                        {group.network.name === "MTN" && mtnLine ? (
+                          <span className="yg-speed" data-paused={mtnLine.paused ? "" : undefined} title="Typical time from payment to delivery right now, counting orders still in progress">
+                            <i aria-hidden="true" />{mtnLine.text}
                           </span>
                         ) : (<>
                           <span className="font-display text-[15px] font-semibold tracking-tight text-foreground">

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { cached } from "@/lib/requestCache";
 import { speedPhrase, speedPill, type NetworkSpeed } from "@/hooks/useDeliverySpeed";
 
 /* The latest order that arrived, per network, shown to every visitor above the bundles: when it was paid, when it
@@ -47,8 +48,14 @@ export function readFeed(raw: unknown): LatestFeed {
   return { all: readLatest(raw), always: !!rule && typeof rule === "object" && (rule as Record<string, unknown>).always === true };
 }
 
+/** Shared for 30 seconds, so the shop band and the bundle list ask once between them. */
 export async function loadLatest(): Promise<LatestFeed> {
-  try { const { data, error } = await db().rpc<unknown>("public_latest_delivery"); return error ? readFeed(null) : readFeed(data); } catch { return readFeed(null); }
+  try {
+    return await cached("public:latest-delivery", 30_000, async () => {
+      const { data, error } = await db().rpc<unknown>("public_latest_delivery");
+      return { ok: !error, feed: error ? readFeed(null) : readFeed(data) };
+    }, { keep: (v) => v.ok }).then((v) => v.feed);
+  } catch { return readFeed(null); }
 }
 
 /** The delivery to show for a network right now, or none. `speed` is that network's live reading; until it has
