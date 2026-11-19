@@ -197,6 +197,7 @@ html.yg-look .onyx-modal-panel .onyx-field,
 
 /* quick links under the band */
 .yg-quick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.yg-quick > :only-child { grid-column: 1 / -1; }
 .yg-quick > * { display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 10px 12px; border-radius: 18px; background: #fff; border: 1px solid var(--line); box-shadow: var(--lift); text-align: left; font-size: 13px; font-weight: 800; line-height: 1.2; color: var(--ink); }
 .yg-quick svg { flex: none; width: 34px; height: 34px; padding: 8px; border-radius: 11px; background: #e3f3ea; color: var(--pitch); }
 .yg-quick small { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 600; color: var(--ink-2); }

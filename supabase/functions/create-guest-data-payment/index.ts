@@ -4,7 +4,7 @@ import { GATEWAY_LABEL, startCheckout } from "../_shared/gateway.ts";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
-import { canManageUnpaidOrder } from "../_shared/unpaidOrder.ts";
+import { clearUnpaidForNumber } from "../_shared/clearUnpaid.ts";
 import { recordPrefixConfirmation } from "../_shared/numberPrefix.ts";
 
 function makeOrderReference(prefix = "YG") {
@@ -146,32 +146,12 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "No active supplier mapping for this product" }, { status: 409 });
     }
 
-    // A partial unique index allows one open order per recipient phone. Resume a
-    // matching open order rather than surfacing the index as a raw 500.
-    const { data: existingOpen } = await supabase
-      .from("orders")
-      .select("id, order_reference, product_id, payment_status, user_id, guest_email, management_token")
-      .eq("recipient_phone_normalized", recipientPhone)
-      .eq("is_open", true)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (existingOpen && existingOpen.payment_status === "succeeded") {
-      // A paid order stays open until delivery resolves; issuing a fresh
-      // payment link for it would let the recipient be charged twice.
-      return jsonResponse(
-        {
-          error: "An order for this number is already paid and on its way. Track it with the reference from your confirmation instead of paying again.",
-          code: "phone_has_paid_open_order",
-        },
-        { status: 409 },
-      );
-    }
-
-    if (existingOpen) {
-      const allowed = canManageUnpaidOrder(existingOpen, authenticatedUser?.id ?? null, String(body.managementToken ?? ""), guestEmail);
-      return jsonResponse({ error: allowed ? "You have an unpaid order. Continue payment or cancel it and choose another bundle." : "This number has an unpaid order. Open it with your order reference and checkout email.", code: "phone_has_open_order", ...(allowed ? { pendingOrderReference: existingOpen.order_reference } : {}) }, { status: 409 });
+    // One open order per recipient phone (partial unique index). An UNPAID one never blocks a new order (owner,
+    // 19 Nov 2026): it closes by itself once its gateway confirms it wasn't paid (_shared/clearUnpaid.ts). A paid one
+    // stays open until delivery resolves; a fresh payment link for it would let the recipient be charged twice.
+    const held = await clearUnpaidForNumber(supabase, recipientPhone, authenticatedUser?.id ?? null);
+    if (!held.ok) {
+      return jsonResponse({ error: held.message, code: "phone_has_paid_open_order" }, { status: 409 });
     }
     const prefixConfirmed = body?.prefixMismatchConfirmed === true;
     const orderReference = makeOrderReference(agent ? "AG" : "YG");
@@ -179,20 +159,7 @@ Deno.serve(async (req) => {
     const paystackReference = makePaystackReference("YGDATA");
     let order: { id: string; order_reference: string };
 
-    if (existingOpen) {
-      // Open order without a live payment link (e.g. a prepared order that never
-      // reached Paystack): point it at a fresh transaction instead of inserting.
-      const { error: reuseError } = await supabase
-        .from("orders")
-        .update({ paystack_reference: paystackReference, updated_at: new Date().toISOString() })
-        .eq("id", existingOpen.id);
-
-      if (reuseError) {
-        return jsonResponse({ error: friendlyError(reuseError.message, "We couldn't reuse your earlier order. Please try again.") }, { status: 500 });
-      }
-
-      order = { id: existingOpen.id, order_reference: existingOpen.order_reference };
-    } else {
+    {
       const { data: inserted, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -221,14 +188,7 @@ Deno.serve(async (req) => {
       if (orderError) {
         // A concurrent checkout for the same phone won the unique index race.
         if (orderError.code === "23505") {
-
-          return jsonResponse(
-            {
-              error: "This number already has an open order awaiting payment. Track it with its reference, or try again shortly.",
-              code: "phone_has_open_order",
-            },
-            { status: 409 },
-          );
+          return jsonResponse({ error: "Another order for this number was placed a moment ago. Try again in a few seconds.", code: "phone_has_open_order" }, { status: 409 });
         }
 
         return jsonResponse({ error: friendlyError(orderError.message, "We couldn't create this order. Please try again.") }, { status: 500 });
@@ -342,7 +302,7 @@ Deno.serve(async (req) => {
         provider: paystack.gateway,
         test: paystack.test,
         reference: paystackReference,
-        resumedExistingOrder: Boolean(existingOpen),
+        replacedUnpaidOrders: held.closed,
       },
     });
 

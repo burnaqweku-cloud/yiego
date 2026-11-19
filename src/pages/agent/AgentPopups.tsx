@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AppWindow, Image as ImageIcon, Inbox, Pencil, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { p1, useAgent } from "@/components/agent/AgentShell";
@@ -15,7 +15,13 @@ const blank: Form = { title: "", body: "", button_label: "Open", action: "link",
 const toLocal = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "");
 const toIso = (local: string) => (local ? new Date(local).toISOString() : null);
 
+/* Main agents only: the database never lets a sub-agent save a pop-up, and sub-agents cannot recruit (19 Nov 2026). */
 export default function AgentPopups() {
+  const { isSub } = useAgent();
+  return isSub ? <Navigate to="/agent" replace /> : <AgentPopupsPage />;
+}
+
+function AgentPopupsPage() {
   const { agent, networkOpen } = useAgent();
   const [popups, setPopups] = useState<Popup[]>([]); const [subs, setSubs] = useState<Sub[]>([]);
   const [f, setF] = useState<Form>(blank); const [editing, setEditing] = useState(false); const [busy, setBusy] = useState(false);

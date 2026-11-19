@@ -88,7 +88,7 @@ const STEPS: Step[] = [
   {
     n: "03",
     title: "Pay how it suits you",
-    body: "From your DataYego wallet, by Mobile Money or card, as a guest — or share the order for someone else to pay.",
+    body: "From your DataYego wallet, or by Mobile Money or card, even as a guest.",
   },
   {
     n: "04",

@@ -39,10 +39,6 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "No. You can check out as a guest and pay by Mobile Money or card. You will get a DataYego reference to track the order. Creating an account adds the wallet, saved details and full order history.",
         preview: true,
       },
-      {
-        q: "Can someone else pay for my order?",
-        a: "Yes. Create the order, then share the DataYego reference with another DataYego user and they can pay it for you. The recipient number and bundle are locked when the order is created, so payment cannot change what was ordered.",
-      },
     ],
   },
   {

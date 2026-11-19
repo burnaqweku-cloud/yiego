@@ -233,6 +233,14 @@ export function prepareDataOrder(input: WalletDataOrderInput) {
   });
 }
 
+/** An unpaid order holding this number is closed by the server once its gateway confirms it wasn't paid (owner,
+ *  19 Nov 2026). Error = a paid order for the number is still on its way (its message says so). Signed in only. */
+export function clearUnpaidForNumber(phone: string, alsoMine = false) {
+  return invokePhase1Function<{ status: string; data?: { closed: string[] } }>("unpaid-order-action", {
+    body: { action: "clear_for_number", phone, alsoMine },
+  });
+}
+
 export function listPendingOrders() {
   return invokePhase1Function<OrderPaymentActionResponse<PreparedOrderSummary[]>>("order-payment-action", {
     body: { action: "list_pending" },

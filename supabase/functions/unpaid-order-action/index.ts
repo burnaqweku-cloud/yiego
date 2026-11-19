@@ -1,6 +1,7 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { canManageUnpaidOrder, isCancellableUnpaid } from "../_shared/unpaidOrder.ts";
+import { clearUnpaidForNumber } from "../_shared/clearUnpaid.ts";
 
 Deno.serve(async (req) => {
   const options = handleOptions(req); if (options) return options;
@@ -9,6 +10,21 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const reference = String(body.reference ?? "").trim().toUpperCase();
     const action = String(body.action ?? "");
+    // clear_for_number (19 Nov 2026, owner): an UNPAID order never blocks a new order for the same number. A signed-in
+    // checkout calls this when the number is held; it closes the unpaid order once its gateway confirms it wasn't
+    // paid, and answers 409 for a paid one still on its way (_shared/clearUnpaid.ts). Guests: the checkout does it.
+    if (action === "clear_for_number") {
+      const phone = String(body.phone ?? "").replace(/\D/g, "");
+      if (!/^0\d{9}$/.test(phone)) return jsonResponse({ error: "Enter a valid 10-digit Ghana number." }, { status: 400 });
+      const db = createSupabaseAdmin();
+      const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
+      const { data: auth } = token ? await db.auth.getUser(token) : { data: { user: null } };
+      if (!auth.user) return jsonResponse({ error: "Sign in to continue." }, { status: 401 });
+      await db.rpc("close_expired_unpaid_orders");
+      // alsoMine: the first-purchase offer allows one unpaid order per account, so the buyer's own go too.
+      const held = await clearUnpaidForNumber(db, phone, auth.user.id, body.alsoMine === true);
+      return held.ok ? jsonResponse({ status: "success", data: { closed: held.closed } }) : jsonResponse({ error: held.message, code: "phone_has_paid_open_order" }, { status: 409 });
+    }
     if (!/^(YG|AG)-[A-Z0-9]{10}$/.test(reference) || !["lookup", "continue", "cancel"].includes(action)) return jsonResponse({ error: "Invalid request" }, { status: 400 });
     const db = createSupabaseAdmin();
     const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");

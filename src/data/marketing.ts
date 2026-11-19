@@ -127,7 +127,7 @@ export const STEPS: Step[] = [
   {
     n: "03",
     title: "Pay your way",
-    body: "Pay from your DataYego wallet, by Mobile Money or card — or send the order to someone else to pay.",
+    body: "Pay from your DataYego wallet, or by Mobile Money or card.",
     icon: Wallet,
   },
   {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, Gift } from "lucide-react";
+import { Gift } from "lucide-react";
 import InviteSheet from "@/components/referrals/InviteSheet";
 import Seo from "@/components/seo/Seo";
 import AgentShopCard from "@/components/agents/AgentShopCard";
@@ -12,7 +12,6 @@ import { TRUST_POINTS } from "@/data/marketing";
 import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
 import { useReveal } from "@/hooks/useReveal";
 import { useAuth } from "@/store/auth-context";
-import { useFlows } from "@/store/flows";
 import { useWallet } from "@/store/wallet";
 
 /**
@@ -33,7 +32,6 @@ export default function Shop() {
   const ref = useReveal<HTMLDivElement>();
   const { isAuthenticated } = useAuth();
   const { transactions } = useWallet();
-  const { openBuyData } = useFlows();
 
   return (
     <div ref={ref} className="space-y-6 lg:space-y-10">
@@ -44,10 +42,6 @@ export default function Shop() {
       {isAuthenticated && (
         <>
           <div className="yg-quick">
-            <button type="button" onClick={() => openBuyData({ kind: "payOrder" })}>
-              <CreditCard aria-hidden="true" />
-              <span>Pay for an order<small>Someone shared an Order ID</small></span>
-            </button>
             <button type="button" onClick={() => setInviteOpen(true)}>
               <Gift aria-hidden="true" />
               <span>Invite &amp; earn<small>GHS 6.00 in data</small></span>

@@ -3,7 +3,7 @@ import { AppWindow, BarChart3, Gift, Globe, Home, LifeBuoy, Megaphone, MessagesS
 /* The agent dashboard menu, two tiers like the admin's: a group you tap opens its pages.
    A page is a route; when the route has a `view`, the page component shows only the
    sections listed for that view (see <Section />), so one long page becomes several screens. */
-export interface AgentNavPage { id: string; label: string; to: string; end?: boolean; badge?: "unread" | "applications"; sections?: string[] }
+export interface AgentNavPage { id: string; label: string; to: string; end?: boolean; badge?: "unread" | "applications"; sections?: string[]; notForSubs?: boolean }
 export interface AgentNavGroup { id: string; label: string; icon: LucideIcon; parentOnly?: boolean; notForSubs?: boolean; pages: AgentNavPage[] }
 
 export const AGENT_GROUPS: AgentNavGroup[] = [
@@ -37,8 +37,10 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "promos", label: "Promos", to: "/agent/marketing/promos", sections: ["promo"] },
     { id: "status", label: "Status maker", to: "/agent/status" },
     { id: "analytics", label: "Analytics", to: "/agent/analytics" },
-    { id: "popups", label: "Pop-ups", to: "/agent/popups/popups", sections: ["new-pop-up", "your-pop-ups"] },
-    { id: "forms", label: "Form submissions", to: "/agent/popups/forms", sections: ["form-submissions"] },
+    // Pop-ups are for main agents only (the database never let a sub-agent save one; 19 Nov 2026, Mbundle: the page
+    // offered sub-agents "Sign up as my agent", and sub-agents cannot recruit).
+    { id: "popups", label: "Pop-ups", to: "/agent/popups/popups", sections: ["new-pop-up", "your-pop-ups"], notForSubs: true },
+    { id: "forms", label: "Form submissions", to: "/agent/popups/forms", sections: ["form-submissions"], notForSubs: true },
   ] },
   { id: "agents", label: "Your agents", icon: Network, parentOnly: true, pages: [
     { id: "applications", label: "Applications", to: "/agent/network/applications", sections: ["applications"], badge: "applications" },
@@ -59,6 +61,12 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "help", label: "Help Center", to: "/agent/help" },
   ] },
 ];
+
+/** The menu an agent sees: a sub-agent gets neither the main-agent-only groups nor the main-agent-only pages. */
+export function agentGroupsFor(isSub: boolean): AgentNavGroup[] {
+  if (!isSub) return AGENT_GROUPS;
+  return AGENT_GROUPS.filter((g) => !g.parentOnly && !g.notForSubs).map((g) => ({ ...g, pages: g.pages.filter((p) => !p.notForSubs) })).filter((g) => g.pages.length > 0);
+}
 
 export const STAFF_GROUPS: AgentNavGroup[] = [
   { id: "customers", label: "Customers", icon: Users, pages: [

@@ -25,7 +25,7 @@ export default function AdminAISupport() {
   const [connection, setConnection] = useState<ConnectionState>("checking");
   const [model, setModel] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [question, setQuestion] = useState("How can a customer pay for another DataYego user's order?");
+  const [question, setQuestion] = useState("How long does MTN delivery take right now?");
   const [answer, setAnswer] = useState("");
   const [sending, setSending] = useState(false);
   const [greeting, setGreeting] = useState("");

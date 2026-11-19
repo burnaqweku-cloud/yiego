@@ -57,10 +57,9 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
           // Guard the shape: an accidental `onClick={openBuyData}` would hand
           // the flow a MouseEvent, and a bad preselect must never block a sale.
           const valid =
-            preselect?.kind === "payOrder" ||
-            (preselect?.kind === "bundle" &&
-              typeof preselect.productCode === "string" &&
-              typeof preselect.networkId === "string");
+            preselect?.kind === "bundle" &&
+            typeof preselect.productCode === "string" &&
+            typeof preselect.networkId === "string";
           setBuyPreselect(valid ? preselect : null);
           setBuyOpen(true);
         },
