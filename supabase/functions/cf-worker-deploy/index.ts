@@ -10,6 +10,8 @@ import { requireCronSecret } from "../_shared/internal.ts";
    /manifest.webmanifest on a store host is the store's own (its name and logo, no DataYego app link), so
    "Add to Home screen" installs the store, not DataYego (18 Nov 2026). store_og finds the store exactly as
    store_by_host does, so a custom domain still getting its padlock is already the store's.
+   datayego.com/s/<slug>/… of a store on a domain answers 302 to that domain (phase1.store_home: its own domain, or a
+   sub-agent's parent's domain + /s/<slug>), so a customer back from paying never lands on our address (19 Nov 2026).
    NOTE: cf-domains' "setup" action still carries the old Worker text; this function is the one to run. */
 const ZONE = "datayego.com"; const WORKER = "datayego-stores";
 const WORKER_JS = `const SUPA = "https://nhxgebulvqhtiiotetoo.supabase.co"; const ANON = "sb_publishable_tAbh99C5tny6sMAiu6ZYrg_BWjkRIAX";
@@ -18,6 +20,15 @@ export default { async fetch(request) {
   const apex = host === "${ZONE}" || host === "www.${ZONE}";
   const sm = apex ? url.pathname.match(/^\\/s\\/([a-z0-9-]+)(?:\\/|$)/i) : null;
   if (apex && !sm) return fetch(request);
+  // datayego.com/s/<slug>/… of a store that lives on a domain (its own, or a sub-agent's parent's) goes straight there
+  // before any page loads: customers coming back from paying saw our address first (19 Nov 2026). store_home decides.
+  if (sm && (request.method === "GET" || request.method === "HEAD")) {
+    const home = await fetch(SUPA + "/rest/v1/rpc/store_home", { method: "POST", headers: { apikey: ANON, Authorization: "Bearer " + ANON, "Content-Type": "application/json", "Content-Profile": "phase1" }, body: JSON.stringify({ p_slug: sm[1].toLowerCase() }) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    if (typeof home === "string" && /^https:\\/\\/[a-z0-9.-]+(\\/s\\/[a-z0-9-]+)?$/.test(home)) {
+      const rest = url.pathname.slice(sm[0].replace(/\\/$/, "").length);
+      return new Response(null, { status: 302, headers: { location: home + rest + url.search, "cache-control": "no-store" } });
+    }
+  }
   // The store this request is for: its own host, or slug.${ZONE} for datayego.com/s/<slug> links.
   const storeHost = sm ? sm[1].toLowerCase() + ".${ZONE}" : host;
   const og = () => fetch(SUPA + "/rest/v1/rpc/store_og", { method: "POST", headers: { apikey: ANON, Authorization: "Bearer " + ANON, "Content-Type": "application/json", "Content-Profile": "phase1" }, body: JSON.stringify({ p_host: storeHost }) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);

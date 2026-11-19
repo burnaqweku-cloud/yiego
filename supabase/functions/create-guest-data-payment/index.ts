@@ -241,14 +241,22 @@ Deno.serve(async (req) => {
     if (prefixConfirmed) await recordPrefixConfirmation(supabase, order.id);
 
     const appUrl = Deno.env.get("SITE_URL") ?? Deno.env.get("APP_URL");
-    // Store buyers come back to the store's own success page; everyone else to ours.
-    const callbackUrl = appUrl
-      ? (agent
-        ? (agentSelf
+    // Store buyers come straight back to the store's own success page on the store's own address (19 Nov 2026: going
+    // through datayego.com/s/<slug> showed our address before the jump to the store's domain); everyone else to ours.
+    // phase1.store_address: its own live domain, else a sub-agent's parent's domain + /s/<slug>, else <slug>.datayego.com.
+    let storeBase: string | null = null;
+    if (agent && !agentSelf) {
+      const { data: addr } = await supabase.rpc("store_address", { p_agent: agent.id });
+      const a = typeof addr === "string" ? addr.trim().toLowerCase() : "";
+      storeBase = /^[a-z0-9.-]+\.[a-z]{2,}(\/s\/[a-z0-9-]+)?$/.test(a) ? `https://${a}` : `https://${agent.slug}.datayego.com`;
+    }
+    const callbackUrl = storeBase
+      ? `${storeBase}/success?reference=${encodeURIComponent(orderReference)}`
+      : appUrl
+        ? (agent
           ? `${appUrl.replace(/\/$/, "")}/agent/orders`
-          : `${appUrl.replace(/\/$/, "")}/s/${agent.slug}/success?reference=${encodeURIComponent(orderReference)}`)
-        : `${appUrl.replace(/\/$/, "")}/payment/success?reference=${encodeURIComponent(orderReference)}&type=order`)
-      : undefined;
+          : `${appUrl.replace(/\/$/, "")}/payment/success?reference=${encodeURIComponent(orderReference)}&type=order`)
+        : undefined;
 
     // Paystack payments carry a 4% fee on top of the bundle price. The order's
     // value stays the bundle price; the customer is charged base + fee.

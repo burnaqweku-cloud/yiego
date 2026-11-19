@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, X, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { p1 } from "@/components/agent/AgentShell";
+import { p1, useAgent } from "@/components/agent/AgentShell";
 
 /* The parent's queue of people asking to sell under them. Approve creates the store
    (awaiting payment if there's a fee); decline just records the decision. Both email the applicant. */
@@ -9,6 +9,9 @@ export interface Application { id: string; status: "pending" | "approved" | "dec
 
 export default function NetworkApplications({ onChange }: { onChange?: () => void }) {
   const [apps, setApps] = useState<Application[] | null>(null);
+  const { agent } = useAgent();
+  // Their store will live on this parent's live domain when it has one (mbundle.shop/s/<name>), like AgentNetwork's list.
+  const subAddress = (name: string) => (agent?.custom_domain && agent.custom_domain_status === "active" ? `${agent.custom_domain}/s/${name}` : `${name}.datayego.com`);
   const [tab, setTab] = useState<"pending" | "all">("pending");
   const [open, setOpen] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -37,7 +40,7 @@ export default function NetworkApplications({ onChange }: { onChange?: () => voi
             <button type="button" onClick={() => { setOpen(open === a.id ? null : a.id); setNote(""); }} className="flex w-full items-start justify-between gap-3 text-left">
               <span className="min-w-0">
                 <span className="block truncate text-[14px] font-semibold text-foreground">{a.applicant_name ?? "Applicant"} <span className="font-normal text-muted-foreground">· {a.store_name}</span></span>
-                <span className="block text-[12px] text-faint-foreground">{a.requested_slug}.datayego.com · {d(a.created_at)}{a.applicant_phone ? ` · ${a.applicant_phone}` : ""}</span>
+                <span className="block text-[12px] text-faint-foreground">{subAddress(a.requested_slug)} · {d(a.created_at)}{a.applicant_phone ? ` · ${a.applicant_phone}` : ""}</span>
               </span>
               <span className="flex shrink-0 items-center gap-2"><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${a.status === "pending" ? "bg-amber/15 text-amber" : a.status === "approved" ? "bg-primary/15 text-primary-glow" : "bg-white/[0.06] text-muted-foreground"}`}>{a.status === "pending" ? "Waiting" : a.status === "approved" ? (a.agent_status === "active" ? "Approved · active" : "Approved · unpaid") : "Declined"}</span><ChevronDown size={16} className={`text-faint-foreground transition ${open === a.id ? "rotate-180" : ""}`} /></span>
             </button>

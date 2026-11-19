@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { storeBase } from "@/lib/storeHost";
+import { storeBase, storeHomeTarget } from "@/lib/storeHost";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Bell, Facebook, Instagram, LayoutDashboard, LayoutGrid, Menu, MessageCircle, Package, Phone, PhoneForwarded, Search, Send, ShieldCheck, Store, Wifi, X, Info, HelpCircle, Clock, UserRound, Users } from "lucide-react";
 import MobileTabBar, { TabBarSpace, type TabItem } from "@/components/layout/MobileTabBar";
@@ -93,15 +93,15 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
       if (r.data === true) { setRedirecting(true); window.location.replace(hostSlug ? "https://datayego.com/" : "/"); } else setRedirecting(false);
     }, () => setRedirecting(false));
   }, [slug, hostSlug]);
-  // A store with its own domain lives there: datayego.com/s/<slug>/… (receipts, old links, shares) jumps to it, same page.
+  // A store on a domain lives there: datayego.com/s/<slug>/… (receipts, old links, shares) jumps to it, same page.
+  // store_home: its own domain, or for a sub-agent its parent's domain + /s/<slug> (19 Nov 2026); null = free address only.
   useEffect(() => {
     if (hostSlug || !slug) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("store_canonical_host", { p_slug: slug }).then((r: { data: string | null }) => {
-      const host = r.data; if (!host || host === window.location.hostname) return;
-      const rest = window.location.pathname.replace(new RegExp(`^${storeBase(slug).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`), "");
-      window.location.replace(`https://${host}${rest || "/"}${window.location.search}${window.location.hash}`);
-    });
+    void (supabase as unknown as { schema: (s: string) => any }).schema("phase1").rpc("store_home", { p_slug: slug }).then((r: { data: string | null }) => {
+      const target = storeHomeTarget(r.data, window.location, storeBase(slug));
+      if (target) window.location.replace(target);
+    }, () => undefined);
   }, [slug, hostSlug]);
   // Services are on in every active store unless the agent switched them all off; the link follows what is on sale.
   const [hasServices, setHasServices] = useState(false);
