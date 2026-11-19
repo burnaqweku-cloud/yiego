@@ -1,6 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { makePaystackReference } from "../_shared/paystack.ts";
-import { startCheckout } from "../_shared/gateway.ts";
+import { GATEWAY_LABEL, startCheckout } from "../_shared/gateway.ts";
 import { paystackFee, paystackTotal } from "../_shared/fees.ts";
 import { createSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { friendlyError } from "../_shared/friendlyErrors.ts";
@@ -337,7 +337,7 @@ Deno.serve(async (req) => {
       event_type: "payment.created",
       from_status: "created",
       to_status: "awaiting_payment",
-      message: `${authenticatedUser ? "Account" : "Guest"} ${paystack.gateway === "flutterwave" ? "Flutterwave" : "Paystack"} payment initialized${paystack.test ? " (TEST key, admin only)" : ""}`,
+      message: `${authenticatedUser ? "Account" : "Guest"} ${GATEWAY_LABEL[paystack.gateway] ?? "Paystack"} payment initialized${paystack.test ? " (TEST key, admin only)" : ""}`,
       metadata: {
         provider: paystack.gateway,
         test: paystack.test,
