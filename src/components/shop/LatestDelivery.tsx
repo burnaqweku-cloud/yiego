@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
-import { useLatestDelivery } from "@/hooks/useLatestDelivery";
+import { Link } from "react-router-dom";
+import { useDeliveryNow } from "@/hooks/useLatestDelivery";
 import { cn } from "@/lib/utils";
-import { Check, Clock3 } from "lucide-react";
+import { Check, CircleHelp, Clock3 } from "lucide-react";
 import type { NetworkSpeed } from "@/hooks/useDeliverySpeed";
 import { boardKey, clockParts, dayLabel, networkMark, rightNow, tookLabel, type LatestDelivery as Delivery } from "@/lib/latestDelivery";
 import type { DeliveryRange } from "@/lib/deliveryRange";
@@ -61,9 +62,43 @@ export function DeliveryNow({ network, speed }: { network: string; speed: Networ
 /* The same delivery at half the size, for the home page (owner, 14 Nov 2026: "not big, not small"): one white board
    of two short lines. Which order, how long it took, then its journey. Same rule as the shop band (deliveryToShow):
    it is only there while the news is good and true of now, and it follows the price board's network tab. */
+/** "Why does data sometimes take longer?" beside a slow board (owner, 19 Nov 2026: at the top as well, not only in the
+    bundle list). Main site only: it opens our /delivery-times page. */
+export function DelayHelpLink({ className }: { className?: string }) {
+  return (
+    <p className={className}>
+      <Link to="/delivery-times" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary-glow underline-offset-2 hover:underline">
+        <CircleHelp size={14} aria-hidden="true" />Why does data sometimes take longer?
+      </Link>
+    </p>
+  );
+}
+
+/** The home page's slow version (owner, 19 Nov 2026): the same half-size board, "From … Up to …" as on the shop. */
+function DeliveryRangeStrip({ r, className }: { r: DeliveryRange; className?: string }) {
+  const mark = networkMark(r.network);
+  return (
+    <div className={className}>
+      <section className="yg-strip" data-slow="" aria-label={`How long ${r.network} orders are taking right now`}>
+        <div className="yg-strip__top">
+          <span className="yg-latest__net" data-tone={mark.tone} aria-hidden="true">{mark.text}</span>
+          <p className="yg-strip__what"><span>{r.network} deliveries</span><b>right now</b></p>
+          <p className="yg-strip__took"><b>{r.text}</b></p>
+        </div>
+        <div className="yg-strip__trip">
+          <span className="yg-strip__end">From {r.from}</span>
+          <span className="yg-latest__track" aria-hidden="true"><i /><b><Clock3 size={11} strokeWidth={3} /></b></span>
+          <span className="yg-strip__end">Up to {r.to}</span>
+        </div>
+      </section>
+      <DelayHelpLink className="mt-2.5" />
+    </div>
+  );
+}
+
 export function DeliveryStrip({ network, speed, className }: { network: string; speed: NetworkSpeed | undefined; className?: string }) {
-  const d = useLatestDelivery(network, speed);
-  if (!d) return null;
+  const { latest: d, range } = useDeliveryNow(network, speed);
+  if (!d) return range ? <DeliveryRangeStrip key={`${range.network}-${range.text}`} r={range} className={className} /> : null;
   const mark = networkMark(d.network);
   const paid = clockParts(d.paidAt); const landed = clockParts(d.deliveredAt);
   const day = dayLabel(d);

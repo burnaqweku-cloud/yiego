@@ -4,7 +4,7 @@ import { useDeliveryNow } from "@/hooks/useLatestDelivery";
 import { boardKey, tookLabel } from "@/lib/latestDelivery";
 import { useAuth } from "@/store/auth-context";
 import { useProfile } from "@/store/profile";
-import { DeliveryBoard, DeliveryNow, DeliveryRangeBoard } from "./LatestDelivery";
+import { DelayHelpLink, DeliveryBoard, DeliveryNow, DeliveryRangeBoard } from "./LatestDelivery";
 import Purse from "./Purse";
 
 const dateFmt = new Intl.DateTimeFormat("en-GH", { weekday: "long", day: "numeric", month: "long" });
@@ -31,17 +31,25 @@ export default function ShopBand({ network, speed }: { network: string; speed: N
       <DeliveryNow network={d.network} speed={speed} />
     </>
   ) : range ? <DeliveryRangeBoard key={`${range.network}-${range.text}`} r={range} /> : null;
+  // While the slow board is up, the "why" link sits right under the band too (owner, 19 Nov 2026).
+  const why = !d && range ? <DelayHelpLink className="-mt-2 text-center lg:-mt-5" /> : null;
   if (isAuthenticated) {
     return (
-      <Band kicker={dateFmt.format(new Date())} title={`${greeting()}, ${profile.firstName}`} className="yg-band--shop">
-        <Purse />
-        {delivery}
-      </Band>
+      <>
+        <Band kicker={dateFmt.format(new Date())} title={`${greeting()}, ${profile.firstName}`} className="yg-band--shop">
+          <Purse />
+          {delivery}
+        </Band>
+        {why}
+      </>
     );
   }
   return (
-    <Band title="Buy Ghana data online" sub="Tap a bundle, enter the number, pay with MoMo or card." className="yg-band--shop">
-      {delivery}
-    </Band>
+    <>
+      <Band title="Buy Ghana data online" sub="Tap a bundle, enter the number, pay with MoMo or card." className="yg-band--shop">
+        {delivery}
+      </Band>
+      {why}
+    </>
   );
 }

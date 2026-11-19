@@ -66,6 +66,10 @@
 .yg-strip__trip time { font-family: var(--font-display); font-weight: 800; font-size: 15px; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .yg-strip__trip small { margin-left: 2px; font-family: var(--font-sans); font-size: 10px; font-weight: 800; letter-spacing: 0; color: #48584f; }
 .yg-strip .yg-latest__track { height: 18px; margin: 0; }
+.yg-strip[data-slow] .yg-strip__took b { color: #a86800; }
+.yg-strip[data-slow] .yg-latest__track i { background: #f7a701; }
+.yg-strip[data-slow] .yg-latest__track b { background: #f7a701; color: #1a1500; }
+.yg-strip__end { font-family: var(--font-display); font-weight: 800; font-size: 15px; line-height: 1; letter-spacing: -0.02em; white-space: nowrap; }
 .yg-strip .yg-latest__track b { width: 18px; height: 18px; }
 .yg-strip .yg-latest__track i { right: 22px; }
 
