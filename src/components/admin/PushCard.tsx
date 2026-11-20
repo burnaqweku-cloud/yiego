@@ -18,7 +18,7 @@ const KINDS: { key: Exclude<keyof PushSettings, "enabled">; label: string; hint:
   { key: "services", label: "DY Services orders", hint: "Checker ready, AFA done, refund." },
   { key: "agent_approved", label: "Agent approved", hint: "When an application is approved." },
 ];
-const KIND_LABEL: Record<string, string> = { order_paid: "Payment", order_delivered: "Delivered", order_refunded: "Refund", announcement: "Announcement", test: "Test", campaign: "Follow-up", alert: "Alert to admins", service_delivered: "Service order", service_refunded: "Service refund", agent_approved: "Agent approved" };
+const KIND_LABEL: Record<string, string> = { order_paid: "Payment", order_delivered: "Delivered", order_refunded: "Refund", announcement: "Announcement", test: "Test", campaign: "Follow-up", alert: "Alert to admins", service_delivered: "Service order", service_refunded: "Service refund", agent_approved: "Agent approved", payout_request: "Withdrawal request" };
 const OFF: PushSettings = { enabled: false, order_paid: true, order_delivered: true, order_refunded: true, announcements: true, services: true, agent_approved: true };
 
 export default function PushCard() {
