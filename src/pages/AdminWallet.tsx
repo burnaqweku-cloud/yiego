@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { csvText } from "@/lib/csv";
+import { readAll } from "@/lib/readAll";
 
 /* Customer wallets — who is holding what, and every movement behind it.
    Tap a customer to see only their history. */
@@ -35,9 +36,10 @@ export default function AdminWallet() {
   useEffect(() => {
     let mounted = true;
     Promise.all([
-      db().from("wallets").select("id, user_id, balance, status, updated_at").order("balance", { ascending: false }),
-      db().from("profiles").select("id, email, full_name"),
-      db().from("wallet_ledger_entries").select("id, wallet_id, user_id, direction, type, amount, balance_after, reference, note, created_at").order("created_at", { ascending: false }).limit(1000),
+      // Read 1,000 at a time: one read stops at 1,000 rows, and the deposit and spend totals add up every entry.
+      readAll(() => db().from("wallets").select("id, user_id, balance, status, updated_at").order("balance", { ascending: false }).order("id", { ascending: true })),
+      readAll(() => db().from("profiles").select("id, email, full_name").order("id", { ascending: true })),
+      readAll<Entry>(() => db().from("wallet_ledger_entries").select("id, wallet_id, user_id, direction, type, amount, balance_after, reference, note, created_at").order("created_at", { ascending: false }).order("id", { ascending: true })),
     ]).then(([w, p, l]) => {
       if (!mounted) return;
       const profile = new Map<string, { email: string | null; full_name: string | null }>((p.data ?? []).map((x: { id: string; email: string | null; full_name: string | null }) => [x.id, x]));

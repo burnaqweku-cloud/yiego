@@ -5,6 +5,7 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Panel, Pill, Rows, Segmented, Stat, StatGrid } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
+import { readAll } from "@/lib/readAll";
 
 /* Numbers people submitted for MTN verification without an order. Separate from the verification queue. */
 interface Row { msisdn: string; source: string; status: "pending" | "approved" | "blocked"; dbh_message: string | null; submitted_at: string; submit_count: number; last_checked_at: string | null; approved_at: string | null }
@@ -14,7 +15,7 @@ const db = () => adminDatabase() as unknown as { from: (t: string) => any };
 
 export default function AdminSubmittedNumbers() {
   const [rows, setRows] = useState<Row[]>([]); const [filter, setFilter] = useState<Filter>("all"); const [loading, setLoading] = useState(true); const [q, setQ] = useState("");
-  const load = useCallback(async () => { setLoading(true); const r = await db().from("submitted_numbers").select("*").order("submitted_at", { ascending: false }).limit(1000); setRows(r.data ?? []); setLoading(false); }, []);
+  const load = useCallback(async () => { setLoading(true); const r = await readAll<Row>(() => db().from("submitted_numbers").select("*").order("submitted_at", { ascending: false }).order("msisdn", { ascending: true })); setRows(r.data); setLoading(false); }, []);
   useEffect(() => { void load(); }, [load]);
   const visible = useMemo(() => rows.filter((r) => (filter === "all" || r.status === filter) && (!q.trim() || r.msisdn.includes(q.trim()))), [rows, filter, q]);
   const tone = (s: Row["status"]) => s === "approved" ? "good" : s === "blocked" ? "bad" : "warn";

@@ -6,6 +6,7 @@ import { Panel, Pill, Rows, Segmented, Stat, StatGrid } from "@/components/admin
 import { Button } from "@/components/ui/button";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
+import { readAll } from "@/lib/readAll";
 
 /* Referrals: who invited whom, what was paid, and anything the checks flagged. */
 type RStatus = "pending" | "rewarded" | "flagged" | "void" | "reversed";
@@ -22,7 +23,7 @@ export default function AdminReferrals() {
   const [filter, setFilter] = useState<Filter>("all"); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState<string | null>(null);
   const load = useCallback(async () => {
     setLoading(true);
-    const [r, p] = await Promise.all([db().from("referrals").select("*").order("created_at", { ascending: false }).limit(500), db().from("profiles").select("id, email, full_name")]);
+    const [r, p] = await Promise.all([db().from("referrals").select("*").order("created_at", { ascending: false }).limit(500), readAll(() => db().from("profiles").select("id, email, full_name").order("id", { ascending: true }))]);
     setRows(r.data ?? []); setPeople(new Map(((p.data ?? []) as Person[]).map((x) => [x.id, x]))); setLoading(false);
   }, []);
   useEffect(() => { void load(); }, [load]);

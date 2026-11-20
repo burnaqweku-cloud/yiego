@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
+import { readAll } from "@/lib/readAll";
 
 /* Agents — applications to review, active agents, promos and the launch switch.
    Nothing here is visible to customers until the switch is on. */
@@ -63,14 +64,15 @@ export default function AdminAgents() {
 
   const load = useCallback(async () => {
     const [a, g, p, s, r, po, sp, gr] = await Promise.all([
-      db().from("agent_applications").select("*").order("created_at", { ascending: false }).limit(500),
+      // These lists feed "total" and "all time" figures, so every row is read (1,000 at a time), never a capped slice.
+      readAll<Application>(() => db().from("agent_applications").select("*").order("created_at", { ascending: false }).order("id", { ascending: true })),
       db().from("agents").select("id, user_id, slug, store_name, status, paid_until, earnings_balance, created_at, parent_agent_id, network_on").is("parent_agent_id", null).order("created_at", { ascending: false }), // sub-agents live under Sub-agents, not here
       db().from("agent_promos").select("*").order("created_at", { ascending: false }),
       db().from("site_settings").select("key, value").in("key", ["agents_launched", "agent_plan"]),
       actor ? db().rpc("admin_role", { p_user: actor }) : Promise.resolve({ data: null, error: null }),
-      db().from("agent_payouts").select("*").order("created_at", { ascending: false }).limit(300),
-      db().from("payment_intents").select("provider_reference, amount, status, verified_at, created_at, user_id, metadata").eq("purpose", "agent_subscription").order("created_at", { ascending: false }).limit(300),
-      db().from("agent_subscription_grants").select("*").order("created_at", { ascending: false }).limit(300),
+      readAll<Payout>(() => db().from("agent_payouts").select("*").order("created_at", { ascending: false }).order("id", { ascending: true })),
+      readAll<SubPayment>(() => db().from("payment_intents").select("provider_reference, amount, status, verified_at, created_at, user_id, metadata").eq("purpose", "agent_subscription").order("created_at", { ascending: false }).order("id", { ascending: true })),
+      readAll<Grant>(() => db().from("agent_subscription_grants").select("*").order("created_at", { ascending: false }).order("id", { ascending: true })),
     ]);
     setPayouts(po.data ?? []); setSubs(sp.data ?? []); setGrants(gr.data ?? []);
     // Added up by the database: a read returns at most 1,000 rows, and counting rows here left newer orders out.

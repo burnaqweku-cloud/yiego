@@ -19,7 +19,7 @@ export default function AdminReviews() {
 
   useEffect(() => {
     let mounted = true;
-    adminDatabase().from<AdminOrderRow>("orders").select("id, order_reference, recipient_phone, amount, status, payment_status, supplier_status, supplier_order_reference, supplier_purchase_id, suppliers(code), created_at").order("created_at", { ascending: false }).then(({ data }) => {
+    (adminDatabase() as unknown as { from: (t: string) => any }).from("orders").select("id, order_reference, recipient_phone, amount, status, payment_status, supplier_status, supplier_order_reference, supplier_purchase_id, suppliers(code), created_at").in("status", ["failed", "failed_needs_review"]).order("created_at", { ascending: false }).then(({ data }) => {
       if (!mounted) return;
       setOrders((data ?? []).filter((order) => ["failed", "failed_needs_review"].includes(order.status)));
       setLoading(false);

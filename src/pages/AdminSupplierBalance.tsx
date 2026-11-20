@@ -11,6 +11,7 @@ import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
 import { csvText } from "@/lib/csv";
+import { readAll } from "@/lib/readAll";
 
 /* One supplier's money: what they report, what our books say, where it went. */
 interface Supplier { id: string; code: string; name: string; status: string; confirmed_balance: number | null; confirmed_at: string | null; metadata?: { topup_fee_rate?: number } | null }
@@ -39,7 +40,8 @@ export default function AdminSupplierBalance() {
     const [r, t, o, f, who] = await Promise.all([
       db().from("supplier_balance_readings").select("balance, observed_at, source").eq("supplier_id", sup.id).order("observed_at", { ascending: false }).limit(60),
       db().from("finance_entries").select("id, created_by, amount, occurred_at, note, metadata").eq("supplier_id", sup.id).eq("kind", "supplier_topup").order("occurred_at", { ascending: false }),
-      db().from("orders").select("order_reference, recipient_phone, cost_amount, amount, status, supplier_status, paid_at, data_products(capacity_gb), networks(name)").eq("supplier_id", sup.id).eq("payment_status", "succeeded").gte("paid_at", `${since(range)}T00:00:00`).order("paid_at", { ascending: false }).limit(2000),
+      // Every order in the range (DataBundlesHub passes 1,000 in a week), read 1,000 at a time.
+      readAll<Ord>(() => db().from("orders").select("order_reference, recipient_phone, cost_amount, amount, status, supplier_status, paid_at, data_products(capacity_gb), networks(name)").eq("supplier_id", sup.id).eq("payment_status", "succeeded").gte("paid_at", `${since(range)}T00:00:00`).order("paid_at", { ascending: false }).order("id", { ascending: true })),
       db().from("finance_balances").select("balance").eq("code", `float_${code}`).maybeSingle(),
       db().rpc("admin_user_labels", {}),
     ]);

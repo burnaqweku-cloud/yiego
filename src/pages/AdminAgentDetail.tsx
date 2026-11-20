@@ -13,6 +13,7 @@ import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
 import { csvText } from "@/lib/csv";
+import { readAll } from "@/lib/readAll";
 
 /* One agent, in full: who they are, their plan, every order through them
    (store sale vs their own purchase), earnings, payouts, free months. */
@@ -40,7 +41,8 @@ export default function AdminAgentDetail() {
     if (!g) { setA(null); return; } setA(g);
     const [p, o, py, gr, lg, r] = await Promise.all([
       db().from("profiles").select("email").eq("id", g.user_id).maybeSingle(),
-      db().from("orders").select("id, order_reference, recipient_phone, amount, agent_price, agent_margin, status, supplier_status, admin_resolution_status, paid_at, user_id, guest_email, data_products(name, capacity_gb), networks(name), suppliers(code, name)").eq("agent_id", g.id).eq("payment_status", "succeeded").gte("paid_at", `${since(range)}T00:00:00`).order("paid_at", { ascending: false }).limit(2000),
+      // Read 1,000 at a time: one read stops at 1,000 rows and the figures on this page add every order up.
+      readAll<Ord>(() => db().from("orders").select("id, order_reference, recipient_phone, amount, agent_price, agent_margin, status, supplier_status, admin_resolution_status, paid_at, user_id, guest_email, data_products(name, capacity_gb), networks(name), suppliers(code, name)").eq("agent_id", g.id).eq("payment_status", "succeeded").gte("paid_at", `${since(range)}T00:00:00`).order("paid_at", { ascending: false }).order("id", { ascending: true })),
       db().from("agent_payouts").select("*").eq("agent_id", g.id).order("created_at", { ascending: false }),
       db().from("agent_subscription_grants").select("*").eq("agent_id", g.id).order("created_at", { ascending: false }),
       db().from("agent_ledger_entries").select("*").eq("agent_id", g.id).order("created_at", { ascending: false }).limit(100),
@@ -51,7 +53,7 @@ export default function AdminAgentDetail() {
     const [par, subs, pm, fi] = await Promise.all([
       g.parent_agent_id ? db().from("agents").select("id, store_name, slug, network_fee").eq("id", g.parent_agent_id).maybeSingle() : Promise.resolve({ data: null }),
       db().from("agents").select("id, store_name, slug, status, paid_until").eq("parent_agent_id", g.id).order("created_at", { ascending: false }),
-      db().from("orders").select("parent_margin").eq("parent_agent_id", g.id).eq("status", "delivered"),
+      readAll(() => db().from("orders").select("parent_margin").eq("parent_agent_id", g.id).eq("status", "delivered").order("id", { ascending: true })),
       db().from("finance_live_entries").select("metadata").eq("kind", "network_fee").filter("metadata->>parent_agent_id", "eq", g.id),
     ]);
     setNet({ parent: par.data ?? null, subs: subs.data ?? [], parentMargin: ((pm.data ?? []) as Array<{ parent_margin: number }>).reduce((t, x) => t + Number(x.parent_margin ?? 0), 0), feeIncome: ((fi.data ?? []) as Array<{ metadata: { base?: number } }>).reduce((t, x) => t + Number(x.metadata?.base ?? 0), 0) });

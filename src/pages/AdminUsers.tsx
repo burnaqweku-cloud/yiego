@@ -9,9 +9,13 @@ import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 
 type Role = "admin" | "registered" | "guest";
 
-interface ProfileRow { id: string; full_name: string | null; email: string | null; phone: string | null; created_at: string; }
-interface AdminUserRow { user_id: string; is_active: boolean; }
-interface OrderRow { user_id: string | null; guest_email: string | null; guest_phone: string | null; recipient_phone: string | null; amount: number | string; payment_status: string; created_at: string; }
+// Built in the database (phase1.admin_user_directory): every account and every guest, with order counts and spend
+// over all orders. It used to be put together here from the newest 1,000 orders, because a read stops at 1,000 rows
+// (20 Nov 2026), so older customers showed too few orders and most guests were missing.
+interface Directory {
+  registered: { id: string; name: string | null; email: string | null; phone: string | null; since: string; admin: boolean; orders: number; spent: number }[];
+  guests: { key: string; email: string | null; phone: string | null; since: string; orders: number; spent: number }[];
+}
 
 interface UserRow {
   key: string;
@@ -31,9 +35,7 @@ const roleBadge: Record<Role, { label: string; variant: "success" | "amber" | "n
 };
 
 export default function AdminUsers() {
-  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
-  const [admins, setAdmins] = useState<AdminUserRow[]>([]);
-  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [directory, setDirectory] = useState<Directory | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [role, setRole] = useState<"all" | Role>("all");
@@ -42,65 +44,27 @@ export default function AdminUsers() {
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([
-      adminDatabase().from<ProfileRow>("profiles").select("id, full_name, email, phone, created_at").order("created_at", { ascending: false }).limit(1000),
-      adminDatabase().from<AdminUserRow>("admin_users").select("user_id, is_active").limit(1000),
-      adminDatabase().from<OrderRow>("orders").select("user_id, guest_email, guest_phone, recipient_phone, amount, payment_status, created_at").order("created_at", { ascending: false }).limit(2000),
-    ]).then(([p, a, o]) => {
-      if (!mounted) return;
-      setProfiles(p.data ?? []);
-      setAdmins(a.data ?? []);
-      setOrders(o.data ?? []);
-      setLoading(false);
-    });
+    (adminDatabase() as unknown as { rpc: (f: string, a: Record<string, unknown>) => PromiseLike<{ data: Directory | null }> })
+      .rpc("admin_user_directory", {})
+      .then((r) => { if (mounted) { setDirectory(r.data ?? null); setLoading(false); } }, () => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, []);
 
   useEffect(() => { setPage(1); }, [search, role, pageSize]);
 
-  // Build one unified list: every registered account (flagged admin where it
-  // sits in admin_users), plus each distinct guest derived from guest orders.
+  // One list: every registered account (flagged admin where it is an active admin), plus each guest grouped by email,
+  // else phone, else the number bought for.
   const users = useMemo<UserRow[]>(() => {
-    const adminIds = new Set(admins.filter((a) => a.is_active).map((a) => a.user_id));
-    const paid = (o: OrderRow) => o.payment_status === "succeeded";
-
-    const registered: UserRow[] = profiles.map((p) => {
-      const mine = orders.filter((o) => o.user_id === p.id);
-      return {
-        key: `u:${p.id}`,
-        name: p.full_name?.trim() || "—",
-        email: p.email,
-        phone: p.phone,
-        role: adminIds.has(p.id) ? "admin" : "registered",
-        orders: mine.length,
-        spent: mine.filter(paid).reduce((s, o) => s + Number(o.amount), 0),
-        since: p.created_at,
-      };
-    });
-
-    // Guests have no account — group their orders by email (falling back to the
-    // number they bought for) so each guest is one row.
-    const guestGroups = new Map<string, OrderRow[]>();
-    for (const o of orders) {
-      if (o.user_id) continue;
-      const id = (o.guest_email || o.guest_phone || o.recipient_phone || "unknown").toLowerCase();
-      const list = guestGroups.get(id) ?? [];
-      list.push(o);
-      guestGroups.set(id, list);
-    }
-    const guests: UserRow[] = [...guestGroups.entries()].map(([id, list]) => ({
-      key: `g:${id}`,
-      name: "Guest",
-      email: list[0].guest_email,
-      phone: list[0].guest_phone || list[0].recipient_phone,
-      role: "guest",
-      orders: list.length,
-      spent: list.filter(paid).reduce((s, o) => s + Number(o.amount), 0),
-      since: list.reduce((min, o) => (o.created_at < min ? o.created_at : min), list[0].created_at),
+    if (!directory) return [];
+    const registered: UserRow[] = directory.registered.map((p) => ({
+      key: `u:${p.id}`, name: p.name?.trim() || "—", email: p.email, phone: p.phone,
+      role: p.admin ? "admin" : "registered", orders: Number(p.orders), spent: Number(p.spent), since: p.since,
     }));
-
+    const guests: UserRow[] = directory.guests.map((g) => ({
+      key: `g:${g.key}`, name: "Guest", email: g.email, phone: g.phone, role: "guest", orders: Number(g.orders), spent: Number(g.spent), since: g.since,
+    }));
     return [...registered, ...guests].sort((a, b) => (a.since < b.since ? 1 : -1));
-  }, [admins, orders, profiles]);
+  }, [directory]);
 
   const counts = useMemo(() => ({
     total: users.length,

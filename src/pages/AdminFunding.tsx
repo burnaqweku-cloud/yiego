@@ -9,6 +9,7 @@ import { adminDatabase, formatAdminDate } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/store/auth-context";
 import { csvText } from "@/lib/csv";
+import { readAll } from "@/lib/readAll";
 
 /* Money put in — every cedi that came from you rather than from customers:
    supplier top-ups (with their charges) and balances carried in at launch. */
@@ -34,7 +35,8 @@ export default function AdminFunding() {
 
   const load = async () => {
     const [en, su, who] = await Promise.all([
-      db().from("finance_entries").select("id, created_by, kind, reference, occurred_at, amount, note, metadata, supplier_id, reverses, postings:finance_postings(account, amount)").in("kind", ["supplier_topup", "opening_balance", "reversal"]).order("occurred_at", { ascending: false }).limit(500),
+      // Every top-up and reversal (467 and growing; a capped read dropped the oldest and left undone ones looking live).
+      readAll<Entry>(() => db().from("finance_entries").select("id, created_by, kind, reference, occurred_at, amount, note, metadata, supplier_id, reverses, postings:finance_postings(account, amount)").in("kind", ["supplier_topup", "opening_balance", "reversal"]).order("occurred_at", { ascending: false }).order("id", { ascending: true })),
       db().from("suppliers").select("id, code, name, metadata").order("display_order"),
       db().rpc("admin_user_labels", {}),
     ]);

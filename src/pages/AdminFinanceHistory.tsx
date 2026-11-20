@@ -4,6 +4,7 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Money, Panel, Pill, Row, Rows, Segmented, Stat, StatGrid } from "@/components/admin/ui";
 import { adminDatabase } from "@/lib/admin-data";
 import { formatGHS } from "@/lib/format";
+import { readAll } from "@/lib/readAll";
 
 /* Read-only history behind the two Finance cards: supplier top-ups (and result-checker stock bought), and money moved in/out by the master admin
    (business costs, capital returned, capital put in). Reads existing ledger entries; never changes them. */
@@ -35,7 +36,7 @@ export default function AdminFinanceHistory() {
     const kinds = topups ? ["supplier_topup", "service_stock"] : ["master_adjustment", "partner_capital"];
     const [en, rev, su, who] = await Promise.all([
       db().from("finance_entries").select("id, created_by, kind, occurred_at, amount, note, metadata, supplier_id, postings:finance_postings(account, amount)").in("kind", kinds).order("occurred_at", { ascending: false }).limit(1000),
-      db().from("finance_entries").select("reverses").not("reverses", "is", null).limit(5000),
+      readAll(() => db().from("finance_entries").select("reverses").not("reverses", "is", null).order("id", { ascending: true })),
       db().from("suppliers").select("id, name"),
       db().rpc("admin_user_labels", {}),
     ]);
