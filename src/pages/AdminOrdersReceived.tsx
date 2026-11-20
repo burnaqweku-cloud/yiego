@@ -151,7 +151,7 @@ export default function AdminOrdersReceived() {
           {list.map((o) => (
             <li key={o.id} className="flex items-start gap-2.5 py-2">
               <div className="min-w-0 flex-1">
-                <p className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-foreground"><SupplierBadge supplier={o.suppliers} from={origins[o.id]} /><CopyRef value={o.order_reference} /> <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
+                <p className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-foreground"><SupplierBadge supplier={o.suppliers} from={origins[o.id]} /><CopyRef value={o.order_reference} />{o.agent_id && <AgentTag reference={o.order_reference} />} <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
                 <p className="text-[11px] text-faint-foreground">paid {formatAdminDate(o.paid_at)} · {age(o.paid_at)} ago · {reasonOf(o)}</p>
               </div>
               <div className="flex max-w-[55%] flex-col items-end gap-1.5 text-right">
@@ -170,3 +170,12 @@ export default function AdminOrdersReceived() {
     </div>
   );
 }
+
+/* 20 Nov 2026 (owner): an agent buying for himself from his dashboard gets a YG reference like our own orders, so in
+   "All" it looked like a customer order at a lower price (GH₵4.00 agent price beside GH₵4.10). Every agent order now
+   says whose it is: "Agent's own" (bought for himself, YG reference) or "Agent store" (his customer, AG reference). */
+function AgentTag({ reference }: { reference: string }) {
+  const own = !reference.startsWith("AG-");
+  return <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10.5px] font-semibold text-amber-800" title={own ? "An agent bought this for himself at his agent price" : "Bought in an agent's store"}>{own ? "Agent's own" : "Agent store"}</span>;
+}
+
