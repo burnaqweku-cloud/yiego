@@ -93,12 +93,18 @@ export default function AdminOrdersReceived() {
   };
   useEffect(() => {
     let mounted = true; setLoading(true);
-    // The API returns at most 1000 rows per read. A date range fits; "All time" would not, so it fetches only the
-    // orders still waiting (the other buckets are per-range anyway) in pages of 1000.
+    // The API returns at most 1000 rows per read, so everything is read in pages of 1000 (20 Nov 2026: a busy week
+    // passed 1,000 orders and the list stopped at 1000). "All time" fetches only the orders still waiting (the other
+    // buckets are per-range anyway).
     const cols = "id, order_reference, product_id, recipient_phone, amount, cost_amount, supplier_order_reference, supplier_retry_after, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(code, name)";
     const fetchAll = async () => {
-      if (!allTime) { const r = await db().from("orders").select(cols).eq("payment_status", "succeeded").gte("paid_at", startOfDay(new Date(from)).toISOString()).lte("paid_at", endOfDay(new Date(to)).toISOString()).order("paid_at", { ascending: false }).limit(1000); return (r.data ?? []) as Row[]; }
-      const out: Row[] = []; for (let page = 0; page < 20; page++) { const r = await db().from("orders").select(cols).eq("payment_status", "succeeded").not("status", "in", "(delivered,refunded,cancelled)").order("paid_at", { ascending: false }).range(page * 1000, page * 1000 + 999); const batch = (r.data ?? []) as Row[]; out.push(...batch); if (batch.length < 1000) break; }
+      const out: Row[] = [];
+      for (let page = 0; page < 20; page++) {
+        let q = db().from("orders").select(cols).eq("payment_status", "succeeded");
+        q = allTime ? q.not("status", "in", "(delivered,refunded,cancelled)") : q.gte("paid_at", startOfDay(new Date(from)).toISOString()).lte("paid_at", endOfDay(new Date(to)).toISOString());
+        const r = await q.order("paid_at", { ascending: false }).order("id", { ascending: true }).range(page * 1000, page * 1000 + 999);
+        const batch = (r.data ?? []) as Row[]; out.push(...batch); if (batch.length < 1000) break;
+      }
       return out;
     };
     void fetchAll().then((data) => { if (mounted) { setRows(data); setLoading(false); } });

@@ -8,10 +8,12 @@ import { csvText } from "@/lib/csv";
 import { profitParts, type OrdersProfit } from "@/lib/ordersProfit";
 
 /* Orders pulse — how many orders came in, for any day or range.
-   Counts paid orders by the moment the customer paid. */
+   Counts paid orders by the moment the customer paid. Every figure is added up in the database
+   (phase1.admin_orders_pulse): a read returns at most 1,000 rows, so counting rows here said "1000" for any
+   busy week (20 Nov 2026, owner: "Why does 7 days always filter 1000?"). Days and hours are Ghana time. */
 
 type Preset = "today" | "yesterday" | "7d" | "30d" | "custom";
-interface Row_ { paid_at: string; status: string; amount: number; agent_id: string | null; agent_margin: number | null; networks: { name: string } | null; data_products: { capacity_gb: number } | null; guest_email: string | null; user_id: string | null }
+interface Pulse { orders: number; delivered: number; refunded: number; cancelled: number; revenue: number; gb: number; agent_margin: number; agent_orders: number; by_network: { name: string; n: number; amt: number }[]; by_day: { day: string; n: number }[]; by_hour: number[] }
 type Source = "all" | "platform" | "agents";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any };
@@ -39,10 +41,9 @@ export default function OrdersPulse({ onRefresh }: { onRefresh?: () => void } = 
   const [preset, setPreset] = useState<Preset>("today");
   const [from, setFrom] = useState(ymd(new Date()));
   const [to, setTo] = useState(ymd(new Date()));
-  const [allRows, setAllRows] = useState<Row_[]>([]);
+  const [pulse, setPulse] = useState<Pulse | null>(null);
   const [source, setSource] = useState<Source>("all");
-  const rows = useMemo(() => allRows.filter((r) => source === "all" || (source === "agents" ? r.agent_id != null : r.agent_id == null)), [allRows, source]);
-  const agentOrders = allRows.filter((r) => r.agent_id != null).length;
+  const agentOrders = Number(pulse?.agent_orders ?? 0);
   const [loading, setLoading] = useState(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- tick is the refresh signal
   const [start, end] = useMemo(() => rangeFor(preset, from, to), [preset, from, to, tick]);
@@ -62,21 +63,22 @@ export default function OrdersPulse({ onRefresh }: { onRefresh?: () => void } = 
 
   useEffect(() => {
     let mounted = true; setLoading(true);
-    db().from("orders").select("paid_at, status, amount, agent_id, agent_margin, guest_email, user_id, networks(name), data_products(capacity_gb)").eq("payment_status", "succeeded").gte("paid_at", iso(start)).lte("paid_at", iso(end)).order("paid_at", { ascending: true }).limit(5000)
-      .then((r: { data: Row_[] | null }) => { if (mounted) { setAllRows(r.data ?? []); setLoading(false); } });
+    (db() as unknown as { rpc: (f: string, a: Record<string, unknown>) => PromiseLike<{ data: Pulse | null }> })
+      .rpc("admin_orders_pulse", { p_from: iso(start), p_to: iso(end), p_source: source })
+      .then((r) => { if (mounted) { setPulse(r.data ?? null); setLoading(false); } }, () => { if (mounted) { setPulse(null); setLoading(false); } });
     return () => { mounted = false; };
-  }, [start, end]);
+  }, [start, end, source]);
 
   const days = Math.max(1, Math.round((endOfDay(end).getTime() - startOfDay(start).getTime()) / 86400000));
-  const n = rows.length;
-  const delivered = rows.filter((r) => r.status === "delivered").length;
-  const refunded = rows.filter((r) => r.status === "refunded").length;
-  const waiting = n - delivered - refunded - rows.filter((r) => r.status === "cancelled").length;
-  const revenue = rows.reduce((a, r) => a + Number(r.amount), 0);
-  const gb = rows.reduce((a, r) => a + Number(r.data_products?.capacity_gb ?? 0), 0);
-  const byNetwork = useMemo(() => { const m = new Map<string, { n: number; amt: number }>(); for (const r of rows) { const k = r.networks?.name ?? "—"; const v = m.get(k) ?? { n: 0, amt: 0 }; v.n += 1; v.amt += Number(r.amount); m.set(k, v); } return [...m.entries()].sort((a, b) => b[1].n - a[1].n); }, [rows]);
-  const byDay = useMemo(() => { if (days <= 1) return []; const m = new Map<string, number>(); for (const r of rows) { const k = ymd(new Date(r.paid_at)); m.set(k, (m.get(k) ?? 0) + 1); } return [...m.entries()].sort(); }, [rows, days]);
-  const byHour = useMemo(() => { if (days > 1) return []; const h = Array(24).fill(0) as number[]; for (const r of rows) h[new Date(r.paid_at).getHours()] += 1; return h; }, [rows, days]);
+  const n = Number(pulse?.orders ?? 0);
+  const delivered = Number(pulse?.delivered ?? 0);
+  const refunded = Number(pulse?.refunded ?? 0);
+  const waiting = n - delivered - refunded - Number(pulse?.cancelled ?? 0);
+  const revenue = Number(pulse?.revenue ?? 0);
+  const gb = Number(pulse?.gb ?? 0);
+  const byNetwork: [string, { n: number; amt: number }][] = (pulse?.by_network ?? []).map((x) => [x.name, { n: Number(x.n), amt: Number(x.amt) }]);
+  const byDay: [string, number][] = days <= 1 ? [] : (pulse?.by_day ?? []).map((x) => [x.day, Number(x.n)]);
+  const byHour: number[] = days > 1 ? [] : (pulse?.by_hour ?? Array(24).fill(0)).map(Number);
   const peakHour = byHour.length ? byHour.indexOf(Math.max(...byHour)) : -1;
 
   const drill = (bucket: string) => `/admin/orders/received?bucket=${bucket}&source=${source}&from=${ymd(start)}&to=${ymd(end)}`;
@@ -97,7 +99,7 @@ export default function OrdersPulse({ onRefresh }: { onRefresh?: () => void } = 
       </div>
       <StatGrid cols={4}>
         <Stat loading={loading} label="Orders" value={String(n)} note={days > 1 ? `${(n / days).toFixed(1)} a day` : "paid"} tone="good" to={drill("all")} />
-        <Stat loading={loading} label="Sales" value={<Money value={revenue} />} note={source === "agents" ? `${gb} GB · agents earn ${formatGHS(rows.reduce((a, r) => a + Number(r.agent_margin ?? 0), 0))}` : `${gb} GB`} to={drill("all")} />
+        <Stat loading={loading} label="Sales" value={<Money value={revenue} />} note={source === "agents" ? `${gb} GB · agents earn ${formatGHS(Number(pulse?.agent_margin ?? 0))}` : `${gb} GB`} to={drill("all")} />
         <Stat loading={loading} label="Delivered" value={String(delivered)} note={`${n ? `${Math.round((delivered / n) * 100)}%` : "—"}${profit != null ? ` · profit ${formatGHS(Number(profit.profit))}` : ""}`} tone="good" to={drill("delivered")} />
         <Stat loading={loading} label="Waiting / refunded" value={`${waiting} / ${refunded}`} note={waiting ? "still to deliver" : "all settled"} tone={waiting ? "warn" : "default"} to={drill("waiting")} />
       </StatGrid>
