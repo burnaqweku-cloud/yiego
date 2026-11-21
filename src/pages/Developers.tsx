@@ -64,7 +64,84 @@ const ENDPOINTS: { method: "GET" | "POST"; path: string; what: string }[] = [
   { method: "GET", path: "/bundles", what: "Every bundle you can buy, your price, and whether it is available now." },
   { method: "POST", path: "/orders", what: "Buy a bundle for a number. Paid from your wallet." },
   { method: "GET", path: "/orders/{reference}", what: "One order, by our reference or yours." },
-  { method: "GET", path: "/orders", what: "Your latest orders (up to 100)." },
+  { method: "GET", path: "/orders", what: "Your orders, newest first. ?limit=1-100, ?status=delivered, ?before=<created_at> for the next page." },
+  { method: "GET", path: "/status", what: "No key needed: is the API open right now." },
+];
+
+type HookLang = "php" | "js";
+const VERIFY: Record<HookLang, string> = {
+  php: `<?php
+$secret  = getenv("DATAYEGO_WEBHOOK_SECRET");          // whsec_...
+$payload = file_get_contents("php://input");           // the raw body
+$header  = $_SERVER["HTTP_X_DATAYEGO_SIGNATURE"] ?? "";  // t=...,v1=...
+parse_str(str_replace(",", "&", $header), $sig);
+
+$expected = hash_hmac("sha256", ($sig["t"] ?? "") . "." . $payload, $secret);
+if (!hash_equals($expected, $sig["v1"] ?? "") || abs(time() - (int)($sig["t"] ?? 0)) > 300) {
+  http_response_code(400);
+  exit;
+}
+
+$event = json_decode($payload, true);
+if ($event["type"] === "order.delivered") {
+  $yourRef = $event["data"]["order"]["your_reference"];
+  // mark order $yourRef as delivered on your site
+}
+http_response_code(200);`,
+  js: `import crypto from "node:crypto";
+import express from "express";
+
+const app = express();
+app.post("/datayego-webhook", express.raw({ type: "application/json" }), (req, res) => {
+  const header = req.get("X-DataYego-Signature") || "";       // t=...,v1=...
+  const { t, v1 } = Object.fromEntries(header.split(",").map((p) => p.split("=")));
+  const expected = crypto.createHmac("sha256", process.env.DATAYEGO_WEBHOOK_SECRET)
+    .update(\`\${t}.\${req.body}\`).digest("hex");
+  const ok = v1 && v1.length === expected.length &&
+    crypto.timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
+  if (!ok || Math.abs(Date.now() / 1000 - Number(t)) > 300) return res.sendStatus(400);
+
+  const event = JSON.parse(req.body);
+  if (event.type === "order.delivered") {
+    // mark event.data.order.your_reference as delivered on your site
+  }
+  res.sendStatus(200);
+});`,
+};
+
+const HOOK_EXAMPLE = `POST https://yoursite.com/datayego-webhook
+Content-Type: application/json
+X-DataYego-Event: order.delivered
+X-DataYego-Delivery: evt_1042
+X-DataYego-Signature: t=1763720380,v1=5f2c8e...
+
+{
+  "id": "evt_1042",
+  "type": "order.delivered",
+  "created_at": "2026-11-21T10:19:40Z",
+  "test": false,
+  "data": {
+    "order": {
+      "reference": "YG-61F041CF38",
+      "your_reference": "ORDER-1001",
+      "status": "delivered",
+      "bundle": { "id": "mtn-2", "network": "MTN", "size_gb": 2 },
+      "phone": "0241234567",
+      "price": 8.50,
+      "delivered_at": "2026-11-21T10:19:38Z"
+    }
+  }
+}`;
+
+const EVENTS: [string, string][] = [
+  ["order.processing", "Sent to the network."],
+  ["order.delivered", "The bundle is on the number."],
+  ["order.verifying", "MTN is verifying a first-time number."],
+  ["order.on_hold", "We are checking the order."],
+  ["order.queued", "Back in line to be sent (after a check)."],
+  ["order.refunded", "The money is back in your balance."],
+  ["order.cancelled", "Cancelled."],
+  ["ping", "The test event from your API page."],
 ];
 
 const STATUSES: [string, string][] = [
@@ -74,21 +151,28 @@ const STATUSES: [string, string][] = [
   ["verifying", "MTN is checking a number that is getting its first bundle. This can take a few weeks; it is delivered by itself once MTN is done."],
   ["on_hold", "We are checking this order. It is either delivered or refunded to your balance."],
   ["refunded", "The money is back in your balance."],
+  ["cancelled", "Cancelled before it was sent."],
 ];
 
 const ERRORS: [string, number, string][] = [
   ["missing_key / invalid_key", 401, "No key, or a key we don't know. Check it, or make a new one."],
   ["account_not_active", 403, "Your API access is paused. Contact support."],
+  ["ip_not_allowed", 403, "Your live key is locked to other IP addresses. The reply shows the address we saw."],
   ["invalid_phone", 400, "The number is not a 10-digit Ghana number."],
   ["wrong_network", 400, "The number is on another network (e.g. a Telecel number with an MTN bundle)."],
-  ["unknown_bundle", 400, "No bundle with that id. Get the ids from GET /bundles."],
+  ["unknown_bundle / bundle_not_offered", 400, "No bundle with that id, or it is not on your price list. Get the ids from GET /bundles."],
   ["insufficient_balance", 402, "Your balance is too low. Top up and send again."],
   ["bundle_unavailable", 409, "That bundle can't be bought right now. Try again later."],
-  ["rate_limited", 429, "More than 120 requests in a minute. Slow down."],
+  ["reference_conflict", 409, "You used this reference before for a different number or bundle. Use a new reference."],
+  ["rate_limited", 429, "More than 120 requests in a minute. Wait for the Retry-After seconds."],
+  ["too_many_failures", 429, "Too many wrong keys from your server. Wait 10 minutes."],
+  ["maintenance / api_closed", 503, "We are under maintenance. Nothing was charged. Try again shortly."],
+  ["server_error", 500, "Something went wrong on our side. Send the same reference again: it never charges twice."],
 ];
 
 export default function Developers() {
   const [lang, setLang] = useState<Lang>("php");
+  const [hookLang, setHookLang] = useState<HookLang>("php");
   return (
     <div className="mx-auto w-full max-w-[760px]">
       <Seo title="DataYego API — sell data from your own website or app" description="Connect your website or app to DataYego and sell MTN, Telecel and AirtelTigo bundles automatically, paid from your DataYego wallet." path="/developers" />
@@ -127,7 +211,42 @@ export default function Developers() {
           <Code>{ORDER_EXAMPLES[lang]}</Code>
           <p className="mt-3">You get back:</p>
           <Code>{ORDER_REPLY}</Code>
-          <p className="mt-2 text-[12.5px] text-faint-foreground">Then check <b className="font-mono">GET /orders/ORDER-1001</b> until the status is <b>delivered</b>.</p>
+          <p className="mt-2 text-[12.5px] text-faint-foreground">Set a webhook and we tell your server when it is delivered. Or check <b className="font-mono">GET /orders/ORDER-1001</b> now and then.</p>
+          <p className="mt-2 text-[12.5px] text-faint-foreground">No reference in the body? An <b className="font-mono">Idempotency-Key</b> header is used as the reference.</p>
+        </Board>
+
+        <Board title="Webhooks" id="webhooks">
+          <p>Put your webhook address (https) on your API page. Each time an order changes, we send it a POST like this:</p>
+          <Code>{HOOK_EXAMPLE}</Code>
+          <ul className="mt-3 space-y-1.5">{EVENTS.map(([e, d]) => <li key={e} className="flex items-start gap-3"><span className="mt-0.5 w-[130px] shrink-0 font-mono text-[12px] font-semibold text-foreground">{e}</span><span className="text-[12.5px] text-muted-foreground">{d}</span></li>)}</ul>
+          <p className="mt-3 font-semibold text-foreground">Check that it really came from us</p>
+          <p>Every message is signed with your signing secret (on your API page). Work out the HMAC-SHA256 of <b className="font-mono">t + "." + the raw body</b> and compare it with <b className="font-mono">v1</b>. Refuse it if they differ or if <b className="font-mono">t</b> is more than 5 minutes old.</p>
+          <div className="mt-3 flex gap-1.5">{(["php", "js"] as HookLang[]).map((l) => <button key={l} type="button" onClick={() => setHookLang(l)} className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold ${hookLang === l ? "bg-primary/15 text-primary-glow" : "border border-white/[0.1] text-muted-foreground"}`}>{l === "js" ? "JavaScript" : "PHP"}</button>)}</div>
+          <Code>{VERIFY[hookLang]}</Code>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-[12.5px]">
+            <li>Answer with any 2xx within 10 seconds. Do the slow work after answering.</li>
+            <li>No 2xx? We try again after 1 min, 5 min, 15 min, 1 hour, 3 hours, 6 hours and 12 hours, then stop. You can send a failed one again from your API page.</li>
+            <li>A message can arrive twice or out of order. Use <b className="font-mono">id</b> to skip ones you have seen, and the order's <b className="font-mono">status</b> as the truth.</li>
+            <li>We don't follow redirects. Use your final https address.</li>
+            <li>Test keys send test events too (<b className="font-mono">"test": true</b>), 30 seconds after a test order.</li>
+          </ul>
+        </Board>
+
+        <Board title="Keep your account safe" id="safety">
+          <ul className="list-disc space-y-1.5 pl-5 text-[12.5px]">
+            <li>Call the API from your server only. Browsers are blocked on purpose, so a key in a web page simply won't work.</li>
+            <li>Lock your live key to your server's IP addresses on your API page. A stolen key then works for nobody else.</li>
+            <li>Lost a key or think someone saw it? Replace it on your API page. The old one stops at once.</li>
+            <li>Every reply carries an <b className="font-mono">X-Request-Id</b>. Send it to us when you need help with a request.</li>
+          </ul>
+        </Board>
+
+        <Board title="Limits">
+          <ul className="list-disc space-y-1.5 pl-5 text-[12.5px]">
+            <li>120 requests a minute per key. Each reply shows <b className="font-mono">X-RateLimit-Remaining</b>.</li>
+            <li>1,000 test orders a day.</li>
+            <li>No minimum top-up and no daily spending limit on live orders.</li>
+          </ul>
         </Board>
 
         <Board title="Order status">
@@ -135,7 +254,7 @@ export default function Developers() {
         </Board>
 
         <Board title="When something is wrong">
-          <p>Errors always look the same: <span className="font-mono text-[12.5px]">{`{ "error": { "code", "message" } }`}</span>. The message says in plain words what went wrong.</p>
+          <p>Errors always look the same: <span className="font-mono text-[12.5px]">{`{ "error": { "code", "message", "request_id" } }`}</span>. The message says in plain words what went wrong.</p>
           <ul className="mt-2 divide-y divide-white/[0.06]">{ERRORS.map(([c, n, d]) => <li key={c} className="py-2"><span className="flex items-baseline justify-between gap-2"><span className="font-mono text-[12.5px] font-semibold text-foreground">{c}</span><span className="text-[11.5px] text-faint-foreground">{n}</span></span><span className="block text-[12.5px] text-muted-foreground">{d}</span></li>)}</ul>
         </Board>
 

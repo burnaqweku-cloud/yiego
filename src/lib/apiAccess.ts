@@ -10,6 +10,8 @@ export type ApiOrderStatus = "queued" | "processing" | "verifying" | "on_hold" |
 export interface ApiKeyRow { id: string; mode: "live" | "test"; hint: string; created_at: string; last_used_at: string | null }
 export interface ApiOrderRow { reference: string; your_reference: string | null; status: ApiOrderStatus; network: string; size_gb: number; phone: string; price: number; created_at: string }
 export interface ApiPriceRow { id: string; network: string; size_gb: number; price: number; available: boolean }
+export interface ApiWebhookDelivery { id: number; event: string; test: boolean; status: "pending" | "delivered" | "failed"; attempts: number; last_status: number | null; last_error: string | null; created_at: string; delivered_at: string | null; next_attempt_at: string | null; reference: string | null }
+export interface ApiWebhook { url: string | null; secret_hint: string | null; deliveries: ApiWebhookDelivery[] }
 export interface ApiAccount {
   status: ApiStatus;
   name?: string | null;
@@ -19,6 +21,8 @@ export interface ApiAccount {
   today: { orders: number; spent: number; delivered: number };
   orders: ApiOrderRow[];
   prices: ApiPriceRow[];
+  webhook?: ApiWebhook | null;
+  allowed_ips?: string[] | null;
 }
 
 export const EMPTY_ACCOUNT: ApiAccount = { status: "none", keys: [], today: { orders: 0, spent: 0, delivered: 0 }, orders: [], prices: [] };
@@ -56,4 +60,30 @@ export function agoLabel(iso: string | null | undefined, now = Date.now()): stri
 /** The first request to try, ready to paste. */
 export function curlExample(key = "YOUR_API_KEY"): string {
   return `curl ${API_BASE_URL}/bundles \\\n  -H "Authorization: Bearer ${key}"`;
+}
+
+/** How one webhook delivery went, in plain words. */
+export function deliveryLabel(d: ApiWebhookDelivery, now = Date.now()): { text: string; tone: "good" | "warn" | "bad" | "wait" } {
+  if (d.status === "delivered") return { text: `Delivered${d.last_status ? ` (${d.last_status})` : ""}`, tone: "good" };
+  if (d.status === "failed") return { text: "Gave up", tone: "bad" };
+  if (d.attempts === 0) return { text: d.next_attempt_at && Date.parse(d.next_attempt_at) > now + 5000 ? "Sends soon" : "Sending", tone: "wait" };
+  const mins = d.next_attempt_at ? Math.max(1, Math.round((Date.parse(d.next_attempt_at) - now) / 60000)) : 0;
+  return { text: `Retry ${d.attempts + 1}${mins ? ` in ${mins < 60 ? `${mins} min` : `${Math.round(mins / 60)} hr`}` : ""}`, tone: "warn" };
+}
+
+/** The IP list a seller types: one per line or separated by commas or spaces. */
+export function parseIpList(text: string): string[] {
+  return text.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
+}
+
+export function apiSellerError(message: string): string {
+  const url = message.match(/bad_url:(.+)$/);
+  if (url) return url[1].trim();
+  const ip = message.match(/bad_ip:(.+)$/);
+  if (ip) return `"${ip[1].trim()}" is not an IP address.`;
+  if (message.includes("too_many_ips")) return "Up to 10 IP addresses.";
+  if (message.includes("too_many_tests")) return "That's enough test events for this hour.";
+  if (message.includes("no_webhook")) return "Save your webhook address first.";
+  if (message.includes("not_active")) return "Your API access is not active.";
+  return "Could not save. Try again.";
 }

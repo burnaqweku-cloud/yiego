@@ -12,17 +12,21 @@ import { requireCronSecret } from "../_shared/internal.ts";
    store_by_host does, so a custom domain still getting its padlock is already the store's.
    datayego.com/s/<slug>/… of a store on a domain answers 302 to that domain (phase1.store_home: its own domain, or a
    sub-agent's parent's domain + /s/<slug>), so a customer back from paying never lands on our address (19 Nov 2026).
-   api.datayego.com is the reseller API: every request there is passed to the api edge function as it is (21 Nov 2026).
+   api.datayego.com is the reseller API: every request there is passed to the api edge function as it is (21 Nov 2026),
+   with the caller's IP and the API_PROXY_SECRET binding (phase1.internal_secrets 'api_proxy') that proves it came from here.
    NOTE: cf-domains' "setup" action still carries the old Worker text; this function is the one to run. */
 const ZONE = "datayego.com"; const WORKER = "datayego-stores";
 const WORKER_JS = `const SUPA = "https://nhxgebulvqhtiiotetoo.supabase.co"; const ANON = "sb_publishable_tAbh99C5tny6sMAiu6ZYrg_BWjkRIAX";
-export default { async fetch(request) {
+export default { async fetch(request, env) {
   const url = new URL(request.url); const host = url.hostname.toLowerCase();
   // api.${ZONE}: the reseller API (21 Nov 2026), handed straight to the api edge function; never a store page.
+  // The caller's real IP goes along with the shared proxy secret, so the API can trust it (IP locks, wrong-key limits).
   if (host === "api.${ZONE}") {
     if (url.pathname === "/" || url.pathname === "") return Response.redirect("https://${ZONE}/developers", 302);
     const headers = new Headers(request.headers); headers.delete("host"); headers.delete("cookie");
-    const ip = request.headers.get("cf-connecting-ip"); if (ip) headers.set("x-forwarded-for", ip);
+    headers.delete("x-dy-client-ip"); headers.delete("x-dy-proxy-secret");
+    const ip = request.headers.get("cf-connecting-ip") || "";
+    if (ip && env && env.API_PROXY_SECRET) { headers.set("x-dy-client-ip", ip); headers.set("x-dy-proxy-secret", env.API_PROXY_SECRET); }
     return fetch(SUPA + "/functions/v1/api" + url.pathname + url.search, { method: request.method, headers, body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body, redirect: "manual" });
   }
   const apex = host === "${ZONE}" || host === "www.${ZONE}";
@@ -94,9 +98,11 @@ Deno.serve(async (req) => {
     const denied = await requireCronSecret(req, supabase); if (denied) return denied;
     const { data: sec } = await supabase.from("internal_secrets").select("value").eq("key", "cloudflare").maybeSingle();
     const { data: acc } = await supabase.from("cloudflare_config").select("value").eq("key", "account_id").maybeSingle();
+    const { data: proxy } = await supabase.from("internal_secrets").select("value").eq("key", "api_proxy").maybeSingle();
     if (!sec?.value || !acc?.value) return jsonResponse({ error: "cloudflare_not_configured" }, { status: 500 });
     const fd = new FormData();
-    fd.append("metadata", new Blob([JSON.stringify({ main_module: "worker.mjs", compatibility_date: "2025-01-01" })], { type: "application/json" }));
+    const bindings = proxy?.value ? [{ type: "secret_text", name: "API_PROXY_SECRET", text: proxy.value }] : [];
+    fd.append("metadata", new Blob([JSON.stringify({ main_module: "worker.mjs", compatibility_date: "2025-01-01", bindings })], { type: "application/json" }));
     fd.append("worker.mjs", new Blob([WORKER_JS], { type: "application/javascript+module" }), "worker.mjs");
     const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${acc.value}/workers/scripts/${WORKER}`, { method: "PUT", headers: { Authorization: `Bearer ${sec.value}` }, body: fd });
     const payload = await r.json().catch(() => null);

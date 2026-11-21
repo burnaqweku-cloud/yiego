@@ -15,6 +15,8 @@ export interface AdminApiClient {
   orders: number; orders_today: number; delivered: number; waiting: number;
   sales: number; sales_today: number; last_order_at: string | null;
   requests_today: number; special_prices: number;
+  webhook_url?: string | null; webhook_sent_today?: number; webhook_failed_today?: number;
+  allowed_ips?: string[] | null;
 }
 
 export interface AdminApiBundle {

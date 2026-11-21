@@ -7,6 +7,7 @@ import { formatGHS } from "@/lib/format";
 import { useWallet } from "@/store/wallet";
 import { API_BASE_URL, EMPTY_ACCOUNT, agoLabel, maskPhone, orderStatusLabel, type ApiAccount, type ApiKeyRow } from "@/lib/apiAccess";
 import NewKeySheet from "@/components/api/NewKeySheet";
+import { KeyLockPanel, WebhookPanel } from "@/components/api/ApiWebhookPanel";
 
 /* The seller's API page (owner, 21 Nov 2026), one body for two homes: the agent dashboard (/agent/api) and a
    customer's account (/account/api). It only uses the classes both looks already style (onyx-panel, onyx-btn-primary,
@@ -108,6 +109,9 @@ export default function ApiAccessPanel({ variant, onTopUp }: { variant: "agent" 
       </section>
 
       <PriceList prices={account.prices} />
+
+      <WebhookPanel account={account} onChanged={reload} />
+      <KeyLockPanel account={account} onChanged={reload} />
 
       <section className="onyx-panel rounded-[22px] p-4">
         <p className="flex items-center gap-2 text-[15px] font-semibold text-foreground"><Code2 size={16} className="text-primary-glow" />Connect your app</p>

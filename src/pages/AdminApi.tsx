@@ -110,6 +110,8 @@ function ClientPage({ client: c, onBack, onChanged }: { client: AdminApiClient; 
           <dt className="text-faint-foreground">Phone</dt><dd className="text-foreground">{c.phone ? <a href={`tel:${c.phone}`} className="underline">{c.phone}</a> : "—"}{c.phone && <> · <a href={`https://wa.me/233${c.phone.replace(/^0/, "")}`} target="_blank" rel="noreferrer" className="underline">WhatsApp</a></>}</dd>
           <dt className="text-faint-foreground">Website or app</dt><dd className="min-w-0 break-words text-foreground">{c.website ?? "—"}</dd>
           <dt className="text-faint-foreground">What it's for</dt><dd className="min-w-0 whitespace-pre-wrap break-words text-foreground">{c.note ?? "—"}</dd>
+          {c.status !== "pending" && <><dt className="text-faint-foreground">Webhook</dt><dd className="min-w-0 break-all text-foreground">{c.webhook_url ?? "Not set"}</dd>
+          <dt className="text-faint-foreground">Live key</dt><dd className="min-w-0 break-words text-foreground">{c.allowed_ips?.length ? `Locked to ${c.allowed_ips.join(", ")}` : "Any IP address"}</dd></>}
           <dt className="text-faint-foreground">Agent</dt><dd className="text-foreground">{c.agent ? `${c.agent.store} (${c.agent.slug})${c.agent.sub ? " · sub-agent" : ""}` : "Not an agent"}</dd>
         </dl>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -128,6 +130,7 @@ function ClientPage({ client: c, onBack, onChanged }: { client: AdminApiClient; 
           <Stat label="All API orders" value={c.orders} note={`${c.delivered} delivered · ${c.waiting} on the way`} />
           <Stat label="All API sales" value={formatGHS(Number(c.sales))} />
           <Stat label="Requests today" value={c.requests_today} note="120 a minute at most" />
+          <Stat label="Webhooks today" value={c.webhook_url ? `${c.webhook_sent_today ?? 0} sent` : "not set"} note={c.webhook_url ? `${c.webhook_failed_today ?? 0} not answered` : "they ask for updates"} tone={(c.webhook_failed_today ?? 0) > 0 ? "warn" : "default"} />
           <Stat label="Last order" value={c.last_order_at ? agoLabel(c.last_order_at) : "none yet"} />
         </StatGrid>
         <Panel title="Keys" icon={KeyRound} note="only the start and end are kept">

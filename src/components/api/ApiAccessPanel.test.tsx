@@ -11,6 +11,10 @@ vi.mock("@/integrations/supabase/client", () => ({
     calls.push([fn, args]);
     if (fn === "my_api_account") return thenable({ data: account, error: null });
     if (fn === "my_api_new_key") return thenable({ data: { key: "dy_live_" + "a".repeat(48), mode: "live" }, error: null });
+    if (fn === "my_api_set_webhook") return thenable({ data: { url: (args as { p_url: string | null }).p_url, new_secret: false }, error: null });
+    if (fn === "my_api_webhook_secret") return thenable({ data: "whsec_" + "b".repeat(48), error: null });
+    if (fn === "my_api_test_webhook") return thenable({ data: 7, error: null });
+    if (fn === "my_api_set_allowed_ips") return thenable({ data: (args as { p_ips: string[] }).p_ips, error: null });
     return thenable({ data: { status: "pending" }, error: null });
   } }) },
 }));
@@ -72,5 +76,29 @@ describe("ApiAccessPanel", () => {
     expect(calls).toContainEqual(["my_api_new_key", { p_mode: "live" }]);
     expect(screen.getByText("dy_live_" + "a".repeat(48))).toBeTruthy();
     expect(screen.getByText(/We only show it once/)).toBeTruthy();
+  });
+
+  it("saves a webhook address, shows the secret and sends a test event", async () => {
+    account = { ...ACTIVE, webhook: { url: "https://kofi.com/hook", secret_hint: "whsec_bbbb…bbbb", deliveries: [{ id: 3, event: "order.delivered", test: false, status: "failed", attempts: 8, last_status: 500, last_error: "Your server answered 500", created_at: new Date().toISOString(), delivered_at: null, next_attempt_at: null, reference: "YG-1" }] }, allowed_ips: null };
+    await show();
+    expect(screen.getByText("Webhooks")).toBeTruthy();
+    expect(screen.getByText("Gave up")).toBeTruthy();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Show/ })); });
+    expect(screen.getByText("whsec_" + "b".repeat(48))).toBeTruthy();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Send a test event/ })); });
+    expect(calls).toContainEqual(["my_api_test_webhook", {}]);
+    fireEvent.change(screen.getByLabelText("Your webhook address (https)"), { target: { value: "https://kofi.com/new-hook" } });
+    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Save" })[0]); });
+    expect(calls).toContainEqual(["my_api_set_webhook", { p_url: "https://kofi.com/new-hook" }]);
+  });
+
+  it("locks the live key to the addresses typed", async () => {
+    account = { ...ACTIVE, webhook: { url: null, secret_hint: null, deliveries: [] }, allowed_ips: null };
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    await show();
+    fireEvent.change(screen.getByPlaceholderText(/one address per line/), { target: { value: "41.66.12.34\n102.176.1.2" } });
+    const saves = screen.getAllByRole("button", { name: "Save" });
+    await act(async () => { fireEvent.click(saves[saves.length - 1]); });
+    expect(calls).toContainEqual(["my_api_set_allowed_ips", { p_ips: ["41.66.12.34", "102.176.1.2"] }]);
   });
 });
