@@ -12,11 +12,19 @@ import { requireCronSecret } from "../_shared/internal.ts";
    store_by_host does, so a custom domain still getting its padlock is already the store's.
    datayego.com/s/<slug>/… of a store on a domain answers 302 to that domain (phase1.store_home: its own domain, or a
    sub-agent's parent's domain + /s/<slug>), so a customer back from paying never lands on our address (19 Nov 2026).
+   api.datayego.com is the reseller API: every request there is passed to the api edge function as it is (21 Nov 2026).
    NOTE: cf-domains' "setup" action still carries the old Worker text; this function is the one to run. */
 const ZONE = "datayego.com"; const WORKER = "datayego-stores";
 const WORKER_JS = `const SUPA = "https://nhxgebulvqhtiiotetoo.supabase.co"; const ANON = "sb_publishable_tAbh99C5tny6sMAiu6ZYrg_BWjkRIAX";
 export default { async fetch(request) {
   const url = new URL(request.url); const host = url.hostname.toLowerCase();
+  // api.${ZONE}: the reseller API (21 Nov 2026), handed straight to the api edge function; never a store page.
+  if (host === "api.${ZONE}") {
+    if (url.pathname === "/" || url.pathname === "") return Response.redirect("https://${ZONE}/developers", 302);
+    const headers = new Headers(request.headers); headers.delete("host"); headers.delete("cookie");
+    const ip = request.headers.get("cf-connecting-ip"); if (ip) headers.set("x-forwarded-for", ip);
+    return fetch(SUPA + "/functions/v1/api" + url.pathname + url.search, { method: request.method, headers, body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body, redirect: "manual" });
+  }
   const apex = host === "${ZONE}" || host === "www.${ZONE}";
   const sm = apex ? url.pathname.match(/^\\/s\\/([a-z0-9-]+)(?:\\/|$)/i) : null;
   if (apex && !sm) return fetch(request);

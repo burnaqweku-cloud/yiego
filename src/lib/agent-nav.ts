@@ -12,6 +12,8 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
     { id: "buy", label: "Buy data", to: "/agent/buy" },
     { id: "prices", label: "Prices", to: "/agent/prices" },
     { id: "services", label: "Services", to: "/agent/services" },
+    // Our API for an agent's own website or app (21 Nov 2026). Sub-agents sell under their parent, so main agents only.
+    { id: "api", label: "API", to: "/agent/api", notForSubs: true },
   ] },
   { id: "store", label: "My store", icon: Settings, pages: [
     { id: "store-details", label: "Store details", to: "/agent/store/details", sections: ["details", "payout", "alerts"] },

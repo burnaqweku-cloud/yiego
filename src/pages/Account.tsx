@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Seo from "@/components/seo/Seo";
-import { LogOut, Pencil, User } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Code2, LogOut, Pencil, User } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/store/auth-context";
@@ -43,6 +44,11 @@ export default function Account() {
           <span className="flex-1 text-sm font-semibold text-foreground">Personal details</span>
           <span className="text-xs text-faint-foreground">Name and phone</span>
         </button>
+        <Link to="/account/api" className="flex w-full items-center gap-3 py-4 text-left">
+          <Code2 size={18} className="text-primary-glow" />
+          <span className="flex-1 text-sm font-semibold text-foreground">API for your website</span>
+          <span className="text-xs text-faint-foreground">Sell from your own site</span>
+        </Link>
         <button type="button" onClick={() => setSheet("signout")} className="flex w-full items-center gap-3 py-4 text-left text-danger">
           <LogOut size={18} />
           <span className="flex-1 text-sm font-semibold">Sign out</span>

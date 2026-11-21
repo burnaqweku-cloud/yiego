@@ -39,6 +39,8 @@ const Shop = lazy(() => import("./pages/Shop"));
 const Wallet = lazy(() => import("./pages/Wallet"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Account = lazy(() => import("./pages/Account"));
+const AccountApi = lazy(() => import("./pages/AccountApi"));
+const Developers = lazy(() => import("./pages/Developers"));
 const Partner = lazy(() => import("./pages/Partner"));
 const AdminPartners = lazy(() => import("./pages/AdminPartners"));
 const AISupport = lazy(() => import("./pages/AISupport"));
@@ -146,6 +148,7 @@ const AdminHelp = lazy(() => import("./pages/AdminHelp"));
 const AgentOrdersPage = lazy(() => import("./pages/agent/AgentOrders"));
 const AgentPrices = lazy(() => import("./pages/agent/AgentPrices"));
 const AgentEarnings = lazy(() => import("./pages/agent/AgentEarnings"));
+const AgentApi = lazy(() => import("./pages/agent/AgentApi"));
 const AgentStoreSettings = lazy(() => import("./pages/agent/AgentStoreSettings"));
 
 function ThemedToaster() { const { resolved } = useTheme(); return <Toaster position="top-center" theme={resolved} toastOptions={{ classNames: { toast: "!rounded-2xl !border !border-white/10 !bg-[var(--toast-bg)] !text-[var(--toast-ink)] !shadow-[var(--toast-shadow)]", title: "!text-[13.5px] !font-semibold !tracking-tight", description: "!text-[12.5px] !text-ink-dim" } }} />; }
@@ -158,7 +161,7 @@ function RouteFallback() { return <div className="onyx-canvas grid min-h-dvh pla
 const STORE_ROUTES = <><Route index element={<StoreIndex />} /><Route path="bundles" element={<StoreHome />} /><Route path="about" element={<StoreAbout />} /><Route path="contact" element={<StoreContact />} /><Route path="faq" element={<StoreFaq />} /><Route path="check-mtn" element={<StoreCheckMtn />} /><Route path="delivery-times" element={<StoreDeliveryTimes />} /><Route path="sign-in" element={<StoreAuth mode="sign-in" />} /><Route path="sign-up" element={<StoreAuth mode="sign-up" />} /><Route path="reset-password" element={<StoreResetPassword />} /><Route path="account" element={<StoreAccount />} /><Route path="join" element={<StoreJoin />} /><Route path="prices" element={<StorePrices />} /><Route path="services" element={<StoreServices />} /><Route path="services/order/:token" element={<StoreServiceOrder />} /><Route path="services/:section" element={<StoreServices />} /><Route path="track" element={<StoreOrder />} /><Route path="success" element={<StoreOrder />} /></>;
 
 /* The agent dashboard: on the main site, and on every store host so a sub-agent can stay on the parent's address. */
-const AGENT_ROUTES = <><Route index element={<AgentHome />} /><Route path="buy" element={<AgentBuy />} /><Route path="help" element={<AgentHelp />} /><Route path="check-mtn" element={<AgentCheckMtn />} /><Route path="customers" element={<AgentCustomers />} /><Route path="marketing" element={<AgentMarketing />} /><Route path="analytics" element={<AgentAnalytics />} /><Route path="support" element={<AgentSupport />} /><Route path="team" element={<AgentTeam />} /><Route path="domain" element={<AgentDomain />} /><Route path="network" element={<AgentNetwork />} /><Route path="network/prices" element={<AgentNetworkPrices />} /><Route path="popups" element={<AgentPopups />} /><Route path="status" element={<AgentStatus />} /><Route path="orders" element={<AgentOrdersPage />} /><Route path="prices" element={<AgentPrices />} /><Route path="services" element={<AgentServices />} /><Route path="earnings" element={<AgentEarnings />} /><Route path="store" element={<AgentStoreSettings />} /><Route path="store/:view" element={<AgentStoreSettings />} /><Route path="domain/:view" element={<AgentDomain />} /><Route path="marketing/:view" element={<AgentMarketing />} /><Route path="popups/:view" element={<AgentPopups />} /><Route path="network/:view" element={<AgentNetwork />} /><Route path="team/:view" element={<AgentTeam />} /><Route path="assistant" element={<AgentAssistant />} /><Route path="ask" element={<AgentAsk />} /></>;
+const AGENT_ROUTES = <><Route index element={<AgentHome />} /><Route path="buy" element={<AgentBuy />} /><Route path="api" element={<AgentApi />} /><Route path="help" element={<AgentHelp />} /><Route path="check-mtn" element={<AgentCheckMtn />} /><Route path="customers" element={<AgentCustomers />} /><Route path="marketing" element={<AgentMarketing />} /><Route path="analytics" element={<AgentAnalytics />} /><Route path="support" element={<AgentSupport />} /><Route path="team" element={<AgentTeam />} /><Route path="domain" element={<AgentDomain />} /><Route path="network" element={<AgentNetwork />} /><Route path="network/prices" element={<AgentNetworkPrices />} /><Route path="popups" element={<AgentPopups />} /><Route path="status" element={<AgentStatus />} /><Route path="orders" element={<AgentOrdersPage />} /><Route path="prices" element={<AgentPrices />} /><Route path="services" element={<AgentServices />} /><Route path="earnings" element={<AgentEarnings />} /><Route path="store" element={<AgentStoreSettings />} /><Route path="store/:view" element={<AgentStoreSettings />} /><Route path="domain/:view" element={<AgentDomain />} /><Route path="marketing/:view" element={<AgentMarketing />} /><Route path="popups/:view" element={<AgentPopups />} /><Route path="network/:view" element={<AgentNetwork />} /><Route path="team/:view" element={<AgentTeam />} /><Route path="assistant" element={<AgentAssistant />} /><Route path="ask" element={<AgentAsk />} /></>;
 
 /* A connected custom domain or slug.datayego.com: that store lives at the root. */
 const StoreHostApp = ({ slug }: { slug: string }) => (
@@ -239,6 +242,8 @@ export const MainSite = () => (
         <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
         <Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />
         <Route path="/account" element={<RequireAuth><Account /></RequireAuth>} />
+        <Route path="/account/api" element={<RequireAuth><AccountApi /></RequireAuth>} />
+        <Route path="/developers" element={<Developers />} />
         <Route path="/partner" element={<RequireAuth><Partner /></RequireAuth>} />
       </Route>
       {/* A real 404 (noindexed) instead of a soft-404 redirect home. */}
