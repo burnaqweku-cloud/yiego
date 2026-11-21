@@ -26,6 +26,11 @@ describe("admin menu", () => {
     expect(pageForPath("/admin")?.id).toBe("overview");
     expect(pageForPath("/admin/orders")?.id).toBe("orders");
   });
+  it("gives the API its own group with customers at /admin/api", () => {
+    expect(pageForPath("/admin/api")?.id).toBe("api-customers");
+    expect(pageForPath("/admin/api/prices")?.id).toBe("api-prices");
+    expect(groupForPath("/admin/api/prices")?.id).toBe("api");
+  });
   it("has no two pages with the same id or address", () => {
     const pages = ADMIN_GROUPS.flatMap((g) => g.pages);
     expect(new Set(pages.map((p) => p.id)).size).toBe(pages.length);

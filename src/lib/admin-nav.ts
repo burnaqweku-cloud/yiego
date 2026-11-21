@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { GraduationCap, PackagePlus, UserPlus, MailCheck, Handshake, Route, BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText, Send, History } from "lucide-react";
+import { Code2, GraduationCap, PackagePlus, UserPlus, MailCheck, Handshake, Route, BadgePercent, Network, Globe, BookOpen, Bot, CreditCard, Gift, PhoneForwarded, Megaphone, Rocket, UserCheck, ClipboardList, Contact, FileText, Gauge, Inbox, LifeBuoy, Landmark, MessageSquareWarning, Package, ShieldCheck, Star, Store, Tags, TrendingUp, Users, WalletCards, type LucideIcon, Activity, MessageCircleQuestion, Settings2, MessageSquareText, Send, History } from "lucide-react";
 
 /** One admin page. `keywords` are what "Find a page" matches on besides the label. */
 export interface AdminPage {
@@ -66,6 +66,11 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     { id: "sub-agent-list", label: "All sub-agents", to: "/admin/sub-agents/list", icon: Users, keywords: ["sub agent", "move", "detach", "suspend", "grant months"] },
     { id: "sub-agent-applications", label: "Applications", to: "/admin/sub-agents/applications", icon: UserCheck, keywords: ["join", "apply", "network application"] },
     { id: "sub-agent-settings", label: "Settings", to: "/admin/sub-agents/settings", icon: Settings2, keywords: ["switch", "enable", "allow list", "coming soon"] },
+  ] },
+  // The reseller API (21 Nov 2026): websites and apps buying through api.datayego.com.
+  { id: "api", label: "API", icon: Code2, pages: [
+    { id: "api-customers", label: "API customers", to: "/admin/api", icon: Code2, end: true, keywords: ["api", "developer", "reseller", "website", "app", "key", "approve", "application", "seller"] },
+    { id: "api-prices", label: "API prices & switch", to: "/admin/api/prices", icon: Tags, keywords: ["api", "api price", "reseller price", "switch", "off", "on"] },
   ] },
   { id: "promotions", label: "Promotions", icon: BadgePercent, pages: [
     { id: "promotions", label: "Overview & conversions", to: "/admin/promotions", icon: TrendingUp, keywords: ["promotions", "tiktok", "first purchase", "conversion", "buyers", "signups"] },
