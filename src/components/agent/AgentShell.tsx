@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { AppWindow, ArrowRight, BarChart3, CreditCard, ExternalLink, Gift, Globe, Home, Network, LifeBuoy, LogOut, Megaphone, Menu, MessagesSquare, Package, PhoneForwarded, Settings, ShoppingBag, Tags, UserCog, Users, Wallet } from "lucide-react";
+import { AppWindow, ArrowLeft, ArrowRight, BarChart3, CreditCard, ExternalLink, Gift, Globe, Home, Network, LifeBuoy, LogOut, Megaphone, Menu, MessagesSquare, Package, PhoneForwarded, Settings, ShoppingBag, Tags, UserCog, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
@@ -21,6 +21,7 @@ import MobileTabBar, { type TabItem } from "@/components/layout/MobileTabBar";
 import AgentAppBar from "@/components/agent/AgentAppBar";
 import PushPrompt from "@/components/layout/PushPrompt";
 import { readAll } from "@/lib/readAll";
+import { agentBackMove, allowBrowsing } from "@/lib/agentBack";
 
 /* The agent app. Its own header, its own navigation (bottom bar on phones,
    sidebar on desktop), no public site chrome. Pages read shared data from
@@ -236,12 +237,29 @@ function useMtnSavingLine() {
   return line;
 }
 
+/** Back at the top of the pay screen (owner, 21 Nov 2026): to the page they tapped from, or home straight after
+    signing in or when this was the first page (lib/agentBack). Leaving lets the person browse as a customer, so the
+    home page does not send them straight back here. */
+function useLeavePayScreen() {
+  const navigate = useNavigate(); const location = useLocation();
+  return () => {
+    allowBrowsing();
+    const idx = (window.history.state as { idx?: unknown } | null)?.idx;
+    const fromLogin = (location.state as { fromAuth?: boolean } | null)?.fromAuth === true;
+    if (agentBackMove(idx, fromLogin) === "previous") navigate(-1); else navigate("/", { replace: true });
+  };
+}
+
 function PayScreen({ agent, quote, onPaid }: { agent: Agent; quote: PlanQuote | null; onPaid: () => void }) {
   const suspended = agent.status === "suspended";
   const cheaperLine = useMtnSavingLine();
+  const leave = useLeavePayScreen();
   return (
-    <div className="onyx-canvas yg-agent flex min-h-dvh items-center justify-center px-5 py-8">
-      <div className="onyx-panel w-full max-w-md rounded-3xl p-6">
+    <div className="onyx-canvas yg-agent flex min-h-dvh flex-col items-center px-5 pb-8" style={{ paddingTop: "calc(var(--sat, 0px) + 16px)" }}>
+      <div className="w-full max-w-md">
+        <button type="button" onClick={leave} className="yg-pay-back inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] py-2 pl-3 pr-4 text-[14px] font-semibold text-foreground" aria-label="Back"><ArrowLeft size={17} aria-hidden="true" />Back</button>
+      </div>
+      <div className="onyx-panel mt-3 w-full max-w-md rounded-3xl p-6 sm:my-auto">
         <div className="text-center">
           <CreditCard size={28} className="mx-auto text-primary-glow" />
           <h1 className="mt-3 text-[20px] font-semibold text-foreground">{suspended ? "This account is suspended" : "One step left"}</h1>
@@ -252,7 +270,7 @@ function PayScreen({ agent, quote, onPaid }: { agent: Agent; quote: PlanQuote | 
           {[["Buy data cheaper", cheaperLine], ["Free online store", "Your own link. You set the prices and keep the profit on every sale."], ["No deposit needed", "Your customers pay through your store; your profit is saved for you and paid to MoMo from 20.00."], ["We do the rest", "Delivery, payment and support are handled by DataYego."]].map(([t, d]) => <li key={t} className="flex gap-2"><span className="mt-0.5 text-primary-glow">✓</span><span><b className="text-foreground">{t}.</b> {d}</span></li>)}
         </ul>
         {!suspended && <Link to="/agents/store" className="mt-4 flex items-center justify-center gap-1 text-[13px] font-semibold text-primary-glow hover:underline">See everything your store comes with<ArrowRight size={14} /></Link>}
-        <Link to="/" className="mt-3 block text-center text-[12px] text-muted-foreground">Back to DataYego</Link>
+        <Link to="/" onClick={allowBrowsing} className="mt-3 block text-center text-[12px] text-muted-foreground">Back to DataYego</Link>
       </div>
     </div>
   );

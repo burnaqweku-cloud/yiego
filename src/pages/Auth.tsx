@@ -35,7 +35,8 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const nextPath = useMemo(() => safeNext(searchParams.get("next")), [searchParams]);
   const explicitNext = Boolean(searchParams.get("next"));
-  const go = async () => { if (!explicitNext) { sessionStorage.removeItem("yg-agent-browse"); const me = await myAgentStatus(); if (me?.is_agent) { navigate("/agent", { replace: true }); return; } } navigate(nextPath, { replace: true }); };
+  // fromAuth tells the next page it was opened by signing in (the agent pay screen's Back then goes home, not to /auth).
+  const go = async () => { if (!explicitNext) { sessionStorage.removeItem("yg-agent-browse"); const me = await myAgentStatus(); if (me?.is_agent) { navigate("/agent", { replace: true, state: { fromAuth: true } }); return; } } navigate(nextPath, { replace: true, state: { fromAuth: true } }); };
   const requestedMode = searchParams.get("mode") === "signup" ? "signup" : searchParams.get("mode") === "forgot" ? "forgot" : "login";
   const { signIn, signUp, resetPassword, isAuthenticated, loading } = useAuth();
   const [mode, setMode] = useState<Mode>(requestedMode);
