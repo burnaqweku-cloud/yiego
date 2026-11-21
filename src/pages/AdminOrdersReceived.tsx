@@ -24,7 +24,7 @@ const FAILED_STATUSES = new Set(["failed", "rejected", "cancelled", "canceled"])
 const awaitingRefund = (o: Row) => o.status === "processing" && FAILED_STATUSES.has((o.supplier_status ?? "").toLowerCase());
 const stageOf = (o: Row): Exclude<Stage, "all"> => o.admin_resolution_status === "awaiting_verification" ? "verification" : o.status.startsWith("failed") ? (NO_FLOAT.test(o.failure_reason ?? "") ? "no_float" : "review") : awaitingRefund(o) ? "awaiting_refund" : "in_progress";
 const STAGE_LABEL: Record<Stage, string> = { all: "All", in_progress: "In progress", awaiting_refund: "Awaiting refund", verification: "Verification", review: "Needs review", no_float: "Supplier no money" };
-interface Row { id: string; order_reference: string; product_id?: string | null; recipient_phone: string; amount: number; cost_amount: number | null; supplier_order_reference: string | null; supplier_retry_after: string | null; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { code: string; name: string } | null }
+interface Row { id: string; order_reference: string; product_id?: string | null; recipient_phone: string; amount: number; cost_amount: number | null; supplier_order_reference: string | null; supplier_retry_after: string | null; status: string; supplier_status: string | null; failure_reason: string | null; admin_resolution_status: string | null; paid_at: string; agent_id: string | null; api_client_id?: string | null; networks: { name: string } | null; data_products: { name: string; capacity_gb: number } | null; suppliers: { code: string; name: string } | null }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any };
 const startOfDay = (d: Date) => { const x = new Date(d); x.setUTCHours(0, 0, 0, 0); return x; };
@@ -96,7 +96,7 @@ export default function AdminOrdersReceived() {
     // The API returns at most 1000 rows per read, so everything is read in pages of 1000 (20 Nov 2026: a busy week
     // passed 1,000 orders and the list stopped at 1000). "All time" fetches only the orders still waiting (the other
     // buckets are per-range anyway).
-    const cols = "id, order_reference, product_id, recipient_phone, amount, cost_amount, supplier_order_reference, supplier_retry_after, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, networks(name), data_products(name, capacity_gb), suppliers(code, name)";
+    const cols = "id, order_reference, product_id, recipient_phone, amount, cost_amount, supplier_order_reference, supplier_retry_after, status, supplier_status, failure_reason, admin_resolution_status, paid_at, agent_id, api_client_id, networks(name), data_products(name, capacity_gb), suppliers(code, name)";
     const fetchAll = async () => {
       const out: Row[] = [];
       for (let page = 0; page < 20; page++) {
@@ -157,7 +157,7 @@ export default function AdminOrdersReceived() {
           {list.map((o) => (
             <li key={o.id} className="flex items-start gap-2.5 py-2">
               <div className="min-w-0 flex-1">
-                <p className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-foreground"><SupplierBadge supplier={o.suppliers} from={origins[o.id]} /><CopyRef value={o.order_reference} />{o.agent_id && <AgentTag reference={o.order_reference} />} <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
+                <p className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-foreground"><SupplierBadge supplier={o.suppliers} from={origins[o.id]} /><CopyRef value={o.order_reference} />{o.agent_id && <AgentTag reference={o.order_reference} />}{o.api_client_id && <span className="rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[10.5px] font-semibold text-sky-800" title="Placed through the DataYego API by a seller">API</span>} <span className="font-normal text-muted-foreground">· {o.networks?.name} {o.data_products?.capacity_gb}GB → {o.recipient_phone}</span></p>
                 <p className="text-[11px] text-faint-foreground">paid {formatAdminDate(o.paid_at)} · {age(o.paid_at)} ago · {reasonOf(o)}</p>
               </div>
               <div className="flex max-w-[55%] flex-col items-end gap-1.5 text-right">
