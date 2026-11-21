@@ -52,7 +52,7 @@ export default function AgentHome() {
     { label: "Pick a template and your colours", done: !!(agent.logo_url || agent.accent_color || (agent.template && agent.template !== "classic")), to: "/agent/store/look" },
     { label: "Add your logo", done: !!agent.logo_url, to: "/agent/store/look" },
     { label: "Set your prices", done: Object.keys(prices).length > 0, to: "/agent/prices" },
-    { label: "Add your MoMo number for payouts", done: !!agent.momo_number, to: "/agent/store/details" },
+    { label: "Add your MoMo number for payouts", done: !!agent.momo_number, to: "/agent/earnings" },
     { label: "Share your store link", done: orders.length > 0, to: "/agent/domain/addresses" },
   ];
   const setupDone = setup.every((x) => x.done);

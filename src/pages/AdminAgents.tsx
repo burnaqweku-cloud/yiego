@@ -145,6 +145,10 @@ export default function AdminAgents() {
     toast.success(action === "paid" ? "Marked paid, booked, and the agent has been emailed." : action === "reject" ? "Rejected; earnings returned and the agent emailed." : "Approved."); setPaying(null); setPayRef(""); setPayFrom("bank"); setPayCharge(""); setRejecting(null); setRejectNote(""); void load();
   };
   const agentOf = (id: string) => agents.find((g) => g.id === id);
+  // A withdrawal going to a different number from the agent's last paid one gets a flag, so a changed number is
+  // never paid without a second look (owner, 21 Nov 2026: agents can now change their payout number themselves).
+  const lastPaidTo = (p: Payout) => payouts.filter((x) => x.agent_id === p.agent_id && x.status === "paid" && x.id !== p.id && x.created_at < p.created_at)
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0]?.momo_number ?? null;
   const visiblePayouts = payouts.filter((p) => payFilter === "all" || (payFilter === "waiting" ? p.status === "requested" || p.status === "approved" : p.status === payFilter));
   const payTotals = { waiting: payouts.filter((p) => p.status === "requested" || p.status === "approved").reduce((a, p) => a + Number(p.net), 0), paid: payouts.filter((p) => p.status === "paid").reduce((a, p) => a + Number(p.net), 0), fees: payouts.filter((p) => p.status === "paid").reduce((a, p) => a + Number(p.fee), 0) };
 
@@ -293,6 +297,8 @@ export default function AdminAgents() {
                     <div className="min-w-0"><p className="text-[10.5px] text-faint-foreground">Fee</p><p className="truncate text-[12.5px] font-semibold tabular-nums text-foreground">{formatGHS(Number(p.fee))}</p></div>
                     <div className="min-w-0"><p className="text-[10.5px] text-faint-foreground">Send</p><p className="truncate text-[12.5px] font-semibold tabular-nums text-primary-glow">{formatGHS(Number(p.net))}</p></div>
                   </div>
+                  {(() => { const before = lastPaidTo(p); return before && before !== p.momo_number && p.status !== "paid" && p.status !== "rejected"
+                    ? <p className="mt-2 rounded-lg bg-amber/10 px-2.5 py-1.5 text-[11.5px] font-semibold text-amber">New number: last paid to {before}. Check the name on the MoMo before sending.</p> : null; })()}
                   <div className="mt-2 flex items-baseline justify-between gap-3 text-[12px]">
                     <span className="shrink-0 text-faint-foreground">To MoMo</span>
                     <span className="min-w-0 truncate text-right"><span className="font-semibold tabular-nums text-foreground">{p.momo_number}</span>{p.momo_name ? <span className="text-faint-foreground"> · {p.momo_name}</span> : null}</span>

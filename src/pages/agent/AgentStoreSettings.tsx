@@ -6,6 +6,7 @@ import { formatGHS } from "@/lib/format";
 import { p1, useAgent } from "@/components/agent/AgentShell";
 import StoreBrandingEditor from "@/components/agent/StoreBrandingEditor";
 import StoreLinkEditor from "@/components/agent/StoreLinkEditor";
+import PayoutNumber from "@/components/agent/PayoutNumber";
 import Section from "@/components/agent/Section";
 import { longDate } from "@/components/agent/subscription";
 import { Store, Wallet, Mail } from "lucide-react";
@@ -17,7 +18,7 @@ export default function AgentStoreSettings() {
   const headLen = f.header_name.trim().length;
   const save = async () => {
     if (headLen > 20) return toast.error("Keep the header name to 20 characters or fewer.");
-    const { error } = await p1().rpc("agent_update_store", { p_store_name: f.store_name, p_tagline: f.tagline, p_momo_number: f.momo_number, p_momo_name: f.momo_name, p_whatsapp: f.whatsapp });
+    const { error } = await p1().rpc("agent_update_store", { p_store_name: f.store_name, p_tagline: f.tagline, p_momo_number: "", p_momo_name: "", p_whatsapp: f.whatsapp });
     if (error) return toast.error(error.message);
     if (f.header_name.trim() !== (agent.header_name ?? "")) {
       const { error: e2 } = await p1().rpc("agent_update_branding", { p: { header_name: f.header_name.trim() } });
@@ -59,8 +60,8 @@ export default function AgentStoreSettings() {
         <div className="mt-4 flex justify-end"><button type="button" onClick={() => void save()} className="onyx-btn-primary px-5 py-2.5 text-[13.5px]">Save</button></div>
       </Section>
       <Section page="store" id="payout" title="Where we pay your earnings" icon={<Wallet size={15} />} subtitle={agent.momo_number ? `MoMo ${agent.momo_number}${agent.momo_name ? " · " + agent.momo_name : ""}` : "Add your MoMo number"}>
-        <div className="grid gap-3 sm:grid-cols-2">{field("momo_number", "MoMo number", { inputMode: "tel" })}{field("momo_name", "Name on MoMo")}</div>
-        <div className="mt-4 flex justify-end"><button type="button" onClick={() => void save()} className="onyx-btn-primary px-5 py-2.5 text-[13.5px]">Save</button></div>
+        {/* The payout number has its own checks and history (agent_set_payout_number); store details never send it. */}
+        <PayoutNumber compact />
       </Section>
       <Section page="store" id="alerts" title="Sale alerts" icon={<Mail size={15} />} badge={(agent.sale_alert_email ?? true) ? "On" : "Off"} subtitle="A short email when a customer pays on your store.">
         <label className="flex items-start justify-between gap-3"><span className="block text-[12.5px] text-muted-foreground">Email me on every sale, with the bundle, number and your profit.</span><input type="checkbox" defaultChecked={agent.sale_alert_email ?? true} onChange={(e) => void p1().rpc("agent_set_sale_alert", { p_on: e.target.checked }).then(({ error }) => error ? toast.error("Couldn't save.") : toast.success(e.target.checked ? "Sale alerts on." : "Sale alerts off."))} className="mt-1 h-5 w-5" /></label>
