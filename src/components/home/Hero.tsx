@@ -5,7 +5,7 @@ import InviteSheet from "@/components/referrals/InviteSheet";
 import { AgentNudgeLine } from "@/components/agents/AgentPopup";
 import PriceBoard from "@/components/home/PriceBoard";
 import { DeliveryStrip } from "@/components/shop/LatestDelivery";
-import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { useLiveSpeeds } from "@/hooks/useLatestDelivery";
 
 /**
  * The first screen: the promise on the left, the proof on the right. The
@@ -50,7 +50,7 @@ export default function Hero() {
   const [inviteOpen, setInviteOpen] = useState(false);
   // The latest delivery on the network the price board is showing.
   const [network, setNetwork] = useState("MTN");
-  const speeds = useDeliverySpeed();
+  const speeds = useLiveSpeeds();
 
   return (
     <section className="mk-hero !pt-0" aria-labelledby="hero-h">

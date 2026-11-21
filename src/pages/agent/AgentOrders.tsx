@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { formatGHS } from "@/lib/format";
 import { type AgentOrder, useAgent } from "@/components/agent/AgentShell";
 import { stageOf, toneClass } from "@/components/agent/orderStage";
-import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { useLiveSpeeds } from "@/hooks/useLatestDelivery";
 import { csvText } from "@/lib/csv";
 
 /* The agent's orders: every paid order placed in their store, newest first.
@@ -38,7 +38,7 @@ const waLink = (phone: string) => `https://wa.me/233${phone.replace(/\D/g, "").r
 
 export default function AgentOrders() {
   const { orders } = useAgent();
-  const speeds = useDeliverySpeed();
+  const speeds = useLiveSpeeds();
   const [period, setPeriod] = useState<Period>("all");
   const [stage, setStage] = useState<Stage>("all");
   const [network, setNetwork] = useState("all");

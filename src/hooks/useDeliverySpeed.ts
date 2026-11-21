@@ -42,9 +42,10 @@ export function speedLabel(s: NetworkSpeed | undefined): string | null {
 export function speedPhrase(s: NetworkSpeed | undefined): string | null {
   if (!s || s.paused || s.window === "none" || s.sample === 0) return null;
   const m = Math.round(s.median_minutes);
-  const core = m < 1 ? "under a minute" : m < 60 ? `${m} minute${m === 1 ? "" : "s"}` : m < 120 ? "about an hour" : `${Math.round(m / 60)} hours`;
-  if (s.at_least) return `over ${core.replace(/^about /, "")}`;
-  return m < 1 || core.startsWith("about") ? core : `about ${core}`;
+  // An hour or more in hours and minutes ("1 hr 20 min"), never "about an hour" or rounded hours (owner, 18 Nov 2026).
+  const core = m < 1 ? "under a minute" : m < 60 ? `${m} minute${m === 1 ? "" : "s"}` : m % 60 === 0 ? (m === 60 ? "1 hour" : `${m / 60} hours`) : `${Math.floor(m / 60)} hr ${m % 60} min`;
+  if (s.at_least) return `over ${core}`;
+  return m < 1 ? core : `about ${core}`;
 }
 /** Wording + tone for the pill. Slow (over 30 min) shows amber so delays are visible, not hidden in a number. */
 export function speedPill(s: NetworkSpeed | undefined, network = "MTN"): { text: string; slow: boolean; paused?: boolean } | null {

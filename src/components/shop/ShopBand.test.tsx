@@ -45,7 +45,15 @@ describe("the band at the top of the shop", () => {
     render(<ShopBand network="AirtelTigo" speed={quiet} />);
     await waitFor(() => expect(screen.getByText("Latest AirtelTigo delivery")).toBeInTheDocument());
     expect(screen.getByText("to 027*****92")).toBeInTheDocument();
-    expect(screen.getByText("delivering fast")).toBeInTheDocument();
+    expect(screen.getByText("about 10 minutes")).toBeInTheDocument();   // the card's own time, not "delivering fast"
+  });
+
+  it("says the card's time on the right-now line, not the hour's middle value (owner, 21 Nov 2026)", async () => {
+    render(<ShopBand network="MTN" speed={{ ...quick, median_minutes: 3.6 }} />);
+    await waitFor(() => expect(screen.getByText("Latest MTN delivery")).toBeInTheDocument());
+    expect(screen.getByText("10 minutes")).toBeInTheDocument();
+    expect(screen.getByText("about 10 minutes")).toBeInTheDocument();
+    expect(screen.queryByText("about 4 minutes")).not.toBeInTheDocument();
   });
 
   it("carries no delivery while the network is slow, before the speed is known, or with nothing delivered lately", async () => {

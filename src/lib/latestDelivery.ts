@@ -100,9 +100,29 @@ export function dayLabel(d: Pick<LatestDelivery, "deliveredAt" | "ageSeconds">):
   return apart <= 0 ? "Today" : apart === 1 ? "Yesterday" : "";
 }
 
-/** What the network is doing at this moment, in the same words as the speed line in the catalogue. */
-export function rightNow(speed: NetworkSpeed | undefined): string {
-  return speedPhrase(speed) ?? "delivering fast";
+/** What the network is doing at this moment, in the same words as the speed line in the catalogue. While the latest
+    delivery is on show, that delivery is the answer (owner, 21 Nov 2026: "every counting should be using it"). */
+export function rightNow(speed: NetworkSpeed | undefined, shown?: LatestDelivery | null): string {
+  return speedPhrase(shown ? speedOfDelivery(speed, shown) : speed) ?? "delivering fast";
+}
+
+/** A network's speed read from one delivery: how long it took, paid to delivered. */
+export function speedOfDelivery(base: NetworkSpeed | undefined, d: Pick<LatestDelivery, "paidAt" | "deliveredAt">): NetworkSpeed {
+  return { window: "1h", sample: Math.max(1, base?.sample ?? 1), median_minutes: Math.max(0, (d.deliveredAt - d.paidAt) / 60_000), at_least: false, paused: base?.paused };
+}
+
+/** Every network's speed, with the latest delivery standing in wherever its card is on show (owner, 21 Nov 2026: one
+    card said "3 minutes" and the line under it "about 4 minutes"; "since the latest MTN delivery mode is active every
+    counting should be using it"). So the speed pills, the bundle lists, stores, the delivery-times page and agents'
+    order notes all say what the card says. A network whose card is not shown keeps its measured speed, so a slow
+    network is never made to look quick: the card itself decides (deliveryToShow), with the owner's switch. */
+export function withLatest(speeds: Record<string, NetworkSpeed>, feed: LatestFeed): Record<string, NetworkSpeed> {
+  const out: Record<string, NetworkSpeed> = { ...speeds };
+  for (const [network, speed] of Object.entries(speeds)) {
+    const d = deliveryToShow(feed.all, network, speed, feed.always);
+    if (d) out[network] = speedOfDelivery(speed, d);
+  }
+  return out;
 }
 
 /** The short mark on the order row: people know their network by its colour before its name. */

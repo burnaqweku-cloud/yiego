@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import type { NetworkSpeed } from "@/hooks/useDeliverySpeed";
-import { deliveryToShow, loadLatest, readFeed, type LatestDelivery, type LatestFeed } from "@/lib/latestDelivery";
+import { useEffect, useMemo, useState } from "react";
+import { useDeliverySpeed, type NetworkSpeed } from "@/hooks/useDeliverySpeed";
+import { deliveryToShow, loadLatest, readFeed, withLatest, type LatestDelivery, type LatestFeed } from "@/lib/latestDelivery";
 import { deliveryRange, type DeliveryRange } from "@/lib/deliveryRange";
 
 const REFRESH_MS = 60_000;
@@ -30,4 +30,12 @@ export function useDeliveryNow(network: string, speed: NetworkSpeed | undefined)
   const feed = useLatestFeed();
   const latest = deliveryToShow(feed.all, network, speed, feed.always);
   return { latest, range: latest ? null : deliveryRange(network, speed, feed.all[network]) };
+}
+
+/** Every network's live speed, with the latest delivery standing in wherever its card is on show (withLatest). Use
+    this, not useDeliverySpeed, anywhere a customer or an agent reads how long orders take. */
+export function useLiveSpeeds(): Record<string, NetworkSpeed> {
+  const speeds = useDeliverySpeed();
+  const feed = useLatestFeed();
+  return useMemo(() => withLatest(speeds, feed), [speeds, feed]);
 }

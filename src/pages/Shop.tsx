@@ -9,7 +9,7 @@ import BundleCatalogue from "@/components/shop/BundleCatalogue";
 import ShopBand from "@/components/shop/ShopBand";
 import ImportantNotice from "@/components/shop/ImportantNotice";
 import { TRUST_POINTS } from "@/data/marketing";
-import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
+import { useLiveSpeeds } from "@/hooks/useLatestDelivery";
 import { useReveal } from "@/hooks/useReveal";
 import { useAuth } from "@/store/auth-context";
 import { useWallet } from "@/store/wallet";
@@ -28,7 +28,7 @@ export default function Shop() {
   const [inviteOpen, setInviteOpen] = useState(false);
   // The network tab open in the catalogue, so the wallet card shows that network's latest delivery.
   const [network, setNetwork] = useState("MTN");
-  const speeds = useDeliverySpeed();
+  const speeds = useLiveSpeeds();
   const ref = useReveal<HTMLDivElement>();
   const { isAuthenticated } = useAuth();
   const { transactions } = useWallet();

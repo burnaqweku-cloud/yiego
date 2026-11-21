@@ -4,7 +4,8 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 vi.mock("@/lib/bootstrap", () => ({ bootstrapOnce: () => Promise.resolve() }));
 vi.mock("@/lib/phase1-api", () => ({ loadPhase1Networks: () => Promise.resolve({ data: [] }) }));
 import type { NetworkSpeed } from "@/hooks/useDeliverySpeed";
-import { clockParts, dayLabel, deliveryToShow, FRESH_HOURS, MAX_MINUTES, networkMark, readFeed, readLatest, rightNow, tookLabel } from "./latestDelivery";
+import { clockParts, dayLabel, deliveryToShow, FRESH_HOURS, MAX_MINUTES, networkMark, readFeed, readLatest, rightNow, tookLabel, withLatest } from "./latestDelivery";
+import { speedPhrase, speedPill } from "@/hooks/useDeliverySpeed";
 
 const at = (iso: string) => Date.parse(iso);
 const row = (over: Record<string, unknown> = {}) => ({ gb: 1, phone: "055*****15", paid_at: "2026-11-14T13:03:15.9+00:00", delivered_at: "2026-11-14T13:20:07.4+00:00", age_seconds: 381, ...over });
@@ -124,5 +125,37 @@ describe("the words on the card", () => {
     expect(networkMark("MTN")).toEqual({ text: "MTN", tone: "mtn" });
     expect(networkMark("Telecel").tone).toBe("telecel");
     expect(networkMark("AirtelTigo")).toEqual({ text: "AT", tone: "at" });
+  });
+});
+
+describe("every count follows the latest delivery while its card is on show (owner, 21 Nov 2026)", () => {
+  // Paid 7:09, delivered 7:12: the card said "3 minutes" while the hour's middle value said "about 4 minutes".
+  const three = readLatest({ MTN: row({ paid_at: "2026-11-21T07:09:00+00:00", delivered_at: "2026-11-21T07:12:00+00:00", age_seconds: 300 }) });
+  const hour: NetworkSpeed = { window: "1h", sample: 6, median_minutes: 3.6, longest_minutes: 9 };
+
+  it("the band's right-now line says the card's time", () => {
+    expect(rightNow(hour)).toBe("about 4 minutes");
+    expect(rightNow(hour, three.MTN)).toBe("about 3 minutes");
+  });
+
+  it("speed pills and lines use it too", () => {
+    const live = withLatest({ MTN: hour }, { all: three, always: false });
+    expect(speedPill(live.MTN)?.text).toBe("MTN delivering in ~3 min");
+    expect(speedPhrase(live.MTN)).toBe("about 3 minutes");
+    expect(live.MTN.longest_minutes).toBeUndefined();
+  });
+
+  it("leaves a network alone when its card is not on show", () => {
+    const slowHour: NetworkSpeed = { window: "1h", sample: 6, median_minutes: 48 };
+    expect(withLatest({ MTN: slowHour }, { all: three, always: false }).MTN).toEqual(slowHour);   // slow: the card steps aside
+    expect(withLatest({ MTN: hour }, { all: {}, always: false }).MTN).toEqual(hour);              // nothing delivered to show
+    const paused: NetworkSpeed = { ...hour, paused: true };
+    expect(withLatest({ MTN: paused }, { all: three, always: true }).MTN).toEqual(paused);
+  });
+
+  it("with the owner's always-show switch, the shown delivery is the count even when slow", () => {
+    const slowOne = readLatest({ MTN: row({ paid_at: "2026-11-21T05:00:00+00:00", delivered_at: "2026-11-21T06:20:00+00:00", age_seconds: 300 }) });
+    const live = withLatest({ MTN: { window: "1h", sample: 6, median_minutes: 48 } }, { all: slowOne, always: true });
+    expect(speedPhrase(live.MTN)).toBe("about 1 hr 20 min");
   });
 });

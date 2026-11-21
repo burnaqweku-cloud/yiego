@@ -7,8 +7,7 @@ import snapshot from "@/data/catalog.snapshot.json";
 import { useFlows } from "@/store/flows";
 import { useReveal } from "@/hooks/useReveal";
 import { cn } from "@/lib/utils";
-import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
-import { useLatestFeed } from "@/hooks/useLatestDelivery";
+import { useLatestFeed, useLiveSpeeds } from "@/hooks/useLatestDelivery";
 import { speedLine } from "@/lib/deliveryRange";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { reportClientError } from "@/lib/client-errors";
@@ -163,7 +162,7 @@ function SkeletonGrid() {
 /* ── Section ─────────────────────────────────────────────────────── */
 
 export default function BundleCatalogue({ onNetwork }: { onNetwork?: (network: string) => void } = {}) {
-  const speeds = useDeliverySpeed();
+  const speeds = useLiveSpeeds();
   // While MTN is slow the line gives the same range as the shop band (lib/deliveryRange, owner 19 Nov 2026).
   const latestFeed = useLatestFeed();
   const mtnLine = speedLine("MTN", speeds.MTN, latestFeed.all.MTN);

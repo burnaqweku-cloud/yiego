@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, BadgeCheck, CircleCheck, Clock, Radio, TriangleAlert, Users, Wrench } from "lucide-react";
 import { DELIVERY_TIMES as C, speedNetworks, type DeliveryReason } from "@/lib/deliveryTimes";
-import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
-import { useLatestFeed } from "@/hooks/useLatestDelivery";
+import { useLatestFeed, useLiveSpeeds } from "@/hooks/useLatestDelivery";
 import { speedLine } from "@/lib/deliveryRange";
 
 /* The body of "Why does my data sometimes take longer?", shared by the main site and every agent store.
@@ -13,7 +12,7 @@ export interface DeliveryLinks { buy: string; track: string; help: string; check
 const REASON_ICON: Record<DeliveryReason["key"], typeof Users> = { busy: Users, first_mtn: BadgeCheck, network: Wrench, number: TriangleAlert };
 
 export default function DeliveryTimesBody({ links }: { links: DeliveryLinks }) {
-  const speeds = useDeliverySpeed();
+  const speeds = useLiveSpeeds();
   const latestFeed = useLatestFeed();
   const live = speedNetworks(Object.keys(speeds)).map((n) => ({ name: n, pill: speedLine(n, speeds[n], latestFeed.all[n]) })).filter((x) => x.pill);
   return (

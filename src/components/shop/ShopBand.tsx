@@ -28,7 +28,7 @@ export default function ShopBand({ network, speed }: { network: string; speed: N
   const delivery = d ? (
     <>
       <DeliveryBoard key={boardKey(d)} d={d} head={<p className="yg-latest__lead"><span className="yg-latest__dot" aria-hidden="true" /><span>Latest {d.network} delivery</span><b>{tookLabel(d)}</b></p>} />
-      <DeliveryNow network={d.network} speed={speed} />
+      <DeliveryNow network={d.network} speed={speed} latest={d} />
     </>
   ) : range ? <DeliveryRangeBoard key={`${range.network}-${range.text}`} r={range} /> : null;
   // While the slow board is up, the "why" link sits right under the band too (owner, 19 Nov 2026).

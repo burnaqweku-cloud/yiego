@@ -74,8 +74,8 @@ export function DeliveryRangeBoard({ r }: { r: DeliveryRange }) {
 }
 
 /** The last line of the card: what the network is doing at this moment. */
-export function DeliveryNow({ network, speed }: { network: string; speed: NetworkSpeed | undefined }) {
-  return <p className="yg-latest__now"><Clock3 size={16} aria-hidden="true" /><span>{network} right now</span><b>{rightNow(speed)}</b></p>;
+export function DeliveryNow({ network, speed, latest }: { network: string; speed: NetworkSpeed | undefined; latest?: Delivery | null }) {
+  return <p className="yg-latest__now"><Clock3 size={16} aria-hidden="true" /><span>{network} right now</span><b>{rightNow(speed, latest)}</b></p>;
 }
 
 /* The same delivery at half the size, for the home page (owner, 14 Nov 2026: "not big, not small"): one white board

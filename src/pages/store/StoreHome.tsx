@@ -3,8 +3,7 @@ import { storeBase } from "@/lib/storeHost";
 import { CircleHelp, Info } from "lucide-react";
 import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
-import { useDeliverySpeed } from "@/hooks/useDeliverySpeed";
-import { useLatestFeed } from "@/hooks/useLatestDelivery";
+import { useLatestFeed, useLiveSpeeds } from "@/hooks/useLatestDelivery";
 import { speedLine } from "@/lib/deliveryRange";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { MessageCircle, Search, ShieldCheck, Zap } from "lucide-react";
@@ -17,7 +16,7 @@ import { formatGHS } from "@/lib/format";
 import { loadPhase1Products, type Phase1Product } from "@/lib/phase1-api";
 
 export default function StoreHome() {
-  const speeds = useDeliverySpeed(); const [checkInfoOpen, setCheckInfoOpen] = useState(false);
+  const speeds = useLiveSpeeds(); const [checkInfoOpen, setCheckInfoOpen] = useState(false);
   // While MTN is slow: "MTN orders taking 4 hr 20 min to 6 hr 27 min" (lib/deliveryRange, owner 19 Nov 2026), names no one.
   const latestFeed = useLatestFeed(); const mtnLine = speedLine("MTN", speeds.MTN, latestFeed.all.MTN);
   const store = useStore(); const navigate = useNavigate();
