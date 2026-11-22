@@ -178,11 +178,11 @@ export default function AdminAgentDetail() {
         </ul>
       </Panel>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Panel title="Earnings ledger" note="every credit and debit">
           <Rows empty="Nothing yet.">{ledger.map((l) => <Row key={l.id} primary={`${l.direction === "credit" ? "+" : "−"}${formatGHS(Number(l.amount))} · ${l.type.replace(/_/g, " ")}`} secondary={`${formatAdminDate(l.created_at)} · ${l.reference}${l.note ? ` · ${l.note}` : ""}`} right={formatGHS(Number(l.balance_after))} rightNote="balance after" tone={l.direction === "credit" ? "good" : "muted"} />)}</Rows>
         </Panel>
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <Panel title="Payouts">
             <Rows empty="No payouts yet.">{payouts.map((p) => <Row key={p.id} primary={<>{formatGHS(Number(p.amount))} <Pill tone={p.status === "paid" ? "good" : p.status === "rejected" ? "muted" : "warn"}>{p.status}</Pill></>} secondary={`${formatAdminDate(p.created_at)} · fee ${formatGHS(Number(p.fee))}${p.paid_at ? ` · paid ${formatAdminDate(p.paid_at)}` : ""}`} right={formatGHS(Number(p.net))} rightNote="net" />)}</Rows>
             <div className="mt-2 text-right"><Link to="/admin/agents/payouts" className="text-[12px] text-primary-glow">Manage payouts →</Link></div>

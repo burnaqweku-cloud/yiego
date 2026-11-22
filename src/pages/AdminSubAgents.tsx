@@ -106,7 +106,7 @@ function OverviewTab({ ov, loading, period, setPeriod, parents, subs, onTab }: {
           <p className="mt-2 text-[11px] text-faint-foreground">Our side of these orders is the normal agent-price margin: sales − parents' margin − subs' margin − bundle cost {ov ? `= ${formatGHS(Number(ov.sales.amount) - Number(ov.sales.parent_margin) - Number(ov.sales.sub_margin) - Number(ov.sales.our_cost))}` : ""}.</p>
         </Panel>
       </div>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <Panel title="Top parents" icon={Network} action={<Button variant="ghost" size="sm" onClick={() => onTab("parents")}>All parents</Button>}>
           <Rows empty={loading ? "Loading…" : "No parent has a programme yet."}>{topParents.map((p) => <Row key={p.id} primary={<>{p.store_name} {p.network_paused_at ? <Pill tone="bad">paused by admin</Pill> : p.network_on ? <Pill tone="good">open</Pill> : <Pill>closed</Pill>}</>} secondary={`${p.subs_active}/${p.subs_total} active agents · ${p.pending_apps} waiting`} right={formatGHS(Number(p.margin_income))} rightNote="margin from agents" />)}</Rows>
         </Panel>
@@ -264,7 +264,7 @@ function SettingsTab({ ov, agents, act }: { ov: Overview | null; agents: AgentLi
   const save = () => { if (enabled && !window.confirm("Open the sub-agent feature to every active agent? Each one can then start a programme from their dashboard.")) return; void act("Settings saved.", () => db().rpc("admin_network_set_tier", { p_enabled: enabled, p_allow: allow })); };
   const name = (id: string) => { const a = agents.find((x) => x.id === id); return a ? `${a.store_name} (${a.slug})` : id; };
   return (
-    <div className="grid gap-3 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
       <Panel title="Master switch" icon={Settings}>
         <label className="flex items-start justify-between gap-3 py-1"><span><span className="block text-[13px] font-semibold text-foreground">Open to all agents</span><span className="block text-[11.5px] text-muted-foreground">Every active agent sees "Build your own network" and can start recruiting. Off = only the agents listed on the right.</span></span><input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="mt-1 h-5 w-5" /></label>
         <div className="mt-3 rounded-lg border border-white/[0.07] p-2.5 text-[11.5px] text-muted-foreground">

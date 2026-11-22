@@ -169,7 +169,7 @@ export default function AdminFinance() {
         <p className="mt-2 text-[11px] text-faint-foreground">No fees change hands: a sub-agent's store is free. The parent's share sits in "owed to agents" until they withdraw.</p>
       </Panel>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Panel title="Paystack payouts" icon={ArrowDownToLine} action={<InlineAction onClick={() => setModal("payout")}>Record manually</InlineAction>}>
           <Rows empty="No payouts yet.">{payouts.map((e) => <Row key={e.id} primary={formatAdminDate(e.occurred_at)} secondary={e.source === "auto" ? `from Paystack · fees ${formatGHS(Number(e.metadata?.fees ?? 0))}` : e.note ?? "recorded by hand"} right={formatGHS(Number(e.amount))} rightNote={<Pill tone={e.source === "auto" ? "good" : "muted"}>{e.source === "auto" ? "auto" : "manual"}</Pill>} tone="good" />)}</Rows>
         </Panel>

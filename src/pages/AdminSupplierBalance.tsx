@@ -84,7 +84,7 @@ export default function AdminSupplierBalance() {
         <Stat loading={loading} label="Topped up (all time)" value={<Money value={topupTotal} />} note={`${topups.length} top-ups`} tone="good" />
       </StatGrid>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Panel title="Balance readings" note="as the supplier reported it">
           <Rows empty={loading ? "Loading…" : "No readings yet."}>{readings.slice(0, 20).map((r, i) => { const prev = readings[i + 1]; const delta = prev ? Number(r.balance) - Number(prev.balance) : null; return <Row key={r.observed_at} primary={formatGHS(Number(r.balance))} secondary={`${formatAdminDate(r.observed_at)} · ${r.source}`} right={delta == null ? "" : `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}`} tone={delta == null ? "default" : delta >= 0 ? "good" : "muted"} />; })}</Rows>
         </Panel>

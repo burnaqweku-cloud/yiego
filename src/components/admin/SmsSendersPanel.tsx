@@ -39,7 +39,7 @@ export default function SmsSendersPanel() {
   return (
     <Panel title="SMS" icon={MessageSquareText} note={data.credits != null ? `${data.credits} credits left` : undefined}>
       <p className="mb-2 text-[11.5px] leading-5 text-faint-foreground">Turn a switch on only after Vynfy shows that sender ID as approved; until then its texts are refused. Number-verification texts use <b className="text-foreground">{data.verify_sender}</b> and are {data.verify_enabled ? "on" : "off"} (change that under Verification SMS).</p>
-      <div className="grid gap-2 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
         {row("Send result-checker PINs by SMS", "When off, the PIN is on screen and in the buyer’s email only.", data.services_enabled, (v) => set({ services_enabled: v }), data.services_sender, (v) => set({ services_sender: v }))}
         {row("Text an agent when they are approved", "Sent once, the moment you approve their application.", data.agents_enabled, (v) => set({ agents_enabled: v }), data.agents_sender, (v) => set({ agents_sender: v }))}
       </div>
