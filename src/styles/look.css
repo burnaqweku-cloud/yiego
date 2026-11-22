@@ -472,3 +472,24 @@ html.yg-look .onyx-flowhead .text-white { color: #fff; }
 .light .yg-admin button[role="switch"][aria-checked="true"], .light .yg-admin button[role="switch"][data-state="checked"] { background: var(--leaf); }
 .light .yg-admin input[type="checkbox"], .light .yg-admin input[type="radio"] { accent-color: var(--leaf); }
 .light .yg-admin button[role="switch"] > span { background: #fff; box-shadow: 0 1px 3px rgba(10, 25, 18, 0.3); }
+
+/* ── The agent price list on /agents/store (22 Nov 2026): the home price board, seen from the agent's side ── */
+.light .site .agent-board-head,
+.light .site .agent-board-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px 72px; align-items: center; column-gap: 10px; padding-left: 18px; padding-right: 18px; }
+.light .site .agent-board-head { padding-top: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); background: #f7fbf8; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7b72; }
+.light .site .agent-board-head span:nth-child(n+2) { text-align: right; }
+.light .site .agent-board-row { padding-top: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.light .site .agent-board-row:last-child { border-bottom: 0; }
+.light .site .agent-board-row .board-size { font-size: 20px; }
+.light .site .agent-board-meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.light .site .agent-paused { display: inline-block; padding: 1px 7px; border-radius: 999px; background: #eef1ef; color: #6b7b72; font-size: 10.5px; font-weight: 700; }
+.light .site .agent-board-row .board-price { font-size: 19px; color: var(--ink); text-align: right; }
+.light .site .agent-board-row .board-price small { margin-right: 2px; font-size: 11px; }
+.light .site .agent-keep { justify-self: end; display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 999px; background: rgba(1, 138, 87, 0.1); color: var(--leaf); font-family: var(--font-display); font-weight: 800; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.light .site .agent-board .board-foot { font-size: 12.5px; line-height: 1.5; }
+@media (max-width: 380px) {
+  .light .site .agent-board-head, .light .site .agent-board-row { grid-template-columns: minmax(0, 1fr) 82px 62px; column-gap: 8px; padding-left: 14px; padding-right: 14px; }
+  .light .site .agent-board-meta { font-size: 12px; }
+  .light .site .agent-board-row .board-price { font-size: 17px; }
+  .light .site .agent-keep { padding: 0 8px; font-size: 13.5px; }
+}

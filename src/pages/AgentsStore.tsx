@@ -5,13 +5,17 @@ import { ChevronDown, Globe, Megaphone, ShoppingBag, Users, UsersRound } from "l
 import { metaFor } from "@/lib/site";
 import { faqPageLd } from "@/lib/structuredData";
 import Seo from "@/components/seo/Seo";
-import { headlineSavings, useAgentSavings } from "@/hooks/useAgentSavings";
-import { planQuote, type PlanQuote } from "@/lib/agents";
+import { useAgentPriceList } from "@/hooks/useAgentSavings";
+import { myAgentStatus, planQuote, type MyAgentStatus, type PlanQuote } from "@/lib/agents";
+import AgentPriceBoard from "@/components/agents/AgentPriceBoard";
+import { useAuth } from "@/store/auth-context";
 import { formatGHS } from "@/lib/format";
 
 /* Everything in a DataYego store, laid out like a spec sheet: numbered
    sections, each feature a collapsible row (title + one-line summary always
-   visible, full detail on tap). Linked from the agents page and the pay screen. */
+   visible, full detail on tap). Linked from the agents page and the pay screen.
+   The full agent price list sits at the top (owner, 22 Nov 2026). Someone approved who has not paid yet (or whose
+   plan ran out) gets the page opened on their own prices, with the way to pay, before the features. */
 
 interface Item { t: string; s: string; d: string }
 interface Section { id: string; icon: typeof Globe; title: string; pitch: string; items: Item[] }
@@ -118,42 +122,63 @@ function FeatureRow({ item }: { item: Item }) {
 }
 
 export default function AgentsStore() {
-  const savings = headlineSavings(useAgentSavings(), 4);
+  const prices = useAgentPriceList();
   const [quote, setQuote] = useState<PlanQuote | null>(null);
   useEffect(() => { void planQuote().then(setQuote); }, []);
+  const { user, isAuthenticated } = useAuth();
+  const [me, setMe] = useState<MyAgentStatus | null>(null);
+  useEffect(() => { if (isAuthenticated) void myAgentStatus().then(setMe); else setMe(null); }, [user, isAuthenticated]);
   const fee = quote ? (quote.promo ? quote.pay_now : quote.monthly) : null;
   const feeText = fee !== null ? formatGHS(fee) : "one small fee";
+  const feeLine = `${feeText} a month${quote?.promo ? ` (${quote.promo.percent_off}% off)` : ""} · no deposit`;
   const total = SECTIONS.reduce((n, s) => n + s.items.length, 0);
+  const status = me?.is_agent ? me.agent_status : null;
+  const waiting = status === "awaiting_payment" || status === "lapsed";
+  const cta = status === "active" ? { to: "/agent", label: "Open my dashboard" } : waiting ? { to: "/agent", label: status === "lapsed" ? "Renew and reopen my store" : "Pay and open my store" } : { to: "/agents", label: "Apply now" };
+  const contents = (
+    <nav aria-label="Sections" className="mt-8 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
+      {SECTIONS.map((s, i) => <a key={s.id} href={`#${s.id}`} className="flex items-center gap-2 text-[13px] text-foreground hover:text-primary-glow"><span className="w-5 text-[11px] font-semibold text-faint-foreground">{String(i + 1).padStart(2, "0")}</span>{s.title}<span className="text-[11px] text-faint-foreground">{s.items.length}</span></a>)}
+    </nav>
+  );
+  const featuresLead = <>{total} features, {SECTIONS.length} sections, {fee !== null ? `${feeText} a month` : "one small monthly fee"}. A real website with your name on it, agent prices on every bundle, customers who pay first so you never need a deposit, and the tools to sell on WhatsApp every day. Tap any row for the detail.</>;
 
   return (
     <div className="mk-wrap py-8 sm:py-14">
       <Seo {...metaFor("/agents/store")} jsonLd={faqPageLd(FAQ)} />
       <div className="mx-auto max-w-2xl">
-        {/* Hero */}
         <BackLink className="mb-5" />
-        <span className="mk-eyebrow">Agents</span>
-        <h1 className="mk-h2 mt-3">Everything in your store.</h1>
-        <p className="mk-lead mt-5">{total} features, {SECTIONS.length} sections, {fee !== null ? `${feeText} a month` : "one small monthly fee"}. A real website with your name on it, agent prices on every bundle, customers who pay first so you never need a deposit, and the tools to sell on WhatsApp every day. Tap any row for the detail.</p>
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Link to="/agents" className="mk-btn mk-btn-primary">Apply now</Link>
-          <span className="text-[12.5px] text-muted-foreground">{feeText} a month{quote?.promo ? ` (${quote.promo.percent_off}% off)` : ""} · no deposit</span>
-        </div>
-
-        {/* Contents */}
-        <nav aria-label="Sections" className="mt-8 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
-          {SECTIONS.map((s, i) => <a key={s.id} href={`#${s.id}`} className="flex items-center gap-2 text-[13px] text-foreground hover:text-primary-glow"><span className="w-5 text-[11px] font-semibold text-faint-foreground">{String(i + 1).padStart(2, "0")}</span>{s.title}<span className="text-[11px] text-faint-foreground">{s.items.length}</span></a>)}
-        </nav>
-
-        {/* Live prices */}
-        {savings.length > 0 && (
-          <div className="mt-8 border-y border-white/[0.08] py-3">
-            <div className="flex items-baseline justify-between"><p className="text-[14px] font-semibold text-foreground">Agent prices right now</p><span className="text-[12px] font-semibold text-primary-glow">Live</span></div>
-            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-4">
-              {savings.map((s) => <p key={`${s.network}${s.gb}`} className="text-[13px] text-foreground"><span className="font-semibold">{s.network} {s.gb}GB</span> {formatGHS(s.agent)} <span className="text-faint-foreground line-through">{formatGHS(s.pub)}</span> <span className="text-primary-glow">+{formatGHS(s.pub - s.agent)}</span></p>)}
-            </div>
-            <p className="mt-1.5 text-[11.5px] text-faint-foreground">The green figure is what you keep per sale at the public price. Sell higher and keep more.</p>
+        {waiting ? <>
+          {/* Approved, not paid yet (or plan run out): their own prices first, then how to open the store. */}
+          <span className="mk-eyebrow">{status === "lapsed" ? "Your plan has run out" : "You're approved"}</span>
+          <h1 className="mk-h2 mt-3">Your agent prices.</h1>
+          <p className="mk-lead mt-5">{status === "lapsed" ? "Renew your plan and buy every bundle below at the agent price again." : "Pay for your plan and buy every bundle below at the agent price."} Sell at the customer price and keep the green figure, or set your own price and keep more.</p>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Link to={cta.to} className="mk-btn mk-btn-primary">{cta.label}</Link>
+            <span className="text-[12.5px] text-muted-foreground">{feeLine}</span>
           </div>
-        )}
+          <div className="mt-7"><AgentPriceBoard rows={prices} /></div>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Link to={cta.to} className="mk-btn mk-btn-primary">{cta.label}</Link>
+            <span className="text-[12.5px] text-muted-foreground">{feeLine}</span>
+          </div>
+          <h2 className="mk-h2 mt-14 !text-[30px] sm:!text-[40px]">Everything in your store.</h2>
+          <p className="mk-lead mt-4">{featuresLead}</p>
+          {contents}
+        </> : <>
+          <span className="mk-eyebrow">Agents</span>
+          <h1 className="mk-h2 mt-3">Everything in your store.</h1>
+          <p className="mk-lead mt-5">{featuresLead}</p>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Link to={cta.to} className="mk-btn mk-btn-primary">{cta.label}</Link>
+            {status !== "active" && <span className="text-[12.5px] text-muted-foreground">{feeLine}</span>}
+          </div>
+          {/* Every agent price, live, before the features. */}
+          <div className="mt-9">
+            <div className="mb-3 flex items-baseline justify-between gap-3"><h2 className="font-display text-[22px] font-extrabold tracking-tight text-foreground">Agent prices right now</h2><span className="text-[12px] font-semibold text-primary-glow">Live</span></div>
+            <AgentPriceBoard rows={prices} />
+          </div>
+          {contents}
+        </>}
 
         {/* Sections */}
         {SECTIONS.map((s, i) => (

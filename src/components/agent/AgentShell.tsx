@@ -269,7 +269,7 @@ function PayScreen({ agent, quote, onPaid }: { agent: Agent; quote: PlanQuote | 
         <ul className="mt-5 space-y-2 text-left text-[13px] text-muted-foreground">
           {[["Buy data cheaper", cheaperLine], ["Free online store", "Your own link. You set the prices and keep the profit on every sale."], ["No deposit needed", "Your customers pay through your store; your profit is saved for you and paid to MoMo from 20.00."], ["We do the rest", "Delivery, payment and support are handled by DataYego."]].map(([t, d]) => <li key={t} className="flex gap-2"><span className="mt-0.5 text-primary-glow">✓</span><span><b className="text-foreground">{t}.</b> {d}</span></li>)}
         </ul>
-        {!suspended && <Link to="/agents/store" className="mt-4 flex items-center justify-center gap-1 text-[13px] font-semibold text-primary-glow hover:underline">See everything your store comes with<ArrowRight size={14} /></Link>}
+        {!suspended && <Link to="/agents/store" className="mt-4 flex items-center justify-center gap-1 text-[13px] font-semibold text-primary-glow hover:underline">See all your agent prices<ArrowRight size={14} /></Link>}
         <Link to="/" onClick={allowBrowsing} className="mt-3 block text-center text-[12px] text-muted-foreground">Back to DataYego</Link>
       </div>
     </div>

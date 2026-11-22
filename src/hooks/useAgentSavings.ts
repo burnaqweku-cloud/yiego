@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { loadPhase1Networks, loadPhase1Products } from "@/lib/phase1-api";
+import { agentPriceRows, type AgentPriceRow } from "@/lib/agentPriceList";
 
 /* Live agent-vs-public prices for the recruitment pages, so "buy data cheaper"
    never quotes a number that has since changed. */
@@ -26,4 +27,15 @@ export function headlineSavings(rows: Saving[], count = 3): Saving[] {
   const mtn = rows.filter((r) => r.network === "MTN");
   const picks = [1, 2, 10, 20].map((gb) => mtn.find((r) => r.gb === gb)).filter((r): r is Saving => Boolean(r));
   return (picks.length ? picks : rows.slice().sort((a, b) => a.gb - b.gb)).slice(0, count);
+}
+
+/** Every agent price, live (null while loading, [] if the catalogue could not be read). */
+export function useAgentPriceList(): AgentPriceRow[] | null {
+  const [rows, setRows] = useState<AgentPriceRow[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void Promise.all([loadPhase1Products(), loadPhase1Networks()]).then(([{ data: products }, { data: networks }]) => { if (alive) setRows(agentPriceRows(products, networks)); }).catch(() => { if (alive) setRows([]); });
+    return () => { alive = false; };
+  }, []);
+  return rows;
 }
