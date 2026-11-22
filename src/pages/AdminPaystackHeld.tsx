@@ -4,6 +4,7 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Money, Panel, Row, Rows, Stat, StatGrid } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { formatGHS } from "@/lib/format";
+import { refundPaidLabel } from "@/lib/financeV2";
 import { usePaystackHeld } from "@/lib/usePaystackHeld";
 import { useAuth } from "@/store/auth-context";
 
@@ -29,8 +30,13 @@ export default function AdminPaystackHeld() {
         <Rows empty="No payout scheduled right now.">{payouts.map((p) => <Row key={String(p.id)} primary={`${formatGHS(p.gross)} scheduled · Paystack Refund ${formatGHS(p.gross - p.net)}`} secondary={`${p.status}${p.date ? ` · ${when(p.date)}` : ""}`} right={formatGHS(p.net)} tone="good" />)}</Rows>
       </Panel>
       <Panel title="Refund not yet deducted">
-        <Rows empty="None — every Paystack refund has been taken out of a payout.">{refunds.map((r) => <Row key={String(r.id)} primary={`Refund ${r.id} · ${r.status}`} secondary={`${r.created ? when(r.created) : ""} · taken back so far ${formatGHS(r.deducted)}`} right={`− ${formatGHS(r.amount - r.deducted)}`} tone="bad" />)}</Rows>
-        <p className="mt-2 text-xs text-muted-foreground">Paystack takes these out of a coming payout. Wallet refunds never appear here.</p>
+        <Rows empty="None — every Paystack refund has been taken out of a payout.">{refunds.map((r) => {
+          const paidAt = held.alreadyOut[String(r.id)];
+          return paidAt
+            ? <Row key={String(r.id)} primary={`Refund ${r.id} · ${refundPaidLabel(paidAt).toLowerCase()}`} secondary="Already taken out of Not yet scheduled" right={formatGHS(r.amount - r.deducted)} rightNote="not taken off again" tone="muted" />
+            : <Row key={String(r.id)} primary={`Refund ${r.id} · ${r.status}`} secondary={`${r.created ? when(r.created) : ""} · taken back so far ${formatGHS(r.deducted)}`} right={`− ${formatGHS(r.amount - r.deducted)}`} tone="bad" />;
+        })}</Rows>
+        <p className="mt-2 text-xs text-muted-foreground">Refund on an older order (its money was already scheduled): Paystack takes it out of a coming payout, so it is taken off here until then. Refund on an order paid after the last scheduled payout (usually today): Paystack takes it out of Not yet scheduled at once, so it is not taken off again. Wallet refunds never appear here.</p>
       </Panel>
     </>}
   </div>;

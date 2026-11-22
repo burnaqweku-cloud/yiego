@@ -7,7 +7,10 @@ import type { PaystackHoldings } from "@/lib/paystackHoldings";
    wallet refunds only move money between debts and never touch the bank. */
 
 export interface Line { code: string; name: string; amount: number }
-export interface PaystackHeld { scheduledGross: number; scheduledFees: number; scheduledNet: number; notYetScheduled: number; refundsNotTakenBack: number; total: number }
+export interface PaystackHeld { scheduledGross: number; scheduledFees: number; scheduledNet: number; notYetScheduled: number; refundsNotTakenBack: number; total: number;
+  /** Refund id → when its payment was received, for refunds on money not yet scheduled: Paystack already took them out of
+   *  "Not yet scheduled", so they are not subtracted again (shown as such on the Paystack page). */
+  alreadyOut: Record<string, string> }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const sum = (xs: number[]) => r2(xs.reduce((a, b) => a + Math.round(b * 100), 0) / 100);
@@ -36,8 +39,17 @@ export function paystackHeld(reading: PaystackHoldings & { refunds_not_fully_ded
     const paid = originalPaidAt[String(x.id)];
     return cutoff != null && !!paid && Date.parse(paid) >= cutoff;
   };
+  const alreadyOut: Record<string, string> = {};
+  for (const x of refunds.items) if (alreadyOutOfPending(x)) alreadyOut[String(x.id)] = originalPaidAt[String(x.id)];
   const refundsNotTakenBack = sum(refunds.items.filter((x) => !["failed", "reversed"].includes(String(x.status).toLowerCase()) && !alreadyOutOfPending(x)).map((x) => Math.max(0, x.amount - x.deducted)));
-  return { scheduledGross, scheduledFees: r2(scheduledGross - scheduledNet), scheduledNet, notYetScheduled: r2(pending), refundsNotTakenBack, total: r2(scheduledNet + pending - refundsNotTakenBack) };
+  return { scheduledGross, scheduledFees: r2(scheduledGross - scheduledNet), scheduledNet, notYetScheduled: r2(pending), refundsNotTakenBack, total: r2(scheduledNet + pending - refundsNotTakenBack), alreadyOut };
+}
+
+/** "Paid today" / "Paid 21 Nov" (Ghana time) for a refund on money not yet scheduled. */
+export function refundPaidLabel(paidAt: string, now: Date = new Date()) {
+  const day = (d: Date) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Accra" }).format(d);
+  const paid = new Date(paidAt);
+  return day(paid) === day(now) ? "Paid today" : `Paid ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "Africa/Accra" }).format(paid)}`;
 }
 
 export function financeProfit(input: { bank: number; paystack: number; kora?: number; suppliers: Line[]; owed: Line[]; capital: number }) {

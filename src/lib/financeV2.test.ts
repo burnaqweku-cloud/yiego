@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estimateProfitAfterPendingFees, financeProfit, paystackHeld, profitIfAllDeliver } from "./financeV2";
+import { estimateProfitAfterPendingFees, financeProfit, paystackHeld, profitIfAllDeliver, refundPaidLabel } from "./financeV2";
 
 const base = { bank: 1000, paystack: 2000, suppliers: [{ code: "dbh", name: "DBH", amount: 500 }], owed: [{ code: "w", name: "Wallets", amount: 300 }], capital: 2400 };
 const p = (o: Partial<typeof base>) => financeProfit({ ...base, ...o }).profit;
@@ -49,12 +49,19 @@ describe("Paystack held money", () => {
     const held = paystackHeld(r, { "18925390": "2026-10-30T16:48:32Z", "18925896": "2026-10-23T23:08:42Z" });
     expect(held?.refundsNotTakenBack).toBe(18.35);
     expect(held?.total).toBe(2328.59);
+    expect(held?.alreadyOut).toEqual({ "18925390": "2026-10-30T16:48:32Z" });
   });
   it("keeps subtracting a refund whose payment date is unknown", () => {
     const r = reading({ ok: true, items: [{ id: 5, status: "processed", amount: 10, deducted: 0 }] });
     r.settlements[0].not_yet_paid[0].date = "2026-10-30T00:00:00.000Z" as never;
     expect(paystackHeld(r)?.refundsNotTakenBack).toBe(10);
   });
+});
+
+describe("refundPaidLabel", () => {
+  const now = new Date("2026-11-22T17:30:00Z");
+  it("says today for a payment made today in Ghana", () => expect(refundPaidLabel("2026-11-22T13:32:47Z", now)).toBe("Paid today"));
+  it("names the day otherwise", () => expect(refundPaidLabel("2026-11-21T23:10:00Z", now)).toBe("Paid 21 Nov"));
 });
 
 describe("display-only pending fee estimate", () => {
