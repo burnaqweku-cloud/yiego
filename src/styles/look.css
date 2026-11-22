@@ -473,7 +473,15 @@ html.yg-look .onyx-flowhead .text-white { color: #fff; }
 .light .yg-admin input[type="checkbox"], .light .yg-admin input[type="radio"] { accent-color: var(--leaf); }
 .light .yg-admin button[role="switch"] > span { background: #fff; box-shadow: 0 1px 3px rgba(10, 25, 18, 0.3); }
 
-/* ── The agent price list on /agents/store (22 Nov 2026): the home price board, seen from the agent's side ── */
+/* ── The agent price list on /agents/store (22 Nov 2026): closed until tapped, then the home price board seen from the agent's side ── */
+.light .site .agent-board-toggle { display: flex; width: 100%; align-items: center; gap: 12px; padding: 16px 16px 16px 18px; text-align: left; }
+.light .site .agent-board-icon { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: var(--pitch); color: var(--mint); }
+.light .site .agent-board-title { display: block; font-family: var(--font-display); font-weight: 800; font-size: 16.5px; letter-spacing: -0.01em; line-height: 1.25; color: var(--ink); }
+.light .site .agent-board-sub { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.4; color: #6b7b72; }
+.light .site .agent-board-chev { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #eef4f0; color: var(--ink); }
+.light .site .agent-board-chev svg { transition: transform 0.2s; }
+.light .site .agent-board-toggle[aria-expanded="false"]:hover .agent-board-chev { background: #e2ede6; }
+.light .site .agent-board-tabs { border-top: 1px solid var(--line); }
 .light .site .agent-board-head,
 .light .site .agent-board-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px 72px; align-items: center; column-gap: 10px; padding-left: 18px; padding-right: 18px; }
 .light .site .agent-board-head { padding-top: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); background: #f7fbf8; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7b72; }

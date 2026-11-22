@@ -14,8 +14,9 @@ import { formatGHS } from "@/lib/format";
 /* Everything in a DataYego store, laid out like a spec sheet: numbered
    sections, each feature a collapsible row (title + one-line summary always
    visible, full detail on tap). Linked from the agents page and the pay screen.
-   The full agent price list sits at the top (owner, 22 Nov 2026). Someone approved who has not paid yet (or whose
-   plan ran out) gets the page opened on their own prices, with the way to pay, before the features. */
+   The full agent price list sits near the top, closed until tapped (owner, 22 Nov 2026: "click on it and it's now
+   going to drop down all the price list"). Someone approved who has not paid yet (or whose plan ran out) gets the page
+   opened on how to open their store and the price list, before the features. */
 
 interface Item { t: string; s: string; d: string }
 interface Section { id: string; icon: typeof Globe; title: string; pitch: string; items: Item[] }
@@ -148,20 +149,16 @@ export default function AgentsStore() {
       <div className="mx-auto max-w-2xl">
         <BackLink className="mb-5" />
         {waiting ? <>
-          {/* Approved, not paid yet (or plan run out): their own prices first, then how to open the store. */}
+          {/* Approved, not paid yet (or plan run out): how to open the store and their prices, then the features. */}
           <span className="mk-eyebrow">{status === "lapsed" ? "Your plan has run out" : "You're approved"}</span>
-          <h1 className="mk-h2 mt-3">Your agent prices.</h1>
-          <p className="mk-lead mt-5">{status === "lapsed" ? "Renew your plan and buy every bundle below at the agent price again." : "Pay for your plan and buy every bundle below at the agent price."} Sell at the customer price and keep the green figure, or set your own price and keep more.</p>
+          <h1 className="mk-h2 mt-3">{status === "lapsed" ? "Reopen your store." : "Open your store."}</h1>
+          <p className="mk-lead mt-5">{status === "lapsed" ? "Renew your plan and buy every bundle at the agent price again." : "Pay for your plan and buy every bundle at the agent price."} Sell at the customer price and keep the difference, or set your own price and keep more.</p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <Link to={cta.to} className="mk-btn mk-btn-primary">{cta.label}</Link>
             <span className="text-[12.5px] text-muted-foreground">{feeLine}</span>
           </div>
           <div className="mt-7"><AgentPriceBoard rows={prices} /></div>
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <Link to={cta.to} className="mk-btn mk-btn-primary">{cta.label}</Link>
-            <span className="text-[12.5px] text-muted-foreground">{feeLine}</span>
-          </div>
-          <h2 className="mk-h2 mt-14 !text-[30px] sm:!text-[40px]">Everything in your store.</h2>
+          <h2 className="mk-h2 mt-12 !text-[30px] sm:!text-[40px]">Everything in your store.</h2>
           <p className="mk-lead mt-4">{featuresLead}</p>
           {contents}
         </> : <>
@@ -172,11 +169,8 @@ export default function AgentsStore() {
             <Link to={cta.to} className="mk-btn mk-btn-primary">{cta.label}</Link>
             {status !== "active" && <span className="text-[12.5px] text-muted-foreground">{feeLine}</span>}
           </div>
-          {/* Every agent price, live, before the features. */}
-          <div className="mt-9">
-            <div className="mb-3 flex items-baseline justify-between gap-3"><h2 className="font-display text-[22px] font-extrabold tracking-tight text-foreground">Agent prices right now</h2><span className="text-[12px] font-semibold text-primary-glow">Live</span></div>
-            <AgentPriceBoard rows={prices} />
-          </div>
+          {/* Every agent price, live, one tap away. */}
+          <div className="mt-8"><AgentPriceBoard rows={prices} /></div>
           {contents}
         </>}
 
