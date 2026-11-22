@@ -103,6 +103,7 @@ export function RecordPartnerCapitalModal({ open, onClose, actorId, onDone }: { 
   return (
     <Shell open={open} onClose={onClose} title="Partner put in money" onSubmit={submit} busy={busy} submitLabel="Record">
       <p className="text-[12.5px] text-muted-foreground">Fresh money from a partner's own pocket into the business — not a top-up. It raises the master balance; a top-up afterwards lowers it again.</p>
+      <p className="text-[12.5px] font-medium text-amber">This is capital: it is taken off profit. Money that is already the business's (sent from Kora to the master balance) is not capital: use "Move from Kora" instead.</p>
       <Field label="Amount (GH₵)"><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1000" className={inputCls} /></Field>
       <Field label="When"><input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className={inputCls} /></Field>
       <Field label="Note (optional)" hint="who put it in, for the record"><input value={note} onChange={(e) => setNote(e.target.value)} className={inputCls} /></Field>

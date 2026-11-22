@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Banknote, History, Minus, Receipt, PiggyBank, Plus, RefreshCw, Store, TrendingUp, Wallet } from "lucide-react";
+import { ArrowDownToLine, Banknote, History, Minus, Receipt, PiggyBank, Plus, RefreshCw, Store, TrendingUp, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Field, inputCls, Money, Panel, Stat, StatGrid } from "@/components/admin/ui";
@@ -28,7 +28,7 @@ export default function AdminFinanceV2() {
   const [isMaster, setIsMaster] = useState(false);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const [topup, setTopup] = useState(false); const [putIn, setPutIn] = useState(false); const [out, setOut] = useState(false);
+  const [topup, setTopup] = useState(false); const [putIn, setPutIn] = useState(false); const [out, setOut] = useState(false); const [moveIn, setMoveIn] = useState(false);
   const [inFlight, setInFlight] = useState<InFlightOrder[]>([]);
   const [inFlightReady, setInFlightReady] = useState(false);
   const ps = usePaystackHeld(!!user);
@@ -87,6 +87,7 @@ export default function AdminFinanceV2() {
         <Button variant="ghost" size="sm" onClick={refresh} aria-label="Refresh"><RefreshCw size={14} className={loading || ps.loading || kor.loading ? "animate-spin" : ""} /></Button>
         {isMaster && <Button size="sm" onClick={() => setTopup(true)}>Record top-up</Button>}
         {isMaster && <Button variant="soft" size="sm" onClick={() => setOut(true)}><Minus size={14} />Take money out</Button>}
+        {isMaster && <Button variant="soft" size="sm" onClick={() => setMoveIn(true)}><ArrowDownToLine size={14} />Move from Kora</Button>}
         {isMaster && <Button variant="soft" size="sm" onClick={() => setPutIn(true)}><Plus size={14} />Partner put in</Button>}
       </div>} />
 
@@ -158,7 +159,41 @@ export default function AdminFinanceV2() {
     <RecordTopupModal open={topup} onClose={() => setTopup(false)} actorId={actor} suppliers={suppliers.map((s) => ({ code: s.code, name: s.name, fee_rate: Number(s.metadata?.topup_fee_rate ?? 0) }))} onDone={refresh} />
     <RecordPartnerCapitalModal open={putIn} onClose={() => setPutIn(false)} actorId={actor} onDone={() => void load()} />
     <TakeOutModal open={out} onClose={() => setOut(false)} onDone={refresh} profit={view?.profit ?? null} />
+    <MoveFromKoraModal open={moveIn} onClose={() => setMoveIn(false)} onDone={refresh} view={view ? { bank: view.bank, capital: view.capital, kora: view.kora, profit: view.profit } : null} />
   </div>;
+}
+
+/* The business's own money moved from Kora into the master balance (owner, 22 Nov 2026: "it shouldn't be capital").
+   Kora's figure here is read live from Kora, so it has already gone down; this only adds the money to the bank.
+   Capital stays the same, so profit only drops by Kora's charge for the transfer (finance_move_to_bank). */
+function MoveFromKoraModal({ open, onClose, onDone, view }: { open: boolean; onClose: () => void; onDone: () => void; view: { bank: number; capital: number; kora: number; profit: number } | null }) {
+  const [amount, setAmount] = useState(""); const [charge, setCharge] = useState(""); const [note, setNote] = useState(""); const [busy, setBusy] = useState(false);
+  const v = Number(amount) || 0, c = Number(charge) || 0;
+  const submit = async () => {
+    if (!(v > 0)) return toast.error("Enter the amount that reached the master balance.");
+    if (c < 0 || c > v) return toast.error("Kora's charge can't be more than the amount.");
+    setBusy(true);
+    const { error } = await db().rpc("finance_move_to_bank", { p_amount: v, p_charge: c, p_note: note.trim() || null });
+    setBusy(false);
+    if (error) return toast.error(error.message.includes("master_admin_required") ? "Only the master admin, signed in with the two-step check, can record this." : "Not recorded. Refresh and check before trying again.");
+    toast.success(`${formatGHS(v)} moved from Kora to the master balance.`);
+    setAmount(""); setCharge(""); setNote(""); onDone(); onClose();
+  };
+  return <Modal open={open} onClose={() => { if (!busy) onClose(); }} label="Move money from Kora">
+    <div className="w-[min(92vw,420px)] space-y-4 p-5"><h2 className="text-lg font-semibold">Move money from Kora to the master balance</h2>
+      <p className="text-xs leading-5 text-muted-foreground">For the business's own money. Kora's balance here goes down by itself (we read it from Kora). This adds the money to the master balance. It is not capital, so profit stays the same.</p>
+      <Field label="Amount that reached the master balance (GH₵)"><input className={inputCls} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
+      <Field label="Kora's charge for the transfer (GH₵, if any)"><input className={inputCls} inputMode="decimal" value={charge} onChange={(e) => setCharge(e.target.value)} placeholder="0" /></Field>
+      <Field label="Note (optional)"><input className={inputCls} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. for supplier top-up" /></Field>
+      {view && v > 0 && <div className="space-y-0.5 rounded-lg bg-white/[0.03] p-3 text-[12.5px] tabular-nums">
+        <p>Master balance: {formatGHS(view.bank)} → <b>{formatGHS(view.bank + v)}</b></p>
+        <p>Capital: stays <b>{formatGHS(view.capital)}</b></p>
+        <p>Profit: {c > 0 ? <>{formatGHS(view.profit)} → <b>{formatGHS(view.profit - c)}</b> (Kora's charge)</> : <>stays <b>{formatGHS(view.profit)}</b></>}</p>
+        <p className="text-faint-foreground">Kora shows {formatGHS(view.kora)} now. If you haven't sent the money from Kora yet, send it first: it goes down by {formatGHS(v + c)}.</p>
+      </div>}
+      <div className="flex justify-end gap-2"><Button variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button><Button disabled={busy || !(v > 0)} onClick={() => void submit()}>{busy ? "Saving…" : "Record"}</Button></div>
+    </div>
+  </Modal>;
 }
 
 function TakeOutModal({ open, onClose, onDone, profit }: { open: boolean; onClose: () => void; onDone: () => void; profit: number | null }) {

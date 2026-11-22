@@ -10,7 +10,7 @@ import { readAll } from "@/lib/readAll";
    (business costs, capital returned, capital put in). Reads existing ledger entries; never changes them. */
 
 interface Entry { id: string; created_by: string | null; kind: string; occurred_at: string; amount: number; note: string | null; metadata: Record<string, unknown> | null; supplier_id: string | null; postings: { account: string; amount: number }[] }
-type Filter = "all" | "spend" | "withdraw" | "capital_in";
+type Filter = "all" | "spend" | "withdraw" | "capital_in" | "move_in";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => adminDatabase() as unknown as { from: (t: string) => any; rpc: (f: string, a?: Record<string, unknown>) => any };
 const when = (v: string) => new Intl.DateTimeFormat("en-GH", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Accra" }).format(new Date(v));
@@ -21,9 +21,10 @@ export function moneyMoveType(e: Entry): Exclude<Filter, "all"> | "add" {
   const k = String(e.metadata?.kind ?? "");
   if (k === "spend" || post(e, "other_expenses") > 0) return "spend";
   if (k === "add") return "add";
+  if (k === "move_in") return "move_in";
   return "withdraw";
 }
-const LABEL = { spend: "Business cost", withdraw: "Capital returned", capital_in: "Capital put in", add: "Added to bank" } as const;
+const LABEL = { spend: "Business cost", withdraw: "Capital returned", capital_in: "Capital put in", add: "Added to bank", move_in: "Moved from Kora" } as const;
 
 export default function AdminFinanceHistory() {
   const { type } = useParams(); const topups = type === "topups";
@@ -56,18 +57,19 @@ export default function AdminFinanceHistory() {
   const abs = (e: Entry) => Math.abs(Number(e.amount));
 
   return <div className="space-y-5">
-    <AdminPageHeader title={topups ? "Top-up history" : "Money in & out history"} description={topups ? "Every supplier top-up and result-checker stock purchase, its charges and who recorded it." : "Business costs, capital returned and capital put in."} />
+    <AdminPageHeader title={topups ? "Top-up history" : "Money in & out history"} description={topups ? "Every supplier top-up and result-checker stock purchase, its charges and who recorded it." : "Business costs, capital returned, capital put in and our own money moved from Kora."} />
     {error && <div role="alert" className="border-l-2 border-danger bg-danger/10 p-4 text-sm text-danger">Records could not be loaded.</div>}
     {topups ? <StatGrid cols={3}>
       <Stat loading={loading} label="Topped up" value={<Money value={total(() => true, into)} />} note={`${live.length} top-ups`} />
       <Stat loading={loading} label="Charges" value={<Money value={total(() => true, fee)} />} />
       <Stat loading={loading} label="Total paid" value={<Money value={total(() => true, (e) => into(e) + fee(e))} />} />
-    </StatGrid> : <StatGrid cols={3}>
+    </StatGrid> : <StatGrid cols={4}>
       <Stat loading={loading} label="Business costs" value={<Money value={total((e) => moneyMoveType(e) === "spend", abs)} tone="bad" />} note="lowered profit" />
       <Stat loading={loading} label="Capital returned" value={<Money value={total((e) => moneyMoveType(e) === "withdraw", abs)} />} note="profit unchanged" />
       <Stat loading={loading} label="Capital put in" value={<Money value={total((e) => moneyMoveType(e) === "capital_in", abs)} tone="good" />} note="profit unchanged" />
+      <Stat loading={loading} label="Moved from Kora" value={<Money value={total((e) => moneyMoveType(e) === "move_in", abs)} tone="good" />} note="our own money, not capital" />
     </StatGrid>}
-    {!topups && <div className="max-w-xl"><Segmented<Filter> value={filter} onChange={setFilter} options={[{ value: "all", label: "All" }, { value: "spend", label: "Costs" }, { value: "withdraw", label: "Returned" }, { value: "capital_in", label: "Put in" }]} /></div>}
+    {!topups && <div className="max-w-xl"><Segmented<Filter> value={filter} onChange={setFilter} options={[{ value: "all", label: "All" }, { value: "spend", label: "Costs" }, { value: "withdraw", label: "Returned" }, { value: "capital_in", label: "Put in" }, { value: "move_in", label: "From Kora" }]} /></div>}
     <Panel title={`${shown.length} record${shown.length === 1 ? "" : "s"}`}>
       <Rows empty={loading ? "Loading…" : "Nothing recorded yet."}>
         {shown.map((e) => {
@@ -76,7 +78,7 @@ export default function AdminFinanceHistory() {
             right={formatGHS(into(e))} rightNote={fee(e) ? `+ ${formatGHS(fee(e))} charges` : "no charges"} />;
           const t = moneyMoveType(e);
           return <Row key={e.id} primary={e.note || LABEL[t]} secondary={`${when(e.occurred_at)} · ${by}`}
-            right={`${t === "capital_in" || t === "add" ? "+" : "−"}${formatGHS(abs(e))}`} rightNote={<Pill tone={t === "spend" ? "bad" : t === "capital_in" ? "good" : "muted"}>{LABEL[t]}</Pill>} />;
+            right={`${t === "capital_in" || t === "add" || t === "move_in" ? "+" : "−"}${formatGHS(abs(e))}`} rightNote={<Pill tone={t === "spend" ? "bad" : t === "capital_in" || t === "move_in" ? "good" : "muted"}>{LABEL[t]}</Pill>} />;
         })}
       </Rows>
     </Panel>
