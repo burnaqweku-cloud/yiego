@@ -164,32 +164,30 @@ export default function AdminFinanceV2() {
 }
 
 /* The business's own money moved from Kora into the master balance (owner, 22 Nov 2026: "it shouldn't be capital").
-   Kora's figure here is read live from Kora, so it has already gone down; this only adds the money to the bank.
-   Capital stays the same, so profit only drops by Kora's charge for the transfer (finance_move_to_bank). */
+   Kora's figure here is read live from Kora, so it has already gone down by the amount and Kora's charge; profit has
+   already taken the charge. Only the amount that reached the master balance is recorded (owner: "I just need to record
+   the 300"); capital stays the same, so profit does not move (finance_move_to_bank, charge left at 0). */
 function MoveFromKoraModal({ open, onClose, onDone, view }: { open: boolean; onClose: () => void; onDone: () => void; view: { bank: number; capital: number; kora: number; profit: number } | null }) {
-  const [amount, setAmount] = useState(""); const [charge, setCharge] = useState(""); const [note, setNote] = useState(""); const [busy, setBusy] = useState(false);
-  const v = Number(amount) || 0, c = Number(charge) || 0;
+  const [amount, setAmount] = useState(""); const [note, setNote] = useState(""); const [busy, setBusy] = useState(false);
+  const v = Number(amount) || 0;
   const submit = async () => {
     if (!(v > 0)) return toast.error("Enter the amount that reached the master balance.");
-    if (c < 0 || c > v) return toast.error("Kora's charge can't be more than the amount.");
     setBusy(true);
-    const { error } = await db().rpc("finance_move_to_bank", { p_amount: v, p_charge: c, p_note: note.trim() || null });
+    const { error } = await db().rpc("finance_move_to_bank", { p_amount: v, p_charge: 0, p_note: note.trim() || null });
     setBusy(false);
     if (error) return toast.error(error.message.includes("master_admin_required") ? "Only the master admin, signed in with the two-step check, can record this." : "Not recorded. Refresh and check before trying again.");
     toast.success(`${formatGHS(v)} moved from Kora to the master balance.`);
-    setAmount(""); setCharge(""); setNote(""); onDone(); onClose();
+    setAmount(""); setNote(""); onDone(); onClose();
   };
   return <Modal open={open} onClose={() => { if (!busy) onClose(); }} label="Move money from Kora">
     <div className="w-[min(92vw,420px)] space-y-4 p-5"><h2 className="text-lg font-semibold">Move money from Kora to the master balance</h2>
-      <p className="text-xs leading-5 text-muted-foreground">For the business's own money. Kora's balance here goes down by itself (we read it from Kora). This adds the money to the master balance. It is not capital, so profit stays the same.</p>
-      <Field label="Amount that reached the master balance (GH₵)"><input className={inputCls} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
-      <Field label="Kora's charge for the transfer (GH₵, if any)"><input className={inputCls} inputMode="decimal" value={charge} onChange={(e) => setCharge(e.target.value)} placeholder="0" /></Field>
+      <p className="text-xs leading-5 text-muted-foreground">For the business's own money. Kora's balance here goes down by itself, charge included (we read it from Kora). Record only the amount that reached the master balance. It is not capital.</p>
+      <Field label="Amount that reached the master balance (GH₵)"><input className={inputCls} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="300" /></Field>
       <Field label="Note (optional)"><input className={inputCls} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. for supplier top-up" /></Field>
       {view && v > 0 && <div className="space-y-0.5 rounded-lg bg-white/[0.03] p-3 text-[12.5px] tabular-nums">
         <p>Master balance: {formatGHS(view.bank)} → <b>{formatGHS(view.bank + v)}</b></p>
         <p>Capital: stays <b>{formatGHS(view.capital)}</b></p>
-        <p>Profit: {c > 0 ? <>{formatGHS(view.profit)} → <b>{formatGHS(view.profit - c)}</b> (Kora's charge)</> : <>stays <b>{formatGHS(view.profit)}</b></>}</p>
-        <p className="text-faint-foreground">Kora shows {formatGHS(view.kora)} now. If you haven't sent the money from Kora yet, send it first: it goes down by {formatGHS(v + c)}.</p>
+        <p className="text-faint-foreground">Kora shows {formatGHS(view.kora)} now. Send the money from Kora first: Kora's own figure takes off the amount and its charge, so nothing else is needed.</p>
       </div>}
       <div className="flex justify-end gap-2"><Button variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button><Button disabled={busy || !(v > 0)} onClick={() => void submit()}>{busy ? "Saving…" : "Record"}</Button></div>
     </div>
