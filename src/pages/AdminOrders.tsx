@@ -13,6 +13,7 @@ import SupplierCreditControl from "@/components/admin/SupplierCreditControl";
 import { creditMatches, loadSupplierCredits, type SupplierCredit } from "@/lib/supplierCredit";
 import SupplierBadge, { useFallbackOrigins } from "@/components/admin/SupplierBadge";
 import AdminStatStrip from "@/components/admin/AdminStatStrip";
+import AdminLastDelivered from "@/components/admin/AdminLastDelivered";
 import OrdersPulse from "@/components/admin/OrdersPulse";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -344,6 +345,7 @@ export default function AdminOrders() {
 
   return <div className="space-y-7">
     <AdminPageHeader eyebrow="Operations" title="Order management" description="Search, filter and manage every stage of payment, fulfilment, delivery and customer communication." />
+    <AdminLastDelivered onOpen={(ref) => { setSearch(ref); window.setTimeout(() => document.getElementById("admin-orders-search")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50); }} />
     <OrdersPulse onRefresh={() => void loadOrders()} />
     <AdminStatStrip loading={loading} items={[
       { label: "All", value: totalAll, active: lifecycleFilter === "all", onClick: () => { setLifecycleFilter("all"); setCustomerFilter("all"); } },
@@ -388,7 +390,7 @@ export default function AdminOrders() {
 
     <Card><CardContent>
       <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_repeat(4,minmax(145px,0.55fr))_auto]">
-        <label className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 px-4 py-3"><Search size={17} className="text-faint-foreground" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search orders" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-faint-foreground" /></label>
+        <label className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 px-4 py-3"><Search size={17} className="text-faint-foreground" /><input id="admin-orders-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search orders" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-faint-foreground" /></label>
         <select value={lifecycleFilter} onChange={(event) => setLifecycleFilter(event.target.value)} className="onyx-field"><option value="all">All order stages</option><option value="agent_orders">Agent store orders (AG-)</option><option value="in_progress">All in progress</option><option value="failed_group">Failed delivery</option><option value="payment_failed">Payment failed</option>{LIFECYCLE_STATUSES.filter((status) => status !== "failed").map((status) => <option key={status} value={status}>{readableStatus(status)}</option>)}</select>
         <select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)} className="onyx-field"><option value="all">All payments</option>{PAYMENT_STATUSES.map((status) => <option key={status} value={status}>{readableStatus(status)}</option>)}</select>
         <select value={supplierFilter} onChange={(event) => setSupplierFilter(event.target.value)} className="onyx-field"><option value="all">All delivery responses</option>{SUPPLIER_STATUSES.map((status) => <option key={status} value={status}>{readableStatus(status)}</option>)}</select>

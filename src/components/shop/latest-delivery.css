@@ -111,3 +111,7 @@
 .yg-strip[data-slow] .yg-strip__took b { white-space: nowrap; font-size: 17px; }
 .yg-latest__trip[data-one], .yg-strip__trip[data-one] { grid-template-columns: auto minmax(0, 1fr); }
 
+
+/* Admin → Orders: the same card, full width, flat on the admin's white board; the time turns amber past 30 minutes. */
+.yg-a-last { max-width: none; border: 1px solid rgba(6, 64, 44, 0.09); box-shadow: none; }
+.yg-a-last[data-late] .yg-strip__took b { color: #b45309; }
