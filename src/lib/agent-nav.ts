@@ -47,6 +47,7 @@ export const AGENT_GROUPS: AgentNavGroup[] = [
   { id: "agents", label: "Your agents", icon: Network, parentOnly: true, pages: [
     { id: "applications", label: "Applications", to: "/agent/network/applications", sections: ["applications"], badge: "applications" },
     { id: "agents-all", label: "All agents", to: "/agent/network/agents", sections: ["agents"] },
+    { id: "agent-sales", label: "Agents' sales", to: "/agent/network/sales" },
     { id: "agent-prices", label: "Prices for your agents", to: "/agent/network/prices" },
     { id: "programme", label: "Programme & invite link", to: "/agent/network/programme", sections: ["programme", "recruit-popup"] },
     { id: "questions", label: "Application form", to: "/agent/network/form", sections: ["questions"] },
