@@ -1,5 +1,9 @@
 # Roadmap
 
+## Delivery-speed switch live activation
+- [x] Apply the saved delivery-speed SQL to the active external database; verify on/off feed and admin readback in a rolled-back transaction, anonymous grants denied, and non-admin calls rejected. Current setting remains on, unchanged.
+- [ ] Verify saving through the owner's signed-in master-admin screen — requires their external-account session and two-step check; database checks do not replace that screen check.
+
 ## North-star delivery measurement
 - [x] Count a data bundle only when an existing admin completion action confirms delivery or a supplier action newly returns delivered; never count tracking-page views, pending orders or repeated terminal-status checks.
 - [x] Register project.data_bundle_delivered with only network and completion source, validate its schema and test success/failure behavior. Four delivery tests and eleven consent regressions pass; schema and collector validation pass.
