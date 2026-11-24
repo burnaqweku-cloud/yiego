@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Check, Copy, KeyRound, Wallet, Zap } from "lucide-react";
+import { ArrowRight, Check, Copy, Download, KeyRound, Wallet, Zap } from "lucide-react";
 import Band from "@/components/layout/Band";
 import Seo from "@/components/seo/Seo";
 import { API_BASE_URL } from "@/lib/apiAccess";
@@ -170,13 +170,54 @@ const ERRORS: [string, number, string][] = [
   ["server_error", 500, "Something went wrong on our side. Send the same reference again: it never charges twice."],
 ];
 
-export default function Developers() {
+/* The whole guide as one Markdown file (owner, 24 Nov 2026: sellers hand it to an AI that writes their code). */
+export function apiDocsMarkdown(): string {
+  const L: string[] = [];
+  L.push("# DataYego API", "", "Sell MTN, Telecel and AirtelTigo data bundles from your own website or app. Orders are paid from your DataYego wallet.", "");
+  L.push("## Base URL", "", "```", API_BASE_URL, "```", "");
+  L.push("## Authentication", "", "Send your key with every request:", "", "```", "Authorization: Bearer YOUR_API_KEY", "```", "", "Keys starting `dy_test_` never charge or send anything (test orders become delivered after about 30 seconds). Keys starting `dy_live_` are real. Keep the live key on your server, never in a web page (browser requests are refused). Get keys at https://datayego.com/account/api after your access is approved.", "");
+  L.push("## Endpoints", "");
+  ENDPOINTS.forEach((e) => L.push(`- \`${e.method} ${e.path}\` — ${e.what}`));
+  L.push("", "## Buy a bundle: POST /orders", "", "Body: `bundle` (id from GET /bundles), `phone` (10-digit Ghana number), `reference` (your own order number). The same reference again never charges twice; the same reference with a different number or bundle returns 409 reference_conflict. Without a reference in the body, an `Idempotency-Key` header is used.", "");
+  (["curl", "php", "js"] as Lang[]).forEach((l) => L.push(`### ${l === "js" ? "JavaScript" : l === "php" ? "PHP" : "cURL"}`, "", "```" + (l === "curl" ? "bash" : l === "js" ? "javascript" : "php"), ORDER_EXAMPLES[l], "```", ""));
+  L.push("### Reply", "", "```json", ORDER_REPLY, "```", "");
+  L.push("## Order statuses", "");
+  STATUSES.forEach(([k, d]) => L.push(`- \`${k}\` — ${d}`));
+  L.push("", "## Webhooks", "", "Set an https webhook address on your API page. Every order status change is POSTed to it:", "", "```", HOOK_EXAMPLE, "```", "", "Events:", "");
+  EVENTS.forEach(([k, d]) => L.push(`- \`${k}\` — ${d}`));
+  L.push("", "Verify the signature: HMAC-SHA256 of `t + \".\" + raw body` with your `whsec_` signing secret must equal `v1`; refuse if `t` is more than 5 minutes old. Answer any 2xx within 10 seconds. Failed deliveries are retried after 1 m, 5 m, 15 m, 1 h, 3 h, 6 h and 12 h.", "");
+  L.push("### PHP", "", "```php", VERIFY.php, "```", "", "### JavaScript (Node/Express)", "", "```javascript", VERIFY.js, "```", "");
+  L.push("## Errors", "", "Errors always look like `{ \"error\": { \"code\", \"message\", \"request_id\" } }`.", "", "| Code | HTTP | Meaning |", "|---|---|---|");
+  ERRORS.forEach(([c, n, d]) => L.push(`| ${c} | ${n} | ${d} |`));
+  L.push("", "## Bundle ids", "", "Ids are the network and the size in GB: `mtn-1`, `mtn-10`, `at-2`, `tel-15`. Call GET /bundles for your prices and what is available now.", "", "## Limits", "", "120 requests a minute per key (429 rate_limited, see Retry-After). Every reply carries an `X-Request-Id`; quote it when contacting support.", "");
+  return L.join("\n");
+}
+
+export function downloadApiDocs() {
+  const blob = new Blob([apiDocsMarkdown()], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "datayego-api-docs.md";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}
+
+export function DownloadDocsButton() {
+  return (
+    <button type="button" onClick={downloadApiDocs} className="onyx-panel flex w-full items-center gap-3 rounded-[20px] p-4 text-left">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/15 text-primary-glow"><Download size={18} /></span>
+      <span className="min-w-0 flex-1"><span className="block text-[14.5px] font-semibold text-foreground">Download the full guide</span><span className="block text-[12.5px] text-muted-foreground">One file with everything. Give it to your developer or your AI to write the code.</span></span>
+    </button>
+  );
+}
+
+export default function Developers({ embedded = false }: { embedded?: boolean }) {
   const [lang, setLang] = useState<Lang>("php");
   const [hookLang, setHookLang] = useState<HookLang>("php");
   return (
     <div className="mx-auto w-full max-w-[760px]">
-      <Seo title="DataYego API — sell data from your own website or app" description="Connect your website or app to DataYego and sell MTN, Telecel and AirtelTigo bundles automatically, paid from your DataYego wallet." path="/developers" />
-      <Band kicker="For developers" title="DataYego API" sub="Sell MTN, Telecel and AirtelTigo bundles from your own website or app. Your site sends the order; we deliver it." className="mb-5" />
+      {!embedded && <Seo title="DataYego API — sell data from your own website or app" description="Connect your website or app to DataYego and sell MTN, Telecel and AirtelTigo bundles automatically, paid from your DataYego wallet." path="/developers" />}
+      {!embedded && <Band kicker="For developers" title="DataYego API" sub="Sell MTN, Telecel and AirtelTigo bundles from your own website or app. Your site sends the order; we deliver it." className="mb-5" />}
 
       <div className="space-y-4">
         <section className="grid gap-2 sm:grid-cols-3">
@@ -184,7 +225,8 @@ export default function Developers() {
           <Step n={2} icon={<Wallet size={16} />} title="Top up">Orders are paid from your DataYego wallet. Any amount.</Step>
           <Step n={3} icon={<Zap size={16} />} title="Send orders">Your site calls the API. You get an order number at once.</Step>
         </section>
-        <Link to="/account/api" className="onyx-btn-primary flex w-full items-center justify-center gap-2 !py-3.5 !text-[14.5px]">Apply for API access<ArrowRight size={16} /></Link>
+        <DownloadDocsButton />
+        {!embedded && <Link to="/account/api" className="onyx-btn-primary flex w-full items-center justify-center gap-2 !py-3.5 !text-[14.5px]">Get your API keys<ArrowRight size={16} /></Link>}
 
         <Board title="Your key">
           <p>Send your key with every request, in this header:</p>

@@ -117,7 +117,7 @@ export default function ApiAccessPanel({ variant, onTopUp }: { variant: "agent" 
         <p className="flex items-center gap-2 text-[15px] font-semibold text-foreground"><Code2 size={16} className="text-primary-glow" />Connect your app</p>
         <p className="mt-0.5 text-[12px] text-muted-foreground">Send your key with every request to this address:</p>
         <CopyLine value={API_BASE_URL} />
-        <Link to="/developers" className="mt-3 flex items-center justify-between rounded-2xl bg-primary/10 px-4 py-3 text-[13.5px] font-semibold text-primary-glow"><span className="flex items-center gap-2"><BookOpen size={16} />Read the guide, with PHP and JavaScript examples</span><ArrowRight size={15} /></Link>
+        <Link to="/account/api?tab=docs" className="mt-3 flex items-center justify-between rounded-2xl bg-primary/10 px-4 py-3 text-[13.5px] font-semibold text-primary-glow"><span className="flex items-center gap-2"><BookOpen size={16} />Read the guide, with PHP and JavaScript examples</span><ArrowRight size={15} /></Link>
       </section>
 
       <NewKeySheet open={!!newKey} keyValue={newKey?.key ?? ""} mode={newKey?.mode ?? "live"} onClose={() => setNewKey(null)} />
@@ -221,7 +221,7 @@ function ApplyCard({ variant, onDone }: { variant: "agent" | "site"; onDone: () 
           <Field label="How will you use it?"><textarea value={use} onChange={(e) => setUse(e.target.value)} rows={3} placeholder="e.g. My website sells bundles and I want orders to go through automatically." className="onyx-field w-full" /></Field>
         </div>
         <button type="button" disabled={!ok || busy} onClick={() => void send()} className="onyx-btn-primary mt-4 w-full !py-3 !text-[14px] disabled:opacity-50">{busy ? "Sending…" : "Apply"}</button>
-        <Link to="/developers" className="mt-3 flex items-center justify-center gap-1 text-[12.5px] font-semibold text-primary-glow">See how it works first<ArrowRight size={13} /></Link>
+        <Link to="/account/api?tab=docs" className="mt-3 flex items-center justify-center gap-1 text-[12.5px] font-semibold text-primary-glow">See how it works first<ArrowRight size={13} /></Link>
       </section>
     </div>
   );

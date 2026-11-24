@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { ArrowRight, Code2, BookOpen, ChevronDown, CircleHelp, Download, Home, LayoutGrid, LifeBuoy, ListOrdered, LogOut, Menu, PhoneForwarded, Search, ShieldCheck, Store, UserRound, Wallet, Wifi, X } from "lucide-react";
+import { ArrowRight, Code2, ChevronDown, CircleHelp, Download, Home, LayoutGrid, LifeBuoy, ListOrdered, LogOut, Menu, PhoneForwarded, Search, ShieldCheck, Store, UserRound, Wallet, Wifi, X } from "lucide-react";
 import { toast } from "sonner";
 import Wordmark from "@/components/brand/Wordmark";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -182,8 +182,7 @@ export default function PublicNav() {
       <MenuItem to="/check-mtn" icon={PhoneForwarded} label="Check MTN number" />
       {agentLink && <MenuItem to={agentLink.to} icon={Store} label={agentLink.label === "My store" ? "Agent dashboard" : agentLink.label} />}
       {isAdmin && <MenuItem to="/admin" icon={ShieldCheck} label="Admin panel" />}
-      <MenuItem to={agentLink?.to === "/agent" ? "/agent/api" : "/account/api"} icon={Code2} label="API for your website" />
-      <MenuItem to="/developers" icon={BookOpen} label="API documentation" />
+      <MenuItem to="/account/api" icon={Code2} label="API" />
       {!runningAsApp() && <MenuItem to="/app" icon={Download} label="Get the app" />}
       <MenuItem to="/support" icon={LifeBuoy} label="Support" />
       <MenuItem to="/faq" icon={CircleHelp} label="Help & FAQ" />
