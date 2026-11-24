@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Delivery-speed switch live activation
+- [x] Older delivery-progress panel in checkout, order history and tracking obeys Off; figures stay hidden until the switch loads. All 53 focused tests pass; phone browser with controlled switch replies verifies tracking On → Off (no supplier reads when off) and shop speed claims hidden. These latest screen changes await publishing.
 - [x] Apply the saved delivery-speed SQL to the active external database; verify on/off feed and admin readback in a rolled-back transaction, anonymous grants denied, and non-admin calls rejected. Current setting remains on, unchanged.
 - [ ] Verify saving through the owner's signed-in master-admin screen — requires their external-account session and two-step check; database checks do not replace that screen check.
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Clock3, Truck, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cached } from "@/lib/requestCache";
+import { useLatestFeed } from "@/hooks/useLatestDelivery";
 
 /* ══════════════════════════════════════════════════════════════
    Delivery Progress — how fast bundles are landing right now.
@@ -21,8 +22,10 @@ interface Panel { banner: { text: string; tone: "ok" | "slow" } | null; rows: Ro
  *  would crowd the pay button it sits above. */
 export default function DeliveryProgress({ className = "", compact = false }: { className?: string; compact?: boolean }) {
   const [panel, setPanel] = useState<Panel | null>(null);
+  const { speedOn } = useLatestFeed();
 
   useEffect(() => {
+    if (!speedOn) return;
     let cancelled = false;
     void (async () => {
       // A fresh reading on every page open, as before; the 10 s copy only stops the shop and the buy sheet asking twice at once.
@@ -35,9 +38,9 @@ export default function DeliveryProgress({ className = "", compact = false }: { 
       setPanel(data);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [speedOn]);
 
-  if (!panel) return null;
+  if (!speedOn || !panel) return null;
 
   if (compact) {
     if (!panel.banner) return null;

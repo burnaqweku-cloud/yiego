@@ -7,7 +7,7 @@ const REFRESH_MS = 60_000;
 
 /** The latest deliveries and the owner's switch, read live and again every minute while the page is in view. */
 export function useLatestFeed(): LatestFeed {
-  const [feed, setFeed] = useState<LatestFeed>(() => readFeed(null));
+  const [feed, setFeed] = useState<LatestFeed>(() => ({ ...readFeed(null), speedOn: false }));
   useEffect(() => {
     let alive = true;
     const read = () => { void loadLatest().then((next) => { if (alive) setFeed(next); }); };
@@ -21,13 +21,14 @@ export function useLatestFeed(): LatestFeed {
 /** The delivery to show for a network right now (good news only, see deliveryToShow). */
 export function useLatestDelivery(network: string, speed: NetworkSpeed | undefined): LatestDelivery | null {
   const feed = useLatestFeed();
-  return deliveryToShow(feed.all, network, speed, feed.always);
+  return feed.speedOn ? deliveryToShow(feed.all, network, speed, feed.always) : null;
 }
 
 /** What the shop says about a network's delivery right now: the latest delivery while it is fast, otherwise how
     long orders are taking as a range (lib/deliveryRange), otherwise nothing. Never both. */
 export function useDeliveryNow(network: string, speed: NetworkSpeed | undefined): { latest: LatestDelivery | null; range: DeliveryRange | null } {
   const feed = useLatestFeed();
+  if (!feed.speedOn) return { latest: null, range: null };
   const latest = deliveryToShow(feed.all, network, speed, feed.always);
   return { latest, range: latest ? null : deliveryRange(network, speed, feed.all[network]) };
 }
