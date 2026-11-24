@@ -32,6 +32,21 @@ export async function setLatestDeliveryRule(always: boolean): Promise<string | n
   return error ? error.message : null;
 }
 
+/* The delivery speed shown across the site and stores: the speed pill and line in the bundle lists, the "right now"
+   line, the slow range board, the delivery-times page and agents' order notes (hooks/useLatestDelivery.ts). Off hides
+   all of it at once; the latest-delivery card steps aside too, since its figures are speed claims. Stored in
+   site_settings 'delivery_speed' as {"enabled": true|false}; only the master admin can change it. */
+export interface DeliverySpeedRule { enabled: boolean; updated_at: string | null; updated_by: string | null }
+export async function loadDeliverySpeedRule(): Promise<DeliverySpeedRule | null> {
+  const { data, error } = await rpc("admin_delivery_speed_rule");
+  if (error || !data) return null;
+  return { enabled: data.enabled !== false, updated_at: data.updated_at ?? null, updated_by: data.updated_by ?? null };
+}
+export async function setDeliverySpeedRule(enabled: boolean): Promise<string | null> {
+  const { error } = await rpc("admin_set_delivery_speed_rule", { p_enabled: enabled });
+  return error ? error.message : null;
+}
+
 /* Front-end failures reported by phase1.log_client_error (see src/lib/client-errors.ts). */
 export interface ClientError { id: number; at: string; page: string; source: string; message: string; email: string | null; context: Record<string, unknown> }
 export async function loadClientErrors(hours = 48): Promise<ClientError[]> {

@@ -41,11 +41,19 @@ export function readLatest(raw: unknown): Record<string, LatestDelivery> {
   return out;
 }
 
-/** What the server sends: the deliveries, and the owner's switch. Anything unclear means the switch is off. */
-export interface LatestFeed { all: Record<string, LatestDelivery>; always: boolean }
+/** What the server sends: the deliveries, and the owner's switches. Anything unclear means the card switch is off;
+    the speed switch is on unless the server plainly says it is off (older copies of the server send no "_speed" key,
+    and they still showed the speed). */
+export interface LatestFeed { all: Record<string, LatestDelivery>; always: boolean; speedOn: boolean }
 export function readFeed(raw: unknown): LatestFeed {
-  const rule = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>)._rule : null;
-  return { all: readLatest(raw), always: !!rule && typeof rule === "object" && (rule as Record<string, unknown>).always === true };
+  const obj = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null;
+  const rule = obj?._rule;
+  const speed = obj?._speed;
+  return {
+    all: readLatest(raw),
+    always: !!rule && typeof rule === "object" && (rule as Record<string, unknown>).always === true,
+    speedOn: !(!!speed && typeof speed === "object" && (speed as Record<string, unknown>).enabled === false),
+  };
 }
 
 /** Shared for 30 seconds, so the shop band and the bundle list ask once between them. */

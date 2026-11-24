@@ -77,6 +77,15 @@ describe("the owner's switch (Admin → Status)", () => {
     expect(on.always).toBe(true);
     expect(Object.keys(on.all)).toEqual(["MTN"]);                                      // the setting is never read as a network
   });
+  it("the delivery-speed switch is on unless the server plainly says it is off", () => {
+    expect(readFeed(null).speedOn).toBe(true);
+    expect(readFeed({ MTN: row() }).speedOn).toBe(true);                               // older servers send no key: speed stays on
+    expect(readFeed({ MTN: row(), _speed: { enabled: true } }).speedOn).toBe(true);
+    expect(readFeed({ MTN: row(), _speed: { enabled: "false" } }).speedOn).toBe(true); // anything unclear means on
+    const off = readFeed({ MTN: row(), _speed: { enabled: false } });
+    expect(off.speedOn).toBe(false);
+    expect(Object.keys(off.all)).toEqual(["MTN"]);                                     // the setting is never read as a network
+  });
   it("on: shows a slow delivery, and shows it while the network is slow", () => {
     expect(deliveryToShow(slow, "MTN", quick)).toBeNull();
     expect(deliveryToShow(slow, "MTN", quick, true)?.phone).toBe("055*****15");
@@ -139,7 +148,7 @@ describe("every count follows the latest delivery while its card is on show (own
   });
 
   it("speed pills and lines use it too", () => {
-    const live = withLatest({ MTN: hour }, { all: three, always: false });
+    const live = withLatest({ MTN: hour }, { all: three, always: false, speedOn: true });
     expect(speedPill(live.MTN)?.text).toBe("MTN delivering in ~3 min");
     expect(speedPhrase(live.MTN)).toBe("about 3 minutes");
     expect(live.MTN.longest_minutes).toBeUndefined();
@@ -147,15 +156,15 @@ describe("every count follows the latest delivery while its card is on show (own
 
   it("leaves a network alone when its card is not on show", () => {
     const slowHour: NetworkSpeed = { window: "1h", sample: 6, median_minutes: 48 };
-    expect(withLatest({ MTN: slowHour }, { all: three, always: false }).MTN).toEqual(slowHour);   // slow: the card steps aside
-    expect(withLatest({ MTN: hour }, { all: {}, always: false }).MTN).toEqual(hour);              // nothing delivered to show
+    expect(withLatest({ MTN: slowHour }, { all: three, always: false, speedOn: true }).MTN).toEqual(slowHour);   // slow: the card steps aside
+    expect(withLatest({ MTN: hour }, { all: {}, always: false, speedOn: true }).MTN).toEqual(hour);              // nothing delivered to show
     const paused: NetworkSpeed = { ...hour, paused: true };
-    expect(withLatest({ MTN: paused }, { all: three, always: true }).MTN).toEqual(paused);
+    expect(withLatest({ MTN: paused }, { all: three, always: true, speedOn: true }).MTN).toEqual(paused);
   });
 
   it("with the owner's always-show switch, the shown delivery is the count even when slow", () => {
     const slowOne = readLatest({ MTN: row({ paid_at: "2026-11-21T05:00:00+00:00", delivered_at: "2026-11-21T06:20:00+00:00", age_seconds: 300 }) });
-    const live = withLatest({ MTN: { window: "1h", sample: 6, median_minutes: 48 } }, { all: slowOne, always: true });
+    const live = withLatest({ MTN: { window: "1h", sample: 6, median_minutes: 48 } }, { all: slowOne, always: true, speedOn: true });
     expect(speedPhrase(live.MTN)).toBe("about 1 hr 20 min");
   });
 });

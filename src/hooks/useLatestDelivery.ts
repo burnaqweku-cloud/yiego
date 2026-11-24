@@ -33,9 +33,11 @@ export function useDeliveryNow(network: string, speed: NetworkSpeed | undefined)
 }
 
 /** Every network's live speed, with the latest delivery standing in wherever its card is on show (withLatest). Use
-    this, not useDeliverySpeed, anywhere a customer or an agent reads how long orders take. */
+    this, not useDeliverySpeed, anywhere a customer or an agent reads how long orders take. When the owner has switched
+    the delivery speed off (Admin → Operations → Status, "Delivery speed status") this answers nothing, so every speed
+    line, pill, range board and latest-delivery card steps aside at once. */
 export function useLiveSpeeds(): Record<string, NetworkSpeed> {
   const speeds = useDeliverySpeed();
   const feed = useLatestFeed();
-  return useMemo(() => withLatest(speeds, feed), [speeds, feed]);
+  return useMemo(() => (feed.speedOn ? withLatest(speeds, feed) : {}), [speeds, feed]);
 }

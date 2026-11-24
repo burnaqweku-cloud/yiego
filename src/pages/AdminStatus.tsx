@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { Panel, Pill } from "@/components/admin/ui";
 import { formatAdminDate } from "@/lib/admin-data";
-import { loadClientErrors, loadLatestDeliveryRule, loadOpsStatus, PROCESSING_DELAY_NOTE, setLatestDeliveryRule, setProcessingDelay, type ClientError, type LatestDeliveryRule, type OpsStatus } from "@/lib/ops-status";
+import { loadClientErrors, loadDeliverySpeedRule, loadLatestDeliveryRule, loadOpsStatus, PROCESSING_DELAY_NOTE, setDeliverySpeedRule, setLatestDeliveryRule, setProcessingDelay, type ClientError, type DeliverySpeedRule, type LatestDeliveryRule, type OpsStatus } from "@/lib/ops-status";
 
 /* Team-wide switches that change what we tell customers. Today: the processing-delay apology. */
 const BASE = "Hello, payment for your DataYego order YG-XXXXXXXXXX has been confirmed and your data order is still being processed.";
@@ -16,7 +16,19 @@ export default function AdminStatus() {
   const [hours, setHours] = useState(48);
   const [rule, setRule] = useState<LatestDeliveryRule | null>(null);
   const [ruleBusy, setRuleBusy] = useState(false);
-  useEffect(() => { void loadOpsStatus().then(setS); void loadLatestDeliveryRule().then(setRule); }, []);
+  const [speed, setSpeed] = useState<DeliverySpeedRule | null>(null);
+  const [speedBusy, setSpeedBusy] = useState(false);
+  useEffect(() => { void loadOpsStatus().then(setS); void loadLatestDeliveryRule().then(setRule); void loadDeliverySpeedRule().then(setSpeed); }, []);
+  const toggleSpeed = async () => {
+    if (!speed || speedBusy) return;
+    const next = !speed.enabled;
+    setSpeedBusy(true);
+    const err = await setDeliverySpeedRule(next);
+    setSpeedBusy(false);
+    if (err) return toast.error(err.includes("admin_required") ? "Only the master admin can change this." : "Couldn't change it. Try again.");
+    setSpeed(await loadDeliverySpeedRule());
+    toast.success(next ? "Delivery speed is showing again." : "Delivery speed is now hidden everywhere.");
+  };
   const chooseRule = async (always: boolean) => {
     if (!rule || ruleBusy || rule.always === always) return;
     setRuleBusy(true);
@@ -87,6 +99,26 @@ export default function AdminStatus() {
           })}
         </div>
         <p className="mt-3 text-[12px] text-faint-foreground">Either way the card is hidden when that network has had no delivery in the last 6 hours, or is paused.{rule?.updated_at ? ` Last changed ${formatAdminDate(rule.updated_at)}${rule.updated_by ? ` by ${rule.updated_by}` : ""}.` : ""}</p>
+      </Panel>
+
+      <Panel title="Delivery speed status" icon={Timer} action={speed ? <Pill tone={speed.enabled ? "muted" : "warn"}>{speed.enabled ? "On" : "Off"}</Pill> : null}>
+        <div className="flex items-start justify-between gap-4">
+          <p className="max-w-[60ch] text-[13px] leading-relaxed text-muted-foreground">
+            Every speed figure customers and agents see: the "delivering in ~20 min" pill and line on the bundles, the "right now" line, the slow range board, the home page strip, the delivery-times page and agents' order notes. Off hides all of it at once, on the main site and in every store; the latest-delivery card steps aside too, since its figures are speed claims. Customers see the change within a minute.
+          </p>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={speed?.enabled ?? true}
+            aria-label="Delivery speed status"
+            disabled={!speed || speedBusy}
+            onClick={() => void toggleSpeed()}
+            className={`relative mt-0.5 inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${speed?.enabled ? "bg-primary" : "bg-foreground/20"}`}
+          >
+            <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${speed?.enabled ? "translate-x-6" : "translate-x-1"}`} />
+          </button>
+        </div>
+        {speed?.updated_at && <p className="mt-3 text-[12px] text-faint-foreground">Last changed {formatAdminDate(speed.updated_at)}{speed.updated_by ? ` by ${speed.updated_by}` : ""}</p>}
       </Panel>
 
       <Panel title="Front-end failures" icon={AlertTriangle} action={<div className="flex items-center gap-2">
