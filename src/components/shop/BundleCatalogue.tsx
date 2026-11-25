@@ -17,6 +17,8 @@ import MtnCheckField from "@/components/mtn/MtnCheckField";
 import MtnCheckInfoSheet from "@/components/mtn/MtnCheckInfoSheet";
 import { useAuth } from "@/store/auth-context";
 import { usePromoPrices } from "@/lib/promotions";
+import { MtnPausedPanel } from "@/components/shop/MtnPaused";
+import { mtnAllPaused } from "@/hooks/useMtnPaused";
 
 /**
  * The shop floor: every live bundle, on the page itself.
@@ -201,6 +203,8 @@ export default function BundleCatalogue({ onNetwork }: { onNetwork?: (network: s
   }, [attempt]);
 
   const state: LoadState = productsState;
+  // The snapshot starts every bundle as "Checking availability…"; only the live list can say MTN is off.
+  const mtnOff = useMemo(() => !products.some((p) => p.pause_reason === "Checking availability…") && mtnAllPaused(products), [products]);
 
   // Promotion link visitors see the promotion price as the bundle price, nothing else changes.
   const { user } = useAuth();
@@ -371,6 +375,9 @@ export default function BundleCatalogue({ onNetwork }: { onNetwork?: (network: s
                         </>)}
                       </h3>
                     </div>
+                    {group.network.name === "MTN" && mtnOff ? (
+                      <MtnPausedPanel onOther={() => setFilter("telecel")} />
+                    ) : (<>
                     {group.network.name === "MTN" && (
                       <p className="-mt-2 mb-4"><Link to="/delivery-times" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary-glow underline-offset-2 hover:underline"><CircleHelp size={14} />Why does data sometimes take longer?</Link></p>
                     )}
@@ -383,6 +390,7 @@ export default function BundleCatalogue({ onNetwork }: { onNetwork?: (network: s
                     )}
 
                     <BundleGrid rows={group.rows} onBuy={buy} />
+                    </>)}
                   </div>
                 );
               })}

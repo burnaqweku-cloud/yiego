@@ -501,3 +501,22 @@ html.yg-look .onyx-flowhead .text-white { color: #fff; }
   .light .site .agent-board-row .board-price { font-size: 17px; }
   .light .site .agent-keep { padding: 0 8px; font-size: 13.5px; }
 }
+
+/* MTN switched off (25 Nov 2026): strip under the header + panel in place of the MTN list. */
+.yg-mtnbar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #fff4d6; border-bottom: 1px solid #f7a701; color: #3d2a00; font-size: 13px; line-height: 1.4; }
+.yg-mtnbar p { flex: 1; margin: 0; }
+.yg-mtnbar__dot { width: 9px; height: 9px; flex-shrink: 0; border-radius: 999px; background: #f7a701; box-shadow: 0 0 0 4px rgba(247,167,1,.22); }
+.yg-mtnbar__link { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; font-weight: 700; color: #06402c; }
+.yg-mtnoff { position: relative; overflow: hidden; border-radius: 22px; background: #06402c; color: #fff; padding: 22px; }
+.yg-mtnoff::after { content: ""; position: absolute; right: -40px; top: -40px; width: 160px; height: 160px; border-radius: 999px; border: 18px solid rgba(247,167,1,.18); }
+.yg-mtnoff__head { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
+.yg-mtnoff__icon { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 14px; background: #f7a701; color: #06402c; }
+.yg-mtnoff__tag { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #f7c34a; }
+.yg-mtnoff h4 { margin: 2px 0 0; font-size: 20px; font-weight: 800; line-height: 1.2; }
+.yg-mtnoff__lead { position: relative; z-index: 1; margin: 14px 0 0; font-size: 14px; line-height: 1.6; color: rgba(255,255,255,.86); max-width: 60ch; }
+.yg-mtnoff__safe { position: relative; z-index: 1; display: flex; gap: 10px; margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.1); font-size: 13.5px; line-height: 1.55; }
+.yg-mtnoff__safe svg { flex-shrink: 0; margin-top: 2px; color: #7be0a8; }
+.yg-mtnoff__safe p { margin: 0; }
+.yg-mtnoff__foot { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.yg-mtnoff__foot .onyx-btn-primary { background: #fff; color: #06402c; }
+.yg-mtnoff__foot .onyx-btn-ghost { color: #fff; border-color: rgba(255,255,255,.35); }

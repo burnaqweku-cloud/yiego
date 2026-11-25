@@ -9,6 +9,7 @@ import AppBanner from "@/components/layout/AppBanner";
 import PushPrompt from "@/components/layout/PushPrompt";
 import FloatingSupport from "@/components/layout/FloatingSupport";
 import { TabBarSpace } from "@/components/layout/MobileTabBar";
+import { MtnPauseBanner } from "@/components/shop/MtnPaused";
 import { trackPromoEvent } from "@/lib/promotionAnalytics";
 
 function ScrollToTop() {
@@ -32,6 +33,7 @@ export default function PublicShell() {
         <AppBanner />
         <PushPrompt />
         <PublicNav />
+        <MtnPauseBanner />
         <AnnouncementStrip />
         <main className="flex-1">
           <Outlet />
