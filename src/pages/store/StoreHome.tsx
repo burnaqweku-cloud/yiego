@@ -10,6 +10,8 @@ import { MessageCircle, Search, ShieldCheck, Zap } from "lucide-react";
 import Seo from "@/components/seo/Seo";
 import AddMoneyFlow from "@/components/flows/AddMoneyFlow";
 import BuyDataFlow, { type AgentStoreContext, type BuyPreselect } from "@/components/flows/BuyDataFlow";
+import { StoreMtnPanel } from "@/components/store/StoreMtnPaused";
+import { mtnAllPaused } from "@/hooks/useMtnPaused";
 import { useStore, waLink } from "@/components/store/StoreShell";
 import { NETWORKS, type Network } from "@/data/bundles";
 import { formatGHS } from "@/lib/format";
@@ -55,6 +57,7 @@ export default function StoreHome() {
       )}
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1">{([["all", "All"], ["mtn", "MTN"], ["telecel", "Telecel"], ["at", "AirtelTigo"]] as const).map(([id, label]) => <button key={id} type="button" onClick={() => setNetwork(id)} className={`st-pill ${network === id ? "on" : ""} shrink-0 rounded-full px-3.5 py-1.5 text-[12.5px] font-medium ${network === id ? "bg-primary/20 text-primary-glow" : "border border-white/[0.08] text-muted-foreground"}`}>{label}</button>)}</div>
       <div className="mt-3 space-y-4">
+        {(network === "all" || network === "mtn") && mtnAllPaused(products) && <StoreMtnPanel onOther={() => setNetwork("telecel")} trackHref={`${storeBase(store.slug)}/track`} />}
         {groups.map(({ n, items }) => (
           <section key={n.id}>
             <div className="mb-1.5 flex items-center gap-2 px-1"><h2 className={tpl === "classic" ? "text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground" : tpl === "studio" ? "text-[15px] font-bold text-foreground" : "st-net"}>{n.name}</h2>{n.id === "mtn" && mtnLine && <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${mtnLine!.paused ? "border-white/[0.12] bg-white/[0.05] text-muted-foreground" : "border-primary-glow/20 bg-primary/[0.08] text-primary-glow"}`}><span className={`h-1.5 w-1.5 rounded-full ${mtnLine!.paused ? "bg-faint-foreground" : "bg-primary-glow"}`} />{mtnLine!.text}</span>}</div>

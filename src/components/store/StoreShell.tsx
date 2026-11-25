@@ -10,6 +10,7 @@ import StoreSplash from "@/components/store/StoreSplash";
 import { forgetStoreBrand, saveStoreBrand } from "@/lib/storeBrand";
 import StoreSupport from "@/components/store/StoreSupport";
 import StorePopup from "@/components/store/StorePopup";
+import { StoreMtnBanner } from "@/components/store/StoreMtnPaused";
 import ServicesPopup from "@/components/services/ServicesPopup";
 import { scopeOf, useServicesNew } from "@/lib/servicesNews";
 import { openCookieSettings } from "@/components/tracking/TikTokConsent";
@@ -231,6 +232,7 @@ export default function StoreShell({ children, hostSlug }: { children?: ReactNod
             </aside>
           </div>
         )}
+        <StoreMtnBanner />
         <main className={studio && isHome ? "w-full flex-1" : "mx-auto w-full max-w-2xl flex-1 px-4 pb-24 pt-5"}>{children ?? <Outlet />}</main>
         <StoreSupport />
         <StorePopup />
